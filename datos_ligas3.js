@@ -1,0 +1,13 @@
+/* DATOS: jugadores reales confirmados de clubes de la liga griega (Peristeri, Promitheas, Aris y PAOK) — se añaden sobre los clubes de datos_ligas2.js.
+   Fuentes: plantillas publicadas para 2026-27 (RealGM, Eurohoops, Wikipedia). Las valoraciones son estimaciones y las plantillas, parciales: el resto sigue siendo relleno. */
+(function () {
+  const D = GM.data; let seq = 0;
+  [["peristeri", "Paul Scruggs", "SG", 28, 70, 70, "T", 0.7, 2027, "US"], ["peristeri", "Ty Nichols", "SF", 30, 68, 68, "T", 0.5, 2027, "US"], ["peristeri", "Omar Payne", "C", 25, 68, 70, "R", 0.5, 2027, "US"], ["peristeri", "Tytan Anderson", "SF", 24, 66, 70, "D", 0.4, 2027, "US"], ["peristeri", "Jalen Finch", "SG", 26, 66, 68, "T", 0.4, 2027, "US"], ["peristeri", "Manos Chatzidakis", "C", 26, 66, 68, "R", 0.4, 2027, "GR"], ["peristeri", "Kostas Papadakis", "SG", 28, 64, 64, "P", 0.3, 2027, "GR"], ["peristeri", "Giorgos Gkiouzelis", "PF", 30, 64, 64, "R", 0.4, 2028, "GR"], ["peristeri", "Noah Freidel", "SF", 26, 64, 66, "T", 0.3, 2027, "US"], ["peristeri", "Tasos Kamateros", "PF", 26, 64, 66, "R", 0.3, 2027, "GR"], ["peristeri", "Will Carius", "PG", 26, 64, 66, "P", 0.3, 2027, "US"], ["peristeri", "Alexandros Nikolaidis", "SG", 24, 62, 66, "T", 0.2, 2027, "GR"], ["promitheas", "Alex Antetokounmpo", "SF", 24, 68, 70, "D", 0.5, 2027, "NG"], ["promitheas", "Zac Cuthbertson", "PF", 27, 66, 66, "R", 0.4, 2027, "US"], ["promitheas", "Joirdon Nicholas", "SF", 25, 64, 66, "D", 0.3, 2027, "US"], ["promitheas", "Periklis Kouroupakis", "C", 27, 64, 64, "R", 0.3, 2027, "GR"], ["promitheas", "Charilaos Paraskevopoulos", "SG", 27, 62, 62, "T", 0.2, 2027, "GR"], ["promitheas", "New Williams", "PG", 26, 64, 66, "P", 0.3, 2027, "US"], ["promitheas", "Dimitris Poulos", "SG", 18, 56, 74, "T", 0.1, 2029, "GR"], ["aris", "Vassilis Toliopoulos", "SG", 30, 72, 72, "T", 0.8, 2030, "GR"], ["paok", "Nikos Persidis", "PF", 31, 68, 68, "R", 0.5, 2028, "GR"], ["paok", "Breein Tyree", "SG", 32, 74, 74, "T", 1.2, 2027, "US"], ["paok", "Ben Moore", "PF", 29, 70, 70, "R", 0.8, 2027, "US"]].forEach(r => {
+    const e = D.equipos[r[0]]; if (!e) return;
+    const h = GM.util.hash(r[1]);
+    const p = GM.mkJugador(r[0], 950 + (++seq), r[1], r[2], r[3], GM.alturaPos(r[2], h), r[9], GM.pasaporte(r[9]), r[4], r[5], r[6], Math.round(r[7] * 1e6), r[8]);
+    p.id = 'gr26-' + seq; D.jugadores[p.id] = p; e.plantilla.push(p.id);
+    const fic = e.plantilla.map(i => D.jugadores[i]).filter(x => x.ficticio).sort((a, b) => b.ovr - a.ovr)[0];
+    if (e.plantilla.length > 14 && fic) { e.plantilla = e.plantilla.filter(i => i !== fic.id); delete D.jugadores[fic.id]; }
+  });
+})();

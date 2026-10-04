@@ -1,0 +1,150 @@
+/* Basket Manager — «La camiseta»: la interfaz se viste con los colores del club.
+   Tipografías: Graduate (rotulación de camiseta), Bricolage Grotesque (texto), Doto (marcador de puntos). */
+:root{
+  --club:#e8590c;--club-ink:#101c2e;--club2:#1c2b3a;--club-hi:#e8590c;
+  --bg:#e3e7ea;--bg2:#f8f9fa;--bg3:#d4dbe0;--linea:#b4bec6;--tinta:#101c2e;--mut:#56646f;
+  --ok:#1f8f5f;--mal:#c8402f;--amb:#b87c00;--led:#ffb000;
+  --fd:'Graduate','Rockwell','Arial Narrow',serif;--fb:'Bricolage Grotesque','Segoe UI',system-ui,-apple-system,Roboto,sans-serif;--fl:'Doto','Courier New',monospace;
+}
+:root[data-tema="noche"]{
+  --bg:#13181c;--bg2:#1d252b;--bg3:#2a343b;--linea:#3b4750;--tinta:#eef2f4;--mut:#98a6b0;
+  --ok:#4cc38a;--mal:#ef6a58;--amb:#e8b84a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tinta);font-family:var(--fb);font-size:15px;line-height:1.4;overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;text-align:left}
+h1,h2,h3,h4{font-family:var(--fd);font-weight:400;margin:0;letter-spacing:.03em}
+h3{font-size:22px;line-height:1.1}h4{font-size:15px;color:var(--mut);margin:14px 0 6px}
+p{margin:6px 0}.muted{color:var(--mut);font-size:13px}.neg{color:var(--mal)}.pos-v{color:var(--ok)}
+:focus-visible{outline:3px solid var(--club);outline-offset:2px}
+.app{height:100dvh;display:flex;flex-direction:column;max-width:560px;margin:0 auto;background:var(--bg);position:relative}
+
+/* Cabecera: cuello de camiseta con ribetes */
+.cab{position:relative;display:flex;align-items:center;gap:10px;padding:10px 12px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--club);color:var(--club-ink);margin-bottom:9px;
+  background-image:radial-gradient(circle at 96% 135%,transparent 0 44px,rgba(255,255,255,.22) 45px 47px,transparent 48px 66px,rgba(255,255,255,.14) 67px 69px,transparent 70px)}
+.cab::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:9px;background:linear-gradient(to bottom,var(--club2) 0 4px,var(--bg) 4px 6px,var(--club2) 6px 9px);pointer-events:none}
+.cab-t{flex:1;min-width:0;display:flex;flex-direction:column}.cab-t b{font:400 21px/1.05 var(--fd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cab-t span{font-size:12px;opacity:.85}
+.cab-c{text-align:right;display:flex;flex-direction:column}.cab-c b{font:400 19px/1 var(--fd)}.cab-c span{font-size:11px;opacity:.85}
+.cab .neg{color:inherit;text-decoration:underline wavy}
+.btn-ic{width:40px;height:40px;border-radius:10px;background:rgba(0,0,0,.18);color:inherit;display:grid;place-items:center}
+.cuerpo{flex:1;overflow-y:auto;padding:12px 12px 20px;-webkit-overflow-scrolling:touch}
+
+/* Navegación */
+.nav{display:flex;background:var(--bg2);border-top:4px solid var(--club);padding:3px 2px calc(3px + env(safe-area-inset-bottom,0px))}
+.navb{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0 5px;margin:0 1px;border-radius:10px;color:var(--mut);font-size:10.5px;font-weight:600;text-align:center}
+.navb.on{background:var(--club);color:var(--club-ink)}.ic{display:inline-flex}
+
+/* Secciones: banderines */
+.sec{margin:0 0 18px}
+.sec>h2{display:inline-block;font-size:16px;line-height:1;padding:8px 28px 8px 12px;margin:0 0 10px;background:var(--club);color:var(--club-ink);clip-path:polygon(0 0,100% 0,calc(100% - 13px) 50%,100% 100%,0 100%)}
+.tarjeta,.resumen{position:relative;overflow:hidden;background:var(--bg2);border-radius:6px;padding:16px 12px 12px;margin-bottom:9px;box-shadow:0 1px 0 var(--linea)}
+.tarjeta::before,.resumen::before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:linear-gradient(to bottom,var(--club) 0 3px,var(--bg2) 3px 4px,var(--club2) 4px 7px)}
+
+/* Listas: hojas de plantilla con puntos */
+.lista{display:flex;flex-direction:column}
+.item,.jug,.liga,.club{display:flex;align-items:center;gap:10px;width:100%;padding:10px 4px;background:transparent;border:0;border-bottom:1px dashed var(--linea);border-radius:0}
+.lista>.item:last-child,.lista>.jug:last-child{border-bottom:0}
+.item.col{flex-direction:column;align-items:stretch;gap:4px}.item .f{width:46px;flex:none}
+.ct{flex:1;min-width:0;display:flex;flex-direction:column}.ct b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jug.lesion{background:linear-gradient(90deg,rgba(200,64,47,.14),transparent 70%)}.jug.sel{background:linear-gradient(90deg,color-mix(in srgb,var(--club) 22%,transparent),transparent 80%)}
+.pos{width:32px;flex:none;text-align:center;font:400 14px var(--fd);color:var(--mut)}
+.fila{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.par{display:flex;gap:8px}.par>.btn{flex:1}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-height:44px;padding:8px 16px;border-radius:9px;background:var(--club);color:var(--club-ink);font-weight:700;font-size:15.5px;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.btn.grande{min-height:54px;font-size:18px;width:100%}.btn.peq{min-height:34px;padding:4px 11px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.btn-sec{background:transparent;color:var(--tinta);border:2px solid var(--tinta);box-shadow:none}.btn-sec:active{box-shadow:none}
+.btn.peligro{background:transparent;color:var(--mal);border-color:var(--mal)}
+.btn[disabled]{opacity:.4}
+
+/* Escudos y dorsales */
+.escudo{flex:none;width:34px;height:34px;border-radius:7px 7px 17px 17px;display:grid;place-items:center;font:400 12px var(--fd);border:2px solid rgba(0,0,0,.35)}.escudo.grande{width:60px;height:60px;font-size:19px}
+.ovr{flex:none;min-width:40px;text-align:center;padding:3px 6px 6px;border-radius:6px 6px 16px 16px;font:400 18px/1 var(--fd);color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}.ovr.grande{font-size:28px;min-width:56px;padding:6px 8px 10px}
+.o-a{background:#1f8f5f}.o-b{background:#4f8f2f}.o-c{background:#b87c00}.o-d{background:#667682}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.chip{display:inline-block;padding:3px 10px;border-radius:99px;border:1.5px solid var(--linea);font-size:12.5px;font-weight:500}
+.chip.ok{border-color:var(--ok);color:var(--ok)}.chip.mal{border-color:var(--mal);color:var(--mal)}
+.barra{display:block;height:8px;border-radius:2px;background:var(--bg3);overflow:hidden;flex:1;min-width:46px}.barra i{display:block;height:100%;background:var(--club)}
+.barra.verde i{background:var(--ok)}.barra.ambar i{background:var(--amb)}.barra.rojo i{background:var(--mal)}.energia{width:46px;display:flex}
+.aviso{padding:10px 12px;border-radius:4px 10px 10px 4px;background:var(--bg3);border-left:5px solid var(--club);margin:6px 0;font-size:14px}.aviso.med{border-color:var(--amb)}.aviso.mal{border-color:var(--mal)}.aviso.ok{border-color:var(--ok)}
+
+/* Pestañas: subrayado; segmentos: botones redondos */
+.tabs{display:flex;gap:2px;overflow-x:auto;margin-bottom:12px;border-bottom:2px solid var(--linea)}
+.tabs .tab{flex:1 0 auto;padding:9px 12px 7px;border:0;border-bottom:4px solid transparent;border-radius:0;margin-bottom:-2px;background:none;color:var(--mut);font-weight:600;text-align:center;white-space:nowrap}
+.tabs .tab.on{color:var(--tinta);border-bottom-color:var(--club)}
+.seg{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px;flex-wrap:wrap}.seg.compacto{flex-wrap:nowrap}
+.seg .tab{flex:1 0 auto;padding:7px 13px;border-radius:99px;border:2px solid var(--linea);font-size:14px;font-weight:600;text-align:center;white-space:nowrap}
+.seg .tab.on{background:var(--club);color:var(--club-ink);border-color:var(--club)}
+
+/* Tablas */
+.tabla{width:100%;border-collapse:collapse;font-size:13px;background:var(--bg2);border-radius:6px;overflow:hidden}.tabla th{color:var(--mut);font-weight:600;padding:7px 4px;text-align:center;border-bottom:2px solid var(--club)}
+.tabla td{padding:6px 4px;text-align:center;border-top:1px dashed var(--linea)}.tabla .iz{text-align:left}.tabla .escudo{width:20px;height:20px;font-size:0;border-radius:4px 4px 10px 10px;vertical-align:middle;border-width:1.5px}
+.tabla tr.mio td{background:color-mix(in srgb,var(--club) 22%,transparent);font-weight:700}.tabla .b{font-weight:700}.tabla.pq td,.tabla.pq th{padding:4px 3px}
+
+/* Partido: entrada con muescas y marcador de puntos */
+.tarjeta.partido{padding-top:18px;background:radial-gradient(circle at 0 62%,var(--bg) 10px,transparent 11px) left/51% 100% no-repeat,radial-gradient(circle at 100% 62%,var(--bg) 10px,transparent 11px) right/51% 100% no-repeat,var(--bg2)}
+.partido .etq,.resultado .etq{font:400 15px var(--fd);text-align:center;color:var(--tinta)}
+.marcador{display:flex;align-items:center;justify-content:center;gap:16px;margin:10px 0}.vs{font:400 22px var(--fd);color:var(--mut)}
+.nombres{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-bottom:6px}
+.duelo{display:flex;align-items:center;gap:8px;font:400 17px var(--fd)}.barra.dual{height:10px;background:var(--bg3)}.barra.dual i{background:var(--club)}
+.pts{display:flex;align-items:baseline;gap:12px;padding:6px 16px 4px;border-radius:8px;background:#0b0e11;box-shadow:inset 0 0 0 3px var(--club2),0 0 0 2px var(--tinta);font-family:var(--fl);color:var(--led);text-shadow:0 0 9px rgba(255,176,0,.55)}
+.pts b{font-size:46px;font-weight:800;line-height:1}.pts i{font-style:normal;color:#7a6326}
+.resultado.gana .pts{color:#5fe0a4;text-shadow:0 0 9px rgba(95,224,164,.5)}.resultado.pierde .pts{color:#ff7d6b;text-shadow:0 0 9px rgba(255,125,107,.5)}
+.wl{flex:none;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;font:400 14px var(--fd);color:#fff}.wl.w{background:var(--ok)}.wl.l{background:var(--mal)}
+.item.res,.item.serie{cursor:pointer}.serie{justify-content:center;font:400 20px var(--fd)}
+.cronica{margin:0;padding-left:18px;font-size:14px}.cronica li{margin:4px 0}.top .fila{font-size:13px;padding:2px 0}
+
+/* Voces: citas de quien propone o pide */
+.cita{display:flex;gap:10px;margin:8px 0;padding:10px;background:var(--bg3);border-radius:10px}
+.avatar{flex:none;width:38px;height:38px;border-radius:50%;background:var(--club);color:var(--club-ink);font:400 18px/38px var(--fd);text-align:center}
+.cita .rol{font-size:12px;color:var(--mut)}.cita .dicho{margin:4px 0 0;font-style:italic}
+
+/* Hojas modales y avisos */
+.fondo{position:fixed;inset:0;background:rgba(5,10,20,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.hoja{width:100%;max-width:560px;max-height:86dvh;overflow-y:auto;background:var(--bg2);color:var(--tinta);border-radius:18px 18px 0 0;padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px));border-top:6px solid var(--club);animation:sube .2s ease-out}
+.hoja.alta{max-height:92dvh}.asa{width:44px;height:5px;border-radius:3px;background:var(--linea);margin:4px auto 10px}.acciones{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+@keyframes sube{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--tinta);color:var(--bg2);padding:10px 16px;border-radius:8px;border-left:6px solid var(--club);font-weight:600;z-index:99;transition:opacity .3s;max-width:90vw}.toast.fuera{opacity:0}
+.attrs{margin-top:10px}.at{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}.at span{width:112px;color:var(--mut)}.at b{width:26px;text-align:right}
+.ajuste{margin:10px 0}.ajuste b{display:block;margin-bottom:5px;font-size:13px;color:var(--mut)}
+.filtros{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.sel,.area{width:100%;padding:9px 10px;border-radius:8px;background:var(--bg2);border:2px solid var(--linea);color:var(--tinta);font:inherit}.area{resize:vertical}
+.resumen{display:flex;flex-direction:column;gap:4px}.gran{font:400 30px/1.1 var(--fd);display:block}.rango{width:100%;accent-color:var(--club);margin:10px 0}
+.medidor{margin:10px 0;display:flex;flex-direction:column;gap:4px}
+
+/* Menú de inicio */
+.menu{padding:calc(20px + env(safe-area-inset-top,0px)) 16px 24px;overflow-y:auto;height:100%}.menu .col,.col{display:flex;flex-direction:column;gap:10px;margin-top:14px}.pie{margin-top:18px}
+.portada{position:relative;margin:-20px -16px 8px;padding:calc(34px + env(safe-area-inset-top,0px)) 20px 34px;background:var(--club);color:var(--club-ink);overflow:hidden}
+.portada::before{content:"";position:absolute;right:-60px;top:-30px;width:230px;height:230px;border-radius:50%;border:5px solid rgba(255,255,255,.28);box-shadow:inset 0 0 0 38px transparent,0 0 0 26px rgba(255,255,255,.12)}
+.portada::after{content:"";position:absolute;left:0;right:0;bottom:0;height:9px;background:linear-gradient(to bottom,var(--club2) 0 4px,var(--bg) 4px 6px,var(--club2) 6px 9px)}
+.portada h1{position:relative;font-size:46px;line-height:.98;letter-spacing:.02em}.portada p{position:relative;margin:10px 0 0;max-width:20em;opacity:.92}
+.liga{flex-direction:column;align-items:flex-start;gap:2px;padding:14px 12px;font-size:17px;border:2px solid var(--tinta);border-radius:10px;background:var(--bg2)}.liga b{font:400 22px var(--fd)}
+.club{border-bottom:1px dashed var(--linea)}.club .ct b{font-size:15px}.cargando{display:grid;place-items:center;height:100%;font:400 24px var(--fd);color:var(--club-hi)}
+
+/* Vistas 3D */
+.c3d{display:flex;flex-direction:column;gap:10px}.vista3d{height:300px;border-radius:8px;overflow:hidden;background:#a9d6f2;position:relative;border:3px solid var(--tinta)}.vacio{padding:24px;color:#10202f;font-size:14px}.panel3d{display:flex;flex-direction:column;gap:8px}
+@media (prefers-reduced-motion:reduce){.hoja{animation:none}.toast{transition:none}}
+
+/* Personaje y carrera */
+.avatar-pj{display:inline-flex;flex:none;border-radius:50%;overflow:hidden;line-height:0}
+.avatar-btn{padding:0;overflow:hidden;background:transparent!important}
+.centro{display:flex;justify-content:center;margin:6px 0 10px}
+.perfil-linea{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;margin-bottom:12px;background:var(--bg2);border-radius:10px;border-left:6px solid var(--club)}
+.ficha .gran{font-size:24px}
+.escalera{display:flex;flex-direction:column;gap:6px}
+.peldano{display:flex;flex-direction:column;padding:9px 12px;border-radius:8px;border:2px dashed var(--linea);color:var(--mut)}
+.peldano:nth-child(1){margin-left:0}.peldano:nth-child(2){margin-left:14px}.peldano:nth-child(3){margin-left:28px}.peldano:nth-child(4){margin-left:42px}
+.peldano.sup{border-style:solid;border-color:var(--club);color:var(--tinta)}
+.peldano.act{border:3px solid var(--club);background:color-mix(in srgb,var(--club) 18%,transparent);color:var(--tinta)}
+
+.item.col .barra{margin-top:2px}
+
+/* Partido en directo */
+.directo{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;background:#0c1116;color:#eef2f4;max-width:560px;margin:0 auto;overflow-y:auto}
+.dir-marcador{display:grid;grid-template-columns:1fr auto 1fr;gap:6px 10px;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;background:#0b0e11;border-bottom:4px solid var(--club)}
+.dir-eq{display:flex;flex-direction:column}.dir-eq b{font:400 22px var(--fd)}.dir-eq.der{text-align:right}.dir-eq .muted{font-size:11px;color:#8fa0ab}
+.dir-num{display:flex;align-items:baseline;gap:8px;font-family:var(--fl);color:var(--led);text-shadow:0 0 9px rgba(255,176,0,.55)}.dir-num b{font-size:40px;font-weight:800}.dir-num i{font-style:normal;color:#7a6326}
+.dir-reloj{grid-column:1/-1;text-align:center;font:400 14px var(--fd);color:#8fa0ab}
+.dir-vista{height:260px;flex:none;background:#10151b;position:relative}
+.dir-ticker{display:flex;flex-direction:column;gap:3px;padding:8px 12px;min-height:96px;background:#10161d;font-size:13.5px}.dir-linea{opacity:.9}.dir-linea.bien{color:#5fe0a4;font-weight:600}
+.dir-ctrl{padding:10px 12px}.dir-panel{padding:0 12px 24px}.dir-panel .jug,.dir-panel .tab{color:#eef2f4}.dir-panel .tab.on{color:var(--club-ink)}

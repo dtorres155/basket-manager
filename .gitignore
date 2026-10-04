@@ -1,0 +1,4 @@
+node_modules/
+dist/
+*.log
+PROMPT_CLAUDE_CODE.txt

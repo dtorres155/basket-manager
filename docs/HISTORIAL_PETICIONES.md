@@ -1,0 +1,20 @@
+# Lo que ha pedido el usuario (en orden)
+
+1. **Idea inicial:** juego de gestión de baloncesto para Android, en 3D no muy detallado, con estadio y ciudad deportiva y relación con la ciudad (referencia: FC Barcelona y la Ciutat Esportiva Joan Gamper). NBA, Euroliga y ligas europeas. Nombres reales, uso personal. Todo en un único archivo jugable, sin sitio externo.
+2. **Temporada 2026-27**, todo programado en el mismo chat (se abandonó el plan de módulos en chats paralelos). Empieza el 24 de septiembre de 2026.
+3. **Ciudad deportiva:** sin cuadrículas, con personalidad por club, obras que se ven avanzar por fases, edificios únicos; todos los clubes empiezan igual y la personalidad aparece al crecer; edificio emblemático por club (Masia, Pavelló Ausiàs March, etc.).
+4. **Modo presidente:** el club se autogestiona; el usuario cuida el legado y la esencia (pilares, alma, influencia, decisiones, elecciones, sala de historia). Elegible al empezar. Pabellón que evoluciona por dentro (iluminación por niveles). Joventut de Badalona con el mismo detalle que el Barça.
+5. **Ciudad:** que se vea y se pueda interactuar; contratos con alternativas excluyentes; actividades con la ciudad; vista de mapa y vista de calle (se pidió poder cambiar entre las dos).
+6. **Plantillas actuales** (no las de la temporada anterior), más personalidad en las propuestas, y una interfaz menos genérica.
+7. **Diseño de su personaje** (director técnico/presidente) y **carrera de jugador** (ligas europeas → Euroliga → NBA, por draft o por fichaje).
+8. Más creatividad en los modos; ciudad deportiva y ciudad menos cuadriculadas; piso del jugador (elegir zona); ligas **griega, alemana y turca**.
+9. Seis ideas aceptadas: copas, derbis/rivalidades, partido en directo 3D, modo entrenador, vida social del jugador, plantillas reales de las ligas nuevas.
+10. Casa visible por fuera y por dentro (más pobre o más rica), personaje en el centro, muebles según fase y nivel; también para director técnico y entrenador.
+11. Patrocinios del jugador; mejores modelos de objetos; pueblo que crece con el jugador; **EuroCup y Champions League** con previa; **inicio desde adolescente**; piso más interactivo; casas con apariencia, personalidad, tamaño y distribución distintos; reputación más difícil con más grados y estatus por club (de promesa a leyenda del club, penalización por fichar por un rival, menos reputación al subir de liga, estatus de leyenda al bajar de liga siendo veterano).
+12. Pregunta final: ¿hay una herramienta de Claude con más movilidad (menos cuadrícula) y más resolución? Respuesta: Claude Code. Este paquete es el traspaso.
+
+## Preferencias del usuario
+Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.
+
+## Enlace del prototipo
+Publicado como Artifact en claude.ai: https://claude.ai/artifact/81PJHeF2pJ5d6KGTNrZPNV (privado para su autor salvo que lo comparta).
