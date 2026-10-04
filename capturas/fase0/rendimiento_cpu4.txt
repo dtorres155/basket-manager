@@ -1,0 +1,14 @@
+CPU x4
+dt club Ciudad deportiva: 10 fps, peor fotograma 150 ms, heap 28 MB
+dt club Estadio: 60 fps, peor fotograma 17 ms, heap 18 MB
+dt ciudad Mapa 3D: 8 fps, peor fotograma 183 ms, heap 15 MB
+dt ciudad Mi casa: 60 fps, peor fotograma 33 ms, heap 13 MB
+directo: 60 fps, peor fotograma 17 ms, heap 10 MB
+entr ciudad Mi casa: 61 fps, peor fotograma 67 ms, heap 10 MB
+car ciudad Mapa 3D: 25 fps, peor fotograma 167 ms, heap 20 MB
+car ciudad Mi casa: 60 fps, peor fotograma 33 ms, heap 13 MB
+car ciudad Mi pueblo: 15 fps, peor fotograma 117 ms, heap 16 MB
+casa Fuera: 60 fps, peor fotograma 33 ms, heap 13 MB
+casa Edificio: 60 fps, peor fotograma 33 ms, heap 16 MB
+casa Habitaciones: 60 fps, peor fotograma 33 ms, heap 12 MB
+pueblo: 13 fps, peor fotograma 133 ms, heap 17 MB
