@@ -33,12 +33,12 @@ const arranque = `<div id="arranque" style="position:fixed;inset:0;display:flex;
 const registroSW = `
 (function(){
   if (!('serviceWorker' in navigator) || !(location.protocol === 'https:' || /^(localhost|127\\.0\\.0\\.1)$/.test(location.hostname))) return;
-  var recargando = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () { if (recargando) return; recargando = true; location.reload(); });
+  var actualizar = false, recargando = false; // solo se recarga si el usuario ha pedido actualizar (la primera instalación no recarga)
+  navigator.serviceWorker.addEventListener('controllerchange', function () { if (!actualizar || recargando) return; recargando = true; location.reload(); });
   function avisar(w) {
     if (!navigator.serviceWorker.controller || !window.GM || !GM.ui || !GM.ui.modal) return;
     var d = document.createElement('div'); d.innerHTML = '<h3>Nueva versión</h3><p>Hay una versión nueva del juego. Tu partida se guarda antes de actualizar.</p>';
-    GM.ui.modal(d, [{ t: 'Actualizar ahora', fn: function () { try { if (GM.state && GM.mods.guardado) GM.mods.guardado.guardar(0); } catch (e) {} w.postMessage('SKIP_WAITING'); } }, { t: 'Más tarde', cls: 'btn-sec' }]);
+    GM.ui.modal(d, [{ t: 'Actualizar ahora', fn: function () { try { if (GM.state && GM.mods.guardado) GM.mods.guardado.guardar(0); } catch (e) {} actualizar = true; w.postMessage('SKIP_WAITING'); } }, { t: 'Más tarde', cls: 'btn-sec' }]);
   }
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js').then(function (reg) {
