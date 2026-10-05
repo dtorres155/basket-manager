@@ -74,7 +74,7 @@ MOVIMIENTOS DE VERANO 2026 (NBA) — se aplica sobre GM.data después de cargar 
 DATOS: jugadores reales confirmados de clubes de la liga griega (Peristeri, Promitheas, Aris y PAOK) — se añaden sobre los clubes de datos_ligas2.js. Fuentes: plantillas publicadas para 2026-27 (RealGM, Eurohoops, Wikipedia). Las valoraciones son estimaciones y las plantillas, parciales: el resto sigue siendo relleno.
 
 ### `three_kit.js`
-KIT 3D (GM.kit) Utilidades comunes de los módulos 8 y 9: helper DOM h(), vista Three.js r128 con cámara orbital propia (un dedo gira, dos dedos acercan, toque = selección), primitivas low-poly y liberación de recursos. Si Three.js o WebGL no están disponibles, disponible() devuelve false y los módulos usan su panel de lista.
+KIT 3D (GM.kit) Utilidades comunes de los módulos 8 y 9: helper DOM h(), vista Three.js (0.186; intensidades de luz en escala clásica, el kit las multiplica por π) con cámara orbital propia (un dedo gira, dos dedos acercan, toque = selección), primitivas low-poly y liberación de recursos. Si Three.js o WebGL no están disponibles, disponible() devuelve false y los módulos usan su panel de lista.
 
 ### `finanzas.js`
 FINANZAS (GM.mods.finanzas) Expone: registrar, ingresosPartido, cierreMes, ofertasPatrocinio, firmarPatrocinio, resumen, masaSalarial, selfTest. Escribe state.finanzas[clubId] = { caja, movimientos, patrocinios, temp, historial }. Movimientos detallados solo del club del jugador. Se suscribe a partido:jugado (taquilla), dia:avanzado (cierre el día 1 de cada mes), temporada:fin y temporada:nueva.

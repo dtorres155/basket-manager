@@ -1,5 +1,5 @@
 /* KIT 3D (GM.kit)
-   Utilidades comunes de los módulos 8 y 9: helper DOM h(), vista Three.js r128 con cámara orbital propia
+   Utilidades comunes de los módulos 8 y 9: helper DOM h(), vista Three.js (0.186; intensidades de luz en escala clásica, el kit las multiplica por π) con cámara orbital propia
    (un dedo gira, dos dedos acercan, toque = selección), primitivas low-poly y liberación de recursos.
    Si Three.js o WebGL no están disponibles, disponible() devuelve false y los módulos usan su panel de lista. */
 (function () {
@@ -108,7 +108,7 @@
     renderer.setPixelRatio(Math.min((typeof window !== 'undefined' && window.devicePixelRatio) || 1, altaQ ? 2 : 1.5));
     renderer.setSize(w, hgt);
     renderer.setClearColor(o.fondo !== undefined ? o.fondo : 0xa9d6f2);
-    if (o.sombras && renderer.shadowMap) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; }
+    if (o.sombras && renderer.shadowMap) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; renderer.shadowMap.radius = 3; }
     const cv = renderer.domElement;
     cv.style.display = 'block'; cv.style.width = '100%'; cv.style.height = '100%'; cv.style.touchAction = 'none';
     el.appendChild(cv);
@@ -116,6 +116,8 @@
     const camera = new T.PerspectiveCamera(45, w / hgt, 0.1, 300);
     const amb = new T.AmbientLight(0xffffff, 0.78); scene.add(amb);
     const sun = new T.DirectionalLight(0xffffff, 0.65); sun.position.set(8, 14, 6); scene.add(sun);
+    // Los módulos fijan las intensidades en la escala clásica de r128; con la iluminación física de r155+ equivalen a ×π
+    [amb, sun].forEach(l => { let i = l.intensity; Object.defineProperty(l, 'intensity', { get: () => i * Math.PI, set: x => { i = x; }, configurable: true }); });
     if (o.sombras) { sun.castShadow = true; sun.shadow.mapSize.set(1536, 1536); const sc = sun.shadow.camera; sc.left = -52; sc.right = 52; sc.top = 52; sc.bottom = -52; sc.near = 1; sc.far = 140; sun.shadow.bias = -0.0008; }
     const v = { scene, camera, renderer, el, sun, amb, anim: null, theta: o.theta !== undefined ? o.theta : 0.8, phi: o.phi || 1.0, radio: o.radio || 16, target: new T.Vector3(0, 0, 0), need: true, dead: false, onTap: null };
     const rmin = o.min || 5, rmax = o.max || 40;

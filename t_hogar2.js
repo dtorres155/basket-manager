@@ -2,7 +2,7 @@ const { JSDOM } = require('jsdom');
 const dom = new JSDOM('<!doctype html><div id="app"></div>', { pretendToBeVisual: true });
 global.window = global; global.document = dom.window.document; global.performance=global.performance||require('perf_hooks').performance;
 global.requestAnimationFrame = f => setTimeout(()=>f(Date.now()), 16); global.cancelAnimationFrame = clearTimeout;
-global.THREE = require('three/build/three.min.js');
+global.THREE = require('./tools/three_node');
 THREE.WebGLRenderer = class { constructor(){ this.domElement = document.createElement('canvas'); } setPixelRatio(){} setSize(){} setClearColor(){} render(){} dispose(){} forceContextLoss(){} };
 const L = require('./load');
 L(['core','datos_util','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','finanzas','ciudad','campus','contratos','ciudad3d','partidos','competiciones','mercado','cantera','personaje','carrera','social','sponsor','pueblo','hogar','hogar3d','copas','continental','rivalidades','entrenador','legado']);

@@ -1,4 +1,4 @@
-const { JSDOM } = require('jsdom'); const dom=new JSDOM('<div id=app></div>'); global.window=global; global.document=dom.window.document; global.THREE=require('three/build/three.min.js');
+const { JSDOM } = require('jsdom'); const dom=new JSDOM('<div id=app></div>'); global.window=global; global.document=dom.window.document; global.THREE=require('./tools/three_node');
 const L=require('./load'); L(['core','datos_util','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','finanzas','ciudad','campus','contratos','ciudad3d','ciudad_deportiva','estadio','legado','directiva_ia','guardado','partidos','competiciones','mercado','cantera','copas','continental','rivalidades','directo','entrenador','personaje','carrera','social','sponsor','pueblo','hogar','hogar3d','fans']);
 GM.rng.seed(3);
 const st=GM.newGame('boston-celtics',3,{modo:'carrera',personaje:{nombre:'Marc',apellido:'Soler'},carrera:{origen:'europa',clubId:'unicaja',pos:'SG',perfil:'tirador',nac:'ES',agente:'dinero'}});

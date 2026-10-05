@@ -2,7 +2,7 @@ const { JSDOM } = require('jsdom');
 const dom = new JSDOM('<!doctype html><div id="app"></div>', { pretendToBeVisual: true });
 global.window = global; global.document = dom.window.document; global.performance=global.performance||require('perf_hooks').performance;
 global.requestAnimationFrame = f => setTimeout(()=>f(Date.now()), 5); global.cancelAnimationFrame = clearTimeout;
-global.THREE = require('three/build/three.min.js');
+global.THREE = require('./tools/three_node');
 let renders=0; THREE.WebGLRenderer = class { constructor(){ this.domElement = document.createElement('canvas'); } setPixelRatio(){} setSize(){} setClearColor(){} render(){renders++;} dispose(){} forceContextLoss(){} };
 const L = require('./load');
 L(['core','datos_util','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','finanzas','ciudad','campus','partidos','competiciones','mercado','cantera','copas','continental','rivalidades','directo','entrenador']);

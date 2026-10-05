@@ -1,6 +1,6 @@
 # Basket Manager 2026-27
 
-Juego de gestión de baloncesto para móvil (3D con Three.js r128) que se genera en `dist/` y funciona sin conexión. Modos: presidente, director técnico, entrenador y carrera de jugador (desde cadete, universidad o liga europea).
+Juego de gestión de baloncesto para móvil (3D con Three.js 0.186) que se genera en `dist/` y funciona sin conexión. Modos: presidente, director técnico, entrenador y carrera de jugador (desde cadete, universidad o liga europea).
 
 ```
 npm install

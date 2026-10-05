@@ -20,7 +20,7 @@
     const kk = key + C.calidad; if (TC[kk]) return TC[kk];
     try {
       const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); draw(x, w, h);
-      const t = new THREE.CanvasTexture(c);
+      const t = new THREE.CanvasTexture(c); if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
       if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep[0], rep[1]); }
       return (TC[kk] = t);
     } catch (e) { return null; }

@@ -2,7 +2,7 @@
 // Uso: node tools/sin_red.js   (requiere `npm run serve` en marcha)
 const { chromium } = require('playwright');
 const path = require('path');
-const URL = process.env.URL || 'http://localhost:8080/';
+const URL = process.env.URL || 'http://localhost:8080/', THREE_REV = '186';
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
@@ -19,5 +19,5 @@ const URL = process.env.URL || 'http://localhost:8080/';
   await p.screenshot({ path: path.join(__dirname, '..', 'capturas', 'fase1', 'sin_red_menu.png') });
   console.log(JSON.stringify(r), '\npeticiones externas bloqueadas:', fuera.length ? fuera : 'ninguna', '\nerrores:', errs.length ? errs : 'ninguno');
   await b.close();
-  process.exit(r.three === '128' && r.graduate && r.bricolage && r.doto && !fuera.length && !errs.length ? 0 : 1);
+  process.exit(r.three === THREE_REV && r.graduate && r.bricolage && r.doto && !fuera.length && !errs.length ? 0 : 1);
 })();

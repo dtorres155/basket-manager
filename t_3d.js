@@ -2,7 +2,7 @@ const { JSDOM } = require('jsdom');
 const dom = new JSDOM('<!doctype html><div id="app"></div>', { pretendToBeVisual: true });
 global.window = global; global.document = dom.window.document;
 global.requestAnimationFrame = f => setTimeout(f, 16); global.cancelAnimationFrame = clearTimeout;
-global.THREE = require('three/build/three.min.js');
+global.THREE = require('./tools/three_node');
 let renders = 0;
 THREE.WebGLRenderer = class { constructor(){ this.domElement = document.createElement('canvas'); } setPixelRatio(){} setSize(){} setClearColor(){} render(){ renders++; } dispose(){} forceContextLoss(){} };
 const L = require('./load');

@@ -7,7 +7,7 @@ El usuario escribe en español y catalán. Prefiere respuestas concisas y direct
 
 ## Comandos
 ```
-npm install        # jsdom, three@0.128, playwright y fuentes (solo para pruebas y build)
+npm install        # jsdom, three@0.186, esbuild, playwright y fuentes (solo para pruebas y build)
 npm run build      # genera dist/ (index.html, three.min.js, fonts/) a partir de los módulos (node build.js)
 npm test           # build + 26 pruebas (test_all.js); debe terminar con «Todas las pruebas pasan»
 npm run serve      # sirve dist/ en http://localhost:8080 (por HTTP el móvil no puede instalar la PWA; solo para probar)
@@ -21,7 +21,7 @@ node tools/sim_potencial.js [temporadas]  # carreras con hábitos distintos: có
 **Publicación:** repositorio público `dtorres155/basket-manager`; `.github/workflows/pages.yml` pasa las pruebas y publica `dist/` en **https://dtorres155.github.io/basket-manager/** en cada push a `main`. No subas datos personales del usuario (nombre, pueblo, correo); `PROMPT_CLAUDE_CODE.txt` está en `.gitignore`. Instrucciones para el usuario: `INSTALAR_EN_MOVIL.md`.
 
 **PWA:** `build.js` genera `dist/manifest.webmanifest` y `dist/sw.js`. La versión de la caché es un hash del contenido de `dist/`: cualquier cambio crea una caché nueva y el juego muestra «Nueva versión» (guarda la partida y recarga). Si añades archivos a `dist/`, añádelos a la lista `archivos` de `build.js`.
-Three.js r128 y las fuentes woff2 (Graduate, Bricolage Grotesque, Doto) están en `vendor/` con sus licencias (ver `CREDITOS.md`). **No añadas dependencias de CDN.** `dist/` no se guarda en git: se genera. Node está en `C:\Program Files\nodejs` (en Git Bash: `export PATH="/c/Program Files/nodejs:$PATH"`). Playwright usa el Edge del sistema (`channel: 'msedge'`); la descarga de Chromium falla en este equipo.
+Three.js 0.186 (paquete propio con GLTFLoader, BufferGeometryUtils, RoundedBoxGeometry y Sky: `npm run vendor:three` a partir de `tools/three_entry.js`; las pruebas usan el mismo con `require("./tools/three_node")`) y las fuentes woff2 (Graduate, Bricolage Grotesque, Doto) están en `vendor/` con sus licencias (ver `CREDITOS.md`). **No añadas dependencias de CDN.** `dist/` no se guarda en git: se genera. Node está en `C:\Program Files\nodejs` (en Git Bash: `export PATH="/c/Program Files/nodejs:$PATH"`). Playwright usa el Edge del sistema (`channel: 'msedge'`); la descarga de Chromium falla en este equipo.
 
 ## Reglas de la arquitectura (léelas antes de tocar nada)
 - **Sin módulos ES ni bundler.** Cada archivo es una IIFE que cuelga de `window.GM`. El orden de carga está en `build.js` (`const mods=[...]`) y en `load.js` (para pruebas en Node con `vm`).
