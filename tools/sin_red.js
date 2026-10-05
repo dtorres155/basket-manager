@@ -16,7 +16,7 @@ const URL = process.env.URL || 'http://localhost:8080/';
     const f = n => document.fonts.check('16px "' + n + '"', 'Basket');
     return { three: typeof THREE !== 'undefined' && THREE.REVISION, graduate: f('Graduate'), bricolage: f('Bricolage Grotesque'), doto: f('Doto'), cargadas: [...document.fonts].filter(x => x.status === 'loaded').map(x => x.family) };
   });
-  await p.screenshot({ path: path.join(__dirname, '..', 'capturas', 'sin_red_menu.png') });
+  await p.screenshot({ path: path.join(__dirname, '..', 'capturas', 'fase1', 'sin_red_menu.png') });
   console.log(JSON.stringify(r), '\npeticiones externas bloqueadas:', fuera.length ? fuera : 'ninguna', '\nerrores:', errs.length ? errs : 'ninguno');
   await b.close();
   process.exit(r.three === '128' && r.graduate && r.bricolage && r.doto && !fuera.length && !errs.length ? 0 : 1);

@@ -14,7 +14,7 @@
 
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
-- Valorar PWA con modo sin conexión y/o empaquetado Android (Capacitor u otro). Hoy es un HTML que se abre en el navegador y guarda en `localStorage` (ligado al navegador).
+- ~~PWA con modo sin conexión~~: hecho en la fase 1.2 (manifiesto, iconos, service worker con caché versionada y aviso de nueva versión). Pendiente: publicarla por HTTPS (1.5).
 - Guardado: versionado y migraciones de partidas (`state.version`), exportar/importar ya existe.
 
 ## P1 — Datos

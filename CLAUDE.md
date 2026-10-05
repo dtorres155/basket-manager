@@ -13,7 +13,10 @@ npm test           # build + 26 pruebas (test_all.js); debe terminar con «Todas
 npm run serve      # sirve dist/ en http://localhost:8080 (por HTTP el móvil no puede instalar la PWA; solo para probar)
 node tools/capturas.js <fase> [--lento]   # capturas 390x844 con Edge en capturas/<fase>/ y fps (--lento: CPU x4)
 node tools/sin_red.js                     # comprueba que dist/ carga sin ninguna petición externa
+node tools/pwa.js                         # instalable (según Edge), service worker activo y arranque sin red con la partida guardada
+node tools/iconos.js                      # regenera vendor/icons/ (escudo con balón) a partir del SVG del script
 ```
+**PWA:** `build.js` genera `dist/manifest.webmanifest` y `dist/sw.js`. La versión de la caché es un hash del contenido de `dist/`: cualquier cambio crea una caché nueva y el juego muestra «Nueva versión» (guarda la partida y recarga). Si añades archivos a `dist/`, añádelos a la lista `archivos` de `build.js`.
 Three.js r128 y las fuentes woff2 (Graduate, Bricolage Grotesque, Doto) están en `vendor/` con sus licencias (ver `CREDITOS.md`). **No añadas dependencias de CDN.** `dist/` no se guarda en git: se genera. Node está en `C:\Program Files\nodejs` (en Git Bash: `export PATH="/c/Program Files/nodejs:$PATH"`). Playwright usa el Edge del sistema (`channel: 'msedge'`); la descarga de Chromium falla en este equipo.
 
 ## Reglas de la arquitectura (léelas antes de tocar nada)
