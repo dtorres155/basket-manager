@@ -15,7 +15,7 @@
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
 - ~~PWA con modo sin conexión~~: hecho en la fase 1.2 (manifiesto, iconos, service worker con caché versionada y aviso de nueva versión). Publicada por HTTPS (1.5) en https://dtorres155.github.io/basket-manager/ (GitHub Actions publica dist/ en cada push a main).
-- Guardado: versionado y migraciones de partidas (`state.version`), exportar/importar ya existe.
+- ~~Guardado seguro~~: hecho en la fase 1.4 (versión y migraciones, guardado al salir de la app, almacenamiento persistente, copia de seguridad por archivo o compartir y recordatorio semanal).
 
 ## P1 — Datos
 - Plantillas reales para BBL (alemana), BSL (turca) y el resto de GBL (griega); completar Efes, ASVEL y los clubes de ACB y Lega con relleno.
@@ -27,6 +27,7 @@
 - Reputación del jugador (`carrera.js`), progresión, finanzas de los clubes (resultado/presupuesto), efectos de muebles, sueldo y ahorros en los modos no jugador (hoy son estimaciones).
 - Comprobar que llegar a la NBA lleve el tiempo esperado en distintos orígenes.
 - Revisar si algún efecto antiguo sigue dando mucha fama de golpe.
+- **Progresión todavía rápida con entrenamiento intenso:** en `tools/sim_potencial.js`, el perfil disciplinado de cantera pasa de 61 a 77 entre los 19 y los 22 años (el diseño pide 73 a los 23). Ya se limitó la experiencia de la vida social (tope semanal en `social.js`, antes «pedir consejo» al mentor daba más nivel que entrenar). Falta revisar la intensidad (x1,5) y el crecimiento por edad.
 
 ## P2 — Funcionalidad que se pidió y no está completa
 - Etapa universitaria sin partidos jugados (se resume por curso).

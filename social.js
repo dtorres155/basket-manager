@@ -29,6 +29,8 @@
   // nombreAleatorio solo tiene nombres masculinos: la madre usa su propia lista
   const MADRES = { ES: 'Carmen,Montse,Laura,Marta,Pilar,Núria,Elena,Isabel,Rosa,Cristina,Anna,Teresa', US: 'Jennifer,Michelle,Lisa,Angela,Kimberly,Tanya,Monique,Rachel,Denise,Karen,Stephanie,Nicole' };
   function nombreMadre(pais, h) { const l = (MADRES[pais] || MADRES.ES).split(','); return l[(h >>> 2) % l.length]; }
+  const XP_SEMANA = 0.04; // ~2 puntos de nivel al año como mucho
+  function potencial(st, d, motivo) { const K = GM.mods.carrera; if (K && K.ajustarPot) K.ajustarPot(st, d, motivo); }
   function nuevaPartida(st) {
     if (st.modo !== 'carrera' || !st.carrera) return;
     const pais = YO(st).nac === 'US' ? 'US' : 'ES', h = U.hash(YO(st).nombre + 'fam');
@@ -63,9 +65,13 @@
     if (accion === 'mudarse') { s.pareja.ciudad = ciudad(st); k.rel = U.clamp(k.rel + 10, 0, 100); out.push('vivís en la misma ciudad'); return { ok: true, efectos: out }; }
     k.rel = U.clamp(k.rel + (a.rel || 0), 0, 100); if (a.rel) out.push('relación ' + (a.rel > 0 ? '+' : '') + a.rel);
     if (a.moral) { c.moral = U.clamp(c.moral + a.moral, 0, 100); out.push('moral ' + (a.moral > 0 ? '+' : '') + a.moral); }
-    if (a.xp) { YO(st).xp = (YO(st).xp || 0) + a.xp; out.push('progresión extra'); }
+    // La progresión que da la vida social tiene un tope semanal (XP_SEMANA): antes, pedir consejo al mentor tres veces por semana daba más nivel que entrenar
+    if (a.xp) { const x = Math.min(a.xp, Math.max(0, XP_SEMANA - (s.xpSemana || 0))); if (x > 0) { s.xpSemana = (s.xpSemana || 0) + x; YO(st).xp = (YO(st).xp || 0) + x; out.push('progresión extra'); } }
     if (a.fama) c.fama = U.clamp(c.fama + a.fama, 0, 100);
-    if (a.riesgo && GM.rng.next() < a.riesgo) { c.fama = U.clamp(c.fama - 3, 0, 100); c.moral = U.clamp(c.moral - 3, 0, 100); out.push('la fiesta se te va de las manos en redes'); }
+    if (a.riesgo && GM.rng.next() < a.riesgo) { c.fama = U.clamp(c.fama - 3, 0, 100); c.moral = U.clamp(c.moral - 3, 0, 100); out.push('la fiesta se te va de las manos en redes'); potencial(st, -0.12, 'La fiesta se te va de las manos'); }
+    // Potencial dinámico: las noches largas pasan factura; los consejos del mentor ayudan
+    if (accion === 'fiesta') potencial(st, -0.01, 'Noches largas');
+    if (accion === 'consejo') potencial(st, 0.005, 'Consejos del mentor');
     return { ok: true, efectos: out };
   }
   GM.bus.on('dia:avanzado', function () {
@@ -73,7 +79,7 @@
     const c = C(st), s = c.social; if (c.fase === 'retirado') return;
     if (U.weekday(st.fecha) !== 1) return;
     if (s.club !== st.clubId || (c.fase === 'pro' && !s.contactos.some(x => x.tipo === 'companero'))) refrescarEquipo(st);
-    s.energia = 3;
+    s.energia = 3; s.xpSemana = 0;
     s.contactos.forEach(k => {
       const dist = k.tipo === 'pareja' && s.pareja.ciudad && s.pareja.ciudad !== ciudad(st);
       k.rel = U.clamp(k.rel - (k.tipo === 'familia' ? 0.6 : k.tipo === 'rival' ? 0.2 : 1.2) - (dist ? 2 : 0), k.tipo === 'familia' ? 20 : 5, 100);

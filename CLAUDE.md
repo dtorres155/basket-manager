@@ -15,6 +15,8 @@ node tools/capturas.js <fase> [--lento]   # capturas 390x844 con Edge en captura
 node tools/sin_red.js                     # comprueba que dist/ carga sin ninguna petición externa
 node tools/pwa.js                         # instalable (según Edge), service worker activo y arranque sin red con la partida guardada
 node tools/iconos.js                      # regenera vendor/icons/ (escudo con balón) a partir del SVG del script
+node tools/perfil.js --lento [--calidad=normal|alta]   # llamadas de dibujo y ms por fotograma de cada escena 3D
+node tools/sim_potencial.js [temporadas]  # carreras con hábitos distintos: cómo se mueven nivel y potencial
 ```
 **Publicación:** repositorio público `dtorres155/basket-manager`; `.github/workflows/pages.yml` pasa las pruebas y publica `dist/` en **https://dtorres155.github.io/basket-manager/** en cada push a `main`. No subas datos personales del usuario (nombre, pueblo, correo); `PROMPT_CLAUDE_CODE.txt` está en `.gitignore`. Instrucciones para el usuario: `INSTALAR_EN_MOVIL.md`.
 
@@ -24,7 +26,7 @@ Three.js r128 y las fuentes woff2 (Graduate, Bricolage Grotesque, Doto) están e
 ## Reglas de la arquitectura (léelas antes de tocar nada)
 - **Sin módulos ES ni bundler.** Cada archivo es una IIFE que cuelga de `window.GM`. El orden de carga está en `build.js` (`const mods=[...]`) y en `load.js` (para pruebas en Node con `vm`).
 - **Contrato de módulo:** `GM.register('nombre', api)` → `GM.mods.nombre`. Si define `nuevaPartida(state)`, `core.js` (`newGame`) lo llama; hay que añadirlo a la lista de ese método.
-- **Estado único serializable** en `GM.state` (JSON). Nada de funciones ni referencias circulares. Se guarda en `localStorage` (`gm1:slot0..2`) y se exporta como texto `GM1:`. El guardado rechaza más de 2,6 MB.
+- **Estado único serializable** en `GM.state` (JSON). **Versionado:** `GM.VERSION_ESTADO` (core.js); si cambias la forma del estado, súbela y añade una migración en `MIGRACIONES` de `guardado.js` (nunca borres una). Nada de funciones ni referencias circulares. Se guarda en `localStorage` (`gm1:slot0..2`) y se exporta como texto `GM1:`. El guardado rechaza más de 2,6 MB.
 - **Eventos (`GM.bus`):** `dia:avanzado`, `partido:jugado`, `temporada:fin`, `temporada:nueva`, `partida:cargada`, `fichaje:hecho`, `instalacion:mejorada`, `dinero:cambio`, `copa:fin`. El orden de los manejadores depende del orden de carga.
 - **Azar:** usa `GM.rng` (determinista, con semilla). `GM.util.hash(texto)` devuelve un entero sin signo; **si desplazas bits usa `>>>`, nunca `>>`** (con `>>` salen índices negativos y fallos silenciosos; ya nos pasó varias veces).
 - **Cada módulo cuyo estado cambia el club del usuario debe respetar `state.clubId`** y el modo (`gestor`, `presidente`, `entrenador`, `carrera`). En `entrenador` y `carrera` la IA lleva el club del usuario (ver `mercado.js`).

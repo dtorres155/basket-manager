@@ -93,7 +93,7 @@
   // ---------- Arranque y menú ----------
   // Filas desplazables (.tabs, .seg.compacto): la clase «mas» difumina el borde derecho mientras quede contenido por ver
   function pistasScroll() {
-    if (typeof MutationObserver === 'undefined' || !document.body) return;
+    if (typeof MutationObserver === 'undefined' || typeof document === 'undefined' || !document.body || typeof window.addEventListener !== 'function') return;
     const marca = el => { el.classList.toggle('mas', el.scrollLeft + el.clientWidth < el.scrollWidth - 4); };
     let pend = false;
     const revisar = () => { pend = false; document.querySelectorAll('.tabs, .seg.compacto').forEach(el => { if (!el._pista) { el._pista = true; el.addEventListener('scroll', () => marca(el), { passive: true }); } marca(el); }); };
@@ -103,7 +103,7 @@
     document.addEventListener('focusin', e => { const t = e.target; if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && t.scrollIntoView) setTimeout(() => t.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300); });
   }
   function start(raiz) {
-    ui.raiz = raiz; raiz.className = 'app'; pistasScroll();
+    ui.raiz = raiz; raiz.className = 'app'; pistasScroll(); if (M().guardado) M().guardado.pedirPersistencia();
     if (S()) juego(); else menu();
   }
   function menu() {
@@ -115,7 +115,7 @@
       h('div', { class: 'col' },
         h('button', { class: 'btn grande', onclick: flujoNueva }, 'Nueva partida'),
         slots.length ? h('button', { class: 'btn btn-sec grande', onclick: () => cargarMenu(slots) }, 'Continuar partida') : null,
-        g ? h('button', { class: 'btn btn-sec', onclick: dialogoImportar }, 'Importar partida desde texto') : null,
+        g ? h('button', { class: 'btn btn-sec', onclick: dialogoImportar }, 'Importar partida') : null,
         h('button', { class: 'btn btn-sec', onclick: () => { setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche'); } }, 'Cambiar entre tema claro y oscuro'),
         h('p', { class: 'muted pie' }, 'Los nombres de clubes y jugadores son reales y las valoraciones son estimaciones. Los jugadores sin fama pueden ser ficticios.'))));
   }
@@ -126,7 +126,8 @@
   }
   function dialogoImportar() {
     const ta = h('textarea', { class: 'area', rows: 6, placeholder: 'Pega aquí el texto que empieza por GM1:' });
-    modal(h('div', null, h('h3', null, 'Importar partida'), ta), [{ t: 'Importar', fn: () => { const r = M().guardado.importar(ta.value); if (!r.ok) { toast(r.motivo); return false; } } }, { t: 'Cancelar', cls: 'btn-sec' }]);
+    const fi = h('input', { type: 'file', accept: '.txt,text/plain', style: { display: 'none' }, onchange: () => { const f = fi.files && fi.files[0]; if (!f) return; f.text().then(t => { const r = M().guardado.importar(t); if (!r.ok) toast(r.motivo); else cerrarModales(); }); } });
+    modal(h('div', null, h('h3', null, 'Importar partida'), h('button', { class: 'btn', style: { width: '100%', marginBottom: '10px' }, onclick: () => fi.click() }, 'Elegir archivo de copia'), fi, h('p', { class: 'muted' }, 'O pega el texto:'), ta), [{ t: 'Importar', fn: () => { const r = M().guardado.importar(ta.value); if (!r.ok) { toast(r.motivo); return false; } } }, { t: 'Cancelar', cls: 'btn-sec' }]);
   }
   function flujoNueva() {
     const op = (modo, tit, desc, rol) => h('button', { class: 'liga', onclick: () => { cerrarModales(); ui.nuevo = { modo, pj: M().personaje.crear(), jug: { pos: 'SG', perfil: 'tirador', nac: 'ES', origen: 'cantera', agente: 'equilibrado' } }; setTimeout(() => personajeModal(ui.nuevo.pj, rol, () => { if (modo === 'carrera') jugadorModal(); else elegirLiga(); }), 0); } }, h('b', null, tit), h('span', { class: 'muted' }, desc));
@@ -261,16 +262,23 @@
       h('div', { class: 'par' }, s.slot ? h('button', { class: 'btn', onclick: () => { const r = g.guardar(s.slot); toast(r.ok ? (r.persistente ? 'Partida guardada' : 'Guardada en memoria (se perderá al cerrar)') : r.motivo); cerrarModales(); } }, 'Guardar') : null,
         s.club ? h('button', { class: 'btn btn-sec', onclick: () => { const r = g.cargar(s.slot); if (!r.ok) toast(r.motivo); else cerrarModales(); } }, 'Cargar') : null))) : [];
     modal(h('div', null, h('h3', null, 'Partida'), h('div', { class: 'lista' }, filas),
-      h('div', { class: 'par' }, h('button', { class: 'btn btn-sec', onclick: dialogoExportar }, 'Exportar texto'), h('button', { class: 'btn btn-sec', onclick: dialogoImportar }, 'Importar texto')),
+      h('div', { class: 'par' }, h('button', { class: 'btn btn-sec', onclick: dialogoExportar }, 'Copia de seguridad'), h('button', { class: 'btn btn-sec', onclick: dialogoImportar }, 'Importar')),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { try { window.localStorage.setItem('gm1:directo', directoOn() ? 'no' : 'si'); } catch (e) { } toast(directoOn() ? 'Partidos en directo activados' : 'Partidos en directo desactivados'); } }, 'Ver los partidos en directo: activar o desactivar'),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche') }, 'Tema claro u oscuro'),
-      h('p', { class: 'muted' }, 'El guardado vive en el navegador de este móvil. Exporta el texto como copia de seguridad.')),
+      h('p', { class: 'muted' }, 'El guardado vive en este móvil' + (g && g.protegido() ? ' y el navegador lo protege (no lo borra aunque falte espacio)' : g && g.protegido() === false ? '; el navegador podría borrarlo si falta espacio' : '') + '. Haz copias de seguridad de vez en cuando.')),
       [{ t: 'Salir al menú principal', cls: 'btn-sec', fn: () => { if (g) g.guardar(0); GM.state = null; setTimeout(menu, 0); } }, { t: 'Cerrar', cls: 'btn-sec' }]);
   }
   function dialogoExportar() {
-    const txt = M().guardado.exportar(), ta = h('textarea', { class: 'area', rows: 5, readonly: true }); ta.value = txt;
-    modal(h('div', null, h('h3', null, 'Exportar partida'), h('p', { class: 'muted' }, 'Copia el texto y guárdalo donde quieras (' + (txt.length / 1e6).toFixed(1) + ' MB).'), ta),
-      [{ t: 'Copiar', fn: () => { try { ta.select(); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copiado'), () => { document.execCommand && document.execCommand('copy'); toast('Copiado'); }); } catch (e) { toast('Selecciona y copia el texto a mano'); } return false; }, queda: true }, { t: 'Cerrar', cls: 'btn-sec' }]);
+    const G = M().guardado, st = S(), txt = G.exportar(), ta = h('textarea', { class: 'area', rows: 4, readonly: true }); ta.value = txt;
+    const hecha = msg => { G.copiaHecha(st); G.guardar(0); toast(msg); if (ui.pantalla === 'inicio') refrescar(); };
+    const archivo = () => { try { return new File([txt], G.nombreArchivo(st), { type: 'text/plain' }); } catch (e) { return null; } };
+    const compartir = typeof navigator !== 'undefined' && navigator.canShare && archivo() && navigator.canShare({ files: [archivo()] });
+    modal(h('div', null, h('h3', null, 'Copia de seguridad'), h('p', { class: 'muted' }, 'Guarda la partida fuera del navegador (' + (txt.length / 1e6).toFixed(1) + ' MB). Para recuperarla: Importar, en el menú.'),
+      h('div', { class: 'col' },
+        compartir ? h('button', { class: 'btn', onclick: () => { navigator.share({ files: [archivo()], title: 'Basket Manager' }).then(() => hecha('Copia enviada'), () => {}); } }, 'Compartir (Drive, correo...)') : null,
+        h('button', { class: 'btn' + (compartir ? ' btn-sec' : ''), onclick: () => { const a = document.createElement('a'), u = URL.createObjectURL(new Blob([txt], { type: 'text/plain' })); a.href = u; a.download = G.nombreArchivo(st); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); hecha('Archivo guardado en Descargas'); } }, 'Guardar archivo'),
+        h('button', { class: 'btn btn-sec', onclick: () => { try { ta.select(); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => hecha('Copiado'), () => { document.execCommand && document.execCommand('copy'); hecha('Copiado'); }); } catch (e) { toast('Selecciona y copia el texto a mano'); } } }, 'Copiar como texto')),
+      ta), [{ t: 'Cerrar', cls: 'btn-sec' }]);
   }
 
   // ---------- Partido: avanzar y resultado ----------
@@ -347,7 +355,8 @@
     return out;
   }
   function inicio(el, st) {
-    const club = st.clubId, C = M().competiciones, P = M().partidos;
+    const club = st.clubId, C = M().competiciones, P = M().partidos, G = M().guardado;
+    if (G && G.necesitaCopia(st)) el.append(h('div', { class: 'aviso med' }, h('b', null, 'Haz una copia de seguridad. '), 'Si se borran los datos del navegador, la partida se pierde. ', h('div', { class: 'par', style: { marginTop: '8px' } }, h('button', { class: 'btn peq', onclick: dialogoExportar }, 'Hacer copia'), h('button', { class: 'btn btn-sec peq', onclick: () => { G.copiaAvisada(st); refrescar(); } }, 'Más tarde'))));
     if (carrera()) { if (inicioCarrera(el, st)) return; }
     else if (st.personaje) el.append(h('button', { class: 'perfil-linea', onclick: perfilModal }, avatarEl(st.personaje, 44), h('div', { class: 'ct' }, h('b', null, M().personaje.nombre(st.personaje)), h('span', { class: 'muted' }, (pres() ? 'Presidente' : entr() ? 'Entrenador' : 'Director técnico') + ' de ' + eq(club).nombre)), chip('Cambiar aspecto')));
     if (entr() && st.entrenador.fase !== 'retirado') {
@@ -797,6 +806,16 @@
         h('p', { class: 'muted' }, 'La reputación cuesta ganarla y depende del nivel de la liga donde juegas. Cambiar de liga o fichar por un rival la afecta.')))); }
     if (c.fase !== 'ncaa') el.append(seccion('Esta temporada', h('div', { class: 'tarjeta' }, h('div', { class: 'chips' }, chip(s.pj + ' partidos'), chip(Math.round(s.min) + ' min'), chip(s.pts.toFixed(1) + ' pts'), chip(s.reb.toFixed(1) + ' reb'), chip(s.ast.toFixed(1) + ' ast')),
       ro ? h('p', null, 'Rol en el equipo: ' + ro + '. ' + (ro === 'Titular' ? 'El entrenador cuenta contigo para empezar.' : ro === 'Rotación' ? 'Entras con regularidad desde el banquillo.' : 'Necesitas subir de nivel para ganarte minutos.')) : null, c.mejor ? h('p', { class: 'muted' }, 'Tu mejor partido: ' + c.mejor.pts + ' pts, ' + c.mejor.reb + ' reb, ' + c.mejor.ast + ' ast.') : null)));
+    { // Potencial dinámico: lo que haces mueve tu techo
+      const P = K.potEstado(st), aj = P.ajuste + P.resto, ult = P.historial[0], mes = Object.keys(P.mes || {});
+      const linea = (t, v) => h('div', { class: 'fila' }, h('span', null, t), h('b', { class: v >= 0 ? 'sube' : 'baja' }, v >= 0 ? 'sube' : 'baja'));
+      el.append(seccion('Tu potencial', h('div', { class: 'tarjeta' },
+        h('div', { class: 'fila' }, h('b', null, 'Potencial ' + p.pot), h('span', { class: 'muted' }, Math.abs(aj) < 0.05 ? 'sin cambios todavía' : (aj > 0 ? '+' : '−') + Math.abs(aj).toFixed(1).replace('.', ',') + ' por cómo te cuidas')),
+        barra(aj + K.POT_MAX, K.POT_MAX * 2, aj >= 0 ? 'verde' : 'ambar'),
+        mes.length ? h('div', null, h('p', { class: 'muted', style: { margin: '10px 0 4px' } }, 'Este mes'), mes.sort((x, y) => Math.abs(P.mes[y]) - Math.abs(P.mes[x])).slice(0, 4).map(k => linea(k, P.mes[k]))) : null,
+        ult ? h('div', null, h('p', { class: 'muted', style: { margin: '10px 0 4px' } }, 'El mes pasado'), ult.motivos.map(m => linea(m.t, m.v))) : null,
+        h('p', { class: 'muted', style: { marginTop: '10px' } }, p.edad > 27 ? 'A tu edad el potencial ya no se mueve.' : 'Lo suben entrenar fuerte y con constancia, jugar minutos de joven, el buen ánimo y tu mentor. Lo bajan las lesiones, el cansancio, las noches largas y quedarte sin jugar. Como mucho ' + K.POT_MAX + ' puntos arriba o abajo, hasta los 27 años.'))));
+    }
     el.append(seccion('Entrenamiento personal', h('div', { class: 'tarjeta' }, h('b', null, 'En qué trabajas'),
       h('div', { class: 'seg' }, [['tiro', 'Tiro'], ['defensa', 'Defensa'], ['fisico', 'Físico'], ['pase', 'Pase y bote'], ['mente', 'Mentalidad']].map(o => h('button', { class: 'tab' + (c.entreno.foco === o[0] ? ' on' : ''), onclick: () => { c.entreno.foco = o[0]; refrescar(); } }, o[1]))),
       h('b', null, 'Intensidad'), h('div', { class: 'seg' }, [['suave', 'Suave'], ['normal', 'Normal'], ['intensa', 'Intensa']].map(o => h('button', { class: 'tab' + (c.entreno.intensidad === o[0] ? ' on' : ''), onclick: () => { c.entreno.intensidad = o[0]; refrescar(); } }, o[1]))),

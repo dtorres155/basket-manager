@@ -23,6 +23,8 @@ window.GM = window.GM || (function () {
     clone(o) { return JSON.parse(JSON.stringify(o)); }
   };
   const GM = {
+    // Versión del formato de la partida guardada. Si cambias la forma del estado, súbela y añade una migración en guardado.js
+    VERSION_ESTADO: 2,
     data: { equipos: {}, jugadores: {}, ligas: {} },
     mods: {},
     ui: { screens: {} },
@@ -63,7 +65,7 @@ window.GM = window.GM || (function () {
       seed = seed || 20260924;
       this.rng.seed(seed);
       const st = {
-        version: 1, seed, fecha: '2026-09-24', temporada: '2026-27', clubId,
+        version: GM.VERSION_ESTADO, copia: { creada: Date.now(), ultima: null, avisada: null }, seed, fecha: '2026-09-24', temporada: '2026-27', clubId,
         equipos: util.clone(this.data.equipos), jugadores: util.clone(this.data.jugadores), ligas: util.clone(this.data.ligas),
         modo: opts.modo === 'presidente' ? 'presidente' : opts.modo === 'carrera' ? 'carrera' : opts.modo === 'entrenador' ? 'entrenador' : 'gestor', opciones: opts, personaje: opts.personaje || null,
         calendario: [], clasificaciones: {}, playoffs: {}, estadisticas: {}, historial: [],

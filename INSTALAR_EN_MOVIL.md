@@ -15,9 +15,10 @@ Dirección del juego: **https://dtorres155.github.io/basket-manager/**
 Después de abrirlo una vez con internet, el juego queda guardado en el móvil. Funciona en **modo avión**.
 
 ## Tus partidas
-- Se guardan en el propio móvil: automáticamente al crear la partida y cada semana de juego, y también desde el menú (☰).
-- **Copia de seguridad:** en el menú (☰), toca «Exportar texto» y guarda ese texto (por ejemplo, envíatelo por correo o a Notas). Si borras los datos de Chrome o desinstalas la app, **las partidas se pierden** si no tienes copia.
-- Para recuperar una copia: en el menú de inicio, «Importar partida desde texto» (o «Importar texto» en el menú ☰).
+- Se guardan solas en el móvil: al crear la partida, cada semana de juego y **cada vez que sales de la app** (aunque la cierres de golpe).
+- **Copia de seguridad:** menú (☰), «Copia de seguridad». Lo más cómodo es **«Compartir»**, que la manda a Google Drive, a tu correo o a WhatsApp. También puedes guardarla como archivo en Descargas. El juego te lo recuerda en Inicio si pasa una semana sin copia.
+- Si borras los datos de Chrome o desinstalas la app, **las partidas se pierden** si no tienes copia.
+- **Recuperar una copia:** menú (☰) o pantalla de inicio, «Importar», y luego «Elegir archivo de copia».
 
 ## Actualizaciones
 Cuando haya una versión nueva, al abrir el juego con internet saldrá el aviso **«Nueva versión»**. Toca «Actualizar ahora»: tu partida se guarda antes y el juego se recarga.

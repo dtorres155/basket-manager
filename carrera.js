@@ -89,8 +89,57 @@
   function retrato(st) { const c = C(st), p = YO(st); return { nombre: p.nombre, edad: p.edad, ovr: p.ovr, pot: p.pot, pos: p.pos, club: p.equipoId ? st.equipos[p.equipoId].nombre : c.etapa === 'cantera' ? 'Cantera de ' + st.equipos[c.cantera.clubId].nombre : 'Universidad', liga: liga(st) ? NOMLIGA[liga(st)] : c.fase === 'ncaa' ? (c.etapa === 'cantera' ? categoria(p.edad) : 'NCAA') : 'Agente libre', agente: c.agente.nombre }; }
 
   // ---------- Entrenamiento y vida diaria ----------
+  // ---------- Potencial dinámico ----------
+  // Lo que haces mueve tu techo como mucho ±8 sobre el de partida, hasta los 27 años. Los cambios se acumulan en fracciones
+  // (c.potencial.resto) y el potencial sube o baja de punto en punto. El mes se resume en c.potencial.historial con sus motivos.
+  const POT_MAX = 8, POT_EDAD = 27;
+  function potEstado(st) { const c = C(st); if (!c.potencial) c.potencial = { ajuste: 0, resto: 0, mes: {}, historial: [] }; return c.potencial; }
+  function ajustarPot(st, delta, motivo) {
+    const c = C(st), p = YO(st); if (!p || !delta || c.fase === 'retirado' || p.edad > POT_EDAD) return 0;
+    const P = potEstado(st), d = U.clamp(delta, -POT_MAX - P.ajuste - P.resto, POT_MAX - P.ajuste - P.resto); if (!d) return 0;
+    P.resto += d; P.mes[motivo] = (P.mes[motivo] || 0) + d;
+    const antes = p.pot;
+    while (P.resto >= 1) { P.resto -= 1; if (p.pot < 99) { p.pot++; P.ajuste++; } }
+    while (P.resto <= -1) { P.resto += 1; if (p.pot > p.ovr) { p.pot--; P.ajuste--; } }
+    if (p.pot !== antes) { const t = (p.pot > antes ? 'Tu potencial sube a ' : 'Tu potencial baja a ') + p.pot + ' (' + motivo.toLowerCase() + ').'; GM.noticia(st, t); c.hitos.unshift({ fecha: st.fecha, texto: t }); }
+    return d;
+  }
+  function potSemana(st) {
+    const c = C(st), p = YO(st), P = potEstado(st), e = c.entreno, joven = p.edad <= 23;
+    if (e.intensidad === 'intensa' && !p.estado.lesion) ajustarPot(st, 0.005, 'Entrenas a tope');
+    if (e.intensidad === 'suave' && joven) ajustarPot(st, -0.006, 'Entrenas con el freno puesto');
+    P.foco = P.foco === e.foco ? P.foco : (P.semanas = 0, e.foco); P.semanas = (P.semanas || 0) + 1;
+    if (P.semanas >= 4) ajustarPot(st, 0.003, 'Constancia en el entrenamiento');
+    if (c.moral >= 70) ajustarPot(st, 0.002, 'Buen ánimo');
+    else if (c.moral < 30) ajustarPot(st, -0.006, 'Ánimo por los suelos');
+    if (p.estado.fatiga > 85) ajustarPot(st, -0.005, 'Juegas reventado de cansancio');
+    const men = c.social && c.social.contactos && c.social.contactos.find(k => k.tipo === 'mentor');
+    if (men && men.rel >= 70) ajustarPot(st, 0.004, 'Lo que aprendes de tu mentor');
+  }
+  function potMes(st) {
+    const c = C(st), p = YO(st), P = potEstado(st);
+    if (p.edad <= 22) {
+      const r = rol(st);
+      if (c.fase === 'ncaa') ajustarPot(st, c.etapa === 'cantera' ? 0.015 : 0.025, c.etapa === 'cantera' ? 'Juegas en tu categoría' : 'Minutos en la universidad');
+      else if (r === 'Titular') ajustarPot(st, 0.04, 'Minutos de titular siendo joven');
+      else if (r === 'Rotación') ajustarPot(st, 0.02, 'Minutos en la rotación');
+      else if (r === 'Banquillo') ajustarPot(st, -0.02, 'Pocos minutos');
+      else if (r) ajustarPot(st, -0.04, 'Sin jugar');
+    }
+    const ks = Object.keys(P.mes), tot = ks.reduce((s, k) => s + P.mes[k], 0);
+    if (ks.length) {
+      const mot = ks.sort((a, b) => Math.abs(P.mes[b]) - Math.abs(P.mes[a])).slice(0, 4).map(k => ({ t: k, v: Math.round(P.mes[k] * 100) / 100 }));
+      P.historial.unshift({ fecha: st.fecha, delta: Math.round(tot * 100) / 100, pot: p.pot, motivos: mot }); if (P.historial.length > 12) P.historial.length = 12;
+    }
+    P.mes = {};
+  }
+  function potLesion(st) {
+    const p = YO(st), l = p && p.estado.lesion; if (!l || l.contada) return;
+    l.contada = true; if (l.dias >= 30) ajustarPot(st, -0.8, 'Lesión grave'); else if (l.dias >= 10) ajustarPot(st, -0.2, 'Lesión');
+  }
   function entrenar(st) {
     const c = C(st), p = YO(st); if (!p || c.fase === 'retirado') return;
+    potSemana(st);
     const g = p.edad <= 21 ? 0.025 : p.edad <= 24 ? 0.018 : p.edad <= 28 ? 0.008 : p.edad <= 31 ? 0 : -0.02, f = INTENS[c.entreno.intensidad] || 1;
     const mod = 1 + (c.moral - 50) / 250;
     p.xp = (p.xp || 0) + g * f * mod * (0.7 + 0.6 * GM.rng.next());
@@ -117,11 +166,13 @@
   GM.bus.on('dia:avanzado', function () {
     const st = GM.state; if (!st || st.modo !== 'carrera' || !st.carrera) return;
     const c = C(st), p = YO(st); if (c.fase === 'retirado') return;
+    potLesion(st);
     if (U.weekday(st.fecha) === 1) {
       entrenar(st);
       if (c.pend.length < 2 && U.diffDays(c.ultimoEvento, st.fecha) >= 10 && GM.rng.next() < 0.22) nuevoEvento(st);
     }
     if (st.fecha.slice(8) === '01') {
+      potMes(st);
       if (p.contrato && p.contrato.salario) c.dinero += Math.round(p.contrato.salario * 0.58 / 12 / 1000);
       efectosVivienda(st); ingresosVivienda(st);
       const r = rol(st), objetivo = r === 'Titular' ? 75 : r === 'Rotación' ? 60 : r === 'Banquillo' ? 44 : c.fase === 'ncaa' ? 62 : 32;
@@ -429,5 +480,5 @@
     return a && FOCOS.tiro.length === 3 && TIPOS_VIV.atico.base > TIPOS_VIV.piso.base;
   }
   GM.bus.on('partida:cargada', function () { const st = GM.state; if (st && st.modo === 'carrera' && st.carrera) { instalaFama(st.carrera); if (!st.carrera.clubes) st.carrera.clubes = {}; actualizaTier(st); } });
-  GM.register('carrera', { gradoFama, estatusClub, impacto, GRADOS, ESTATUS, instalaFama, invitarEquipo, TIPOS_VIV, COCHES, barriosVivienda, precioVivienda, comprarVivienda, gestionarPropiedad, comprarCoche, crearFundacion, fijarAporte, estado, stats, rol, liga, retrato, entrenar, declararse, mock, preDraft, postDraft, preCierre, generarOfertas, aceptar, cerrar, retirarse, eventos, elegirEvento, nuevaPartida, selfTest, AGENTES, ORIGENES, NOMLIGA, NIVEL, MIN, FOCOS, INTENS });
+  GM.register('carrera', { ajustarPot, potEstado, POT_MAX, gradoFama, estatusClub, impacto, GRADOS, ESTATUS, instalaFama, invitarEquipo, TIPOS_VIV, COCHES, barriosVivienda, precioVivienda, comprarVivienda, gestionarPropiedad, comprarCoche, crearFundacion, fijarAporte, estado, stats, rol, liga, retrato, entrenar, declararse, mock, preDraft, postDraft, preCierre, generarOfertas, aceptar, cerrar, retirarse, eventos, elegirEvento, nuevaPartida, selfTest, AGENTES, ORIGENES, NOMLIGA, NIVEL, MIN, FOCOS, INTENS });
 })();

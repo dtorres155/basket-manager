@@ -171,3 +171,5 @@ p{margin:6px 0}.muted{color:var(--mut);font-size:13px}.neg{color:var(--mal)}.pos
 input,textarea,select{font-size:16px}
 /* El partido en directo siempre es oscuro: el botón secundario tiene que verse en el tema claro */
 .directo .btn-sec{color:#eef2f4;border-color:rgba(238,242,244,.85)}
+/* Potencial dinámico: motivos que suben o bajan */
+.sube{color:var(--ok)}.baja{color:var(--mal)}
