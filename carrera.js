@@ -18,11 +18,12 @@
     leal: { etq: 'De confianza', desc: 'Prioriza renovar y la estabilidad en tu club.', sal: 1.0, ren: 1.1 },
     equilibrado: { etq: 'Equilibrado', desc: 'Un poco de todo y sin sorpresas.', sal: 1.03 }
   };
+  // dinero: ahorros iniciales en miles de euros (un cadete de 14 años no tiene casi nada)
   const ORIGENES = {
-    cadete: { etq: 'Cadete en una cantera', desc: 'Empiezas con 14 años en la cantera de un club. Jugarás en cadete, junior y filial; a los 18 llegan las decisiones: contrato profesional, universidad en EE. UU. o un año más de filial.', edad: 14, ovr: 42, pot: 84 },
-    cantera: { etq: 'Cantera europea', desc: 'Empiezas con 18 años en la cantera de un club profesional. Poco nivel hoy, mucho margen.', edad: 18, ovr: 58, pot: 82 },
-    ncaa: { etq: 'Universidad de EE. UU.', desc: 'Juegas en la NCAA y aspiras al draft de la NBA. Si no te eligen, tendrás que abrirte camino en Europa.', edad: 19, ovr: 64, pot: 86 },
-    europa: { etq: 'Liga europea modesta', desc: 'Empiezas con 20 años en un club de ACB o Lega. Más minutos, menos techo.', edad: 20, ovr: 64, pot: 78 }
+    cadete: { dinero: 1, etq: 'Cadete en una cantera', desc: 'Empiezas con 14 años en la cantera de un club. Jugarás en cadete, junior y filial; a los 18 llegan las decisiones: contrato profesional, universidad en EE. UU. o un año más de filial.', edad: 14, ovr: 42, pot: 84 },
+    cantera: { dinero: 4, etq: 'Cantera europea', desc: 'Empiezas con 18 años en la cantera de un club profesional. Poco nivel hoy, mucho margen.', edad: 18, ovr: 58, pot: 82 },
+    ncaa: { dinero: 3, etq: 'Universidad de EE. UU.', desc: 'Juegas en la NCAA y aspiras al draft de la NBA. Si no te eligen, tendrás que abrirte camino en Europa.', edad: 19, ovr: 64, pot: 86 },
+    europa: { dinero: 15, etq: 'Liga europea modesta', desc: 'Empiezas con 20 años en un club de ACB o Lega. Más minutos, menos techo.', edad: 20, ovr: 64, pot: 78 }
   };
   const PERFIL = { tirador: 'T', defensor: 'D', interior: 'R', creador: 'P', atleta: 'E' };
   // Reputación: 9 grados. Cuesta ganarla (más cuanto más alta) y depende del nivel de la liga donde juegas.
@@ -63,7 +64,7 @@
     p.id = 'yo'; p.esYo = true; p.ficticio = false; p.equipoId = club; p.libre = false; p.juvenil = false;
     st.jugadores.yo = p;
     if (club) { const eq = st.equipos[club]; if (eq.plantilla.length >= 15) quitarPeor(st, club); eq.plantilla.push('yo'); eq.tactica = null; st.clubId = club; }
-    st.carrera = { fase: club ? 'pro' : 'ncaa', origen: o.origen, curso: 1, declarado: false, agente: { perfil: o.agente || 'equilibrado', nombre: GM.nombreAleatorio(nac === 'US' ? 'US' : 'ES', U.hash('ag' + nombre)) }, entreno: { foco: o.perfil === 'defensor' ? 'defensa' : o.perfil === 'tirador' ? 'tiro' : o.perfil === 'creador' ? 'pase' : 'fisico', intensidad: 'normal' }, dinero: 5000, fama: 20, moral: 60, historial: [], hitos: [], ofertas: [], pend: [], res: [], mejor: null, ultimoEvento: st.fecha, ncaa: { pts: 0 }, fichado: club, vivienda: { actual: null, propiedades: [], coche: null, fundacion: null } };
+    st.carrera = { fase: club ? 'pro' : 'ncaa', origen: o.origen, curso: 1, declarado: false, agente: { perfil: o.agente || 'equilibrado', nombre: GM.nombreAleatorio(nac === 'US' ? 'US' : 'ES', U.hash('ag' + nombre)) }, entreno: { foco: o.perfil === 'defensor' ? 'defensa' : o.perfil === 'tirador' ? 'tiro' : o.perfil === 'creador' ? 'pase' : 'fisico', intensidad: 'normal' }, dinero: base.dinero, fama: 20, moral: 60, historial: [], hitos: [], ofertas: [], pend: [], res: [], mejor: null, ultimoEvento: st.fecha, ncaa: { pts: 0 }, fichado: club, vivienda: { actual: null, propiedades: [], coche: null, fundacion: null } };
     if (cadete) { st.carrera.etapa = 'cantera'; st.carrera.cantera = { clubId: o.clubId }; st.clubId = o.clubId; } else if (!club) st.carrera.etapa = 'universidad';
     st.carrera.clubes = {}; if (club) st.carrera.clubes[club] = { desde: st.fecha, temps: 0, pts: 0 };
     instalaFama(st.carrera); actualizaTier(st);
@@ -318,7 +319,7 @@
   }
   function precioVivienda(st, barrio, tipo) { const b = barriosVivienda(st)[barrio]; return Math.round(TIPOS_VIV[tipo].base * b.precio); }
   function comprarVivienda(st, barrio, tipo, modo) {
-    const c = C(st), v = c.vivienda; if (c.fase === 'ncaa') return { ok: false, motivo: 'Vives en la residencia universitaria.' };
+    const c = C(st), v = c.vivienda; if (c.fase === 'ncaa') return { ok: false, motivo: c.etapa === 'cantera' ? 'Vives en la residencia de la cantera hasta los 18.' : 'Vives en la residencia universitaria.' };
     const b = barriosVivienda(st)[barrio], t = TIPOS_VIV[tipo]; if (!b || !t) return { ok: false, motivo: 'Opción no válida.' };
     const H = GM.mods.hogar; if (H && H.TIPOS[tipo] && H.nivel(st) < H.TIPOS[tipo].req) return { ok: false, motivo: 'Requiere nivel de vida ' + H.TIPOS[tipo].req + ' (' + H.NIVELES[H.TIPOS[tipo].req] + ').' };
     const precio = precioVivienda(st, barrio, tipo), alquiler = Math.max(1, Math.round(precio * 0.005 * 10) / 10);

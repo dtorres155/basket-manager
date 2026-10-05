@@ -26,11 +26,14 @@
     if (rival) out.push({ id: 'r-' + rival.id, tipo: 'rival', nombre: rival.nombre, rel: 15, ref: rival.id });
     return out;
   }
+  // nombreAleatorio solo tiene nombres masculinos: la madre usa su propia lista
+  const MADRES = { ES: 'Carmen,Montse,Laura,Marta,Pilar,Núria,Elena,Isabel,Rosa,Cristina,Anna,Teresa', US: 'Jennifer,Michelle,Lisa,Angela,Kimberly,Tanya,Monique,Rachel,Denise,Karen,Stephanie,Nicole' };
+  function nombreMadre(pais, h) { const l = (MADRES[pais] || MADRES.ES).split(','); return l[(h >>> 2) % l.length]; }
   function nuevaPartida(st) {
     if (st.modo !== 'carrera' || !st.carrera) return;
     const pais = YO(st).nac === 'US' ? 'US' : 'ES', h = U.hash(YO(st).nombre + 'fam');
     st.carrera.social = { contactos: [
-      { id: 'f1', tipo: 'familia', nombre: GM.nombreAleatorio(pais, h).split(' ')[0] + ' (tu madre)', rel: 75 }, { id: 'f2', tipo: 'familia', nombre: GM.nombreAleatorio(pais, h + 7).split(' ')[0] + ' (tu hermano)', rel: 65 },
+      { id: 'f1', tipo: 'familia', nombre: nombreMadre(pais, h) + ' (tu madre)', rel: 75 }, { id: 'f2', tipo: 'familia', nombre: GM.nombreAleatorio(pais, h + 7).split(' ')[0] + ' (tu hermano)', rel: 65 },
       { id: 'a1', tipo: 'amigo', nombre: GM.nombreAleatorio(pais, h + 3), rel: 60 }].concat(st.carrera.fase === 'pro' ? equipo(st) : []), energia: 3, pareja: { estado: 'no', ciudad: null, hijos: 0 }, club: st.clubId, semana: st.fecha };
   }
   function refrescarEquipo(st) {

@@ -187,7 +187,7 @@
     const nu = ui.nuevo || {}, op = { modo, personaje: nu.pj || null };
     let real = id;
     if (modo === 'carrera') { op.carrera = Object.assign({}, nu.jug, { clubId: nu.jug.origen === 'ncaa' ? null : id }); if (nu.jug.origen === 'ncaa') real = GM.data.ligas.NBA.equipos[U.hash((nu.pj.nombre || '') + (nu.pj.apellido || '')) % GM.data.ligas.NBA.equipos.length]; }
-    setTimeout(() => { ui.pantalla = 'inicio'; GM.newGame(real, undefined, op); if (modo === 'presidente' && altos) M().legado.fijarPilares(S(), altos); juego(); }, 40);
+    setTimeout(() => { ui.pantalla = 'inicio'; GM.newGame(real, undefined, op); if (modo === 'presidente' && altos) M().legado.fijarPilares(S(), altos); if (M().guardado) M().guardado.guardar(0); juego(); }, 40);
   }
   function elegirModo(id) {
     modal(h('div', null, h('h3', null, '¿Cómo quieres jugar?'), h('div', { class: 'col' },
@@ -636,7 +636,8 @@
     if (!tabs.some(t => t[0] === ui.tab.ciudad)) ui.tab.ciudad = tabs[0][0];
     el.append(pestanas(tabs, ui.tab.ciudad, t => { ui.tab.ciudad = t; refrescar(true); }));
     const t = ui.tab.ciudad;
-    if (car && st.carrera.fase === 'ncaa' && t !== 'mapa' && t !== 'casa' && t !== 'pueblo') { el.append(aviso('Vives en la residencia universitaria. Cuando fiches por un club podrás elegir barrio y vivienda.', 'med')); return; }
+    if (car && st.carrera.fase === 'ncaa' && st.carrera.etapa === 'cantera' && (t === 'vivienda' || t === 'vida')) { el.append(aviso('Vives en la residencia de la cantera de ' + eq(st.clubId).nombre + '. A los 18 años, con tu primer contrato, podrás elegir barrio, vivienda y estilo de vida.', 'med')); return; }
+    if (car && st.carrera.fase === 'ncaa' && st.carrera.etapa !== 'cantera' && t !== 'mapa' && t !== 'casa' && t !== 'pueblo') { el.append(aviso('Vives en la residencia universitaria. Cuando fiches por un club podrás elegir barrio y vivienda.', 'med')); return; }
     if (t === 'mapa') { const cont = h('div', { class: 'club3d' }); el.append(cont); M().ciudad3d.mount(cont, st); }
     else if (t === 'casa') { const cont = h('div', { class: 'club3d' }); el.append(cont); M().hogar3d.mount(cont, st); }
     else if (t === 'pueblo') { const cont = h('div', { class: 'club3d' }); el.append(cont); M().pueblo.mount(cont, st); }

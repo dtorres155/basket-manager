@@ -70,6 +70,7 @@
   function casaActual(st) {
     if (modoCar(st)) {
       const c = C(st), a = c.vivienda && c.vivienda.actual;
+      if (c.fase === 'ncaa' && c.etapa === 'cantera') return { id: 'residencia-cantera', tipo: 'residencia', nombre: 'Residencia de la cantera', lujo: 0, modo: 'residencia', barrioNombre: 'Cerca del pabellón', ciudad: club(st).ciudad, cond: 0.5, variante: VARIANTES.residencia[0] };
       if (c.fase === 'ncaa') return { id: 'residencia', tipo: 'residencia', nombre: TIPOS.residencia.nombre, lujo: 0, modo: 'residencia', barrioNombre: 'Campus', ciudad: 'Universidad', cond: 0.5, variante: VARIANTES.residencia[0] };
       if (a) { const v = varianteDe(a.tipo, a.barrioNombre); return { id: a.id, tipo: a.tipo, nombre: v.nombre, lujo: TIPOS[a.tipo].lujo, modo: a.modo, barrioNombre: a.barrioNombre, ciudad: a.ciudad, cond: condicion(st, a.barrio, a.tipo), variante: v }; }
       return { id: 'club-' + st.clubId, tipo: 'estudio', nombre: 'Alojamiento del club', lujo: 0, modo: 'club', barrioNombre: 'Cerca del pabellón', ciudad: club(st).ciudad, cond: 0.4, variante: VARIANTES.estudio[1] };
