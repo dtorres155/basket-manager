@@ -1,6 +1,6 @@
 # Arquitectura
 
-Resumen: un núcleo (`core.js`) con RNG, bus de eventos, utilidades y `newGame`; módulos de datos (`datos_*.js`) que rellenan `GM.data`; módulos de lógica y de interfaz que se registran en `GM.mods`; `build.js` concatena todo en `index.html`.
+Resumen: un núcleo (`core.js`) con RNG, bus de eventos, utilidades y `newGame`; módulos de datos (`datos_*.js`) que rellenan `GM.data`; módulos de lógica y de interfaz que se registran en `GM.mods`; `build.js` concatena todo en `dist/index.html` y copia `vendor/` (Three.js y fuentes) a `dist/`.
 
 ## Eventos del bus
 

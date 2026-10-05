@@ -1,18 +1,20 @@
 # Basket Manager 2026-27 — instrucciones para Claude Code
 
-Juego de gestión de baloncesto para móvil (NBA, Euroliga, EuroCup, Champions League, ACB, Lega, ligas griega, alemana y turca), temporada 2026-27, en **un único `index.html`** generado a partir de módulos JS. Uso personal, con nombres reales de clubes y jugadores.
+Juego de gestión de baloncesto para móvil (NBA, Euroliga, EuroCup, Champions League, ACB, Lega, ligas griega, alemana y turca), temporada 2026-27, generado a partir de módulos JS en una carpeta **`dist/` autocontenida** que funciona sin conexión. Uso personal, con nombres reales de clubes y jugadores.
 
 ## Sobre el usuario
 El usuario escribe en español y catalán. Prefiere respuestas concisas y directas, recomendaciones concretas y que le corrijas con claridad. El juego, los textos y los comentarios están en **español**. Dicta por voz: interpreta sus mensajes con tolerancia.
 
 ## Comandos
 ```
-npm install        # jsdom y three@0.128 (solo para pruebas y build)
-npm run build      # ensambla index.html a partir de los módulos (node build.js)
+npm install        # jsdom, three@0.128, playwright y fuentes (solo para pruebas y build)
+npm run build      # genera dist/ (index.html, three.min.js, fonts/) a partir de los módulos (node build.js)
 npm test           # build + 26 pruebas (test_all.js); debe terminar con «Todas las pruebas pasan»
-npm run serve      # sirve index.html en http://localhost:8080 (también desde el móvil en la misma red)
+npm run serve      # sirve dist/ en http://localhost:8080 (por HTTP el móvil no puede instalar la PWA; solo para probar)
+node tools/capturas.js <fase> [--lento]   # capturas 390x844 con Edge en capturas/<fase>/ y fps (--lento: CPU x4)
+node tools/sin_red.js                     # comprueba que dist/ carga sin ninguna petición externa
 ```
-`index.html` carga Three.js r128 desde cdnjs y las fuentes (Graduate, Bricolage Grotesque, Doto) desde Google Fonts. Sin conexión no hay 3D ni tipografías.
+Three.js r128 y las fuentes woff2 (Graduate, Bricolage Grotesque, Doto) están en `vendor/` con sus licencias (ver `CREDITOS.md`). **No añadas dependencias de CDN.** `dist/` no se guarda en git: se genera. Node está en `C:\Program Files\nodejs` (en Git Bash: `export PATH="/c/Program Files/nodejs:$PATH"`). Playwright usa el Edge del sistema (`channel: 'msedge'`); la descarga de Chromium falla en este equipo.
 
 ## Reglas de la arquitectura (léelas antes de tocar nada)
 - **Sin módulos ES ni bundler.** Cada archivo es una IIFE que cuelga de `window.GM`. El orden de carga está en `build.js` (`const mods=[...]`) y en `load.js` (para pruebas en Node con `vm`).

@@ -1,5 +1,5 @@
 const fs=require('fs');const { JSDOM } = require('jsdom');
-let html=fs.readFileSync('index.html','utf8').replace(/<script src="https:[^>]*><\/script>/,'').replace(/<link[^>]*>/g,'');
+let html=fs.readFileSync('dist/index.html','utf8').replace(/<script src="https:[^>]*><\/script>/,'').replace(/<link[^>]*>/g,'');
 const errs=[];
 const dom=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'https://example.org/',beforeParse(w){
   w.THREE=require('three/build/three.min.js');

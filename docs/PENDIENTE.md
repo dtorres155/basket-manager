@@ -13,7 +13,7 @@
 - Edificios del campus que se pensaron y no están: museo, hotel de concentración, sala de prensa.
 
 ## P1 — Distribución
-- Dejar de depender de CDN: empaquetar Three.js y las fuentes dentro del proyecto.
+- ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
 - Valorar PWA con modo sin conexión y/o empaquetado Android (Capacitor u otro). Hoy es un HTML que se abre en el navegador y guarda en `localStorage` (ligado al navegador).
 - Guardado: versionado y migraciones de partidas (`state.version`), exportar/importar ya existe.
 
