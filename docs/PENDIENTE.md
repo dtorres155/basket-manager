@@ -12,6 +12,8 @@
 - Casas: más personalización (color de paredes y suelos, iluminación), más piezas por habitación, objetos con modelos de mayor detalle.
 - Edificios del campus que se pensaron y no están: museo, hotel de concentración, sala de prensa.
 
+- **Pueblo 3D:** construir el nivel 5 tarda ~1,2 s con CPU x4 y se reconstruye tras cada acción del panel; cachear la geometría o actualizar solo lo que cambia.
+
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
 - ~~PWA con modo sin conexión~~: hecho en la fase 1.2 (manifiesto, iconos, service worker con caché versionada y aviso de nueva versión). Publicada por HTTPS (1.5) en https://dtorres155.github.io/basket-manager/ (GitHub Actions publica dist/ en cada push a main).

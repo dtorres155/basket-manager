@@ -5,7 +5,7 @@ global.requestAnimationFrame = f => setTimeout(()=>f(Date.now()), 16); global.ca
 global.THREE = require('./tools/three_node');
 THREE.WebGLRenderer = class { constructor(){ this.domElement = document.createElement('canvas'); } setPixelRatio(){} setSize(){} setClearColor(){} render(){} dispose(){} forceContextLoss(){} };
 const L = require('./load');
-L(['core','datos_util','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','finanzas','ciudad','campus','contratos','ciudad3d','partidos','competiciones','mercado','cantera','personaje','carrera','social','sponsor','pueblo','hogar','hogar3d','copas','continental','rivalidades','entrenador','legado']);
+L(['core','datos_util','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','finanzas','ciudad','campus','contratos','ciudad3d','partidos','competiciones','mercado','cantera','personaje','carrera','social','sponsor','pueblo','pueblo3d','hogar','hogar3d','copas','continental','rivalidades','entrenador','legado']);
 GM.kit.disponible=()=>true; const P=GM.mods.pueblo, el=document.getElementById('app');
 console.log('selfTest',P.selfTest());
 GM.rng.seed(3); const st=GM.newGame('unicaja',4,{modo:'carrera',personaje:{nombre:'Marc'},carrera:{origen:'europa',clubId:'unicaja',pos:'SG',perfil:'tirador',nac:'ES',agente:'leal'}});

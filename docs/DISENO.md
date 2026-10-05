@@ -12,7 +12,7 @@ La aplicación se viste con los colores del club del usuario. `ui.js` (`aplicaKi
 ## Escenas 3D
 Cámara orbital táctil (un dedo gira, dos dedos acercan, toque = seleccionar). Luz de día, tarde y noche (`GM.campus.ambiente`). Texturas por canvas (fachadas, hierba, parquet, asfalto, rótulos con siglas del club). Animaciones ligeras (banderas, grúa, coches, personas, balón).
 
-Escenas: ciudad deportiva (parcelas fijas por club, obras por fases, edificio emblemático), pabellón (interior evolutivo, iluminación por niveles, formas propias por club), mapa y calle de la ciudad (barrios, lugares interactivos), pueblo natal (crece con la reputación), casa del jugador (exterior, edificio y habitaciones con muebles por nivel), partido en directo.
+Escenas: ciudad deportiva (parcelas fijas por club, obras por fases, edificio emblemático), pabellón (interior evolutivo, iluminación por niveles, formas propias por club), mapa y calle de la ciudad (barrios, lugares interactivos), pueblo natal (pueblo de colina amurallado tipo Monteriggioni con estilo regional español: crece de aldea a ciudad, con arrabal fuera de la muralla y barrio nuevo; mural con tu dorsal, pabellón y hospital con tu apellido), casa del jugador (exterior, edificio y habitaciones con muebles por nivel), partido en directo.
 
 Límite actual: todo son primitivas procedurales y se ha afinado sin ver el resultado. La mejora principal es cargar **modelos glTF y texturas reales** (por ejemplo de Kenney, Quaternius o Poly Haven, con licencia libre) y usar formas orgánicas (LatheGeometry, ExtrudeGeometry, curvas, InstancedMesh).
 
