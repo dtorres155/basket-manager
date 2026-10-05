@@ -58,9 +58,11 @@
   const eq = id => S().equipos[id];
   const clip = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
   function claro(hex) { const n = parseInt(String(hex).replace('#', ''), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 150; }
+  // Siglas legibles sobre los dos colores del escudo: si uno es claro y el otro oscuro, letra blanca con contorno
+  function tintaEscudo(c1, c2) { const k1 = claro(c1), k2 = claro(c2); return k1 && k2 ? { color: '#10202f', cls: '' } : !k1 && !k2 ? { color: '#fff', cls: '' } : { color: '#fff', cls: ' halo' }; }
   function escudo(id, big) {
     const e = eq(id), c1 = e.colores[0], c2 = e.colores[1] || c1;
-    return h('span', { class: 'escudo' + (big ? ' grande' : ''), style: { background: 'linear-gradient(135deg,' + c1 + ' 55%,' + c2 + ' 55%)', color: claro(c1) ? '#10202f' : '#fff' } }, e.siglas);
+    return h('span', { class: 'escudo' + (big ? ' grande' : '') + tintaEscudo(c1, c2).cls, style: { background: 'linear-gradient(135deg,' + c1 + ' 55%,' + c2 + ' 55%)', color: tintaEscudo(c1, c2).color } }, e.siglas);
   }
   const chip = (t, c) => h('span', { class: 'chip' + (c ? ' ' + c : '') }, t);
   const barra = (v, max, cls) => h('span', { class: 'barra ' + (cls || '') }, h('i', { style: { width: U.clamp(v / (max || 100) * 100, 0, 100) + '%' } }));
@@ -89,8 +91,19 @@
   function registerScreen(id, def) { screens[id] = def; GM.ui.screens[id] = def; }
 
   // ---------- Arranque y menú ----------
+  // Filas desplazables (.tabs, .seg.compacto): la clase «mas» difumina el borde derecho mientras quede contenido por ver
+  function pistasScroll() {
+    if (typeof MutationObserver === 'undefined' || !document.body) return;
+    const marca = el => { el.classList.toggle('mas', el.scrollLeft + el.clientWidth < el.scrollWidth - 4); };
+    let pend = false;
+    const revisar = () => { pend = false; document.querySelectorAll('.tabs, .seg.compacto').forEach(el => { if (!el._pista) { el._pista = true; el.addEventListener('scroll', () => marca(el), { passive: true }); } marca(el); }); };
+    new MutationObserver(() => { if (!pend) { pend = true; requestAnimationFrame(revisar); } }).observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', revisar);
+    // Con el teclado abierto, el campo activo queda a la vista
+    document.addEventListener('focusin', e => { const t = e.target; if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && t.scrollIntoView) setTimeout(() => t.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300); });
+  }
   function start(raiz) {
-    ui.raiz = raiz; raiz.className = 'app';
+    ui.raiz = raiz; raiz.className = 'app'; pistasScroll();
     if (S()) juego(); else menu();
   }
   function menu() {
@@ -169,7 +182,7 @@
         const e = D.equipos[id], ligas = Object.keys(D.ligas).filter(l => D.ligas[l].equipos.indexOf(id) >= 0).map(l => CORTO[l]).join(' + ');
         const c1 = e.colores[0];
         return h('button', { class: 'club', onclick: () => confirmarClub(id) },
-          h('span', { class: 'escudo', style: { background: 'linear-gradient(135deg,' + c1 + ' 55%,' + (e.colores[1] || c1) + ' 55%)', color: claro(c1) ? '#10202f' : '#fff' } }, e.siglas),
+          h('span', { class: 'escudo' + tintaEscudo(c1, e.colores[1] || c1).cls, style: { background: 'linear-gradient(135deg,' + c1 + ' 55%,' + (e.colores[1] || c1) + ' 55%)', color: tintaEscudo(c1, e.colores[1] || c1).color } }, e.siglas),
           h('span', { class: 'ct' }, h('b', null, e.nombre), h('span', { class: 'muted' }, ligas + ', ' + e.pabellon.nombre)),
           h('span', { class: 'ovr ' + clsOvr(ovrData(id)) }, Math.round(ovrData(id))), id === 'fc-barcelona' ? chip('Recomendado', 'ok') : null);
       }))));

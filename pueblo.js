@@ -132,6 +132,7 @@
     for (let i = 0; i < gente; i++) { const q = new THREE.Group(), h = U.hash('p' + i) >>> 0, hincha = h % 100 < p.cariño; q.add(K.caja(0.2, 0.4, 0.14, hincha ? (h % 2 ? S.c1 : S.c2) : [0x7a8791, 0x3c5a7a, 0x8a6a4a][h % 3], 0, 0.3, 0)); q.add(K.cilindro(0.08, 0.14, 0xe0b48f, 0, 0.7, 0, 6)); q.userData.anim = t => { const a = t * 0.12 * (i % 2 ? 1 : -1) + i; q.position.set(Math.cos(a) * (5 + (i % 3) * 0.6), 0.1, Math.sin(a) * (5 + (i % 3) * 0.6)); }; W.add(q); }
     for (let i = 0; i < 3 + Math.round(p.cariño / 20); i++) { const a = i * 1.1, f = new THREE.Group(); f.add(K.cilindro(0.03, 1.8, 0xdfe3e8, 0, 0, 0, 5)); const t = K.caja(0.5, 0.3, 0.02, i % 2 ? S.c1 : S.c2, 0.28, 1.5, 0); f.add(t); f.position.set(Math.cos(a) * 5.6, 0, Math.sin(a) * 5.6); f.userData.anim = tt => { t.rotation.y = Math.sin(tt * 3 + i) * 0.3; }; W.add(f); }
     CP.rotulo(W, p.nombre.toUpperCase().slice(0, 18), 5.0, 0.7, S.c1, 0xffffff, 0, 2.6, -11).rotation.y = 0;
+    K.fusionar(W);
     if (CP.config.calidad === 'alta') K.sombrear(W);
     const an = []; W.traverse(o => { if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim); }); v.anim = an.length ? (t => an.forEach(f => f(t))) : null;
     CP.ambiente(v, 'dia'); v.place();

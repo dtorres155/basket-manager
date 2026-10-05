@@ -53,7 +53,7 @@ const css = fs.readFileSync('estilos.css', 'utf8');
 const js = mods.map(m => '/* ===== ' + m + ' ===== */\n' + fs.readFileSync(m + '.js', 'utf8')).join('\n');
 const html = `<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, interactive-widget=resizes-content">
 <meta name="theme-color" content="#e8590c">
 <title>Basket Manager 2026-27</title>
 <meta name="description" content="${manifest.description}">

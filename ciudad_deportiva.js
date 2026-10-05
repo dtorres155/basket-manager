@@ -161,6 +161,7 @@
       if (sl) { const r = new THREE.Mesh(new THREE.RingGeometry(2.9, 3.1, 4), K.mat(0xffd54a)); r.rotation.x = -Math.PI / 2; r.rotation.z = Math.PI / 4; r.position.set(sl.x, 0.15, sl.z); V.mundo.add(r); }
     }
     CP.vida(V.mundo, L, S);
+    K.fusionar(V.mundo);
     if (CP.config.calidad === 'alta') K.sombrear(V.mundo);
     const an = CP.animables(V.mundo);
     v.anim = an.length ? (t => an.forEach(f => f(t))) : null;

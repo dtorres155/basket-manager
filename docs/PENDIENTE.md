@@ -1,8 +1,8 @@
 # Pendiente y deuda técnica (priorizado)
 
 ## P0 — Ver lo que se construye
-1. Abrir el juego en un navegador real y en móvil (390×844). Hacer capturas de cada pantalla y escena 3D (campus, pabellón, ciudad, calle, pueblo, casa, directo) y corregir proporciones, solapes, colores y rendimiento. Todo lo visual se ha hecho sin ver el resultado.
-2. Medir rendimiento en un Android de gama media (fotogramas, memoria). El modo «calidad normal» existe pero no se ha medido.
+1. ~~Hecho en la fase 0~~ (capturas en `capturas/`). Abrir el juego en un navegador real y en móvil (390×844). Hacer capturas de cada pantalla y escena 3D (campus, pabellón, ciudad, calle, pueblo, casa, directo) y corregir proporciones, solapes, colores y rendimiento. Todo lo visual se ha hecho sin ver el resultado.
+2. Medido con CPU limitada (fase 1.3, `capturas/fase1/RENDIMIENTO.md`): 60 fps en calidad normal. Falta confirmarlo en un Android real.
 3. Añadir pruebas visuales automáticas (por ejemplo Playwright con capturas) a `npm test`.
 
 ## P1 — Salto de calidad visual

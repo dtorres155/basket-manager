@@ -170,6 +170,7 @@
     if (viv && viv.ciudad === eq.ciudad) { const q = cs[viv.barrio], g = new THREE.Group(); g.position.set(q.x - 1.2, 0.07, q.z + 4.6); g.add(K.caja(1.6, 1.1, 1.4, 0xf2e6d0, 0, 0, 0)); g.add(K.caja(1.8, 0.12, 1.6, S.c1, 0, 1.1, 0)); g.add(K.cilindro(0.03, 1.3, 0xdfe3e8, 0.7, 1.1, 0.6, 4)); g.add(K.caja(0.5, 0.3, 0.02, S.c2, 0.95, 2.1, 0.6)); g.userData = { casa: true }; W.add(g); const m = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 4), K.mat(0xffd54a)); m.rotation.x = Math.PI; m.position.set(0, 3.0, 0); g.add(m); m.userData.anim = t => { m.position.y = 2.9 + Math.sin(t * 2.4) * 0.2; m.rotation.y = t; }; }
     for (let i = 0; i < 50; i++) { const h = U.hash(eq.id + 'ar' + i) >>> 0, a = (h % 628) / 100, rr = 33 + ((h >>> 8) % 20); W.add(K.arbol(Math.cos(a) * rr * 1.3, Math.sin(a) * rr * 0.9, 1.3)); }
     if (V.sel && V.sel.lugar) { const l = lug.find(x => x.id === V.sel.lugar); if (l) { const r = new THREE.Mesh(new THREE.RingGeometry(2.6, 2.85, 24), K.mat(0xffd54a)); r.rotation.x = -Math.PI / 2; r.position.set(l.x, 0.2, l.z); W.add(r); } }
+    K.fusionar(W);
     const an = []; W.traverse(o => { if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim); });
     v.anim = an.length && CP.config.calidad === 'alta' ? (t => an.forEach(f => f(t))) : null;
     if (CP.config.calidad === 'alta') K.sombrear(W);
@@ -240,6 +241,7 @@
       V.personas.push(p);
     }
     if (afi < 35) { const f = marco(-3); for (let i = 0; i < 5; i++) { const px = f.x + f.tx * i * 0.5 + f.nx * 1.2, pz = f.z + f.tz * i * 0.5 + f.nz * 1.2, p = persona(W, S, px, pz, 0xd94f4f, null, null); p.userData.barrio = b; W.add(K.caja(0.5, 0.3, 0.03, 0xd62d2d, px, 0.95, pz)); W.add(K.cilindro(0.015, 0.6, 0xdfe3e8, px, 0.45, pz, 4)); } }
+    K.fusionar(W);
     const an = []; W.traverse(o => { if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim); });
     v.anim = t => an.forEach(f => f(t));
     if (CP.config.calidad === 'alta') K.sombrear(W);

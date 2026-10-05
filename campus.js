@@ -5,7 +5,9 @@
 (function () {
   const U = GM.util;
   const K = () => GM.kit;
-  const C = { calidad: 'alta', hora: 'dia' };
+  // Calidad por defecto: «normal» en pantallas táctiles (móvil), «alta» en ordenador. La elección del usuario se guarda.
+  const tactil = (() => { try { return window.matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+  const C = { calidad: tactil ? 'normal' : 'alta', hora: 'dia' };
   try { const q = window.localStorage.getItem('gm1:calidad'); if (q === 'normal' || q === 'alta') C.calidad = q; } catch (e) { }
   const alta = () => C.calidad === 'alta';
   const hex = n => '#' + ('000000' + n.toString(16)).slice(-6);

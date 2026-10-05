@@ -51,6 +51,51 @@
     g.add(kit.cono(0.32 * s, 0.8 * s, 0x2e7d4f, 0, 0.3 * s, 0, 6));
     g.position.set(x, 0, z); return g;
   };
+  // Fusiona la geometría estática: reduce cientos de mallas a una por material (menos llamadas de dibujo).
+  // Convención: un nodo con userData (anim, lugar, slot, tipo...) es un «ancla»: no se fusiona con nada externo
+  // y su contenido se fusiona dentro de él, así siguen funcionando las animaciones y la selección por toque
+  // (que sube por los padres buscando userData). Llamar después de construir el mundo y antes del primer render.
+  kit.fusionar = function (root) {
+    const T = THREE; let antes = 0, despues = 0;
+    const ancla = o => o === root || (o.userData && Object.keys(o.userData).length > 0);
+    const apta = c => c.isMesh && !c.isInstancedMesh && !c.isSkinnedMesh && !Array.isArray(c.material) && c.visible && !c.children.length &&
+      c.geometry && c.geometry.isBufferGeometry && c.geometry.attributes.position && !(c.geometry.morphAttributes && c.geometry.morphAttributes.position);
+    function unir(lista) {
+      const geos = lista.map(it => { let g = it.mesh.geometry.index ? it.mesh.geometry.toNonIndexed() : it.mesh.geometry.clone(); g.applyMatrix4(it.m); return g; });
+      const out = new T.BufferGeometry();
+      Object.keys(geos[0].attributes).forEach(n => {
+        const a0 = geos[0].attributes[n], tot = geos.reduce((s, g) => s + g.attributes[n].array.length, 0), arr = new a0.array.constructor(tot);
+        let off = 0; geos.forEach(g => { arr.set(g.attributes[n].array, off); off += g.attributes[n].array.length; g.dispose(); });
+        out.setAttribute(n, new T.BufferAttribute(arr, a0.itemSize, a0.normalized));
+      });
+      out.computeBoundingSphere(); return out;
+    }
+    function procesar(nodo) {
+      nodo.updateMatrixWorld(true);
+      const inv = new T.Matrix4().copy(nodo.matrixWorld).invert(), cubos = new Map();
+      (function rec(o) {
+        o.children.slice().forEach(c => {
+          if (!c.visible) return;
+          if (ancla(c)) { procesar(c); return; }
+          if (apta(c)) {
+            const m = new T.Matrix4().multiplyMatrices(inv, c.matrixWorld); if (m.determinant() <= 0) return;
+            const k = c.material.uuid + '|' + Object.keys(c.geometry.attributes).sort().join(',') + '|' + c.renderOrder;
+            if (!cubos.has(k)) cubos.set(k, []); cubos.get(k).push({ mesh: c, m });
+          } else if (c.children.length) rec(c);
+        });
+      })(nodo);
+      cubos.forEach(lista => {
+        antes += lista.length;
+        if (lista.length < 2) { despues += 1; return; }
+        const m0 = lista[0].mesh, mesh = new T.Mesh(unir(lista), m0.material);
+        mesh.castShadow = lista.some(it => it.mesh.castShadow); mesh.receiveShadow = lista.some(it => it.mesh.receiveShadow); mesh.renderOrder = m0.renderOrder;
+        lista.forEach(it => it.mesh.parent.remove(it.mesh));
+        nodo.add(mesh); despues += 1;
+      });
+    }
+    procesar(root);
+    return { antes, despues };
+  };
   kit.sombrear = function (obj) { obj.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } }); };
   kit.color = function (hex) { return parseInt(String(hex).replace('#', ''), 16); };
 
@@ -59,7 +104,8 @@
     const T = THREE;
     const w = el.clientWidth || 360, hgt = el.clientHeight || 300;
     const renderer = new T.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min((typeof window !== 'undefined' && window.devicePixelRatio) || 1, 2));
+    const altaQ = !GM.campus || GM.campus.config.calidad === 'alta'; // en «normal», menos píxeles: va más fluido en móvil
+    renderer.setPixelRatio(Math.min((typeof window !== 'undefined' && window.devicePixelRatio) || 1, altaQ ? 2 : 1.5));
     renderer.setSize(w, hgt);
     renderer.setClearColor(o.fondo !== undefined ? o.fondo : 0xa9d6f2);
     if (o.sombras && renderer.shadowMap) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; }
