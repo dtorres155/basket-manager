@@ -16,6 +16,8 @@ node tools/sin_red.js                     # comprueba que dist/ carga sin ningun
 node tools/pwa.js                         # instalable (según Edge), service worker activo y arranque sin red con la partida guardada
 node tools/iconos.js                      # regenera vendor/icons/ (escudo con balón) a partir del SVG del script
 ```
+**Publicación:** repositorio público `dtorres155/basket-manager`; `.github/workflows/pages.yml` pasa las pruebas y publica `dist/` en **https://dtorres155.github.io/basket-manager/** en cada push a `main`. No subas datos personales del usuario (nombre, pueblo, correo); `PROMPT_CLAUDE_CODE.txt` está en `.gitignore`. Instrucciones para el usuario: `INSTALAR_EN_MOVIL.md`.
+
 **PWA:** `build.js` genera `dist/manifest.webmanifest` y `dist/sw.js`. La versión de la caché es un hash del contenido de `dist/`: cualquier cambio crea una caché nueva y el juego muestra «Nueva versión» (guarda la partida y recarga). Si añades archivos a `dist/`, añádelos a la lista `archivos` de `build.js`.
 Three.js r128 y las fuentes woff2 (Graduate, Bricolage Grotesque, Doto) están en `vendor/` con sus licencias (ver `CREDITOS.md`). **No añadas dependencias de CDN.** `dist/` no se guarda en git: se genera. Node está en `C:\Program Files\nodejs` (en Git Bash: `export PATH="/c/Program Files/nodejs:$PATH"`). Playwright usa el Edge del sistema (`channel: 'msedge'`); la descarga de Chromium falla en este equipo.
 

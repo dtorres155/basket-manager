@@ -14,7 +14,7 @@
 
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
-- ~~PWA con modo sin conexión~~: hecho en la fase 1.2 (manifiesto, iconos, service worker con caché versionada y aviso de nueva versión). Pendiente: publicarla por HTTPS (1.5).
+- ~~PWA con modo sin conexión~~: hecho en la fase 1.2 (manifiesto, iconos, service worker con caché versionada y aviso de nueva versión). Publicada por HTTPS (1.5) en https://dtorres155.github.io/basket-manager/ (GitHub Actions publica dist/ en cada push a main).
 - Guardado: versionado y migraciones de partidas (`state.version`), exportar/importar ya existe.
 
 ## P1 — Datos
