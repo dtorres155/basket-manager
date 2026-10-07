@@ -59,23 +59,46 @@
     w.scale.setScalar(GM.sedePlano.ESCALA_MUEBLES); w.tam = a[3]; return w;
   }
   // o: { modelo, altura (cm), piel, pelo, ropa: [color principal, color secundario] }
+  let _mSombra = null;
   async function personaje(o) {
     const [g, an] = await Promise.all([cargar('modelos/personas/' + o.modelo + '.glb'), cargar('modelos/personas/animaciones.glb')]);
     const obj = THREE.clonarEsqueleto(g.scene); if (!g.altoBase) g.altoBase = new THREE.Box3().setFromObject(g.scene).getSize(new THREE.Vector3()).y;
     obj.scale.setScalar((o.altura || 178) / 100 / g.altoBase);
-    const tinta = (m, hex) => { const c = m.clone(); c.color.set(hex); return c; };
-    obj.traverse(n => {
-      if (!n.isMesh) return; n.castShadow = true; n.frustumCulled = false;
-      const nm = n.material.name || '';
-      if (o.piel && /^Skin/.test(nm)) n.material = tinta(n.material, o.piel);
-      else if (o.pelo && /Hair|Eyebrows|Moustache/.test(nm)) n.material = tinta(n.material, o.pelo);
-      else if (o.ropa && /^(Purple|Red_Dark|LightBrown)$/.test(nm)) n.material = tinta(n.material, o.ropa[0]);
-      else if (o.ropa && /^(LightBlue)$/.test(nm)) n.material = tinta(n.material, o.ropa[1]);
-    });
+    // Rendimiento: todas las piezas (piel, pelo, ropa, ojos...) se funden en UNA malla con el color en los vértices.
+    // Antes eran ~11 mallas por persona (y el doble con sombras). Se guardan los tramos de ropa para los petos.
+    const color = n => { const nm = n.material.name || ''; if (o.piel && /^Skin/.test(nm)) return o.piel; if (o.pelo && /Hair|Eyebrows|Moustache/.test(nm)) return o.pelo; if (o.ropa && /^(Purple|Red_Dark|LightBrown)$/.test(nm)) return o.ropa[0]; if (o.ropa && /^(LightBlue)$/.test(nm)) return o.ropa[1]; return '#' + n.material.color.getHexString(); };
+    const piezas = []; obj.traverse(n => { if (n.isSkinnedMesh) piezas.push(n); });
+    let rangosRopa = [];
+    try {
+      const geos = [], cc = new THREE.Color(); let base = 0;
+      piezas.forEach(n => {
+        let g0 = n.geometry.index ? n.geometry.toNonIndexed() : n.geometry.clone(); const cnt = g0.attributes.position.count, g1 = new THREE.BufferGeometry();
+        g1.setAttribute('position', g0.attributes.position); g1.setAttribute('normal', g0.attributes.normal);
+        const si = g0.attributes.skinIndex, sw = g0.attributes.skinWeight, si2 = new Uint16Array(cnt * 4), sw2 = new Float32Array(cnt * 4);
+        for (let i = 0; i < cnt; i++) for (let k = 0; k < 4; k++) { si2[i * 4 + k] = si.getComponent(i, k); sw2[i * 4 + k] = sw.getComponent(i, k); }
+        g1.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si2, 4)); g1.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw2, 4));
+        cc.set(color(n)); const cols = new Float32Array(cnt * 3); for (let i = 0; i < cnt; i++) { cols[i * 3] = cc.r; cols[i * 3 + 1] = cc.g; cols[i * 3 + 2] = cc.b; }
+        g1.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+        if (/^(Purple|Red_Dark|LightBrown)$/.test(n.material.name || '')) rangosRopa.push([base, cnt]);
+        base += cnt; geos.push(g1);
+      });
+      const fundida = THREE.mergeGeometries(geos); if (!fundida) throw new Error('no fusiona');
+      const m0 = piezas[0], malla = new THREE.SkinnedMesh(fundida, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 }));
+      malla.bind(m0.skeleton, m0.bindMatrix); malla.castShadow = true; malla.frustumCulled = false; malla.name = 'persona';
+      m0.parent.add(malla); piezas.forEach(n => n.parent.remove(n));
+    } catch (e) { // si algo falla, se queda como antes (piezas separadas)
+      rangosRopa = null;
+      const tinta = (m, hex) => { const c = m.clone(); c.color.set(hex); return c; };
+      piezas.forEach(n => { n.castShadow = true; n.frustumCulled = false; n.material = tinta(n.material, color(n)); });
+    }
     const mixer = new THREE.AnimationMixer(obj), acc = {};
     Object.keys(ANIM).forEach(k => { const c = an.animations.find(a => a.name === ANIM[k]); if (c) acc[k] = mixer.clipAction(c); });
     const B = {}; obj.traverse(n => { if (n.isBone) B[n.name] = n; });
-    return { obj, mixer, acc, huesos: B, altura: o.altura || 178 };
+    if (GM.campus && GM.campus.config.calidad !== 'alta') { // sombra pintada bajo los pies
+      if (!_mSombra) { const t = textura('sombra-pies', 64, (x, n) => { const g2 = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g2.addColorStop(0, 'rgba(0,0,0,0.45)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g2; x.fillRect(0, 0, n, n); }); _mSombra = new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false }); }
+      const sb = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9).rotateX(-Math.PI / 2), _mSombra); sb.position.y = 0.02 / obj.scale.x; sb.scale.setScalar(1 / obj.scale.x); sb.renderOrder = 1; obj.add(sb);
+    }
+    return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa, ropa: o.ropa };
   }
   // Postura sentada (las animaciones no la traen): muslos al frente, pantorrillas hacia el suelo y pies al final de la pierna.
   // En este esqueleto los pies cuelgan de Root (no de la pierna), por eso se recolocan a mano.
@@ -168,6 +191,7 @@
   // Rutina de cada jugador: elegir sala y sitio, ir, hacer la actividad un rato y repetir
   function siguienteActividad(n) {
     if (S.escena === 'calle') return GM.calle.siguiente(S, motor(), n);
+    if (S.escena === 'casa') { n.espera = 99; return; }
     const P = GM.sedePlano, st = S.st, j = n.jugador && st.jugadores[n.jugador];
     let sala; if (j && j.estado && j.estado.lesion) sala = 'fisio';
     else if (n.cabizbajo) { const r = n.r(); sala = r < 0.4 ? 'solo' : r < 0.7 ? 'vestuario' : 'gimnasio'; }
@@ -189,6 +213,7 @@
   // ---------- Construcción de la escena ----------
   async function construir(st) {
     if (S.escena === 'calle') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.calle.construir(S, motor(), st); }
+    if (S.escena === 'casa') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.casa.construir(S, motor(), st); }
     const P = GM.sedePlano, club = st.equipos[st.clubId], G = rejilla(P), W = new THREE.Group(); S.G = G; S.redes = []; S.mundo = W; S.scene.add(W);
     // Suelos: exterior, pasillo y salas
     W.add(plano(70, 50, new THREE.MeshStandardMaterial({ color: 0x6f8a5a, roughness: 1 }), 0, 0, -0.02, 4));
@@ -242,13 +267,15 @@
     const g = new THREE.Group(), anillo = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.6, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: sala.irA ? 0xffd54a : club.colores[0] === '#ffffff' ? 0xe8590c : club.colores[0], transparent: true, opacity: 0.85 }));
     anillo.position.y = 0.02; g.add(anillo); g.position.set(x, 0, z); g.userData = { sala: sala.id, anim: t => { anillo.scale.setScalar(1 + Math.sin(t * 3) * 0.08); } }; W.add(g);
     const et = etiqueta(sala.nombre); et.position.set(x, 2.3, z); W.add(et);
-    return { sala, obj: g };
+    return { sala, obj: g, et };
   }
   // Lo que la calle (calle3d.js) usa del motor de la sede
-  function motor() { return { personaje, anim, irA, rejilla, textura, etiqueta, zona, bocadillo: (t, o) => bocadillo(t, o) }; }
+  async function mueble3(n) { return mueble(n); }
+  function motor() { return { mueble: mueble3, personaje, anim, irA, rejilla, textura, etiqueta, zona, bocadillo: (t, o) => bocadillo(t, o) }; }
   // Cambiar entre la sede y la calle con un fundido
   async function cambiarEscena(dest) {
-    if (!S || S.cambiando) return; S.cambiando = true;
+    if (!S || S.cambiando) return; S.cambiando = true; const de = S.escena;
+    if (S.construccion && GM.casa) await GM.casa.activar(S, motor(), false);
     const velo = GM.h('div', { class: 'sede-velo' }); S.raiz.append(velo); await new Promise(r => setTimeout(r, 280));
     try {
       if (S.panel) S.panel.style.display = 'none'; S.zonaActual = null; S.panelFijo = false; if (S.grupo) disolver();
@@ -258,7 +285,7 @@
       S.mundo.remove(S.yo.obj); S.scene.remove(S.mundo); S.mundo.traverse(o => { if (o.geometry) o.geometry.dispose(); });
       S.escena = dest; if (dest === 'sede') { S.scene.background = new THREE.Color(0x9fb8c8); S.scene.fog = null; }
       await construir(S.st);
-      const sp = dest === 'calle' ? S.spawnCalle : { x: GM.sedePlano.entrada.x, z: 12.4, ry: Math.PI };
+      const sp = dest === 'calle' ? (de === 'casa' ? { x: -31.5, z: 4.4, ry: Math.PI } : S.spawnCalle) : dest === 'casa' ? S.spawnCasa : { x: GM.sedePlano.entrada.x, z: 12.4, ry: Math.PI };
       S.yo.camino = null; S.yo.obj.position.set(sp.x, 0, sp.z); S.yo.obj.rotation.y = sp.ry; S.mundo.add(S.yo.obj); S.foco.set(sp.x, 0, sp.z); anim(S.yo, 'idle');
       hud(S.st); await poblar(S.st);
     } catch (e) { console.error(e); GM.ui.toast && GM.ui.toast('No se ha podido cambiar de escena: ' + e.message); }
@@ -342,16 +369,18 @@
     const fecha = h('span', null, U.fechaLarga(st.fecha));
     const top = h('div', { class: 'sede-hud sede-top' },
       h('button', { class: 'btn btn-sec peq', onclick: cerrar }, 'Salir'),
-      h('div', { class: 'ct' }, h('b', null, S.escena === 'calle' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('span', { class: 'sede-hora' }, '9:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
+      h('div', { class: 'ct' }, h('b', null, S.escena === 'casa' ? 'Tu casa' : S.escena === 'calle' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('span', { class: 'sede-hora' }, '9:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
     S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
     S.ficha = h('div', { class: 'sede-hud sede-ficha', style: { display: 'none' } });
     const ayuda = h('div', { class: 'sede-hud sede-ayuda' }, 'Toca el suelo para caminar o usa WASD (Mayúsculas para correr). Rueda para acercar, Q para girar. Pisa el círculo de una sala para ver qué puedes hacer y toca a un jugador para hablar con él.');
     S.raiz.append(top, S.panel, S.ficha, ayuda);
+    if (S.escena === 'casa' && GM.casa) { S.btnConstruir = h('button', { class: 'btn casa-btn', onclick: () => GM.casa.activar(S, motor()) }, S.construccion ? 'Salir del modo construcción' : 'Modo construcción'); S.raiz.append(h('div', { class: 'sede-hud casa-btn-cont' }, S.btnConstruir)); }
   }
   // ---------- Paneles de sala (menús dentro del mundo) ----------
   const destino = sala => { const d = sala.destino.todos || sala.destino[S.st.modo]; return d && GM.ui.screens[d] ? d : null; };
   function mostrarAviso(zona) {
+    if (S.construccion) { if (S.panel) S.panel.style.display = 'none'; S.zonaActual = null; return; }
     if (!zona) { if (S.zonaActual) { S.zonaActual = null; if (!S.panelFijo) S.panel.style.display = 'none'; } return; }
     if (S.zonaActual === zona) return; S.zonaActual = zona; S.panelFijo = false; abrirSala(zona.sala);
   }
@@ -471,6 +500,11 @@
       _q.setFromUnitVectors(dir, obj); _q2.identity().slerp(_q, w);
       h.getWorldQuaternion(_q); _q.premultiply(_q2); h.parent.getWorldQuaternion(_q2).invert(); h.quaternion.copy(_q2.multiply(_q)); h.updateMatrixWorld(true);
     }
+  }
+  // Un brazo hacia direcciones dadas (mundo): brazo y antebrazo. lado 'L' o 'R'. Lo usa el músico de la plaza.
+  function brazo(p, lado, dU, dL, w) {
+    const B = p.huesos; p.obj.updateMatrixWorld(true);
+    for (const [hueso, hijo, obj] of [['UpperArm' + lado, 'LowerArm' + lado, dU], ['LowerArm' + lado, 'Wrist' + lado, dL]]) { const h = B[hueso], c = B[hijo]; if (!h || !c) continue; const dir = c.getWorldPosition(_w).sub(h.getWorldPosition(_v)).normalize(); _q.setFromUnitVectors(dir, obj.clone().normalize()); _q2.identity().slerp(_q, w); h.getWorldQuaternion(_q); _q.premultiply(_q2); h.parent.getWorldQuaternion(_q2).invert(); h.quaternion.copy(_q2.multiply(_q)); h.updateMatrixWorld(true); }
   }
   let _tBalon = null;
   function balonMat() {
@@ -620,6 +654,7 @@
     entrenadorDice(tipo === 'rueda' ? '¡Rueda de pases! Balón rápido' : '¡Tres contra tres a media pista!');
   }
   function peto(n, on) {
+    if (n.rangosRopa) { const m = n.obj.getObjectByName('persona'); if (!m) return; const col = m.geometry.attributes.color, c = new THREE.Color(on ? '#ff7a1a' : (n.ropa ? n.ropa[0] : '#888')); n.rangosRopa.forEach(([a, k]) => { for (let i = a; i < a + k; i++) col.setXYZ(i, c.r, c.g, c.b); }); col.needsUpdate = true; n.conPeto = on; return; }
     n.obj.traverse(m => { if (!m.isMesh) return; if (on && /^(Purple|Red_Dark|LightBrown)$/.test(m.material.name) && !m._matOriginal) { m._matOriginal = m.material; m.material = m.material.clone(); m.material.color.set('#ff7a1a'); } else if (!on && m._matOriginal) { m.material.dispose(); m.material = m._matOriginal; m._matOriginal = null; } });
   }
   function disolver() {
@@ -690,6 +725,7 @@
     const P = GM.sedePlano, eq = st.equipos[st.clubId], r = rnd(U.hash(st.clubId + st.fecha));
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
     S.dia = estadoDia(st); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
+    if (S.escena === 'casa') { if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'calle') { await GM.calle.poblar(S, motor(), st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     let ids = eq.plantilla.filter(i => i !== 'yo').slice(0, 12);
     if (S.dia.tipo === 'derrota') ids = ids.filter(id => U.hash(id + st.fecha) % 100 > 30); // tras perder, algunos ni aparecen
@@ -724,8 +760,9 @@
     if (S) cerrar();
     const h = GM.h, raiz = h('div', { class: 'sede' }), lienzo = h('div', { class: 'sede-3d' });
     raiz.append(lienzo); document.body.append(raiz);
-    const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+    const alta = !GM.campus || GM.campus.config.calidad === 'alta'; // en «normal» (móvil): sin sombras en tiempo real y menos resolución
+    const renderer = new THREE.WebGLRenderer({ antialias: alta }); renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, alta ? 2 : 1.25));
+    renderer.shadowMap.enabled = alta; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
     lienzo.append(renderer.domElement); renderer.domElement.style.touchAction = 'none';
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
@@ -747,15 +784,16 @@
     (function bucle() {
       if (!S || !S.vivo) return; S.raf = requestAnimationFrame(bucle); if (S.pausa) return;
       S.reloj.update(); const dt = Math.min(0.05, S.reloj.getDelta()), t = S.reloj.getElapsed();
-      if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
+      if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); if (!S.construccion) S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
+      S.cuadro = (S.cuadro || 0) + 1;
       S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente(); }
       if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
       { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {
         if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
-        if (!n.sentado && n.obj.visible) n.mixer.update(dt); if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
+        if (!n.sentado && n.obj.visible) { n.dtAcum = (n.dtAcum || 0) + dt; const lejos = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z) > 12; if (!lejos || (S.cuadro & 1) === (n.obj.id & 1)) { n.mixer.update(n.dtAcum); n.dtAcum = 0; } } if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
         if (n.cabizbajo && !n.sentado) cabeza(n, 0.8);
       });
       saludos(dt);
@@ -763,7 +801,7 @@
       if (S.zonas) S.zonas.forEach(z => z.obj.userData.anim(t));
       if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
-      const inc = 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z);
+      const inc = S.inc || 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z);
       renderer.render(scene, camera);
     })();
   }
@@ -783,6 +821,7 @@
     const ray = new THREE.Raycaster(), suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ptrs = new Map(); let pinza = 0;
     const toque = (cx, cy) => {
       if (!S.yo) return; const r = cv.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), S.camera);
+      if (S.construccion && GM.casa) { const pc = new THREE.Vector3(); if (ray.ray.intersectPlane(suelo, pc)) GM.casa.toque(S, motor(), pc, ray); return; }
       const npcs = S.gente.map(n => n.obj), hit = ray.intersectObjects(npcs, true)[0];
       if (hit) { let o = hit.object; while (o && !(o.userData && o.userData.npc !== undefined)) o = o.parent; if (o) { const n = S.gente[o.userData.npc]; fichaJugador(n); const yo = S.yo.obj.position; if (!n.fijo && n.camino) { n.camino = null; anim(n, 'idle'); n.espera = 6; } n.obj.lookAt(yo.x, 0, yo.z); return; } }
       const p = new THREE.Vector3(); if (!ray.ray.intersectPlane(suelo, p)) return;
@@ -794,8 +833,9 @@
     cv.addEventListener('pointerdown', e => { cv.setPointerCapture && cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: Date.now() }); if (ptrs.size === 2) { const a = [...ptrs.values()]; pinza = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); } });
     cv.addEventListener('pointermove', e => { const p = ptrs.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x; p.x = e.clientX; p.y = e.clientY; if (ptrs.size === 1 && Math.abs(p.x - p.x0) > 8) S.yawObj -= dx * 0.006; else if (ptrs.size === 2) { const a = [...ptrs.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); if (pinza) S.zoom = Math.max(8, Math.min(42, S.zoom * pinza / d)); pinza = d; } });
     cv.addEventListener('pointerup', e => { const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); pinza = 0; if (p && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) < 8 && Date.now() - p.t < 450) toque(e.clientX, e.clientY); });
+    cv.addEventListener('pointermove', e => { if (!S || !S.construccion || !GM.casa || ptrs.size) return; const r = cv.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), S.camera); const pc = new THREE.Vector3(); if (ray.ray.intersectPlane(suelo, pc)) GM.casa.hover(S, pc); });
     cv.addEventListener('wheel', e => { e.preventDefault(); S.zoom = Math.max(8, Math.min(42, S.zoom * (1 + e.deltaY * 0.001))); }, { passive: false });
-    S.onKey = e => { if (!S || S.pausa) return; const k = e.key.toLowerCase(); if (e.type === 'keydown') { if (k === 'q') S.yawObj += Math.PI / 2; if (k === 'e' && S.zonaActual) entrar(S.zonaActual.sala); else if (k === 'e') S.yawObj -= Math.PI / 2; if (k === 'escape') cerrar(); } S.teclas[k] = e.type === 'keydown'; S.teclas.shift = e.shiftKey; };
+    S.onKey = e => { if (!S || S.pausa) return; const k = e.key.toLowerCase(); if (e.type === 'keydown') { if (k === 'q') S.yawObj += Math.PI / 2; if (k === 'e' && S.zonaActual) entrar(S.zonaActual.sala); else if (k === 'e') S.yawObj -= Math.PI / 2; if (k === 'r' && S.construccion && GM.casa) GM.casa.rotar(S); if (k === 'escape') { if (S.construccion && GM.casa) GM.casa.activar(S, motor(), false); else cerrar(); } } S.teclas[k] = e.type === 'keydown'; S.teclas.shift = e.shiftKey; };
     window.addEventListener('keydown', S.onKey); window.addEventListener('keyup', S.onKey);
   }
   function cerrar() {
@@ -804,5 +844,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

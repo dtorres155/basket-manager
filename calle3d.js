@@ -67,20 +67,22 @@
     const fach = o.cristal ? new THREE.MeshStandardMaterial({ map: T.cristal, roughness: 0.25, metalness: 0.3, emissive: 0xbfd8ff, emissiveIntensity: 0 }) : new THREE.MeshStandardMaterial({ map: T.fachadas[(r() * T.fachadas.length) | 0], roughness: 0.9, emissive: 0xffd28a, emissiveMap: T.ventanas || null, emissiveIntensity: 0 });
     (S_.ventanas = S_.ventanas || []).push(fach);
     const cuerpo = new THREE.BoxGeometry(w, pisos * hP, d); uvM(cuerpo, 3, hP); cuerpo.translate(0, hB + pisos * hP / 2, 0);
-    const me = new THREE.Mesh(cuerpo, fach); me.position.set(cx, 0, cz); me.castShadow = me.receiveShadow = true; W.add(me); ocluye(me);
+    const bg = new THREE.Group(); W.add(bg); ocluye(bg); // grupo del edificio: se funde por dentro y se aclara entero
+    const me = new THREE.Mesh(cuerpo, fach); me.position.set(cx, 0, cz); me.castShadow = me.receiveShadow = true; bg.add(me);
     // Planta baja con escaparates (o persianas metálicas)
     const bajo = new THREE.BoxGeometry(w, hB, d); uvM(bajo, 3, hB); bajo.translate(0, hB / 2, 0);
-    const mb = new THREE.Mesh(bajo, new THREE.MeshStandardMaterial({ map: o.persiana ? T.persiana : T.tienda(o.colorBajo || '#3a3f45', o.colorBajo || 'gen'), roughness: 0.7 })); mb.position.set(cx, 0, cz); mb.receiveShadow = true; W.add(mb); ocluye(mb);
+    const mb = new THREE.Mesh(bajo, new THREE.MeshStandardMaterial({ map: o.persiana ? T.persiana : T.tienda(o.colorBajo || '#3a3f45', o.colorBajo || 'gen'), roughness: 0.7 })); mb.position.set(cx, 0, cz); mb.receiveShadow = true; bg.add(mb);
     // Cornisa y azotea con instalaciones
-    const techo = hB + pisos * hP; ocluye(caja(W, w, 0.06, d, new THREE.MeshStandardMaterial({ color: 0x8e8a84, roughness: 1 }), cx, techo, cz));
-    for (const [pw, pd, px, pz] of [[w + 0.3, 0.3, cx, z0], [w + 0.3, 0.3, cx, z1], [0.3, d, x0, cz], [0.3, d, x1, cz]]) ocluye(caja(W, pw, 0.9, pd, new THREE.MeshStandardMaterial({ color: 0xd8d2c6 }), px, techo, pz));
+    const techo = hB + pisos * hP, mTecho = new THREE.MeshStandardMaterial({ color: 0x8e8a84, roughness: 1 }), mPretil = new THREE.MeshStandardMaterial({ color: 0xd8d2c6 }), mInst = new THREE.MeshStandardMaterial({ color: 0x9aa1a6 });
+    caja(bg, w, 0.06, d, mTecho, cx, techo, cz);
+    for (const [pw, pd, px, pz] of [[w + 0.3, 0.3, cx, z0], [w + 0.3, 0.3, cx, z1], [0.3, d, x0, cz], [0.3, d, x1, cz]]) caja(bg, pw, 0.9, pd, mPretil, px, techo, pz);
     caja(W, w + 0.3, 0.25, d + 0.3, '#cfc8bb', cx, hB - 0.25, cz);
-    for (let i = 0; i < 2 + (r() * 3 | 0); i++) ocluye(caja(W, 1 + r(), 0.8 + r() * 0.6, 1 + r(), new THREE.MeshStandardMaterial({ color: 0x9aa1a6 }), x0 + 1.2 + r() * (w - 2.4), hB + pisos * hP, z0 + 1.2 + r() * (d - 2.4)));
+    for (let i = 0; i < 2 + (r() * 3 | 0); i++) caja(bg, 1 + r(), 0.8 + r() * 0.6, 1 + r(), mInst, x0 + 1.2 + r() * (w - 2.4), hB + pisos * hP, z0 + 1.2 + r() * (d - 2.4));
     const fz = lado === 'n' ? z0 - 0.02 : z1 + 0.02, ry = lado === 'n' ? Math.PI : 0, sgn = lado === 'n' ? -1 : 1;
     if (o.toldo) { const t = caja(W, o.toldo.ancho || w * 0.8, 0.12, 1.4, o.toldo.color, o.toldo.x !== undefined ? o.toldo.x : cx, 2.75, fz + sgn * 0.7); t.rotation.x = sgn * 0.2; }
     if (o.letrero) letrero(W, T.letrero(o.letrero.txt, o.letrero.fondo, o.letrero.letra, o.letrero.clave || ''), o.letrero.ancho || Math.min(w * 0.85, 9), (o.letrero.ancho || Math.min(w * 0.85, 9)) / 4.2, o.letrero.x !== undefined ? o.letrero.x : cx, o.letrero.y || 3.05, fz + sgn * 0.03, ry);
     // Banderas del club en los balcones (según la afición)
-    if (o.banderas) for (let i = 0; i < o.banderas; i++) { const bx = x0 + 1.5 + ((r() * (w / 3)) | 0) * 3, by = hB + ((r() * pisos) | 0) * hP + 1.0; plano(W, 1.1, 0.8, new THREE.MeshStandardMaterial({ color: r() < 0.5 ? o.c1 : o.c2, side: THREE.DoubleSide }), bx, by, fz + sgn * 0.12, ry); }
+    if (o.banderas) for (let i = 0; i < o.banderas; i++) { const bx = x0 + 1.5 + ((r() * (w / 3)) | 0) * 3, by = hB + ((r() * pisos) | 0) * hP + 1.0; plano(W, 1.1, 0.8, mat(r() < 0.5 ? o.c1 : o.c2, { side: THREE.DoubleSide }), bx, by, fz + sgn * 0.12, ry); }
     G.bloquea(x0, z0, x1, z1);
     return { fz, sgn, ry, alto: hB + pisos * hP };
   }
@@ -193,7 +195,7 @@
       tienda: { id: 'tienda', nombre: 'Tienda oficial', accion: 'Camisetas, bufandas y aficionados', destino: {} },
       pena: { id: 'pena', nombre: 'Bar La Peña', accion: 'Donde se reúne la afición', destino: {} },
       ayuntamiento: { id: 'ayuntamiento', nombre: 'Ayuntamiento de ' + club.ciudad, accion: 'Convenios y relación con la ciudad', destino: { todos: 'ciudad' } },
-      casa: { id: 'casa', nombre: st.modo === 'carrera' ? 'Tu edificio' : 'Tu casa', accion: 'Descansar y vida personal', destino: { todos: 'ciudad' } },
+      casa: { id: 'portal', nombre: 'Portal de tu casa', accion: 'Subir a tu piso', destino: {}, irA: 'casa', boton: 'Entrar en tu casa' },
       kiosco: { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {} },
       mercado: { id: 'mercado', nombre: 'Mercado de ' + S.plazaNombre, accion: 'Fruta, pescado y charla con los tenderos', destino: {} },
       parque: { id: 'parque', nombre: 'Canasta del parque', accion: 'Donde juegan los chavales del barrio', destino: {} },
@@ -254,7 +256,7 @@
     const tiendas = [['HELADERÍA LA OLA', '#7fd1c7', '#14181d', [-2, 0]], ['PIZZERÍA NAPOLI', '#c8102e', '#ffffff', [6, 0]], ['CAFÉ CENTRAL', '#5a3b26', '#f2d27a', [-10, 0]], ['LIBRERÍA PAPEL', '#1d4f91', '#ffffff', [-18, 0]], ['PELUQUERÍA', '#6b3a7a', '#ffffff', [-26, 0]], ['BASKET STORE', c1, '#ffffff', [-34, 0]]];
     tiendas.forEach(([nom, fondo, letra, [x0]], i) => { edificio(W, G, T, E, r, [x0 - 4, 57, x0 + 4, 64], 3 + (i % 3), 'n', { colorBajo: fondo, letrero: { txt: nom, fondo, letra, clave: 'tb' + i, ancho: 6.5 }, toldo: { color: fondo, ancho: 7 }, banderas: Math.round(afi / 30), c1, c2 }); });
     // Terrazas con mesas y sombrillas
-    [[-10, 'CAFÉ CENTRAL', '#5a3b26'], [6, 'NAPOLI', '#c8102e'], [-2, 'LA OLA', '#7fd1c7']].forEach(([x, , col], k) => { for (let j = 0; j < 3; j++) { const mx = x - 2.5 + j * 2.5, mz = 54.2; cil(W, 0.45, 0.75, '#e8eef2', mx, 0, mz, 12); cil(W, 0.035, 2.3, '#555', mx, 0.75, mz); const so = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.45, 10), mat(col)); so.position.set(mx, 2.95, mz); W.add(so); for (const s of [-1, 1]) caja(W, 0.42, 0.45, 0.42, '#2a2f35', mx + s * 0.75, 0, mz); G.bloquea(mx - 1.1, mz - 0.4, mx + 1.1, mz + 0.4); } });
+    [[-10, 'CAFÉ CENTRAL', '#5a3b26'], [6, 'NAPOLI', '#c8102e'], [-2, 'LA OLA', '#7fd1c7']].forEach(([x, , col], k) => { for (let j = 0; j < 3; j++) { const mx = x - 2.5 + j * 2.5, mz = 54.2; cil(W, 0.45, 0.75, '#e8eef2', mx, 0, mz, 12); cil(W, 0.035, 2.3, '#555', mx, 0.75, mz); const so = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.45, 10), mat(col)); so.position.set(mx, 2.95, mz); W.add(so); for (const s of [-1, 1]) M.mueble('chairCushion').then(o => { o.position.set(mx + s * 0.75, 0, mz); o.rotation.y = s < 0 ? Math.PI / 2 : -Math.PI / 2; o.traverse(q => { if (q.isMesh) q.castShadow = true; }); W.add(o); }).catch(() => {}); G.bloquea(mx - 1.1, mz - 0.4, mx + 1.1, mz + 0.4); } });
     zonas.terraza = [-10, 52.2]; zonas.heladeria = [-2, 52.2];
     // Mural de baloncesto en la medianera del mercado si el club tiene reputación
     if (rep >= 60) plano(W, 5, 5, new THREE.MeshStandardMaterial({ map: T.escudo, transparent: true }), -13.94, 4.2, 32, Math.PI / 2);
@@ -311,7 +313,7 @@
     { const mu = await M.personaje({ modelo: 'h-punk', altura: 176, piel: PIEL[1], pelo: PELO[0] }); mu.fijo = true; mu.rol = 'Músico callejero'; mu.obj.position.set(S.musicoPos[0], 0, S.musicoPos[1]); mu.obj.rotation.y = -Math.PI / 2;
       const gu = new THREE.Group(), cuerpo = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.45, 0.1), mat('#a0522d')), mastil = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.05), mat('#3b2617')); mastil.position.set(0.3, 0.12, 0); mastil.rotation.z = -1.2; gu.add(cuerpo, mastil); gu.position.set(0.05, 1.05, 0.2); gu.rotation.z = 0.5; gu.scale.setScalar(1 / mu.obj.scale.x); gu.position.multiplyScalar(1 / mu.obj.scale.x); mu.obj.add(gu);
       const funda = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 0.35), mat('#1d2024')); funda.position.set(S.musicoPos[0] - 0.9, 0.06, S.musicoPos[1] + 0.6); S.mundo.add(funda);
-      mu.obj.userData = { npc: S.gente.length }; M.anim(mu, 'interact-right'); S.mundo.add(mu.obj); S.gente.push(mu); S.musico = mu; }
+      mu.obj.userData = { npc: S.gente.length }; M.anim(mu, 'idle'); S.mundo.add(mu.obj); S.gente.push(mu); S.musico = mu; }
     // Vecinos con perro (el perro sigue a su dueño)
     S.gente.filter(p => p.peaton && !p.hincha).slice(0, 3).forEach((p, k) => { const d = perro(['#c8a06a', '#3a2a1a', '#f2efe8'][k]); S.mundo.add(d); S.perros.push({ d, dueno: p, fase: k }); p.rol = 'Vecino paseando al perro'; });
     // Chavales jugando en la canasta del parque
@@ -337,7 +339,7 @@
     B(2.5, 2.6, 10.4, mat('#e9edf0', { roughness: 0.4 }), 0, 1.65, 0); B(2.52, 0.9, 10.2, mat('#22303a', { roughness: 0.1, metalness: 0.5 }), 0, 2.2, 0.1); B(2.54, 0.35, 10.42, mat(c1), 0, 0.7, 0);
     B(2.4, 0.06, 10.2, mat('#c9cdd1'), 0, 2.98, 0);
     for (const [x, z] of [[-1.1, 3.6], [1.1, 3.6], [-1.1, -3.4], [1.1, -3.4]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 14), mat('#151515')); w.rotation.z = Math.PI / 2; w.position.set(x, 0.5, z); g.add(w); }
-    g.position.y = -0.12; g.userData = { coche: true }; return g;
+    g.position.y = -0.12; g.userData = { coche: true }; GM.kit.fusionar(g); return g;
   }
   function coche(color) {
     const g = new THREE.Group(), cuerpo = mat(color, { roughness: 0.35, metalness: 0.4 }), cristal = mat('#22303a', { roughness: 0.1, metalness: 0.6 }), rueda = mat('#151515');
@@ -346,7 +348,7 @@
     B(0.4, 0.15, 0.05, mat('#fff6d6', { emissive: 0xfff1c4, emissiveIntensity: 0.5 }), -0.6, 0.55, 2.05); B(0.4, 0.15, 0.05, mat('#fff6d6', { emissive: 0xfff1c4, emissiveIntensity: 0.5 }), 0.6, 0.55, 2.05);
     B(0.4, 0.12, 0.05, mat('#a81010', { emissive: 0x800000 }), -0.6, 0.6, -2.05); B(0.4, 0.12, 0.05, mat('#a81010', { emissive: 0x800000 }), 0.6, 0.6, -2.05);
     for (const [x, z] of [[-0.85, 1.3], [0.85, 1.3], [-0.85, -1.3], [0.85, -1.3]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.25, 14), rueda); w.rotation.z = Math.PI / 2; w.position.set(x, 0.34, z); g.add(w); }
-    g.position.y = -0.12; g.userData = { coche: true }; return g;
+    g.position.y = -0.12; g.userData = { coche: true }; GM.kit.fusionar(g); return g;
   }
   function siguiente(S, M, n) {
     // De noche la calle se vacía: parte de los vecinos se van a casa (desaparecen al llegar a un portal)
@@ -369,7 +371,10 @@
       ch[C.de].obj.lookAt(a.x, 0, a.z);
       if (u >= 1) { C.t = 0; if (C.tiro) { C.tiro = false; C.de = 2; C.a = (Math.random() * 2) | 0; } else { C.de = C.a; C.tiro = Math.random() < 0.35; C.a = C.tiro ? -1 : [0, 1, 2].filter(k => k !== C.de)[(Math.random() * 2) | 0]; if (C.tiro) M.anim(ch[C.de], 'interact-right'); else ch.forEach(p => M.anim(p, 'idle')); } }
       if (C.tiro && C.a === -1) C.a = 0; }
-    if (S.musico) { S.musico.mixer.update(dt); S.tMus = (S.tMus || 0) - dt; if (S.tMus <= 0) { S.tMus = 6 + Math.random() * 4; M.bocadillo(['♪ ♫ ♪', '♫ ' + S.st.equipos[S.st.clubId].siglas + ', ' + S.st.equipos[S.st.clubId].siglas + '... ♫', '♪ La la la ♪'][(Math.random() * 3) | 0], S.musico.obj); } }
+    if (S.musico) { S.musico.mixer.update(dt);
+      { const p = S.musico, f = p.obj.rotation.y, fw = new THREE.Vector3(Math.sin(f), 0, Math.cos(f)), iz = new THREE.Vector3(Math.cos(f), 0, -Math.sin(f)), ab = new THREE.Vector3(0, -1, 0), t = performance.now() / 1000, rasgueo = Math.sin(t * 13) * 0.35;
+        GM.sede.brazo(p, 'L', fw.clone().multiplyScalar(0.45).add(iz.clone().multiplyScalar(0.55)).add(ab.clone().multiplyScalar(0.6)), fw.clone().multiplyScalar(0.7).add(iz.clone().multiplyScalar(0.7)).add(ab.clone().multiplyScalar(-0.1)), 1);
+        GM.sede.brazo(p, 'R', fw.clone().multiplyScalar(0.35).add(ab).add(iz.clone().multiplyScalar(-0.25)), fw.clone().multiplyScalar(0.55).add(iz.clone().multiplyScalar(0.75)).add(ab.clone().multiplyScalar(0.25 + rasgueo)), 1); } S.tMus = (S.tMus || 0) - dt; if (S.tMus <= 0) { S.tMus = 6 + Math.random() * 4; M.bocadillo(['♪ ♫ ♪', '♫ ' + S.st.equipos[S.st.clubId].siglas + ', ' + S.st.equipos[S.st.clubId].siglas + '... ♫', '♪ La la la ♪'][(Math.random() * 3) | 0], S.musico.obj); } }
     S.tSem = (S.tSem + dt) % 18; const verdeX = S.tSem < 8, verdeZ = S.tSem >= 9 && S.tSem < 17;
     S.semaforos.forEach(s => { const v = s.eje === 'x' ? verdeX : verdeZ; s.verde.material.emissiveIntensity = v ? 2.5 : 0; s.roja.material.emissiveIntensity = v ? 0 : 2.5; });
     S.coches.forEach(c => {
@@ -389,8 +394,8 @@
     S.tOcl = (S.tOcl || 0) - dt;
     if (S.oclusores && S.yo && S.tOcl <= 0) {
       S.tOcl = 0.1; const ojo = S.camera.position, obj = S.yo.obj.position.clone().setY(1.0), dir = obj.clone().sub(ojo), dist = dir.length();
-      _ray.set(ojo, dir.normalize()); _ray.far = dist; const tapan = new Set(_ray.intersectObjects(S.oclusores, false).map(h => h.object));
-      S.oclusores.forEach(m => { const meta = tapan.has(m) ? 0.2 : 1, mt = m.material; if (!tapan.has(m) && mt.opacity === 1) return; mt.transparent = true; mt.opacity += (meta - mt.opacity) * 0.6; if (Math.abs(mt.opacity - 1) < 0.02) { mt.opacity = 1; mt.transparent = false; } mt.depthWrite = mt.opacity > 0.95; mt.needsUpdate = true; });
+      _ray.set(ojo, dir.normalize()); _ray.far = dist; const set = new Set(S.oclusores), tapan = new Set(_ray.intersectObjects(S.oclusores, true).map(h => { let o = h.object; while (o && !set.has(o)) o = o.parent; return o; }));
+      S.oclusores.forEach(g => { const meta = tapan.has(g) ? 0.2 : 1; g.traverse(m => { if (!m.isMesh) return; const mt = m.material; if (!tapan.has(g) && mt.opacity === 1) return; mt.transparent = true; mt.opacity += (meta - mt.opacity) * 0.6; if (Math.abs(mt.opacity - 1) < 0.02) { mt.opacity = 1; mt.transparent = false; } mt.depthWrite = mt.opacity > 0.95; mt.needsUpdate = true; }); });
     }
     // Los aficionados reconocen a tu personaje
     S.tFan = (S.tFan || 0) - dt; if (S.tFan > 0 || !S.yo) return; S.tFan = 2.5;

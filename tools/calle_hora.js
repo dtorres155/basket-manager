@@ -13,7 +13,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(8000);
   // 3x3 con petos
   await p.evaluate(() => { const S = GM.sede._estado(); S.ultimoGrupo = 'rueda'; GM.sede._grupo(); }); await sleep(16000);
-  out.petos = await p.evaluate(() => { const G = GM.sede._estado().grupo; return G ? G.tipo + ', con peto: ' + G.miembros.filter(n => { let x = false; n.obj.traverse(m => { if (m._matOriginal) x = true; }); return x; }).length : 'sin grupo'; });
+  out.petos = await p.evaluate(() => { const G = GM.sede._estado().grupo; return G ? G.tipo + ', con peto: ' + G.miembros.filter(n => n.conPeto || (() => { let x = false; n.obj.traverse(m => { if (m._matOriginal) x = true; }); return x; })()).length : 'sin grupo'; });
   await p.evaluate(() => { const S = GM.sede._estado(); document.querySelectorAll('.sede-ayuda').forEach(e => e.style.display = 'none'); S.yo.obj.visible = false; S.yo.obj.position.set(-13.5, 0, -5.5); S.foco.set(-13.5, 0, -5.5); S.zoom = 12; S.yawObj = S.yaw = 0.5; }); await sleep(1200);
   await p.screenshot({ path: path.join(DIR, '1_petos.png') });
   // Calle a mediodía: autobús hacia la parada

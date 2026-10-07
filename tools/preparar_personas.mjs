@@ -23,6 +23,8 @@ for (const [dir, pref] of grupos) {
       await io.write(path.join(OUT, 'animaciones.glb'), a); hecho = true;
     }
     doc.getRoot().listAnimations().forEach(x => x.dispose());
+    // Fuera armas (el modelo de traje trae una pistola en la mano)
+    doc.getRoot().listNodes().filter(n => /Pistol|Gun|Sword/i.test(n.getName())).forEach(n => n.dispose());
     await doc.transform(prune({ keepLeaves: true }), dedup());
     const nombre = pref + '-' + f.replace('.gltf', '').toLowerCase() + '.glb';
     await io.write(path.join(OUT, nombre), doc); const kb = fs.statSync(path.join(OUT, nombre)).size / 1024; total += kb;
