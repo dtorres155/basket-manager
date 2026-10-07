@@ -167,6 +167,7 @@
 
   // Rutina de cada jugador: elegir sala y sitio, ir, hacer la actividad un rato y repetir
   function siguienteActividad(n) {
+    if (S.escena === 'calle') return GM.calle.siguiente(S, motor(), n);
     const P = GM.sedePlano, st = S.st, j = n.jugador && st.jugadores[n.jugador];
     let sala; if (j && j.estado && j.estado.lesion) sala = 'fisio';
     else if (n.cabizbajo) { const r = n.r(); sala = r < 0.4 ? 'solo' : r < 0.7 ? 'vestuario' : 'gimnasio'; }
@@ -187,6 +188,7 @@
 
   // ---------- Construcción de la escena ----------
   async function construir(st) {
+    if (S.escena === 'calle') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.calle.construir(S, motor(), st); }
     const P = GM.sedePlano, club = st.equipos[st.clubId], G = rejilla(P), W = new THREE.Group(); S.G = G; S.redes = []; S.mundo = W; S.scene.add(W);
     // Suelos: exterior, pasillo y salas
     W.add(plano(70, 50, new THREE.MeshStandardMaterial({ color: 0x6f8a5a, roughness: 1 }), 0, 0, -0.02, 4));
@@ -232,13 +234,35 @@
     decorar(W, club, G, segs, st);
     GM.kit.fusionar(W);
     // Puntos de interacción de las salas: anillo luminoso y rótulo
-    S.zonas = P.salas.map(s => {
-      const g = new THREE.Group(), anillo = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.6, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: club.colores[0] === '#ffffff' ? 0xe8590c : club.colores[0], transparent: true, opacity: 0.85 }));
-      anillo.position.y = 0.02; g.add(anillo); g.position.set(s.interaccion[0], 0, s.interaccion[1]); g.userData = { sala: s.id, anim: t => { anillo.scale.setScalar(1 + Math.sin(t * 3) * 0.08); } }; W.add(g);
-      const et = etiqueta(s.nombre); et.position.set(s.interaccion[0], 2.3, s.interaccion[1]); W.add(et);
-      return { sala: s, obj: g };
-    });
+    S.zonas = P.salas.map(sa => zona(W, sa, sa.interaccion[0], sa.interaccion[1], club));
+    S.zonas.push(zona(W, { id: 'salida', nombre: 'Salida a la calle', accion: 'Pasear por ' + club.ciudad, destino: {}, irA: 'calle', boton: 'Salir a la calle' }, GM.sedePlano.entrada.x, 13.3, club));
     return W;
+  }
+  function zona(W, sala, x, z, club) {
+    const g = new THREE.Group(), anillo = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.6, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: sala.irA ? 0xffd54a : club.colores[0] === '#ffffff' ? 0xe8590c : club.colores[0], transparent: true, opacity: 0.85 }));
+    anillo.position.y = 0.02; g.add(anillo); g.position.set(x, 0, z); g.userData = { sala: sala.id, anim: t => { anillo.scale.setScalar(1 + Math.sin(t * 3) * 0.08); } }; W.add(g);
+    const et = etiqueta(sala.nombre); et.position.set(x, 2.3, z); W.add(et);
+    return { sala, obj: g };
+  }
+  // Lo que la calle (calle3d.js) usa del motor de la sede
+  function motor() { return { personaje, anim, irA, rejilla, textura, etiqueta, zona, bocadillo: (t, o) => bocadillo(t, o) }; }
+  // Cambiar entre la sede y la calle con un fundido
+  async function cambiarEscena(dest) {
+    if (!S || S.cambiando) return; S.cambiando = true;
+    const velo = GM.h('div', { class: 'sede-velo' }); S.raiz.append(velo); await new Promise(r => setTimeout(r, 280));
+    try {
+      if (S.panel) S.panel.style.display = 'none'; S.zonaActual = null; S.panelFijo = false; if (S.grupo) disolver();
+      S.gente.forEach(n => { acabarTiro(n); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
+      S.flotantes.forEach(f => f.el.remove()); S.flotantes = []; S.coches = null; S.entrenador = null;
+      if (S.marcaDestino) S.scene.remove(S.marcaDestino);
+      S.mundo.remove(S.yo.obj); S.scene.remove(S.mundo); S.mundo.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+      S.escena = dest; if (dest === 'sede') { S.scene.background = new THREE.Color(0x9fb8c8); S.scene.fog = null; }
+      await construir(S.st);
+      const sp = dest === 'calle' ? S.spawnCalle : { x: GM.sedePlano.entrada.x, z: 12.4, ry: Math.PI };
+      S.yo.camino = null; S.yo.obj.position.set(sp.x, 0, sp.z); S.yo.obj.rotation.y = sp.ry; S.mundo.add(S.yo.obj); S.foco.set(sp.x, 0, sp.z); anim(S.yo, 'idle');
+      hud(S.st); await poblar(S.st);
+    } catch (e) { console.error(e); GM.ui.toast && GM.ui.toast('No se ha podido cambiar de escena: ' + e.message); }
+    velo.classList.add('fuera'); setTimeout(() => velo.remove(), 450); S.cambiando = false;
   }
   // ---------- Decoración: lo que da vida a cada sala ----------
   function decorar(W, club, G, segs, st) {
@@ -318,7 +342,7 @@
     const fecha = h('span', null, U.fechaLarga(st.fecha));
     const top = h('div', { class: 'sede-hud sede-top' },
       h('button', { class: 'btn btn-sec peq', onclick: cerrar }, 'Salir'),
-      h('div', { class: 'ct' }, h('b', null, club.nombre), fecha), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
+      h('div', { class: 'ct' }, h('b', null, S.escena === 'calle' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
     S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
     S.ficha = h('div', { class: 'sede-hud sede-ficha', style: { display: 'none' } });
@@ -340,6 +364,7 @@
       if (!A) cuerpo.append(h('p', null, sala.accion));
       else A.acciones(st, sala.id).forEach(x => cuerpo.append(h('button', { class: 'sp-accion' + (x.panel ? ' abre' : ''), disabled: !x.disponible, onclick: () => x.panel ? abrirSala(sala, x.id) : ejecutar(x.id, sala) }, h('b', null, x.t), h('span', null, x.disponible ? x.d : x.motivo))));
     }
+    if (sala.irA && !panelId) cuerpo.prepend(h('button', { class: 'btn sp-ir', onclick: () => cambiarEscena(sala.irA) }, sala.boton || 'Ir'));
     const d = destino(sala); if (d) P.append(h('button', { class: 'sp-link', onclick: () => entrarClasica(d) }, 'Abrir la pantalla completa'));
   }
   function refrescarSala() { if (S.zonaActual && S.panel.style.display !== 'none' && !/tema-(rueda|ordenador|pizarra|lesionados|plantilla|partido)/.test(S.panel.className)) abrirSala(S.zonaActual.sala); }
@@ -390,6 +415,9 @@
         h('p', null, 'Caja ' + U.eur(o.caja) + ', masa salarial ' + U.eur(o.masa) + ' de ' + U.eur(o.tope)),
         h('p', { class: 'sp-tit' }, 'Agentes libres'), o.libres.map(x => h('div', { class: 'sp-fila' }, h('div', null, h('b', null, x.p.nombre + ' (' + x.p.ovr + ')'), h('span', null, x.p.pos + ', ' + x.p.edad + ' años, pide ' + U.eur(x.pide) + ' al año')), h('button', { class: 'btn peq', onclick: () => { const r = A.ofrecer(st, x.p.id); GM.ui.toast(r.ok ? '¡' + x.p.nombre + ' firma por 2 temporadas!' : r.motivo); if (r.ok) repoblar(); abrirSala(sala, 'ordenador'); } }, 'Ofrecer'))),
         h('p', { class: 'sp-tit' }, 'Contratos que acaban'), o.renov.length ? o.renov.map(x => h('div', { class: 'sp-fila' }, h('div', null, h('b', null, x.p.nombre + ' (' + x.p.ovr + ')'), h('span', null, 'Hasta ' + x.p.contrato.hasta + ', pide ' + U.eur(x.pide))), h('button', { class: 'btn peq', onclick: () => { const r = A.renovar(st, x.p.id); GM.ui.toast(r.ok ? x.p.nombre + ' renueva' : r.motivo); abrirSala(sala, 'ordenador'); } }, 'Renovar'))) : h('p', null, 'Ninguno este año.')));
+    } else if (id === 'noticias') {
+      const club = st.equipos[st.clubId], ns = (st.noticias || []).slice(0, 10);
+      c.append(h('div', { class: 'sp-periodico' }, h('div', { class: 'sp-cabecera-diario' }, 'El Diario de ' + club.ciudad), h('span', { class: 'sp-fecha' }, U.fechaLarga(st.fecha)), ns.length ? ns.map((n, i) => h('p', { class: i ? '' : 'portada' }, n.texto)) : h('p', null, 'Hoy no hay noticias del club.')));
     } else if (id === 'partido') {
       const C = GM.mods.competiciones, g = C.proximoPartido(st, st.clubId);
       if (!g) c.append(h('p', null, 'No quedan partidos esta temporada.'));
@@ -634,6 +662,7 @@
     const P = GM.sedePlano, eq = st.equipos[st.clubId], r = rnd(U.hash(st.clubId + st.fecha));
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
     S.dia = estadoDia(st); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
+    if (S.escena === 'calle') { await GM.calle.poblar(S, motor(), st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     let ids = eq.plantilla.filter(i => i !== 'yo').slice(0, 12);
     if (S.dia.tipo === 'derrota') ids = ids.filter(id => U.hash(id + st.fecha) % 100 > 30); // tras perder, algunos ni aparecen
     const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222222';
@@ -674,8 +703,8 @@
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
     const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
     const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
-    Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; scene.add(sol);
-    S = { luces: { cielo, sol }, st, raiz, renderer, scene, camera, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
+    Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; scene.add(sol, sol.target);
+    S = { luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: 'sede', gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
@@ -692,7 +721,9 @@
       S.reloj.update(); const dt = Math.min(0.05, S.reloj.getDelta()), t = S.reloj.getElapsed();
       if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
-      if (S.gente.length) actualizarGrupo(dt);
+      if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
+      if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
+      { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {
         if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
         if (!n.sentado) n.mixer.update(dt); if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
@@ -743,5 +774,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

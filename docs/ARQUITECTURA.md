@@ -151,6 +151,9 @@ PATROCINADORES PERSONALES (GM.mods.sponsor) — modo carrera Marcas que te patro
 ### `sede_plano.js` y `sede3d.js`
 SEDE DEL CLUB EN 3D (GM.sedePlano, GM.sede): plano de la sede (pista, gimnasio, enfermería, vestuario, sala de prensa, cafetería, recepción con vitrina y despacho) y escena explorable. Tu personaje camina (toque o WASD), la plantilla y el personal se mueven por las salas según una rutina (los lesionados van al fisio), tocar a un jugador abre su ficha y permite charlar (+3 de ánimo, una vez por semana: `state.sede.charlas`) y cada sala abre la pantalla del juego que le corresponde según el modo.
 
+### `calle3d.js`
+LA CALLE (GM.calle): cruce de la ciudad del club al que se sale desde la sede. Avenida y calle con aceras de panot, pasos de peatones elevados (únicas zonas de la calzada que se pueden pisar), semáforos y coches que paran en rojo y guardan distancia. Edificios: pabellón (con el nombre real), sede del club (cristal, escudo), tienda oficial, bar de la peña, ayuntamiento, quiosco, tu edificio y comercios. La ciudad refleja al club: banderas según la afición, más árboles y mural con más reputación, fachadas según el país. Vecinos (más con los colores del club cuanto más afición; riada al pabellón el día de partido) y aficionados que reconocen a tu personaje según el modo. No escribe en el estado.
+
 ### `sede_acciones.js`
 ACCIONES DE LA SEDE (GM.mods.sedeAcciones): lo que se hace en cada sala sin menús (charla motivadora o de exigencia, sesiones de recuperación o fuerza, invitar a la plantilla, firmar camisetas, rueda de prensa con tres respuestas, pizarra táctica, tratamiento intensivo, ordenador con agentes libres y renovaciones). Límites por días en `state.sede.usos`. Pagos de la caja del club (o de tus ahorros en la carrera).
 

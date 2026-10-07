@@ -16,6 +16,13 @@
     if (st.modo === 'carrera') { const c = st.carrera; if (c.dinero < euros / 1000) return false; c.dinero -= euros / 1000; return true; }
     if (caja(st) < euros) return false; M().finanzas.registrar(st, st.clubId, concepto, -euros); return true;
   }
+  function aficion(st, d) { const c = st.ciudad && st.ciudad[st.clubId]; if (c) c.aficion = U.clamp(c.aficion + d, 0, 100); }
+  function opinionPena(st) {
+    const ult = (st.calendario || []).filter(x => x.resultado && (x.local === st.clubId || x.visitante === st.clubId)).slice(-3);
+    const gan = ult.filter(x => (x.local === st.clubId) === (x.resultado.local > x.resultado.visitante)).length;
+    const t = !ult.length ? 'En la peña hay ganas: «Este año vamos a disfrutar».' : gan >= 2 ? 'En la peña están contentos: «Así sí, que siga la racha».' : gan === 1 ? 'En la peña hay dudas: «Falta regularidad, pero hay equipo».' : 'En la peña están mosqueados: «Esto hay que arreglarlo ya».';
+    return t + ' Afición +2.';
+  }
   const subir = (p, campo, d, min, max) => { p.estado[campo] = U.clamp(p.estado[campo] + d, min || 0, max || 100); };
   // [id, sala, título, descripción, días de espera, coste en euros, quién puede, efecto]
   const DEF = [
@@ -24,6 +31,11 @@
     ['sesion_recuperacion', 'gimnasio', 'Sesión de recuperación', 'Estiramientos, bici suave y piscina. Fatiga −10.', 1, 0, () => true, st => { plantilla(st).forEach(p => subir(p, 'fatiga', -10)); return 'Piernas frescas: fatiga −10.'; }],
     ['sesion_fuerza', 'gimnasio', 'Sesión de fuerza', 'Pesas y potencia. Forma +2, fatiga +6.', 1, 0, () => true, st => { plantilla(st).forEach(p => { subir(p, 'forma', 2); subir(p, 'fatiga', 6); }); return 'Buen trabajo de fuerza: forma +2, fatiga +6.'; }],
     ['invitar_cafe', 'cafeteria', 'Invitar a la plantilla', 'Café y bocadillos para todos (2.000 €). Ánimo +2.', 7, 2000, () => true, st => { plantilla(st).forEach(p => subir(p, 'moral', 2)); return 'Buen rato en la cafetería. Ánimo +2.'; }],
+    ['firmar_tienda', 'tienda', 'Firmar camisetas', 'Se forma cola en la tienda. Afición +1.', 7, 0, () => true, st => { aficion(st, 1); return 'Media hora firmando y fotos con los niños. Afición +1.'; }],
+    ['bufanda', 'tienda', 'Comprarte una bufanda del club', '15 €. Sales de la tienda con los colores puestos.', 30, 15, () => true, st => { if (st.modo === 'carrera') st.carrera.moral = U.clamp(st.carrera.moral + 1, 0, 100); return 'Bufanda nueva al cuello. La gente de la calle te sonríe.'; }],
+    ['pena', 'pena', 'Tomar algo con la peña', 'Afición +2 y te cuentan qué piensa la grada (30 €).', 7, 30, () => true, st => { aficion(st, 2); return opinionPena(st); }],
+    ['alcalde', 'ayuntamiento', 'Reunión con el alcalde', 'Apoyo del ayuntamiento +2.', 14, 0, st => st.modo === 'presidente' || st.modo === 'gestor', st => { const c = st.ciudad && st.ciudad[st.clubId]; if (c) c.apoyoAyuntamiento = U.clamp((c.apoyoAyuntamiento || 50) + 2, 0, 100); return 'El alcalde promete ayudar con las obras. Apoyo +2.'; }],
+    ['descansar', 'casa', 'Descansar en casa', 'Fatiga −12 y ánimo +2.', 1, 0, st => st.modo === 'carrera', st => { const y = st.jugadores.yo; if (y) y.estado.fatiga = U.clamp(y.estado.fatiga - 12, 0, 100); st.carrera.moral = U.clamp(st.carrera.moral + 2, 0, 100); return 'Siesta y sofá. Fatiga −12, ánimo +2.'; }],
     ['firmas', 'recepcion', 'Firmar camisetas para la afición', 'Media hora con los aficionados de la entrada. Afición +1.', 7, 0, () => true, st => { const c = st.ciudad && st.ciudad[st.clubId]; if (c) c.aficion = U.clamp(c.aficion + 1, 0, 100); return 'Los aficionados se van encantados. Afición +1.'; }]
   ];
   // Paneles: abren una vista propia dentro de la sede
@@ -33,7 +45,9 @@
     fisio: [['lesionados', 'Parte médico', 'Lesionados y tratamientos.']],
     prensa: [['rueda', 'Rueda de prensa', 'Los periodistas esperan. Lo que digas se nota en la afición y el vestuario.']],
     despacho: [['ordenador', 'Ordenador del despacho', 'Agentes libres, renovaciones y cuentas del club.']],
-    recepcion: [['partido', 'Próximo partido', 'Rival, fecha y avanzar el calendario.']]
+    recepcion: [['partido', 'Próximo partido', 'Rival, fecha y avanzar el calendario.']],
+    pabellon: [['partido', 'Taquillas: próximo partido', 'Rival, fecha y avanzar el calendario.']],
+    kiosco: [['noticias', 'Los periódicos de hoy', 'Qué se dice del club.']]
   };
   function espera(st, id, dias) { const u = usos(st)[id]; if (!u) return 0; const d = U.diffDays(u, st.fecha); return d < dias ? dias - d : 0; }
   function acciones(st, sala) {
@@ -112,6 +126,6 @@
   }
   function ofrecer(st, jugId) { const Mk = M().mercado; return Mk.ofertar(st, jugId, { salario: Mk.salarioPedido(st, jugId, st.clubId), anos: 2 }); }
   function renovar(st, jugId) { const Mk = M().mercado; return Mk.renovar(st, jugId, { salario: Math.round(Mk.salarioPedido(st, jugId, st.clubId) * 1.04 / 10000) * 10000, anos: 2 }); }
-  function selfTest() { return DEF.every(a => typeof a[7] === 'function') && Object.keys(PANELES).length === 6; }
+  function selfTest() { return DEF.every(a => typeof a[7] === 'function') && Object.keys(PANELES).length === 8; }
   GM.register('sedeAcciones', { acciones, hacer, ruedaPrensa, responder, pizarra, fijarTactica, lesionados, tratar, ordenador, ofrecer, renovar, COSTE_TRAT, selfTest });
 })();

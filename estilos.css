@@ -356,3 +356,13 @@ body{background:var(--bg)}
 .sede-bocadillo::after{content:'';position:absolute;left:10px;bottom:-7px;border:7px solid transparent;border-top-color:#fffdf8;border-bottom:0;border-left:0}
 .sede-dia{flex:none;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-size:13px;font-weight:600;white-space:nowrap}
 @media (max-width:700px){.sede-dia{display:none}}
+/* Calle: fundido entre escenas, botón de cambio de escena y periódico del quiosco */
+.sede-velo{position:absolute;inset:0;z-index:5;background:#0b0f14;animation:veloEntra .28s ease-out forwards}.sede-velo.fuera{animation:veloSale .45s ease-in forwards}
+@keyframes veloEntra{from{opacity:0}to{opacity:1}}@keyframes veloSale{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sede-velo,.sede-velo.fuera{animation:none}}
+.sp-ir{width:100%;min-height:56px;font-size:17px}
+.sp-periodico{background:#f4efe3;color:#1d1d1d;border-radius:6px;padding:12px 14px;font-family:Georgia,'Times New Roman',serif}
+.sp-cabecera-diario{font:700 22px/1.1 Georgia,serif;text-align:center;border-bottom:3px double #1d1d1d;padding-bottom:6px}
+.sp-fecha{display:block;text-align:center;font-size:12px;margin:4px 0 10px;opacity:.7}
+.sp-periodico p{margin:0 0 8px;font-size:14px;line-height:1.35;border-bottom:1px solid rgba(0,0,0,.12);padding-bottom:8px}
+.sp-periodico p.portada{font:700 18px/1.25 Georgia,serif}
