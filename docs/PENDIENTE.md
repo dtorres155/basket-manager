@@ -7,15 +7,21 @@
 
 ## P1 — Salto de calidad visual
 - Sustituir la geometría de cajas por **modelos glTF** y texturas reales con licencia libre (edificios, muebles, jugadores, balón, pabellones). Mantener las primitivas como alternativa de baja calidad.
-- Jugadores del partido en directo con figuras y animaciones reales (correr, pasar, tirar); jugadas con más sentido táctico que las actuales (hoy las posesiones se representan de forma estilizada a partir de eventos).
+- ~~Jugadores del partido en directo con figuras reales~~ (hecho: personas, gestos de tiro y pase, grada y banquillos). Falta: jugadas con más sentido táctico, repetición de canastas y cámara que siga la jugada.
 - Formas más orgánicas en campus, ciudad y casas: curvas, `LatheGeometry`, `ExtrudeGeometry`, `InstancedMesh`, vegetación y relieve.
 - Casas: más personalización (color de paredes y suelos, iluminación), más piezas por habitación, objetos con modelos de mayor detalle.
 - Edificios del campus que se pensaron y no están: museo, hotel de concentración, sala de prensa.
 
 - **Pueblo 3D:** construir el nivel 5 tarda ~1,2 s con CPU x4 y se reconstruye tras cada acción del panel; cachear la geometría o actualizar solo lo que cambia.
 
-## Próximo cambio (pedido por el usuario)
-- ~~Petos en el 3 contra 3~~ y ~~transición entre días~~: hechos.
+## Mundo explorable (sede, calle, barrio, casa)
+- Modo construcción también en el despacho y otras salas del club; paredes interiores, color de paredes y suelos en casa.
+- Más ciudad: otros barrios conectados, el pabellón por dentro con esta vista (entrar desde la calle), el campus/ciudad deportiva explorable.
+- La ciudad del club cambia con la reputación más allá de banderas/árboles/mural (comercios nuevos, obras, grada de aficionados en la calle).
+- Rendimiento en móvil: la calle va a ~25 fps con CPU x4; probar en un Android real y bajar más (instanciar vecinos lejanos, LOD).
+- Los coches no esquivan a los peatones fuera de los pasos; el músico usa una postura por código, sin animación propia.
+- Adaptar todo el mundo explorable al móvil (controles táctiles, tamaños de paneles); hasta ahora se ha afinado en PC.
+- Decisión abierta: si Three.js se queda corto, pasar a Godot 4 (APK) reutilizando modelos y diseño.
 
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
