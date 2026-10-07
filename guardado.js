@@ -26,7 +26,8 @@
   }
   // Migraciones: MIGRACIONES[n] pasa una partida de la versión n a la n+1. Nunca borres una: las partidas viejas las necesitan.
   const MIGRACIONES = {
-    1: st => { st.copia = st.copia || { creada: Date.now(), ultima: null, avisada: null }; }
+    1: st => { st.copia = st.copia || { creada: Date.now(), ultima: null, avisada: null }; },
+    2: st => { st.sede = st.sede || { charlas: {} }; }
   };
   function migrar(st) {
     if (!st.version) st.version = 1; if (!st.estadisticas) st.estadisticas = {}; if (!st.historial) st.historial = [];

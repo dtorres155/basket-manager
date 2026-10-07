@@ -13,6 +13,8 @@
 11. Patrocinios del jugador; mejores modelos de objetos; pueblo que crece con el jugador; **EuroCup y Champions League** con previa; **inicio desde adolescente**; piso más interactivo; casas con apariencia, personalidad, tamaño y distribución distintos; reputación más difícil con más grados y estatus por club (de promesa a leyenda del club, penalización por fichar por un rival, menos reputación al subir de liga, estatus de leyenda al bajar de liga siendo veterano).
 12. Pregunta final: ¿hay una herramienta de Claude con más movilidad (menos cuadrícula) y más resolución? Respuesta: Claude Code. Este paquete es el traspaso.
 
+13. **Claude Code (oct 2026):** fases 0 y 1 (PWA publicada en GitHub Pages), potencial dinámico, motor Three.js 0.186, pueblo de colina amurallado con estilo regional. Después: que el juego sea como **Big Ambitions** (moverse por el mundo en vez de solo menús), primero en PC y más adelante como app (APK). Se valoró Godot 4; por ahora se sigue con Three.js y se empieza por la sede del club explorable.
+
 ## Preferencias del usuario
 Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.
 

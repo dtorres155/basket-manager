@@ -57,7 +57,8 @@
   // (que sube por los padres buscando userData). Llamar después de construir el mundo y antes del primer render.
   kit.fusionar = function (root) {
     const T = THREE; let antes = 0, despues = 0;
-    const ancla = o => o === root || (o.userData && Object.keys(o.userData).length > 0);
+    // (userData.name no cuenta: el cargador de glTF guarda ahí el nombre original de cada pieza)
+    const ancla = o => o === root || (o.userData && Object.keys(o.userData).some(k => k !== 'name'));
     const apta = c => c.isMesh && !c.isInstancedMesh && !c.isSkinnedMesh && !Array.isArray(c.material) && c.visible && !c.children.length &&
       c.geometry && c.geometry.isBufferGeometry && c.geometry.attributes.position && !(c.geometry.morphAttributes && c.geometry.morphAttributes.position);
     function unir(lista) {

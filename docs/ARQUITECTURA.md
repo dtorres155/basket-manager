@@ -148,6 +148,9 @@ VIDA SOCIAL (GM.mods.social) — modo carrera Contactos con relación 0-100: fam
 ### `sponsor.js`
 PATROCINADORES PERSONALES (GM.mods.sponsor) — modo carrera Marcas que te patrocinan a ti, no al club. Cada categoría (calzado, ropa, bebidas, tecnología, lujo) se abre con un grado de reputación y ofrece tres alternativas excluyentes: global (más dinero), local (más cercanía) y con causa (valores). Al firmar una, las otras desaparecen hasta que acabe el contrato. Cláusulas de rendimiento (puntos, títulos) y rescisión. Ingresos mensuales en tus ahorros. Expone: categorias, activos, firmar, rescindir, selfTest. Escribe state.carrera.sponsors = [{ cat, marca, perfil, importe, hasta, rescision, ef }].
 
+### `sede_plano.js` y `sede3d.js`
+SEDE DEL CLUB EN 3D (GM.sedePlano, GM.sede): plano de la sede (pista, gimnasio, enfermería, vestuario, sala de prensa, cafetería, recepción con vitrina y despacho) y escena explorable. Tu personaje camina (toque o WASD), la plantilla y el personal se mueven por las salas según una rutina (los lesionados van al fisio), tocar a un jugador abre su ficha y permite charlar (+3 de ánimo, una vez por semana: `state.sede.charlas`) y cada sala abre la pantalla del juego que le corresponde según el modo.
+
 ### `pueblo3d.js`
 PUEBLO 3D (GM.pueblo3d): escena del pueblo natal. Colina con relieve y campos, olivos y cipreses instanciados, río con puente, camino a la puerta, muralla con torres (desde villa), plaza mayor con fuente, iglesia y ayuntamiento con soportales, torre del homenaje, calles empedradas y casas texturizadas (teja árabe, postigos, balcones con macetas, banderas del club según el cariño). Estilo por región (`estiloDe`): piedra catalana, ocre castellano, blanco andaluz, toscano. Las infraestructuras del jugador tienen modelo propio (mural con su dorsal, pabellón y hospital con su apellido) y llevan `userData.tipo`. Azar local con semilla: no usa `GM.rng`. No escribe en el estado.
 

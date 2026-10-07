@@ -356,6 +356,7 @@
   }
   function inicio(el, st) {
     const club = st.clubId, C = M().competiciones, P = M().partidos, G = M().guardado;
+    if (GM.sede && GM.kit && GM.kit.disponible()) el.append(h('button', { class: 'sede-entrar', onclick: () => GM.sede.abrir(st) }, h('b', null, 'Entrar en la sede del club'), h('span', null, 'Camina por las instalaciones, habla con la plantilla y entra en cada sala')));
     if (G && G.necesitaCopia(st)) el.append(h('div', { class: 'aviso med' }, h('b', null, 'Haz una copia de seguridad. '), 'Si se borran los datos del navegador, la partida se pierde. ', h('div', { class: 'par', style: { marginTop: '8px' } }, h('button', { class: 'btn peq', onclick: dialogoExportar }, 'Hacer copia'), h('button', { class: 'btn btn-sec peq', onclick: () => { G.copiaAvisada(st); refrescar(); } }, 'Más tarde'))));
     if (carrera()) { if (inicioCarrera(el, st)) return; }
     else if (st.personaje) el.append(h('button', { class: 'perfil-linea', onclick: perfilModal }, avatarEl(st.personaje, 44), h('div', { class: 'ct' }, h('b', null, M().personaje.nombre(st.personaje)), h('span', { class: 'muted' }, (pres() ? 'Presidente' : entr() ? 'Entrenador' : 'Director técnico') + ' de ' + eq(club).nombre)), chip('Cambiar aspecto')));
@@ -905,7 +906,7 @@
   registerScreen('club', { titulo: 'Club', icono: 'club', render: club });
   registerScreen('ciudad', { titulo: 'Ciudad', icono: 'city', render: ciudad });
   registerScreen('finanzas', { titulo: 'Finanzas', icono: 'eur', render: finanzas });
-  GM.ui.casa = casaModal; GM.ui.cabecera = () => { if (ui.cabecera && S()) cabecera(); }; GM.ui.registerScreen = registerScreen; GM.ui.start = start; GM.ui.navegar = navegar; GM.ui.toast = toast; GM.ui.modal = modal;
+  GM.ui.casa = casaModal; GM.ui.jugarUnDia = jugarUnDia; GM.ui.hastaPartido = hastaPartido; GM.ui.refrescar = refrescar; GM.ui.cabecera = () => { if (ui.cabecera && S()) cabecera(); }; GM.ui.registerScreen = registerScreen; GM.ui.start = start; GM.ui.navegar = navegar; GM.ui.toast = toast; GM.ui.modal = modal;
   GM.bus.on('partida:cargada', function () { if (ui.raiz) juego(); });
 
   function selfTest() {
