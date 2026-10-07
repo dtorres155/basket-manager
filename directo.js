@@ -52,6 +52,24 @@
           const hsh = U.hash(e.id + i); GM.sede.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][hsh % 3], altura: 196 + hsh % 14, piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329', '#e0ac85'][(hsh >>> 3) % 5], pelo: ['#1d1510', '#3b2617', '#a9793e'][(hsh >>> 6) % 3], ropa: [c1, c2] }).then(p => {
             if (!V) return; o.g.children.forEach(ch => { ch.visible = false; }); p.obj.scale.multiplyScalar(1.15); o.g.add(p.obj); o.p = p; GM.sede.animar(p, 'idle'); }).catch(() => {}); }); });
         V.scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+        { // Público: cuerpos y cabezas instanciados, 3/4 con los colores del local
+          const eL = st.equipos[g.local], eV = st.equipos[g.visitante], cols = [eL.colores[0], eL.colores[1] || '#ffffff', eV.colores[0], '#3d4a56', '#d9d9d9', '#7a2f22', '#2f4f6e'];
+          const sitios = []; for (let r = 0; r < 4; r++) for (const s of [-1, 1]) for (let x = -L - 1.5; x <= L + 1.5; x += 0.62) { const h0 = U.hash('fan' + r + s + x.toFixed(2)); if (h0 % 10 < 1) continue; sitios.push({ x: x + ((h0 >>> 4) % 10) / 40, y: r * 0.6 + 0.3, z: s * (W + 1.6 + r * 0.9), s, eq: h0 % 100 < 74 ? 'A' : h0 % 100 < 90 ? 'B' : 'N', h0 }); }
+          const n = sitios.length, cuerpos = new THREE.InstancedMesh(new THREE.BoxGeometry(0.42, 0.62, 0.3), new THREE.MeshLambertMaterial(), n), cabezas = new THREE.InstancedMesh(new THREE.SphereGeometry(0.15, 8, 6), new THREE.MeshLambertMaterial(), n);
+          const c = new THREE.Color(), m = new THREE.Matrix4(), piel = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'];
+          sitios.forEach((p, i) => { const col = p.eq === 'A' ? cols[p.h0 % 2] : p.eq === 'B' ? cols[2] : cols[3 + p.h0 % 4]; cuerpos.setColorAt(i, c.set(col)); cabezas.setColorAt(i, c.set(piel[(p.h0 >>> 7) % 5])); });
+          W3.add(cuerpos, cabezas); ES.publico = { sitios, cuerpos, cabezas, m };
+          ES.colocaPublico = (t) => { const C = ES.celebra, act = C && t - C.t0 < 1.4; sitios.forEach((p, i) => { let y = p.y; if (act && p.eq === C.k) y += Math.abs(Math.sin((t - C.t0) * 9 + p.h0)) * 0.35 * (1 - (t - C.t0) / 1.4); m.makeTranslation(p.x, y + 0.31, p.z); cuerpos.setMatrixAt(i, m); m.makeTranslation(p.x, y + 0.78, p.z); cabezas.setMatrixAt(i, m); }); cuerpos.instanceMatrix.needsUpdate = cabezas.instanceMatrix.needsUpdate = true; ES.publicoQuieto = !act; };
+          ES.colocaPublico(0);
+        }
+        { // Banquillos: banco, cinco suplentes sentados y el entrenador de pie, en la banda de la grada sur
+          const banco = (x) => { const b = K.caja(5.4, 0.45, 0.6, 0x2a2f35, x, 0, W + 0.85); W3.add(b); };
+          banco(-5); banco(5);
+          if (GM.sede && GM.sede.personaje) ['A', 'B'].forEach(k => { const e = st.equipos[k === 'A' ? g.local : g.visitante], c1 = e.colores[0], c2 = e.colores[1] || '#222', bx = k === 'A' ? -5 : 5;
+            for (let i = 0; i < 5; i++) { const h0 = U.hash(e.id + 'banco' + i); GM.sede.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][h0 % 3], altura: 194 + h0 % 14, piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329'][(h0 >>> 3) % 4], pelo: ['#1d1510', '#3b2617'][(h0 >>> 6) % 2], ropa: [c1, c2] }).then(p => { if (!V) return; p.obj.scale.multiplyScalar(1.15); p.obj.position.set(bx - 2 + i, 0, W + 0.85); p.obj.rotation.y = Math.PI; p.asiento = 0.45; W3.add(p.obj); GM.sede.animar(p, 'sit'); }).catch(() => {}); }
+            GM.sede.personaje({ modelo: 'h-suit', altura: 182, piel: '#e0ac85', pelo: '#8a8a8a' }).then(p => { if (!V) return; p.obj.scale.multiplyScalar(1.15); p.obj.position.set(bx + (k === 'A' ? 3.3 : -3.3), 0, W + 0.6); p.obj.rotation.y = Math.PI; W3.add(p.obj); GM.sede.animar(p, 'idle'); ES.entrenadores = (ES.entrenadores || []).concat([p]); }).catch(() => {});
+          });
+        }
         balon = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 10), K.mat(0xe3622b)); balon.position.set(0, 1, 0); W3.add(balon);
         ES.bx = 0; ES.bz = 0; ES.by = 1;
         // posiciones iniciales
@@ -60,8 +78,11 @@
           const dt = 0.033;
           ['A', 'B'].forEach(k => jug[k].forEach(o => { const dx = (o.tx - o.x) * 0.12, dz = (o.tz - o.z) * 0.12; o.x += dx; o.z += dz; o.g.position.set(o.x, 0, o.z); const v = Math.hypot(dx, dz) / dt;
             if (o.p) { if (v > 0.25) { let a = Math.atan2(dx, dz) - o.g.rotation.y; while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; o.g.rotation.y += a * 0.25; } else { const hx = (ES.ataca === k ? 1 : -1) * (k === 'A' ? 1 : -1) * HX; o.g.rotation.y += (Math.atan2(hx - o.x, -o.z) - o.g.rotation.y) * 0.08; }
-              GM.sede.animar(o.p, v > 2.5 ? 'sprint' : v > 0.4 ? 'walk' : 'idle'); o.p.mixer.update(dt); } }));
+              GM.sede.animar(o.p, v > 2.5 ? 'sprint' : v > 0.4 ? 'walk' : 'idle'); o.p.mixer.update(dt);
+              if (o.gesto && GM.sede.brazos) { const u = (performance.now() / 1000 - o.gesto.t0) / o.gesto.dur; if (u >= 0 && u <= 1) { const w = Math.sin(u * Math.PI) * o.gesto.w; GM.sede.brazos(o.p, w, new THREE.Vector3(Math.sin(o.g.rotation.y), 0, Math.cos(o.g.rotation.y))); if (o.gesto.salto) o.g.position.y = Math.sin(u * Math.PI) * 0.35; } else if (u > 1) { o.gesto = null; o.g.position.y = 0; } } } }));
           const a = ES.anim, ahora = performance.now() / 1000;
+          if (ES.colocaPublico && !(ES.publicoQuieto && !(ES.celebra && ahora - ES.celebra.t0 < 1.4))) ES.colocaPublico(ahora);
+          if (ES.entrenadores) ES.entrenadores.forEach(p => p.mixer.update(dt));
           if (a) {
             let u = (ahora - a.t0) / a.dur; if (ES.pausa) { a.t0 += dt; u = (ahora - a.t0) / a.dur; }
             if (u >= 1) { balon.position.set(a.fin[0], a.fin[1], a.fin[2]); ES.anim = null; if (a.cb) a.cb(); }
@@ -100,6 +121,10 @@
       else if (ev.r === 'falta') keys.push([sp[0], 1.4, sp[2]]);
       else keys.push(hoop);
       const dur = Math.max(0.25, Math.min(1.6, 14 / ES.vel * 0.12));
+      { const ahora = performance.now() / 1000, tramo = dur / (keys.length - 1);
+        [1, 2].forEach(j => { const pasador = jug[k].reduce((b, o) => { const dd = Math.hypot(o.tx - keys[j - 1][0], o.tz - keys[j - 1][2]); return dd < b.d ? { o, d: dd } : b; }, { o: null, d: 9 }).o; if (pasador) pasador.gesto = { t0: ahora + tramo * (j - 1), dur: tramo * 0.9, w: 0.55 }; });
+        if (sh && (ev.r === 'ok' || ev.r === 'fallo')) { sh.gesto = { t0: ahora + tramo * (keys.length - 2.6), dur: Math.max(0.45, tramo * 1.4), w: 1, salto: true }; sh.g.rotation.y = Math.atan2(hoop[0] - sp[0], hoop[2] - sp[2]); }
+        if (ev.r === 'ok') ES.celebra = { k: k, t0: ahora + dur }; }
       ES.anim = { t0: performance.now() / 1000, dur, keys, arco: ev.r === 'ok' || ev.r === 'fallo', fin: ev.r === 'fallo' ? [hoop[0] - dir * 1.2, 0.3, (Math.random() - 0.5) * 3] : keys[keys.length - 1] };
     }
     let reloj = 0;

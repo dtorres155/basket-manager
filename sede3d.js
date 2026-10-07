@@ -755,10 +755,11 @@
       { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {
         if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
-        if (!n.sentado) n.mixer.update(dt); if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
+        if (!n.sentado && n.obj.visible) n.mixer.update(dt); if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
         if (n.cabizbajo && !n.sentado) cabeza(n, 0.8);
       });
       saludos(dt);
+      { const lim = S.zoom * 1.5 + 8; S.gente.forEach(n => { n.obj.visible = !n.oculto && Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z) < lim; }); } // fuera de la vista no se dibuja ni se anima
       if (S.zonas) S.zonas.forEach(z => z.obj.userData.anim(t));
       if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
@@ -803,5 +804,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { personaje: o => personaje(o), animar: (p, n) => anim(p, n), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

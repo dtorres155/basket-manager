@@ -7,7 +7,7 @@
    Expone: construir(S, M, st), poblar(S, M, st), siguiente(S, M, n), actualizar(S, M, dt). No escribe en el estado. */
 (function () {
   const U = GM.util;
-  const LIM = [-40, -22, 40, 22];
+  const LIM = [-42, -24, 42, 64];
   const ESTILO = {
     ES: { muros: ['#ead9bd', '#dcc3a0', '#f2e6d2', '#d1b38c', '#e6cfae'], postigo: '#5a4630', persiana: true, balcon: true, teja: false },
     IT: { muros: ['#d9a86c', '#c98f58', '#e2bb85', '#cf9c63'], postigo: '#3f5f3a', persiana: true, balcon: true },
@@ -184,6 +184,8 @@
     S.calleNombre = 'Avenida de ' + (bar[0] || club.ciudad);
     letrero(W, T.letrero(S.calleNombre, '#1d4f91', '#fff', 'av'), 3.2, 0.62, -6.9, 2.6, -6.4, 0);
     letrero(W, T.letrero('Calle de ' + (bar[1] || club.siglas), '#1d4f91', '#fff', 'cc'), 3.2, 0.62, 6.4, 2.6, 8.4, -Math.PI / 2);
+    const bz = barrio(S, M, W, G, T, E, r, club, st, c1, c2, afi, rep, bar);
+    Object.assign(zonas, bz);
     // Zonas interactivas (puertas)
     const SALAS = {
       sede: { id: 'sede_calle', nombre: 'Sede del club', accion: 'Volver a las instalaciones', destino: {}, irA: 'sede', boton: 'Entrar en la sede' },
@@ -192,7 +194,12 @@
       pena: { id: 'pena', nombre: 'Bar La Peña', accion: 'Donde se reúne la afición', destino: {} },
       ayuntamiento: { id: 'ayuntamiento', nombre: 'Ayuntamiento de ' + club.ciudad, accion: 'Convenios y relación con la ciudad', destino: { todos: 'ciudad' } },
       casa: { id: 'casa', nombre: st.modo === 'carrera' ? 'Tu edificio' : 'Tu casa', accion: 'Descansar y vida personal', destino: { todos: 'ciudad' } },
-      kiosco: { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {} }
+      kiosco: { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {} },
+      mercado: { id: 'mercado', nombre: 'Mercado de ' + S.plazaNombre, accion: 'Fruta, pescado y charla con los tenderos', destino: {} },
+      parque: { id: 'parque', nombre: 'Canasta del parque', accion: 'Donde juegan los chavales del barrio', destino: {} },
+      terraza: { id: 'terraza', nombre: 'Terraza del Café Central', accion: 'Un café y escuchar a la gente', destino: {} },
+      heladeria: { id: 'heladeria', nombre: 'Heladería La Ola', accion: 'Helados artesanos', destino: {} },
+      musico: { id: 'musico', nombre: 'Músico callejero', accion: 'Toca en la plaza', destino: {} }
     };
     S.zonas = Object.keys(SALAS).map(k => M.zona(W, SALAS[k], zonas[k][0], zonas[k][1], club));
     S.spawnCalle = { x: 15, z: -4.4, ry: 0 };
@@ -200,10 +207,91 @@
     S.paseo = [];
     for (let x = -38; x <= 38; x += 3) { S.paseo.push([x, -4.8], [x, 4.8]); }
     for (let z = 8; z <= 21; z += 3) { S.paseo.push([-4.8, z], [4.8, z], [-4.8, -z], [4.8, -z]); }
+    for (let x = -10; x <= 10; x += 4) for (let z = 27; z <= 50; z += 5) if (Math.hypot(x + 4, z - 41) > 4) S.paseo.push([x, z]);
+    for (let x = -30; x <= -12; x += 6) S.paseo.push([x, 46]); for (let z = 30; z <= 54; z += 6) S.paseo.push([14, z], [32, z]);
     Object.keys(zonas).forEach(k => S.paseo.push(zonas[k]));
     S.cielo = true; S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xa9c6dc, 45, 110);
     GM.kit.fusionar(W);
     return W;
+  }
+
+  // ---------- Barrio: plaza, mercado, parque, comercios con terraza y fuente ----------
+  function barrio(S, M, W, G, T, E, r, club, st, c1, c2, afi, rep, bar) {
+    const zonas = {}; S.plazaNombre = bar[2] || bar[1] || club.ciudad;
+    const tAdoq = M.textura('adoquin', 128, (x, n) => { x.fillStyle = '#8f8576'; x.fillRect(0, 0, n, n); const rr = rnd(5); for (let f = 0; f < 8; f++) for (let k = -1; k < 8; k++) { const t = 0.85 + rr() * 0.25; x.fillStyle = 'rgb(' + (190 * t | 0) + ',' + (178 * t | 0) + ',' + (160 * t | 0) + ')'; x.fillRect(k * 16 + (f % 2) * 8 + 1, f * 16 + 1, 14, 14); } });
+    const plaza = new THREE.PlaneGeometry(84, 40).rotateX(-Math.PI / 2); uvM(plaza, 3, 3); const pm = new THREE.Mesh(plaza, new THREE.MeshStandardMaterial({ map: tAdoq, roughness: 0.95 })); pm.position.set(0, 0.0, 44); pm.receiveShadow = true; W.add(pm);
+    // Jardineras que cierran la calle al tráfico
+    for (let x = -2.4; x <= 2.4; x += 1.6) { caja(W, 1.2, 0.6, 1.2, '#8a8276', x, 0, 23.4); const ar = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0), mat('#4f7f3a')); ar.position.set(x, 0.95, 23.4); W.add(ar); G.bloquea(x - 0.6, 22.8, x + 0.6, 24); }
+    letrero(W, T.letrero('Plaza de ' + S.plazaNombre, '#1d4f91', '#fff', 'plaza'), 3.6, 0.7, 4.2, 2.6, 24.6, 0); cil(W, 0.05, 2.9, '#2a2f35', 4.2, 0, 24.5);
+    // Fuente en dos alturas
+    const fx = -4, fz = 41;
+    cil(W, 3, 0.6, '#cfc6b4', fx, 0, fz, 28); cil(W, 2.75, 0.06, mat('#5aa7cf', { roughness: 0.1, metalness: 0.3 }), fx, 0.56, fz, 28); cil(W, 0.35, 1.8, '#cfc6b4', fx, 0.6, fz, 12); cil(W, 1.1, 0.3, '#cfc6b4', fx, 2.2, fz, 18); cil(W, 0.95, 0.04, mat('#5aa7cf', { roughness: 0.1 }), fx, 2.48, fz, 18);
+    G.bloquea(fx - 3, fz - 3, fx + 3, fz + 3);
+    // Mercado municipal: nave con bóveda y puestos delante
+    edificio(W, G, T, E, r, [-34, 26, -14, 38], 1, 's', { colorBajo: '#6b4a3a', letrero: { txt: 'MERCADO MUNICIPAL', fondo: '#2e5d3a', letra: '#f2d27a', clave: 'merc', ancho: 9 }, toldo: { color: '#c9733f', ancho: 14 } });
+    { const bo = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 20, 24, 1, false, 0, Math.PI), mat('#9cb3a5', { roughness: 0.6, metalness: 0.2 })); bo.rotation.z = Math.PI / 2; bo.rotation.y = Math.PI / 2; bo.rotation.set(0, 0, Math.PI / 2); bo.position.set(-24, 6.6, 32); bo.scale.set(1, 1, 0.5); W.add(bo); }
+    const frutas = ['#e23b2e', '#f2a51d', '#7cb342', '#ffd23f', '#8e44ad', '#ff7043'];
+    [-31, -27, -21, -17].forEach((x, i) => {
+      caja(W, 3, 0.9, 1.4, '#7a5638', x, 0, 40.2); const aw = caja(W, 3.3, 0.08, 1.9, i % 2 ? '#e8eef2' : c1, x, 2.3, 40.2); aw.rotation.x = 0.15; for (const s of [-1.5, 1.5]) cil(W, 0.04, 2.3, '#555', x + s, 0, 40.9);
+      for (let k = 0; k < 6; k++) { const cs = caja(W, 0.42, 0.18, 0.5, '#b58a5a', x - 1.1 + (k % 3) * 0.75, 0.9, 39.95 + (k >> 2 ? 0 : 0) + Math.floor(k / 3) * 0.55); for (let q = 0; q < 4; q++) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), mat(frutas[(i * 3 + k) % frutas.length])); f.position.set(cs.position.x - 0.12 + (q % 2) * 0.24, 1.17, cs.position.z - 0.1 + (q >> 1) * 0.2); W.add(f); } }
+      letrero(W, T.letrero(['FRUTAS PEPA', 'VERDURAS LUIS', 'FRUTOS SECOS', 'ENCURTIDOS'][i], '#f4efe3', '#2e5d3a', 'pst' + i), 2.2, 0.5, x, 2.55, 41.2, 0);
+      G.bloquea(x - 1.6, 39.4, x + 1.6, 41);
+    });
+    zonas.mercado = [-24, 42.6];
+    // Parque: césped, caminos, árboles, pista de baloncesto, columpios y bancos
+    const cesped = new THREE.PlaneGeometry(22, 30).rotateX(-Math.PI / 2); const cm = new THREE.Mesh(cesped, mat('#6f9a4a', { roughness: 1 })); cm.position.set(24, 0.02, 42); cm.receiveShadow = true; W.add(cm);
+    caja(W, 2.2, 0.01, 30, '#c9b89a', 15, 0.02, 42, 0, false); caja(W, 22, 0.01, 2.2, '#c9b89a', 24, 0.02, 36, 0, false);
+    const pista = caja(W, 9, 0.04, 9, '#2f6f9e', 26, 0.02, 48, 0, false); caja(W, 8.4, 0.01, 0.08, '#ffffff', 26, 0.065, 44, 0, false); caja(W, 0.08, 0.01, 8.4, '#ffffff', 21.8, 0.065, 48, 0, false); caja(W, 0.08, 0.01, 8.4, '#ffffff', 30.2, 0.065, 48, 0, false);
+    cil(W, 0.08, 3, '#2a2f35', 26, 0, 52.6); caja(W, 1.6, 1.0, 0.06, '#f4f4f4', 26, 2.6, 52.3); { const aro = new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.02, 6, 18), mat('#e8590c')); aro.rotation.x = Math.PI / 2; aro.position.set(26, 2.85, 51.9); W.add(aro); S.aroParque = aro.position.clone(); }
+    G.bloquea(25.8, 52.4, 26.2, 52.8);
+    // Columpios y tobogán
+    for (const x of [18, 20]) { cil(W, 0.05, 2.3, '#c8102e', x - 0.8, 0, 30); cil(W, 0.05, 2.3, '#c8102e', x + 0.8, 0, 30); caja(W, 1.7, 0.08, 0.08, '#c8102e', x, 2.3, 30); caja(W, 0.5, 0.05, 0.25, '#333', x, 0.55, 30); G.bloquea(x - 0.9, 29.7, x + 0.9, 30.3); }
+    caja(W, 0.9, 1.6, 0.9, '#ffd23f', 29, 0, 30); const tob = caja(W, 0.6, 0.06, 2.6, '#2f9e6f', 29, 0.75, 31.6); tob.rotation.x = 0.55; G.bloquea(28.5, 29.5, 29.5, 32.6);
+    // Árboles del parque y de la plaza
+    const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#3f6e33')];
+    [[18, 40], [18, 46], [18, 54], [31, 38], [33, 44], [20, 35], [30, 55], [22, 56], [-12, 30], [-12, 52], [6, 30], [8, 47]].forEach(([x, z], i) => { cil(W, 0.16, 2.4, tronco, x, 0, z, 6); const cp = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5 + (i % 3) * 0.25, 1), copas[i % 3]); cp.position.set(x, 3.3, z); cp.castShadow = true; W.add(cp); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); });
+    // Comercios con terraza al sur de la plaza (fachada mirando al norte)
+    const tiendas = [['HELADERÍA LA OLA', '#7fd1c7', '#14181d', [-2, 0]], ['PIZZERÍA NAPOLI', '#c8102e', '#ffffff', [6, 0]], ['CAFÉ CENTRAL', '#5a3b26', '#f2d27a', [-10, 0]], ['LIBRERÍA PAPEL', '#1d4f91', '#ffffff', [-18, 0]], ['PELUQUERÍA', '#6b3a7a', '#ffffff', [-26, 0]], ['BASKET STORE', c1, '#ffffff', [-34, 0]]];
+    tiendas.forEach(([nom, fondo, letra, [x0]], i) => { edificio(W, G, T, E, r, [x0 - 4, 57, x0 + 4, 64], 3 + (i % 3), 'n', { colorBajo: fondo, letrero: { txt: nom, fondo, letra, clave: 'tb' + i, ancho: 6.5 }, toldo: { color: fondo, ancho: 7 }, banderas: Math.round(afi / 30), c1, c2 }); });
+    // Terrazas con mesas y sombrillas
+    [[-10, 'CAFÉ CENTRAL', '#5a3b26'], [6, 'NAPOLI', '#c8102e'], [-2, 'LA OLA', '#7fd1c7']].forEach(([x, , col], k) => { for (let j = 0; j < 3; j++) { const mx = x - 2.5 + j * 2.5, mz = 54.2; cil(W, 0.45, 0.75, '#e8eef2', mx, 0, mz, 12); cil(W, 0.035, 2.3, '#555', mx, 0.75, mz); const so = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.45, 10), mat(col)); so.position.set(mx, 2.95, mz); W.add(so); for (const s of [-1, 1]) caja(W, 0.42, 0.45, 0.42, '#2a2f35', mx + s * 0.75, 0, mz); G.bloquea(mx - 1.1, mz - 0.4, mx + 1.1, mz + 0.4); } });
+    zonas.terraza = [-10, 52.2]; zonas.heladeria = [-2, 52.2];
+    // Mural de baloncesto en la medianera del mercado si el club tiene reputación
+    if (rep >= 60) plano(W, 5, 5, new THREE.MeshStandardMaterial({ map: T.escudo, transparent: true }), -13.94, 4.2, 32, Math.PI / 2);
+    // Banderines con los colores del club cruzando la plaza (si la afición está alta o hay fiesta)
+    if (afi > 55 || (S.dia && S.dia.tipo !== 'normal')) {
+      const n = 24, geo = new THREE.BufferGeometry(); const pos = [], col = [], cc = new THREE.Color();
+      [[-14, 30, 8, 52], [8, 30, -14, 52], [-14, 41, 8, 41]].forEach(([xa, za, xb, zb], li) => { for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, x = xa + (xb - xa) * t, z = za + (zb - za) * t, y = 6.2 - Math.sin(t * Math.PI) * 1.4; pos.push(x - 0.25, y, z, x + 0.25, y, z, x, y - 0.5, z); cc.set((i + li) % 2 ? c1 : c2); for (let k = 0; k < 3; k++) col.push(cc.r, cc.g, cc.b); } });
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
+      W.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+      for (const [x, z] of [[-14, 30], [8, 30], [-14, 52], [8, 52], [-14, 41], [8, 41]]) { cil(W, 0.07, 6.3, '#2a2f35', x, 0, z, 8); G.bloquea(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
+    }
+    // Bancos y farolas de la plaza
+    const mBanco = mat('#7a5638');
+    [[-9, 37, 0], [1, 37, 0], [-9, 45.5, Math.PI], [1, 45.5, Math.PI], [16.3, 42, Math.PI / 2], [16.3, 48, Math.PI / 2]].forEach(([x, z, ry]) => { const b = caja(W, 1.6, 0.45, 0.45, mBanco, x, 0, z, ry); G.bloquea(x - 0.8, z - 0.8, x + 0.8, z + 0.8); });
+    // Palomas alrededor de la fuente (salen volando si te acercas)
+    { const n = 22, im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.16, 0.12, 0.26), mat('#8a8f99'), n), base = [];
+      for (let i = 0; i < n; i++) { const a = r() * Math.PI * 2, rr = 3.6 + r() * 3; base.push({ x: fx + Math.cos(a) * rr, z: fz + Math.sin(a) * rr, y: 0.07, ry: r() * 6, vuelo: 0, vx: 0, vz: 0 }); }
+      W.add(im); im.userData = { palomas: true }; S.palomas = { im, base, m: new THREE.Matrix4(), q: new THREE.Quaternion(), e: new THREE.Euler(), s: new THREE.Vector3(1, 1, 1), p: new THREE.Vector3() }; }
+    zonas.parque = [26, 46.2]; zonas.musico = [-0.6, 44.6]; S.musicoPos = [0.6, 44.6];
+    return zonas;
+  }
+  function moverPalomas(S, dt) {
+    const P = S.palomas; if (!P) return; const yo = S.yo && S.yo.obj.position;
+    P.base.forEach((b, i) => {
+      if (b.vuelo <= 0 && yo && Math.hypot(yo.x - b.x, yo.z - b.z) < 2.6) { b.vuelo = 3.5; const a = Math.atan2(b.z - yo.z, b.x - yo.x) + (Math.random() - 0.5); b.vx = Math.cos(a) * 3; b.vz = Math.sin(a) * 3; b.ox = b.x; b.oz = b.z; }
+      if (b.vuelo > 0) { b.vuelo -= dt; const sube = b.vuelo > 1.5; b.x += b.vx * dt * (sube ? 1 : -1.1); b.z += b.vz * dt * (sube ? 1 : -1.1); b.y = sube ? Math.min(5, b.y + dt * 3) : Math.max(0.07, b.y - dt * 2.8); b.ry = Math.atan2(b.vx, b.vz) + (sube ? 0 : Math.PI); if (b.vuelo <= 0) { b.x = b.ox; b.z = b.oz; b.y = 0.07; } }
+      else if (Math.random() < dt * 0.6) b.ry += (Math.random() - 0.5) * 1.5;
+      const aleteo = b.vuelo > 0 ? 1 + Math.abs(Math.sin(performance.now() / 50 + i)) * 1.5 : 1;
+      P.e.set(0, b.ry, 0); P.q.setFromEuler(P.e); P.s.set(aleteo, 1, 1); P.p.set(b.x, b.y + (b.vuelo > 0 ? 0 : Math.abs(Math.sin(performance.now() / 300 + i)) * 0.02), b.z); P.m.compose(P.p, P.q, P.s); P.im.setMatrixAt(i, P.m);
+    });
+    P.im.instanceMatrix.needsUpdate = true;
+  }
+  function perro(color) {
+    const g = new THREE.Group(), m = mat(color), B = (w, h, d, x, y, z) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.castShadow = true; g.add(me); return me; };
+    B(0.26, 0.22, 0.6, 0, 0.38, 0); B(0.2, 0.2, 0.24, 0, 0.55, 0.36); B(0.12, 0.1, 0.14, 0, 0.5, 0.52); const cola = B(0.05, 0.05, 0.26, 0, 0.5, -0.38); cola.rotation.x = 0.7;
+    const patas = [[-0.09, 0.22], [0.09, 0.22], [-0.09, -0.22], [0.09, -0.22]].map(([x, z]) => B(0.07, 0.28, 0.07, x, 0.14, z));
+    g.userData = { patas, cola }; return g;
   }
 
   // ---------- Vecinos y aficionados ----------
@@ -211,13 +299,30 @@
   const PIEL = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'], PELO = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#d8b46a', '#8a8a8a'];
   async function poblar(S, M, st) {
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
-    const n = partido ? 26 : 16, r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222';
+    const n = partido ? 32 : 24, r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222';
     const lista = await Promise.all(Array.from({ length: n }, (_, k) => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [r() < 0.6 ? c1 : c2, c1] : null }).then(p => Object.assign(p, { hincha })); }));
     lista.forEach((p, k) => {
       const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0] + (r() - 0.5), 0, q[1] + (r() - 0.5) * 0.6);
       Object.assign(p, { peaton: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino de ' + club.ciudad, r: rnd(U.hash(st.fecha + 'p' + k)), espera: r() * 3 });
       p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p);
     });
+    // Músico callejero con su guitarra
+    S.musico = null; S.perros = []; S.chavales = null;
+    { const mu = await M.personaje({ modelo: 'h-punk', altura: 176, piel: PIEL[1], pelo: PELO[0] }); mu.fijo = true; mu.rol = 'Músico callejero'; mu.obj.position.set(S.musicoPos[0], 0, S.musicoPos[1]); mu.obj.rotation.y = -Math.PI / 2;
+      const gu = new THREE.Group(), cuerpo = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.45, 0.1), mat('#a0522d')), mastil = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.05), mat('#3b2617')); mastil.position.set(0.3, 0.12, 0); mastil.rotation.z = -1.2; gu.add(cuerpo, mastil); gu.position.set(0.05, 1.05, 0.2); gu.rotation.z = 0.5; gu.scale.setScalar(1 / mu.obj.scale.x); gu.position.multiplyScalar(1 / mu.obj.scale.x); mu.obj.add(gu);
+      const funda = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 0.35), mat('#1d2024')); funda.position.set(S.musicoPos[0] - 0.9, 0.06, S.musicoPos[1] + 0.6); S.mundo.add(funda);
+      mu.obj.userData = { npc: S.gente.length }; M.anim(mu, 'interact-right'); S.mundo.add(mu.obj); S.gente.push(mu); S.musico = mu; }
+    // Vecinos con perro (el perro sigue a su dueño)
+    S.gente.filter(p => p.peaton && !p.hincha).slice(0, 3).forEach((p, k) => { const d = perro(['#c8a06a', '#3a2a1a', '#f2efe8'][k]); S.mundo.add(d); S.perros.push({ d, dueno: p, fase: k }); p.rol = 'Vecino paseando al perro'; });
+    // Chavales jugando en la canasta del parque
+    { const ch = await Promise.all([0, 1, 2].map(k => M.personaje({ modelo: ['h-casual_hoodie', 'm-casual', 'h-beach'][k], altura: 138 + k * 6, piel: PIEL[k + 1], pelo: PELO[k], ropa: k === 1 ? null : [c1, c2] })));
+      const pos = [[24.5, 49.5], [27.8, 48.8], [26, 46.8]], balon = new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 10), mat('#d9692b')); balon.castShadow = true; S.mundo.add(balon);
+      ch.forEach((p, k) => { p.fijo = true; p.rol = 'Chaval del barrio'; p.obj.position.set(pos[k][0], 0, pos[k][1]); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); });
+      S.chavales = { ch, balon, t: 0, de: 0, a: 1, tiro: false }; }
+    // Clientes sentados en las terrazas
+    { const sillas = [[-12.5 - 0.75, Math.PI / 2], [-10 + 0.75, -Math.PI / 2], [3.5 - 0.75, Math.PI / 2], [6 + 0.75, -Math.PI / 2], [-2 - 0.75, Math.PI / 2], [8.5 + 0.75, -Math.PI / 2]];
+      const cl = await Promise.all(sillas.map((q, k) => M.personaje({ modelo: MODELOS[(k * 5 + 2) % MODELOS.length], altura: 160 + k * 4, piel: PIEL[k % 5], pelo: PELO[(k * 2) % 6] })));
+      cl.forEach((p, k) => { p.fijo = true; p.rol = 'Cliente de la terraza'; p.obj.position.set(sillas[k][0], 0, 54.2); p.obj.rotation.y = sillas[k][1]; p.asiento = 0.45; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); M.anim(p, 'sit'); S.gente.push(p); }); }
     // Coches
     S.coches = []; const colores = ['#c8102e', '#f4f4f4', '#1d2024', '#2f6f9e', '#8a8f94', '#e8b923', '#3a5a3a', '#7a2f22'];
     const carriles = [['x', 1, 1.5], ['x', -1, -1.5], ['z', 1, -1.5], ['z', -1, 1.5]];
@@ -245,8 +350,8 @@
   }
   function siguiente(S, M, n) {
     // De noche la calle se vacía: parte de los vecinos se van a casa (desaparecen al llegar a un portal)
-    if (S.noche > 0.4 && !n.hincha && !n.recogido && n.r() < 0.5) { const port = [[-31.5, 5.2], [35, -5.2], [-35, -5.2], [30, 5.2]][(n.r() * 4) | 0]; n.recogido = true; if (M.irA(n, port[0], port[1], () => { n.obj.visible = false; n.espera = 9999; })) return; }
-    if (n.recogido && S.noche < 0.2) { n.recogido = false; n.obj.visible = true; }
+    if (S.noche > 0.4 && !n.hincha && !n.recogido && n.r() < 0.5) { const port = [[-31.5, 5.2], [35, -5.2], [-35, -5.2], [30, 5.2]][(n.r() * 4) | 0]; n.recogido = true; if (M.irA(n, port[0], port[1], () => { n.oculto = true; n.espera = 9999; })) return; }
+    if (n.recogido && S.noche < 0.2) { n.recogido = false; n.oculto = false; }
     const q = S.paseo[(n.r() * S.paseo.length) | 0];
     if (S.dia && S.dia.tipo === 'partido' && n.hincha && n.r() < 0.6) { const ok = M.irA(n, -19.5 + (n.r() - 0.5) * 8, -5.4 + (n.r() - 0.5) * 1.2, () => { M.anim(n, 'emote-yes'); n.espera = 6 + n.r() * 8; }); if (ok) return; }
     const ok = M.irA(n, q[0] + (n.r() - 0.5) * 0.8, q[1] + (n.r() - 0.5) * 0.5, () => { M.anim(n, n.r() < 0.15 ? 'emote-yes' : 'idle'); n.espera = 1 + n.r() * 6; });
@@ -255,6 +360,16 @@
   // ---------- Tráfico, semáforos y saludos ----------
   function actualizar(S, M, dt) {
     if (!S.coches) return;
+    moverPalomas(S, dt);
+    S.perros && S.perros.forEach(p => { const o = p.dueno.obj, d = p.d, f = o.rotation.y, tx = o.position.x - Math.sin(f) * 0.9 + Math.cos(f) * 0.5, tz = o.position.z - Math.cos(f) * 0.9 - Math.sin(f) * 0.5, dx = tx - d.position.x, dz = tz - d.position.z, l = Math.hypot(dx, dz);
+      d.position.x += dx * Math.min(1, dt * 4); d.position.z += dz * Math.min(1, dt * 4); d.visible = o.visible && !p.dueno.oculto; if (l > 0.05) d.rotation.y = Math.atan2(dx, dz); p.fase += dt * (l > 0.1 ? 14 : 3); d.userData.patas.forEach((pa, i) => { pa.rotation.x = l > 0.1 ? Math.sin(p.fase + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * 0.5 : 0; }); d.userData.cola.rotation.y = Math.sin(p.fase * 2) * 0.5; });
+    if (S.chavales) { const C = S.chavales, ch = C.ch; C.t += dt; ch.forEach(p => p.mixer.update(dt));
+      const de = ch[C.de].obj.position, a = C.tiro ? S.aroParque : ch[C.a].obj.position, dur = C.tiro ? 1.0 : 0.8, u = Math.min(1, C.t / dur);
+      C.balon.position.set(de.x + (a.x - de.x) * u, (C.tiro ? 1.2 + (2.85 - 1.2) * u + Math.sin(u * Math.PI) * 1.6 : 1.0 + Math.abs(Math.sin(u * Math.PI * 2)) * 0.2 - Math.sin(u * Math.PI) * 0.0), de.z + (a.z - de.z) * u);
+      ch[C.de].obj.lookAt(a.x, 0, a.z);
+      if (u >= 1) { C.t = 0; if (C.tiro) { C.tiro = false; C.de = 2; C.a = (Math.random() * 2) | 0; } else { C.de = C.a; C.tiro = Math.random() < 0.35; C.a = C.tiro ? -1 : [0, 1, 2].filter(k => k !== C.de)[(Math.random() * 2) | 0]; if (C.tiro) M.anim(ch[C.de], 'interact-right'); else ch.forEach(p => M.anim(p, 'idle')); } }
+      if (C.tiro && C.a === -1) C.a = 0; }
+    if (S.musico) { S.musico.mixer.update(dt); S.tMus = (S.tMus || 0) - dt; if (S.tMus <= 0) { S.tMus = 6 + Math.random() * 4; M.bocadillo(['♪ ♫ ♪', '♫ ' + S.st.equipos[S.st.clubId].siglas + ', ' + S.st.equipos[S.st.clubId].siglas + '... ♫', '♪ La la la ♪'][(Math.random() * 3) | 0], S.musico.obj); } }
     S.tSem = (S.tSem + dt) % 18; const verdeX = S.tSem < 8, verdeZ = S.tSem >= 9 && S.tSem < 17;
     S.semaforos.forEach(s => { const v = s.eje === 'x' ? verdeX : verdeZ; s.verde.material.emissiveIntensity = v ? 2.5 : 0; s.roja.material.emissiveIntensity = v ? 0 : 2.5; });
     S.coches.forEach(c => {
