@@ -84,16 +84,27 @@
     const B = p.huesos; if (!B.UpperLegL || !B.FootL) return;
     p.obj.updateMatrixWorld(true);
     if (!p.pieLocal) p.pieLocal = {};
-    for (const s of ['L', 'R']) { if (!p.pieLocal[s]) p.pieLocal[s] = B['LowerLeg' + s].worldToLocal(B['Foot' + s].getWorldPosition(new THREE.Vector3())); }
-    for (const s of ['L', 'R']) B['UpperLeg' + s].rotateX(1.5);
+    const qPie = {}; for (const s of ['L', 'R']) qPie[s] = B['Foot' + s].getWorldQuaternion(new THREE.Quaternion()); // orientación de los pies de pie
+    for (const s of ['L', 'R']) { p.pieLocal[s] = B['LowerLeg' + s].worldToLocal(B['Foot' + s].getWorldPosition(new THREE.Vector3())); }
+    // Muslos hacia delante (hacia donde mira la persona) con una leve caída: se orienta cada hueso por su dirección real,
+    // porque los ejes locales de la pierna derecha están en espejo respecto a la izquierda
+    const delante = new THREE.Vector3(0, -0.12, 1).normalize().applyQuaternion(p.obj.getWorldQuaternion(new THREE.Quaternion()));
+    for (const s of ['L', 'R']) {
+      const ul = B['UpperLeg' + s], ini = ul.getWorldPosition(_v), dir = B['LowerLeg' + s].getWorldPosition(_w).sub(ini).normalize();
+      _q.setFromUnitVectors(dir, delante); ul.getWorldQuaternion(_q2); _q2.premultiply(_q);
+      ul.parent.getWorldQuaternion(_q).invert(); ul.quaternion.copy(_q.multiply(_q2)); ul.updateMatrixWorld(true);
+    }
     p.obj.updateMatrixWorld(true);
     for (const s of ['L', 'R']) {
       const ll = B['LowerLeg' + s], f = B['Foot' + s], ini = ll.getWorldPosition(_v);
       const dir = ll.localToWorld(_w.copy(p.pieLocal[s])).sub(ini).normalize();
       _q.setFromUnitVectors(dir, ABAJO); ll.getWorldQuaternion(_q2); _q2.premultiply(_q);
       ll.parent.getWorldQuaternion(_q).invert(); ll.quaternion.copy(_q.multiply(_q2)); ll.updateMatrixWorld(true);
-      const fin = ll.localToWorld(_w.copy(p.pieLocal[s])); f.parent.updateMatrixWorld(true); f.position.copy(f.parent.worldToLocal(fin));
+      const fin = ll.localToWorld(_w.copy(p.pieLocal[s])); f.parent.updateMatrixWorld(true); f.position.copy(f.parent.worldToLocal(fin)); f.parent.getWorldQuaternion(_q).invert(); f.quaternion.copy(_q.multiply(qPie[s]));
     }
+    // Cadera a la altura del asiento (0,48 m) y pies en el suelo como mínimo
+    p.obj.updateMatrixWorld(true); const cad = (B.Hips || B.UpperLegL).getWorldPosition(_v).y, pie = Math.min(B.FootL.getWorldPosition(_w).y, B.FootR.getWorldPosition(_w).y);
+    p.obj.position.y = Math.max((p.asiento || 0.48) - cad, -pie);
   }
 
   // ---------- Cuadrícula y caminos (A*) ----------
@@ -132,8 +143,14 @@
 
   // ---------- Personajes que caminan ----------
   function anim(p, nombre) {
-    p.sentado = nombre === 'sit'; p.obj.position.y = p.sentado ? -(0.52 * (p.altura || 178) / 100 - 0.47) : 0; // cadera a la altura del asiento
-    if (p.actual === nombre) return; const a = p.acc[nombre] || p.acc.idle; if (!a) return;
+    if (p.actual === nombre) return;
+    if (nombre === 'sit') {
+      // Postura sentada fija: primer fotograma de estar de pie, se doblan las piernas una vez y el mezclador se detiene
+      p.mixer.stopAllAction(); const a = p.acc.idle; a.reset().play(); p.mixer.update(0); a.stop();
+      p.obj.position.y = 0; sentar(p); p.sentado = true; p.accion = null; p.actual = nombre; return;
+    }
+    if (p.sentado) { p.sentado = false; p.obj.position.y = 0; }
+    const a = p.acc[nombre] || p.acc.idle; if (!a) return;
     a.reset().fadeIn(0.2).play(); if (p.accion) p.accion.fadeOut(0.2); p.accion = a; p.actual = nombre;
   }
   function irA(p, x, z, alLlegar) {
@@ -155,7 +172,7 @@
     else { const r = n.r(); sala = r < 0.38 ? 'pista' : r < 0.58 ? 'gimnasio' : r < 0.72 ? 'vestuario' : r < 0.88 ? 'cafeteria' : r < 0.94 ? 'prensa' : 'pasillo'; }
     const lista = P.puntos[sala], libres = lista.filter(q => !S.ocupados.has(q)); const q = libres.length ? libres[(n.r() * libres.length) | 0] : lista[0];
     if (n.punto) S.ocupados.delete(n.punto); n.punto = q; S.ocupados.add(q);
-    const ok = irA(n, q[0], q[1], () => { n.obj.rotation.y = q[3] * Math.PI / 180; anim(n, q[2]); n.espera = 6 + n.r() * 12; });
+    const ok = irA(n, q[0], q[1], () => { n.obj.rotation.y = q[3] * Math.PI / 180; n.asiento = q[4] || 0.48; n.actual = null; anim(n, q[2]); n.espera = 6 + n.r() * 12; });
     if (!ok) n.espera = 2;
   }
 
@@ -192,6 +209,7 @@
       else if (tipo === 'bici') { B(0.3, 0.5, 1.1, metal, 0, 0.3, 0); B(0.35, 0.08, 0.3, negro, 0, 0.75, 0.25); B(0.5, 0.06, 0.1, negro, 0, 1.0, -0.45); B(0.06, 0.4, 0.06, metal, 0, 0.8, -0.45); G.bloquea(x - 0.3, z - 0.6, x + 0.3, z + 0.6); }
       else if (tipo === 'pesas') { B(0.5, 1.4, 2.4, metal, 0, 0.7, 0); for (let i = 0; i < 6; i++) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.35, 10), negro); d.rotation.x = Math.PI / 2; d.position.set(0.3, 0.4 + (i % 2) * 0.5, -0.9 + (i >> 1) * 0.9); g.add(d); } G.bloquea(x - 1.3, z - 0.5, x + 1.3, z + 0.5); }
       else if (tipo === 'colchoneta') B(1.6, 0.06, 2.2, clubM, 0, 0.03, 0);
+      else if (tipo === 'banco') { B(0.4, 0.12, 1.3, clubM, 0, 0.42, 0.1); B(0.08, 0.38, 0.08, metal, 0, 0.19, 0.6); B(0.08, 0.38, 0.08, metal, 0, 0.19, -0.4); B(0.06, 1.15, 0.06, metal, -0.42, 0.57, -0.55); B(0.06, 1.15, 0.06, metal, 0.42, 0.57, -0.55); const barra = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.7, 8), metal); barra.rotation.z = Math.PI / 2; barra.position.set(0, 1.12, -0.55); g.add(barra); for (const sx of [-0.7, 0.7]) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 16), negro); d.rotation.z = Math.PI / 2; d.position.set(sx, 1.12, -0.55); g.add(d); } G.bloquea(x - 0.5, z - 0.7, x + 0.5, z + 0.8); }
       g.position.set(x, 0, z); g.rotation.y = ry * Math.PI / 180; W.add(g);
     });
     // Muebles de Kenney
@@ -434,8 +452,8 @@
     (function bucle() {
       if (!S || !S.vivo) return; S.raf = requestAnimationFrame(bucle); if (S.pausa) return;
       S.reloj.update(); const dt = Math.min(0.05, S.reloj.getDelta()), t = S.reloj.getElapsed();
-      if (S.yo) { teclado(dt); moverPaso(S.yo, dt); S.yo.mixer.update(dt); if (S.yo.sentado) sentar(S.yo); S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
-      S.gente.forEach(n => { if (!n.fijo) { if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); } n.mixer.update(dt); if (n.sentado) sentar(n); });
+      if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
+      S.gente.forEach(n => { if (!n.fijo) { if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); } if (!n.sentado) n.mixer.update(dt); });
       if (S.zonas) S.zonas.forEach(z => z.obj.userData.anim(t));
       if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
@@ -480,5 +498,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { abrir, cerrar, volver, activa: () => !!S, _estado: () => S, aEstrella, rejilla };
+  GM.sede = { abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

@@ -48,24 +48,24 @@
       ['loungeSofaCorner', 1.2, 13.2, 0], ['tableCoffee', 0, 11.5, 0], ['televisionModern', -0.2, 5.4, 180], ['cabinetTelevision', -0.2, 5.5, 180], ['plantSmall1', -7.6, 5.6, 0],
       // Sala de prensa: mesa de comparecencia, sillas del público, panel con el escudo
       ['table', -14, 12.4, 0], ['chair', -14.8, 13.2, 180], ['chair', -13.2, 13.2, 180], ['speaker', -17.5, 13.3, 0], ['speaker', -10.5, 13.3, 0],
-      ...[0, 1, 2, 3].flatMap(f => [0, 1, 2, 3, 4, 5].map(c => ['chairModernCushion', -17 + c * 1.2, 7 + f * 1.25, 180])),
+      ...[0, 1, 2, 3].flatMap(f => [0, 1, 2, 3, 4, 5].map(c => ['chairModernCushion', -17 + c * 1.2, 7 + f * 1.25, 0])),
       // Pista: banquillos
       ...[0, 1, 2, 3, 4, 5].map(i => ['chair', -16 + i * 0.7, 1.3, 180]), ...[0, 1, 2, 3, 4, 5].map(i => ['chair', -6 + i * 0.7, 1.3, 180]), ['cardboardBoxClosed', -19.2, 1.2, 0], ['trashcan', 1.4, 1.4, 0],
       // Gimnasio (las máquinas son procedurales en sede3d.js; aquí lo de Kenney)
-      ['bench', 4, -12, 90], ['bench', 6, -12, 90], ['bench', 8, -12, 90], ['speaker', 10.4, -13.4, 0], ['pottedPlant', 10.4, 1.2, 0], ['washer', 2.6, -13.4, 0],
+      ['speaker', 10.4, -13.4, 0], ['pottedPlant', 10.4, 1.2, 0], ['washer', 2.6, -13.4, 0],
       // Pasillo
       ['pottedPlant', -19.4, 2.6, 0], ['pottedPlant', 19.4, 2.6, 0], ['trashcan', 2.3, 4.6, 0]
     ],
     // Máquinas del gimnasio (procedurales): tipo, x, z, rotY
-    gimnasio: [['cinta', 4, -6, 0], ['cinta', 6, -6, 0], ['cinta', 8, -6, 0], ['pesas', 9.8, -9, 90], ['bici', 4, -2, 0], ['bici', 6, -2, 0], ['colchoneta', 9.2, -2.4, 0]],
+    gimnasio: [['cinta', 4, -6, 0], ['cinta', 6, -6, 0], ['cinta', 8, -6, 0], ['pesas', 9.8, -9, 90], ['bici', 4, -2, 0], ['bici', 6, -2, 0], ['colchoneta', 9.2, -2.4, 0], ['banco', 4, -11.6, 0], ['banco', 6, -11.6, 0], ['banco', 8, -11.6, 0]],
     // Puntos de actividad para los personajes que se mueven solos
     puntos: {
       pista: [[-15, -8, 'interact-right', 90], [-12, -4, 'idle', 0], [-9, -10, 'sprint', 0], [-6, -6, 'interact-left', 270], [-3, -9, 'idle', 180], [-14, -1, 'idle', 0], [-9, -6, 'emote-yes', 0]],
-      gimnasio: [[4, -6, 'walk', 0], [6, -6, 'walk', 0], [8, -6, 'walk', 0], [4, -12, 'sit', 90], [6, -12, 'sit', 90], [9.2, -2.4, 'crouch', 0], [4, -2, 'sit', 0]],
-      vestuario: [[13.5, -3, 'sit', 180], [15.5, -3, 'sit', 180], [17.5, -3, 'sit', 180], [13.5, -1, 'sit', 0], [15.5, -1, 'sit', 0], [12.6, -4.6, 'interact-right', 180]],
-      fisio: [[15, -12.6, 'sit', 0], [17.5, -12.6, 'sit', 0], [15.5, -8, 'sit', 180], [16.5, -8, 'sit', 180]],
-      cafeteria: [[-6, 7.7, 'sit', 180], [-6, 9.5, 'sit', 0], [-2.6, 7.7, 'sit', 180], [-6.2, 12.3, 'sit', 0], [-7.2, 12.3, 'sit', 0], [0.6, 12.4, 'sit', 180], [-1, 9, 'idle', 0]],
-      prensa: [[-14.8, 13.2, 'sit', 0], [-13.2, 13.2, 'sit', 0], [-15.8, 8.25, 'sit', 0], [-12.2, 9.5, 'sit', 0], [-10.4, 7, 'sit', 0]],
+      gimnasio: [[4, -6.1, 'walk', 180], [6, -6.1, 'walk', 180], [8, -6.1, 'walk', 180], [4, -11.3, 'sit', 180], [6, -11.3, 'sit', 180], [9.2, -2.4, 'crouch', 0], [4, -1.85, 'sit', 180], [6, -1.85, 'sit', 180]],
+      vestuario: [[13.5, -3, 'sit', 0], [15.5, -3, 'sit', 0], [17.5, -3, 'sit', 0], [13.5, -1, 'sit', 180], [15.5, -1, 'sit', 180], [12.6, -4.6, 'interact-right', 180]],
+      fisio: [[15, -11.75, 'sit', 0, 0.72], [17.5, -11.75, 'sit', 0, 0.72], [15.5, -8, 'sit', 0], [16.5, -8, 'sit', 0]],
+      cafeteria: [[-6, 7.7, 'sit', 0], [-6, 9.5, 'sit', 180], [-2.6, 7.7, 'sit', 0], [-6.2, 12.3, 'sit', 0], [-7.2, 12.3, 'sit', 0], [0.6, 12.4, 'sit', 180], [-1, 9, 'idle', 0]],
+      prensa: [[-14.8, 13.2, 'sit', 180], [-13.2, 13.2, 'sit', 180], [-15.8, 8.25, 'sit', 0], [-12.2, 9.5, 'sit', 0], [-11, 7, 'sit', 0]],
       pasillo: [[-16, 3.5, 'idle', 90], [-2, 3.5, 'idle', 270], [9, 3.5, 'emote-no', 0], [17, 3.5, 'idle', 180]]
     },
     // Personal fijo: rol, sala, x, z, animación, rotY

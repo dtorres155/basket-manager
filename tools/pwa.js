@@ -21,7 +21,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(() => { const pj = GM.mods.personaje.crear(); pj.nombre = 'Marc'; pj.apellido = 'Soler'; GM.newGame('joventut-badalona', undefined, { modo: 'gestor', personaje: pj }); GM.mods.guardado.guardar(0); });
   await ctx.setOffline(true);
   await p.reload(); await sleep(2500);
-  const sinRed = await p.evaluate(() => ({ three: typeof THREE !== 'undefined', menu: !!document.querySelector('.menu'), continuar: [...document.querySelectorAll('button')].some(b => b.textContent.includes('Continuar partida')) }));
+  const sinRed = await p.evaluate(() => ({ three: typeof THREE !== 'undefined', menu: !!document.querySelector('.menu'), continuar: [...document.querySelectorAll('button')].some(b => b.textContent.includes('Continuar')) }));
   await p.screenshot({ path: path.join(__dirname, '..', 'capturas', 'fase1', 'pwa_sin_red.png') });
   console.log(JSON.stringify({ instalable: inst.installabilityErrors.length ? inst.installabilityErrors : 'sí', erroresManifiesto: man.errors, sw, sinRed, errs }, null, 1));
   await ctx.close(); fs.rmSync(perfil, { recursive: true, force: true });

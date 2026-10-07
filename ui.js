@@ -106,18 +106,40 @@
     ui.raiz = raiz; raiz.className = 'app'; pistasScroll(); if (M().guardado) M().guardado.pedirPersistencia();
     if (S()) juego(); else menu();
   }
+  // Fondo 3D de las pantallas previas a la partida (menú, elegir liga y club): fijo detrás de la app
+  function fondoPortada(on) {
+    let f = document.getElementById('portada');
+    if (!on) { if (GM.portada3d) GM.portada3d.desmontar(); if (f) f.remove(); if (ui.raiz) ui.raiz.classList.remove('pre'); return; }
+    if (ui.raiz) ui.raiz.classList.add('pre');
+    if (f) return; f = h('div', { id: 'portada', 'aria-hidden': 'true' }, h('div', { class: 'portada-velo' })); document.body.prepend(f);
+    try { if (GM.portada3d) GM.portada3d.montar(f, ['#e8590c']); } catch (e) { if (typeof console !== 'undefined') console.warn('Fondo 3D no disponible: ' + e.message); } // el fondo es decorativo: nunca debe romper el menú
+  }
   function menu() {
     cerrarModales(); desmontar(); aplicaKit(['#e8590c', '#1c2b3a']);
-    const r = ui.raiz; r.innerHTML = '';
+    const r = ui.raiz; r.innerHTML = ''; fondoPortada(true);
     const g = M().guardado, slots = g ? g.listar().filter(s => s.club) : [];
-    r.append(h('div', { class: 'menu' },
-      h('div', { class: 'portada' }, h('div', { class: 'cancha' }, h('i'), h('b')), h('h1', null, 'Basket Manager'), h('p', null, 'Temporada 2026-27, NBA, Euroliga y ligas europeas')),
-      h('div', { class: 'col' },
-        h('button', { class: 'btn grande', onclick: flujoNueva }, 'Nueva partida'),
-        slots.length ? h('button', { class: 'btn btn-sec grande', onclick: () => cargarMenu(slots) }, 'Continuar partida') : null,
-        g ? h('button', { class: 'btn btn-sec', onclick: dialogoImportar }, 'Importar partida') : null,
-        h('button', { class: 'btn btn-sec', onclick: () => { setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche'); } }, 'Cambiar entre tema claro y oscuro'),
-        h('p', { class: 'muted pie' }, 'Los nombres de clubes y jugadores son reales y las valoraciones son estimaciones. Los jugadores sin fama pueden ser ficticios.'))));
+    const ultima = slots.slice().sort((x, y) => (y.t || 0) - (x.t || 0))[0];
+    const clubDe = nombre => Object.values(GM.data.equipos).find(e => e.nombre === nombre);
+    const tarjetaContinuar = () => {
+      const e = clubDe(ultima.club), c1 = e ? e.colores[0] : '#e8590c', c2 = e ? (e.colores[1] || c1) : '#1c2b3a';
+      return h('button', { class: 'm-continuar', style: { borderLeftColor: c1 }, onclick: () => { const rr = g.cargar(ultima.slot); if (!rr.ok) toast(rr.motivo); } },
+        h('span', { class: 'm-escudo', style: { background: 'linear-gradient(135deg,' + c1 + ' 55%,' + c2 + ' 55%)', color: tintaEscudo(c1, c2).color } }, e ? e.siglas : '?'),
+        h('span', { class: 'ct' }, h('small', null, 'Continuar'), h('b', null, ultima.club), h('span', null, ultima.temporada + ', ' + U.fechaLarga(ultima.fecha) + (ultima.slot === 0 ? ', autoguardado' : ', ranura ' + ultima.slot))),
+        h('span', { class: 'm-flecha' }, '›'));
+    };
+    r.append(h('div', { class: 'menu menu2' },
+      h('header', { class: 'm-marca' },
+        h('span', { class: 'm-sello' }, 'Temporada 2026-27'),
+        h('h1', null, h('span', null, 'Basket'), h('span', null, 'Manager')),
+        h('p', null, 'NBA, Euroliga y siete ligas europeas. Dirige un club, sé su presidente, entrénalo o empieza tu carrera desde cadete.')),
+      h('div', { class: 'm-acciones' },
+        ultima ? tarjetaContinuar() : null,
+        h('button', { class: 'm-nueva', onclick: flujoNueva }, h('b', null, 'Nueva partida'), h('span', null, 'Elige modo, crea tu personaje y tu club')),
+        h('div', { class: 'm-fila' },
+          slots.length > 1 ? h('button', { class: 'm-sec', onclick: () => cargarMenu(slots) }, 'Otras partidas') : null,
+          g ? h('button', { class: 'm-sec', onclick: dialogoImportar }, 'Importar') : null,
+          h('button', { class: 'm-sec', onclick: () => { setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche'); } }, 'Tema claro u oscuro'))),
+      h('p', { class: 'm-pie' }, 'Clubes y jugadores reales; las valoraciones son estimaciones. Modelos 3D de Kenney y Quaternius (CC0).')));
   }
   function cargarMenu(slots) {
     const cont = h('div', { class: 'lista' }, slots.map(s => h('div', { class: 'item' }, h('div', null, h('b', null, s.club), h('div', { class: 'muted' }, (s.slot === 0 ? 'Autoguardado' : 'Ranura ' + s.slot) + ', ' + s.temporada + ', ' + U.fechaLarga(s.fecha))),
@@ -219,7 +241,7 @@
 
   // ---------- Armazón del juego ----------
   function juego() {
-    const st = S(), r = ui.raiz; cerrarModales(); desmontar(); r.innerHTML = '';
+    const st = S(), r = ui.raiz; cerrarModales(); desmontar(); fondoPortada(false); r.innerHTML = '';
     const e = eq(st.clubId); aplicaKit(e.colores);
     ui.cabecera = h('header', { class: 'cab' }); ui.cuerpo = h('main', { class: 'cuerpo' });
     ui.nav = h('nav', { class: 'nav' }, navItems().map(n => h('button', { class: 'navb', 'data-id': n[0], onclick: () => navegar(n[0]) }, icon(n[2]), h('span', null, n[1]))));
@@ -252,7 +274,7 @@
   function refrescar(arriba) {
     if (!S() || !ui.cuerpo) return;
     const y = ui.cuerpo.scrollTop; cabecera();
-    ui.cuerpo.innerHTML = '';
+    ui.cuerpo.innerHTML = ''; ui.cuerpo.setAttribute('data-pantalla', ui.pantalla);
     try { screens[ui.pantalla].render(ui.cuerpo, S()); } catch (err) { ui.cuerpo.append(aviso('Error al mostrar la pantalla: ' + err.message, 'mal')); if (typeof console !== 'undefined') console.error(err); }
     ui.cuerpo.scrollTop = arriba ? 0 : y;
   }

@@ -244,3 +244,110 @@ input,textarea,select{font-size:16px}
 .sp-ticket b{font:400 30px var(--fd);letter-spacing:.06em}.sp-ticket span{font-size:13px}
 /* Números flotando sobre los jugadores */
 .sede-flota{position:absolute;z-index:3;transform:translate(-50%,-50%);pointer-events:none;font:700 15px var(--fb);text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap}
+
+/* ---------- Pantallas previas a la partida: fondo 3D y cristal ---------- */
+#portada{position:fixed;inset:0;z-index:0;background:radial-gradient(120% 90% at 30% 20%,#1d2a3a 0%,#07090d 70%)}
+#portada .portada-3d{position:absolute;inset:0;display:block}
+.portada-velo{position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,7,10,.88) 0%,rgba(5,7,10,.55) 45%,rgba(5,7,10,.1) 100%),linear-gradient(0deg,rgba(5,7,10,.75),transparent 40%);pointer-events:none}
+@media (max-width:700px){.portada-velo{background:linear-gradient(0deg,rgba(5,7,10,.92) 0%,rgba(5,7,10,.55) 55%,rgba(5,7,10,.2) 100%)}}
+.app.pre{background:transparent;position:relative;z-index:1;max-width:none}
+.app.pre .menu{max-width:560px;color:#eef1f4}
+.app.pre .menu .muted{color:#b8c2cc}
+.app.pre .menu h2{color:#fff}
+.app.pre .liga,.app.pre .club{border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(16,20,27,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#eef1f4;margin-bottom:8px;padding:12px 14px;transition:transform .12s,border-color .12s}
+.app.pre .liga:hover,.app.pre .club:hover{border-color:rgba(255,255,255,.4);transform:translateX(3px)}
+.app.pre .btn-sec{color:#eef1f4;border-color:rgba(238,241,244,.55)}
+/* Menú principal */
+.menu2{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:28px;padding:calc(40px + env(safe-area-inset-top,0px)) clamp(18px,6vw,72px) 28px!important;max-width:620px!important}
+.m-marca h1{display:flex;flex-direction:column;font:400 clamp(52px,9vw,92px)/.88 var(--fd);letter-spacing:.01em;color:#fff;margin:14px 0 14px;text-shadow:0 6px 30px rgba(0,0,0,.5)}
+.m-marca h1 span:last-child{color:transparent;-webkit-text-stroke:2px #ff8a3d;text-stroke:2px #ff8a3d}
+.m-marca p{max-width:440px;font-size:16px;line-height:1.5;color:#c9d2da}
+.m-sello{display:inline-block;padding:6px 12px;border-radius:99px;background:rgba(232,89,12,.18);border:1px solid rgba(255,138,61,.55);color:#ffb487;font-weight:700;font-size:13px}
+.m-acciones{display:flex;flex-direction:column;gap:12px}
+.m-nueva,.m-continuar{display:flex;align-items:center;gap:14px;width:100%;padding:18px 20px;border-radius:18px;text-align:left;color:#fff;transition:transform .14s,box-shadow .14s}
+.m-nueva{flex-direction:column;align-items:flex-start;gap:4px;background:linear-gradient(120deg,#e8590c,#ff8a3d);box-shadow:0 10px 30px rgba(232,89,12,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+.m-nueva b{font:400 28px var(--fd)}.m-nueva span{font-size:14px;opacity:.9}
+.m-nueva:hover,.m-continuar:hover{transform:translateY(-2px)}
+.m-continuar{background:rgba(16,20,27,.66);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);border-left:6px solid #e8590c;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.m-continuar .ct{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}.m-continuar small{font-size:12px;color:#9fb0bf;font-weight:700}.m-continuar b{font:400 22px var(--fd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.m-continuar .ct span{font-size:13px;color:#c9d2da}
+.m-escudo{flex:none;width:54px;height:58px;display:grid;place-items:center;border-radius:10px 10px 28px 28px;font:400 16px var(--fd);border:2px solid rgba(255,255,255,.35)}
+.m-flecha{font-size:34px;line-height:1;opacity:.7}
+.m-fila{display:flex;flex-wrap:wrap;gap:8px}
+.m-sec{flex:1 1 auto;min-height:44px;padding:10px 16px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);color:#e6ebef;font-weight:600}
+.m-sec:hover{background:rgba(255,255,255,.13)}
+.m-pie{font-size:12px;color:#8b98a5;max-width:440px}
+@media (prefers-reduced-motion:reduce){.m-nueva,.m-continuar,.app.pre .liga,.app.pre .club{transition:none}}
+
+/* =========================================================================
+   Lavado de cara 2026 (se aplica encima de lo anterior)
+   Superficies con relieve, bordes suaves, cabecera de camiseta y, en PC, barra lateral y dos columnas.
+   ========================================================================= */
+:root{--r:14px;--sombra:0 1px 2px rgba(16,28,46,.06),0 6px 18px rgba(16,28,46,.08);--borde:rgba(16,28,46,.09);--bg:#e9edf1;--bg2:#ffffff;--bg3:#dde3e8}
+:root[data-tema="noche"]{--sombra:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);--borde:rgba(255,255,255,.07);--bg:#0e1216;--bg2:#171d23;--bg3:#222a31}
+body{background:var(--bg)}
+/* Cabecera: degradado del club con rayas diagonales de tejido de camiseta */
+.cab{background:linear-gradient(115deg,color-mix(in srgb,var(--club) 100%,#fff 0%) 0%,color-mix(in srgb,var(--club) 78%,#000) 100%);box-shadow:0 6px 20px rgba(0,0,0,.18);margin-bottom:14px}
+.cab::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 2px,transparent 2px 9px);pointer-events:none}
+.cab>*{position:relative}
+.cab-t b{font-size:23px;letter-spacing:.02em}
+.cab-c{padding:5px 10px;border-radius:10px;background:rgba(0,0,0,.16)}
+.btn-ic{border-radius:12px;background:rgba(0,0,0,.2)}
+/* Secciones: banderín más fino con línea que se prolonga */
+.sec>h2{display:inline-flex;align-items:center;font-size:15px;padding:8px 26px 8px 12px;border-radius:6px 0 0 6px;box-shadow:0 3px 10px color-mix(in srgb,var(--club) 35%,transparent)}
+.sec{position:relative}
+.sec::before{content:"";position:absolute;left:0;right:0;top:16px;height:2px;background:linear-gradient(90deg,var(--club),transparent 70%);opacity:.35;z-index:-1}
+/* Tarjetas con relieve */
+.tarjeta,.resumen{border-radius:var(--r);box-shadow:var(--sombra);border:1px solid var(--borde);padding:18px 14px 14px}
+.tarjeta::before,.resumen::before{height:5px;background:linear-gradient(90deg,var(--club),var(--club2))}
+.item,.jug,.club{border-radius:10px;padding:10px 8px;transition:background .12s}
+.item:hover,.jug:hover,.club:hover{background:color-mix(in srgb,var(--club) 7%,transparent)}
+.tabla{border-radius:var(--r);overflow:hidden;box-shadow:var(--sombra)}
+.btn{border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.25),0 6px 14px color-mix(in srgb,var(--club) 30%,transparent)}
+.btn-sec{box-shadow:none;border-width:1.5px}
+.chip{border-radius:99px}
+.perfil-linea{border-radius:var(--r);box-shadow:var(--sombra);border:1px solid var(--borde)}
+.sede-entrar{position:relative;overflow:hidden;min-height:96px;justify-content:flex-end;border-radius:18px;padding:18px 20px;box-shadow:0 10px 26px color-mix(in srgb,var(--club) 40%,transparent)}
+.sede-entrar::after{content:"";position:absolute;right:-30px;top:-40px;width:200px;height:200px;border-radius:50%;border:26px solid rgba(255,255,255,.12);box-shadow:0 0 0 22px rgba(255,255,255,.06)}
+.sede-entrar b{font-size:24px}
+/* Pestañas como píldoras */
+.tabs{border-bottom:0;gap:6px;padding:4px;border-radius:12px;background:var(--bg3)}
+.tabs .tab{border:0;border-radius:9px;margin:0;padding:9px 12px;min-height:40px}
+.tabs .tab.on{background:var(--bg2);color:var(--tinta);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+/* Barra inferior (móvil) */
+.nav{border-top:0;box-shadow:0 -6px 20px rgba(0,0,0,.08);background:color-mix(in srgb,var(--bg2) 88%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.navb.on{background:color-mix(in srgb,var(--club) 16%,transparent);color:var(--tinta)}
+.navb.on svg{color:var(--club-hi,var(--club))}
+/* Hojas: fondo desenfocado */
+.fondo{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);background:rgba(5,10,20,.5)}
+.hoja{border-top:0;box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+.hoja h3{font-size:22px}
+
+/* ---------- Ordenador: barra lateral, contenido ancho, ventanas centradas ---------- */
+@media (min-width:900px){
+  .app:not(.pre){max-width:none;display:grid;grid-template-columns:104px 1fr;grid-template-rows:auto 1fr;height:100dvh}
+  .app:not(.pre) .cab{grid-column:1/-1;padding:14px 28px;margin:0}
+  .app:not(.pre) .cab::after{display:none}
+  .app:not(.pre) .nav{grid-column:1;grid-row:2;flex-direction:column;justify-content:flex-start;gap:4px;padding:14px 10px;border-right:1px solid var(--borde);box-shadow:none;overflow-y:auto}
+  .app:not(.pre) .navb{flex:none;min-height:66px;padding:10px 4px;margin:0;font-size:11.5px;gap:4px;border-radius:14px}
+  .app:not(.pre) .navb svg{width:24px;height:24px}
+  .app:not(.pre) .cuerpo{grid-column:2;grid-row:2;padding:26px clamp(20px,3vw,44px) 40px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;align-content:start;grid-auto-rows:max-content;max-width:1280px;width:100%}
+  .app:not(.pre) .cuerpo>*{grid-column:1/-1}
+  .app:not(.pre) .cuerpo[data-pantalla="inicio"]>.sec,.app:not(.pre) .cuerpo[data-pantalla="finanzas"]>.sec,.app:not(.pre) .cuerpo[data-pantalla="club"]>.sec{grid-column:auto}
+  .app:not(.pre) .cuerpo>.tabs{align-self:start}
+  .app:not(.pre) .cuerpo>.sede-entrar{grid-column:1/-1}
+  .fondo{align-items:center}
+  .hoja{border-radius:20px;max-width:620px;max-height:84dvh;padding:18px 24px 22px}
+  .hoja .asa{display:none}
+  .toast{bottom:28px}
+}
+@media (min-width:1500px){.app:not(.pre) .cuerpo{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){.item,.jug,.club{transition:none}}
+/* Ventanas: filas como tarjetas, botones alineados y jerarquía */
+.hoja .lista>.item{background:var(--bg);border:1px solid var(--borde);border-radius:12px;margin-bottom:8px;padding:12px 14px;justify-content:space-between}
+.hoja .item .par{margin-left:auto;display:flex;gap:8px}
+.hoja .item .par .btn{min-width:96px}
+.hoja .par{display:flex;gap:8px;flex-wrap:wrap}.hoja .par>.btn{flex:1 1 180px}
+.hoja .muted{line-height:1.45}
+.hoja>div>h3:first-child{margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid var(--club)}
+.sec>.lista,.cuerpo>.lista{background:var(--bg2);border-radius:var(--r);box-shadow:var(--sombra);border:1px solid var(--borde);padding:4px 10px}
+.sec>.lista>.item:last-child,.sec>.lista>.jug:last-child{border-bottom:0}
