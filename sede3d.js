@@ -159,7 +159,7 @@
   }
   function moverPaso(p, dt) {
     if (!p.camino || !p.camino.length) return;
-    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : 2.1) * dt;
+    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * dt;
     if (d < v) { o.x = tx; o.z = tz; p.camino.shift(); if (!p.camino.length) { anim(p, 'idle'); const f = p.alLlegar; p.alLlegar = null; if (f) f(); } return; }
     o.x += dx / d * v; o.z += dz / d * v; girar(p, Math.atan2(dx, dz), dt);
   }
@@ -169,8 +169,17 @@
   function siguienteActividad(n) {
     const P = GM.sedePlano, st = S.st, j = n.jugador && st.jugadores[n.jugador];
     let sala; if (j && j.estado && j.estado.lesion) sala = 'fisio';
-    else { const r = n.r(); sala = r < 0.42 ? 'pista' : r < 0.58 ? 'gimnasio' : r < 0.68 ? 'charla' : r < 0.78 ? 'vestuario' : r < 0.9 ? 'cafeteria' : r < 0.95 ? 'prensa' : 'pasillo'; }
-    const lista = P.puntos[sala], libres = lista.filter(q => !S.ocupados.has(q)); const q = libres.length ? libres[(n.r() * libres.length) | 0] : lista[0];
+    else if (n.cabizbajo) { const r = n.r(); sala = r < 0.4 ? 'solo' : r < 0.7 ? 'vestuario' : 'gimnasio'; }
+    else {
+      const r = n.r(), d = S.dia ? S.dia.tipo : 'normal';
+      if (d === 'partido') sala = r < 0.35 ? 'pista' : r < 0.6 ? 'vestuario' : r < 0.75 ? 'charla' : r < 0.9 ? 'cafeteria' : 'pasillo';
+      else if (d === 'derrota') sala = r < 0.35 ? 'pista' : r < 0.6 ? 'vestuario' : r < 0.8 ? 'gimnasio' : 'pasillo';
+      else if (d === 'victoria') sala = r < 0.35 ? 'pista' : r < 0.5 ? 'gimnasio' : r < 0.72 ? 'charla' : r < 0.82 ? 'vestuario' : r < 0.95 ? 'cafeteria' : 'prensa';
+      else sala = r < 0.42 ? 'pista' : r < 0.58 ? 'gimnasio' : r < 0.68 ? 'charla' : r < 0.78 ? 'vestuario' : r < 0.9 ? 'cafeteria' : r < 0.95 ? 'prensa' : 'pasillo';
+      if (sala === 'pista' && grupoQuiere(n)) return;
+      if (sala === 'pista' && d === 'partido') sala = 'tiro';
+    }
+    const lista = sala === 'tiro' ? P.puntos.pista.filter(q => q[2] === 'tiro') : sala === 'solo' ? P.puntos.solo : P.puntos[sala], libres = lista.filter(q => !S.ocupados.has(q)); const q = libres.length ? libres[(n.r() * libres.length) | 0] : lista[0];
     if (n.punto) S.ocupados.delete(n.punto); acabarTiro(n); n.punto = q; S.ocupados.add(q);
     const ok = irA(n, q[0], q[1], () => { n.obj.rotation.y = q[3] * Math.PI / 180; n.asiento = q[4] || 0.48; n.actual = null; if (q[2] === 'tiro') { anim(n, 'idle'); empezarTiro(n); n.espera = 16 + n.r() * 14; } else { anim(n, q[2] === 'charla' ? 'idle' : q[2]); n.espera = q[2] === 'charla' ? 14 + n.r() * 10 : 6 + n.r() * 12; } });
     if (!ok) n.espera = 2;
@@ -309,7 +318,7 @@
     const fecha = h('span', null, U.fechaLarga(st.fecha));
     const top = h('div', { class: 'sede-hud sede-top' },
       h('button', { class: 'btn btn-sec peq', onclick: cerrar }, 'Salir'),
-      h('div', { class: 'ct' }, h('b', null, club.nombre), fecha),
+      h('div', { class: 'ct' }, h('b', null, club.nombre), fecha), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
     S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
     S.ficha = h('div', { class: 'sede-hud sede-ficha', style: { display: 'none' } });
@@ -403,7 +412,7 @@
     const p = n.jugador && st.jugadores[n.jugador];
     st.sede = st.sede || { charlas: {} };
     const hoy = st.fecha, ult = p && st.sede.charlas[p.id], puede = p && (!ult || U.diffDays(ult, hoy) >= 7);
-    F.append(h('div', { class: 'ct' }, h('b', null, p ? p.nombre : n.rol), h('span', { class: 'muted' }, p ? [p.pos, p.edad + ' años', 'nivel ' + p.ovr, 'ánimo ' + Math.round(p.estado.moral), p.estado.lesion ? 'lesionado' : 'forma ' + Math.round(p.estado.forma)].join(', ') : 'Personal del club')),
+    F.append(h('div', { class: 'ct' }, h('b', null, p ? p.nombre : n.rol), h('span', { class: 'muted' }, p ? [p.pos, p.edad + ' años', 'nivel ' + p.ovr, (p.estado.moral < 45 ? 'desanimado' : p.estado.moral > 78 ? 'muy animado' : 'ánimo') + ' ' + Math.round(p.estado.moral), p.estado.lesion ? 'lesionado' : 'forma ' + Math.round(p.estado.forma)].join(', ') : 'Personal del club')),
       p ? h('button', { class: 'btn peq', disabled: !puede, onclick: () => { st.sede.charlas[p.id] = hoy; p.estado.moral = Math.min(100, p.estado.moral + 3); anim(n, 'emote-yes'); n.espera = 3; GM.ui.toast(p.nombre.split(' ')[0] + ' agradece la charla (+3 de ánimo)'); fichaJugador(n); } }, puede ? 'Charlar' : 'Ya hablasteis esta semana') : null,
       h('button', { class: 'btn btn-sec peq', onclick: () => fichaJugador(null) }, 'Cerrar'));
     F.style.display = 'flex';
@@ -473,7 +482,7 @@
   function moverRedes(dt) { S.redes.forEach(r => { r.t += dt; const k = r.t < 0.6 ? Math.sin(r.t * 20) * (0.6 - r.t) * 0.5 : 0; r.obj.scale.set(1 - k * 0.3, 1 + k, 1 - k * 0.3); }); }
 
   // ---------- Vida: grupos que charlan ----------
-  function frases() {
+  function frases(n) {
     const st = S.st, C = GM.mods.competiciones, g = C && C.proximoPartido(st, st.clubId), club = st.equipos[st.clubId];
     const riv = g ? st.equipos[g.local === st.clubId ? g.visitante : g.local] : null, out = ['¿Vamos luego al gimnasio?', 'Hoy el míster aprieta, ya verás', '¿Quién paga los cafés?', 'Esta semana cena de equipo', '¿Viste el partido de anoche?', 'Me duelen hasta las pestañas'];
     if (riv) out.push('El ' + U.fecha(g.fecha).split(' ')[0] + ' contra ' + riv.siglas + ', hay que ganar', riv.nombre.split(' ').slice(-1)[0] + ' tiene buenos tiradores', 'En ' + riv.pabellon.nombre.split(' ').slice(0, 3).join(' ') + ' siempre cuesta');
@@ -481,6 +490,11 @@
     if (ult) { const gan = (ult.local === st.clubId) === (ult.resultado.local > ult.resultado.visitante); out.push(gan ? '¡Qué partidazo el otro día!' : 'Lo del último partido no puede repetirse', gan ? 'La afición estaba encendida' : 'Hay que defender mejor'); }
     const nom = club.plantilla.map(i => st.jugadores[i]).filter(p => p && p.id !== 'yo').map(p => p.nombre.split(' ').slice(-1)[0]);
     if (nom.length) { const k = U.hash(st.fecha) % nom.length; out.push('¿Has visto cómo tira ' + nom[k] + '?', nom[(k + 3) % nom.length] + ' llega tarde otra vez'); }
+    const d = S.dia ? S.dia.tipo : 'normal';
+    if (d === 'partido') return ['Hoy no fallo ni una', 'Concentración, que hoy hay partido', 'Me como las uñas', (riv ? riv.siglas + ' llega fuerte, ojo' : 'Hoy toca ganar'), 'Hay que salir a morder', 'Lleno hoy, seguro'];
+    if (d === 'derrota') return ['No nos sale nada', 'Hay que levantarse ya', 'Mañana toca vídeo, uf', 'Tenemos que defender mejor', 'Silencio y a currar'];
+    if (d === 'victoria') out.push('¡Qué noche la de ayer!', '¡La grada se vino arriba!', 'Así, así se juega', '¿Repetimos el sábado?');
+    if (n && n.animado) out.push('¿Pique de triples? Pierde invita', 'Hoy estoy on fire', 'El míster me ha guiñado un ojo');
     return out;
   }
   function bocadillo(txt, obj) {
@@ -491,26 +505,160 @@
     S.tCharla = (S.tCharla || 0) - dt; if (S.tCharla > 0) return; S.tCharla = 2.5 + Math.random() * 2.5;
     const quietos = S.gente.filter(n => !n.fijo && n.punto && n.punto[2] === 'charla' && !(n.camino && n.camino.length));
     const conCompania = quietos.filter(n => quietos.some(m => m !== n && m.obj.position.distanceTo(n.obj.position) < 2.2));
+    const fanes = S.gente.filter(m => m.aficionado); if (fanes.length && Math.random() < 0.4) { const fa = fanes[(Math.random() * fanes.length) | 0], club = S.st.equipos[S.st.clubId], gritos = ['¡Vamos ' + club.siglas + '!', '¡Hoy ganamos!', '¡Una foto, porfa!', '¡Esta temporada sí!', '¡A por ellos!']; bocadillo(gritos[(Math.random() * gritos.length) | 0], fa.obj); return; }
+    const solos = S.gente.filter(m => m.cabizbajo && !m.fijo && !(m.camino && m.camino.length)); if (solos.length && Math.random() < 0.2) { bocadillo(['No es mi semana…', 'Uf…', 'Necesito minutos', '…'][(Math.random() * 4) | 0], solos[(Math.random() * solos.length) | 0].obj); return; }
     if (!conCompania.length) return;
-    const n = conCompania[(Math.random() * conCompania.length) | 0], f = frases();
+    const n = conCompania[(Math.random() * conCompania.length) | 0], f = frases(n);
     bocadillo(f[(Math.random() * f.length) | 0], n.obj); anim(n, Math.random() < 0.5 ? 'emote-yes' : 'idle'); n.actual = null;
     // Los de al lado le miran
     quietos.forEach(m => { if (m !== n && m.obj.position.distanceTo(n.obj.position) < 2.2) m.obj.rotation.y = Math.atan2(n.obj.position.x - m.obj.position.x, n.obj.position.z - m.obj.position.z); });
+  }
+
+  // ---------- Ambiente del día ----------
+  function estadoDia(st) {
+    const C = GM.mods.competiciones, g = C && C.proximoPartido(st, st.clubId), club = st.equipos[st.clubId];
+    if (g && g.fecha === st.fecha) { const riv = st.equipos[g.local === st.clubId ? g.visitante : g.local]; return { tipo: 'partido', rival: riv, casa: g.local === st.clubId, texto: 'Día de partido contra ' + riv.nombre }; }
+    const ult = (st.calendario || []).filter(x => x.resultado && (x.local === st.clubId || x.visitante === st.clubId)).pop();
+    if (ult && U.diffDays(ult.fecha, st.fecha) <= 2) {
+      const gan = (ult.local === st.clubId) === (ult.resultado.local > ult.resultado.visitante), riv = st.equipos[ult.local === st.clubId ? ult.visitante : ult.local];
+      return { tipo: gan ? 'victoria' : 'derrota', rival: riv, texto: gan ? 'Buen ambiente tras ganar a ' + riv.siglas : 'Ambiente tocado tras perder con ' + riv.siglas };
+    }
+    return { tipo: 'normal', texto: 'Día de entrenamiento' };
+  }
+  function aplicarAmbiente() {
+    const d = S.dia; if (!S.luces) return;
+    S.luces.cielo.intensity = d.tipo === 'derrota' ? 0.75 : 1.1; S.luces.sol.intensity = d.tipo === 'derrota' ? 1.7 : d.tipo === 'victoria' ? 2.9 : 2.6;
+    S.luces.sol.color.setHex(d.tipo === 'derrota' ? 0xd9e2f0 : 0xfff1dc);
+  }
+
+  // ---------- Ánimo: cabeza baja y saludos ----------
+  function cabeza(p, ang) {
+    const H = p.huesos.Neck || p.huesos.Head; if (!H) return;
+    p.obj.updateMatrixWorld(true); const f = p.obj.rotation.y, eje = _a.set(Math.cos(f), 0, -Math.sin(f));
+    _q.setFromAxisAngle(eje, ang); H.getWorldQuaternion(_q2); _q2.premultiply(_q); H.parent.getWorldQuaternion(_q).invert(); H.quaternion.copy(_q.multiply(_q2));
+  }
+  function saludos(dt) {
+    S.tSaludo = (S.tSaludo || 0) - dt; if (S.tSaludo > 0) return; S.tSaludo = 1.2;
+    const andando = S.gente.filter(n => !n.fijo && n.animado && n.camino && n.camino.length && !n.grupo);
+    andando.forEach(n => { const otro = S.gente.find(m => m !== n && !m.fijo && m.obj.position.distanceTo(n.obj.position) < 1.8); if (otro && Math.random() < 0.35) { const fr = ['¡Ey!', '¿Qué pasa, crack?', '¡Hoy la meto toda!', '¡Arriba ese ánimo!', 'Hoy invito yo']; bocadillo(fr[(Math.random() * fr.length) | 0], n.obj); } });
+  }
+
+  // ---------- Sesión de grupo: rueda de pases y 3 contra 3 ----------
+  const CENTRO = new THREE.Vector3(-12.6, 0, -6), ARO = new THREE.Vector3(-17.98, 2.85, -6);
+  function grupoQuiere(n) {
+    const G = S.grupo; if (!G || G.fase !== 'reclutar' || n.cabizbajo || G.miembros.length >= G.max) return false;
+    unir(n); return true;
+  }
+  function unir(n) {
+    const G = S.grupo; if (n.punto) { S.ocupados.delete(n.punto); n.punto = null; } acabarTiro(n);
+    n.grupo = G; G.miembros.push(n); const k = G.miembros.length - 1, dest = posInicial(G, k);
+    n.listo = false; n.rapido = true; if (!irA(n, dest.x, dest.z, () => { n.listo = true; n.rapido = false; })) { n.obj.position.set(dest.x, 0, dest.z); n.listo = true; }
+  }
+  function posInicial(G, k) { if (G.tipo === 'rueda') { const a = k / G.max * Math.PI * 2; return new THREE.Vector3(CENTRO.x + Math.cos(a) * 2.6, 0, CENTRO.z + Math.sin(a) * 2.6); } return new THREE.Vector3(-13 - (k % 3) * 1.6, 0, -8 + (k < 3 ? 0 : 4) + (k % 3)); }
+  function crearGrupo() {
+    const d = S.dia ? S.dia.tipo : 'normal'; if (d === 'partido') return;
+    const libres = S.gente.filter(n => !n.fijo && !n.grupo && !n.cabizbajo && !(S.st.jugadores[n.jugador] && S.st.jugadores[n.jugador].estado.lesion));
+    if (libres.length < 4) return;
+    const tipo = S.ultimoGrupo === 'partidillo' || libres.length < 6 ? 'rueda' : 'partidillo'; S.ultimoGrupo = tipo;
+    const balon = new THREE.Mesh(new THREE.SphereGeometry(0.12, 18, 12), balonMat()); balon.castShadow = true; balon.position.copy(CENTRO).setY(0.12); S.mundo.add(balon);
+    S.grupo = { tipo, max: tipo === 'rueda' ? Math.min(5, libres.length) : 6, miembros: [], fase: 'reclutar', t: 0, dura: 48, balon, posesion: 0, poseedor: null, pases: 0, vuelo: null, tDec: 1.5, r: rnd(U.hash(S.st.fecha + tipo + S.gente.length)) };
+    // Recluta a los que están en la pista o sin hacer nada; si faltan, al resto
+    libres.sort((a, b) => ((b.punto && b.punto[2] === 'tiro') ? 1 : 0) - ((a.punto && a.punto[2] === 'tiro') ? 1 : 0)).slice(0, S.grupo.max).forEach(unir);
+    entrenadorDice(tipo === 'rueda' ? '¡Rueda de pases! Balón rápido' : '¡Tres contra tres a media pista!');
+  }
+  function disolver() {
+    const G = S.grupo; if (!G) return;
+    G.miembros.forEach(n => { n.grupo = null; n.grupoBrazos = 0; n.espera = 0.5 + Math.random() * 2; n.camino = null; anim(n, 'idle'); });
+    S.mundo.remove(G.balon); G.balon.geometry.dispose(); S.grupo = null; S.tGrupo = 18 + Math.random() * 10;
+    entrenadorDice('Bien. Agua y estiramientos');
+  }
+  function entrenadorDice(t) { if (S.entrenador) { bocadillo(t, S.entrenador.obj); S.entrenador.actual = null; anim(S.entrenador, 'interact-right'); S.entrenador.tGesto = 1.2; } }
+  function manosDe(n, out) { const f = n.obj.rotation.y, h = (n.altura || 190) / 100; return out.set(n.obj.position.x + Math.sin(f) * 0.3, h * 0.55, n.obj.position.z + Math.cos(f) * 0.3); }
+  function mirar(n, x, z, dt) { girar(n, Math.atan2(x - n.obj.position.x, z - n.obj.position.z), dt * 2); }
+  function lanzar(G, desde, hasta, dur, arco, alFin) { G.vuelo = { ini: desde.clone(), fin: hasta.clone(), t: 0, dur, arco, alFin }; }
+  function irDirecto(n, x, z, dt) {
+    const o = n.obj.position, dx = x - o.x, dz = z - o.z, d = Math.hypot(dx, dz);
+    if (d < 0.15) { if (n.actual !== 'idle' && n.actual !== 'interact-right') anim(n, 'idle'); return false; }
+    const v = Math.min(d, (d > 1.2 ? 4 : 2.2) * dt); o.x += dx / d * v; o.z += dz / d * v; anim(n, d > 1.2 ? 'sprint' : 'walk'); girar(n, Math.atan2(dx, dz), dt); return true;
+  }
+  function actualizarGrupo(dt) {
+    if (S.entrenador && S.entrenador.tGesto !== undefined && (S.entrenador.tGesto -= dt) <= 0) { S.entrenador.tGesto = undefined; anim(S.entrenador, 'idle'); }
+    if (!S.grupo) { S.tGrupo = (S.tGrupo === undefined ? 6 : S.tGrupo) - dt; if (S.tGrupo <= 0) { S.tGrupo = 30; crearGrupo(); } return; }
+    const G = S.grupo, b = G.balon; G.t += dt;
+    if (G.fase === 'reclutar') { if (G.miembros.length && G.miembros.every(n => n.listo)) { G.fase = 'juego'; G.t = 0; G.poseedor = G.miembros[0]; } else if (G.t > 25) disolver(); return; }
+    if (G.t > G.dura) return disolver();
+    // Balón en vuelo (pase o tiro)
+    if (G.vuelo) { const V = G.vuelo; V.t += dt; const u = Math.min(1, V.t / V.dur); b.position.lerpVectors(V.ini, V.fin, u); b.position.y += V.arco * 4 * u * (1 - u); b.rotation.x -= dt * 10; if (u >= 1) { G.vuelo = null; V.alFin(); } }
+    else if (G.poseedor) { const p = G.poseedor; manosDe(p, b.position); if (G.tipo === 'partidillo') { const f = p.obj.rotation.y; b.position.x += Math.cos(f) * 0.25; b.position.z -= Math.sin(f) * 0.25; b.position.y = 0.12 + Math.abs(Math.sin(G.t * 7)) * 0.75; } }
+    if (G.tipo === 'rueda') {
+      G.miembros.forEach(n => { if (n !== G.poseedor || !G.vuelo) mirar(n, CENTRO.x, CENTRO.z, dt); n.grupoBrazos = Math.max(0, (n.grupoBrazos || 0) - dt * 3); });
+      if (!G.vuelo && G.poseedor && (G.tDec -= dt) <= 0) {
+        const p = G.poseedor, otros = G.miembros.filter(m => m !== p), q = otros[(G.r() * otros.length) | 0]; G.tDec = 0.7 + G.r() * 0.5;
+        p.obj.rotation.y = Math.atan2(q.obj.position.x - p.obj.position.x, q.obj.position.z - p.obj.position.z); p.grupoBrazos = 0.6;
+        G.poseedor = null; lanzar(G, b.position, manosDe(q, new THREE.Vector3()), 0.45, 0.3, () => { G.poseedor = q; G.pases++; if (G.pases % 12 === 0) entrenadorDice(['¡Más rápido!', '¡Pase y corte!', 'Mirad antes de recibir'][G.pases / 12 % 3 | 0]); });
+      }
+      return;
+    }
+    // 3 contra 3: equipo 0 = miembros 0-2, equipo 1 = 3-5
+    const ataque = G.miembros.filter((n, k) => (k < 3 ? 0 : 1) === G.posesion), defensa = G.miembros.filter((n, k) => (k < 3 ? 0 : 1) !== G.posesion);
+    ataque.forEach((n, k) => {
+      if (!n.dest || (n.tDest -= dt) <= 0) { const a = [-0.95, 0, 0.95][k] + (G.r() - 0.5) * 0.6, rr = 2.6 + G.r() * 4.2; n.dest = [ARO.x + Math.cos(a) * rr, ARO.z + Math.sin(a) * rr * 1.2]; n.dest[0] = Math.max(-17.4, Math.min(-10.2, n.dest[0])); n.dest[1] = Math.max(-11, Math.min(-1.2, n.dest[1])); n.tDest = 1.4 + G.r() * 1.8; }
+      if (!irDirecto(n, n.dest[0], n.dest[1], dt)) mirar(n, ARO.x, ARO.z, dt);
+      n.grupoBrazos = Math.max(0, (n.grupoBrazos || 0) - dt * 2.5);
+    });
+    defensa.forEach((n, k) => { const o = ataque[k] || ataque[0], hx = ARO.x - o.obj.position.x, hz = ARO.z - o.obj.position.z, l = Math.hypot(hx, hz) || 1; if (!irDirecto(n, o.obj.position.x + hx / l * 0.95, o.obj.position.z + hz / l * 0.95, dt)) mirar(n, o.obj.position.x, o.obj.position.z, dt); n.grupoBrazos = 0.25; });
+    if (G.vuelo || !G.poseedor) return;
+    if ((G.tDec -= dt) > 0) return; G.tDec = 1.3 + G.r() * 1.2;
+    const p = G.poseedor;
+    if (G.pases >= 2 && G.r() < 0.5) { // tiro
+      const j = S.st.jugadores[p.jugador], d = Math.hypot(ARO.x - p.obj.position.x, ARO.z - p.obj.position.z), tiro = j && j.att ? (d > 6.6 ? j.att.tiro3 : j.att.tiro2) : 60, mete = G.r() < Math.min(0.75, 0.15 + (tiro - 40) / 85);
+      p.obj.rotation.y = Math.atan2(ARO.x - p.obj.position.x, ARO.z - p.obj.position.z); p.grupoBrazos = 1; G.poseedor = null; G.pases = 0;
+      const fin = ARO.clone(); if (!mete) fin.add(new THREE.Vector3((G.r() - 0.5) * 0.5, 0.05, (G.r() - 0.5) * 0.5));
+      const ini = manosDe(p, new THREE.Vector3()).setY((p.altura || 195) / 100 + 0.4);
+      lanzar(G, ini, fin, 0.8 + d * 0.05, 1 + d * 0.12, () => {
+        const red = S.redes.find(r => r.aro.distanceTo(ARO) < 0.5); if (mete && red) red.t = 0;
+        const sigue = mete ? 1 - G.posesion : (G.r() < 0.55 ? 1 - G.posesion : G.posesion); // rebote
+        G.posesion = sigue; const nuevo = G.miembros.filter((n, k) => (k < 3 ? 0 : 1) === sigue)[0];
+        if (mete && G.r() < 0.5) entrenadorDice(['¡Buena canasta!', '¡Eso es, buen tiro!', 'Así se juega'][(G.r() * 3) | 0]); else if (!mete && G.r() < 0.4) entrenadorDice(['¡Rebote, rebote!', '¡Cerrad el rebote!', '¡Atrás, defensa!'][(G.r() * 3) | 0]);
+        lanzar(G, b.position.clone(), manosDe(nuevo, new THREE.Vector3()), 0.7, 0.6, () => { G.poseedor = nuevo; });
+      });
+    } else { // pase a un compañero
+      const q = ataque.filter(m => m !== p)[(G.r() * 2) | 0] || ataque[0]; if (q === p) return;
+      p.obj.rotation.y = Math.atan2(q.obj.position.x - p.obj.position.x, q.obj.position.z - p.obj.position.z); p.grupoBrazos = 0.5; G.poseedor = null;
+      lanzar(G, b.position.clone().setY(1.1), manosDe(q, new THREE.Vector3()), 0.42, 0.25, () => { G.poseedor = q; G.pases++; });
+    }
   }
 
   // ---------- Gente ----------
   async function poblar(st) {
     const P = GM.sedePlano, eq = st.equipos[st.clubId], r = rnd(U.hash(st.clubId + st.fecha));
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
-    const ids = eq.plantilla.filter(i => i !== 'yo').slice(0, 12);
+    S.dia = estadoDia(st); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
+    let ids = eq.plantilla.filter(i => i !== 'yo').slice(0, 12);
+    if (S.dia.tipo === 'derrota') ids = ids.filter(id => U.hash(id + st.fecha) % 100 > 30); // tras perder, algunos ni aparecen
     const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222222';
     const nuevos = await Promise.all(ids.map(id => { const j = st.jugadores[id], h = U.hash(id), oscura = /US|SN|NG|CM|ML|CD|SS|AO|FR|DO|BR|GB/.test(j.nac || '') && h % 3 !== 0; return personaje({ modelo: PERSONAS.jugador[h % 3], altura: j.altura || 198, piel: PIEL[oscura ? 3 + (h >>> 3) % 3 : (h >>> 3) % 3], pelo: PELO[(h >>> 6) % 5], ropa: [c1, c2] }); }));
     nuevos.forEach((n, k) => {
-      Object.assign(n, { jugador: ids[k], r: rnd(U.hash(ids[k] + st.fecha)), espera: 0 });
+      const mor = st.jugadores[ids[k]].estado.moral; Object.assign(n, { jugador: ids[k], r: rnd(U.hash(ids[k] + st.fecha)), espera: 0, cabizbajo: mor < 45, animado: mor > 78 });
       const z = P.puntos.pasillo[k % P.puntos.pasillo.length]; n.obj.position.set(z[0] + (r() - 0.5) * 2, 0, z[1] + (r() - 0.5) * 0.8); n.obj.userData = { npc: k }; S.mundo.add(n.obj); anim(n, 'idle'); S.gente.push(n);
     });
     const per = await Promise.all(P.personal.map((q, k) => { const h = U.hash(q[0] + st.clubId); return personaje({ modelo: PERSONAS[q[0]] || 'm-casual', altura: 165 + h % 20, piel: PIEL[h % 4], pelo: PELO[(h >>> 4) % 6], ropa: q[0] === 'Preparador físico' ? [c1, c2] : null }); }));
     per.forEach((n, k) => { const q = P.personal[k]; n.rol = q[0]; n.fijo = true; n.obj.position.set(q[2], 0, q[3]); n.obj.rotation.y = q[5] * Math.PI / 180; n.obj.userData = { npc: S.gente.length }; anim(n, q[4]); S.mundo.add(n.obj); S.gente.push(n); });
+    // Entrenador con su pizarra junto a la pista (en el modo entrenador, el entrenador eres tú)
+    S.entrenador = null;
+    if (st.modo !== 'entrenador') {
+      const e = await personaje({ modelo: 'h-casual_hoodie', altura: 182, piel: PIEL[1], pelo: PELO[5], ropa: ['#1d2024', c1] });
+      e.rol = 'Entrenador'; e.fijo = true; e.obj.position.set(-12.4, 0, -0.7); e.obj.rotation.y = Math.PI; e.obj.userData = { npc: S.gente.length };
+      const piz = new THREE.Group(), marco = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.52, 0.02), new THREE.MeshStandardMaterial({ color: 0x1d2024 })), hoja = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.46), new THREE.MeshStandardMaterial({ color: 0xf4f6f8 }));
+      hoja.position.z = 0.012; piz.add(marco, hoja); piz.position.set(0.18, 1.0, 0.25); piz.rotation.set(-0.5, 0, 0); piz.scale.setScalar(1 / e.obj.scale.x); piz.position.multiplyScalar(1 / e.obj.scale.x); e.obj.add(piz);
+      anim(e, 'idle'); S.mundo.add(e.obj); S.gente.push(e); S.entrenador = e;
+    }
+    // Día de partido: aficionados con los colores del club en la entrada
+    if (S.dia.tipo === 'partido' && S.dia.casa) {
+      const fans = await Promise.all([0, 1, 2, 3, 4, 5, 6, 7].map(k => personaje({ modelo: ['h-casual_2', 'm-casual', 'h-beach', 'm-punk', 'h-casual_hoodie', 'm-casual', 'h-casual_2', 'h-farmer'][k], altura: 160 + (k * 7) % 28, piel: PIEL[k % 5], pelo: PELO[(k * 3) % 6], ropa: [k % 2 ? c1 : c2, c1] })));
+      fans.forEach((f, k) => { f.rol = 'Aficionado'; f.fijo = true; f.aficionado = true; f.obj.position.set(1.8 + (k % 4) * 1.6 + (k >> 2) * 0.7, 0, 17.4 + (k >> 2) * 1.2); f.obj.rotation.y = Math.PI + (k % 3 - 1) * 0.3; f.obj.userData = { npc: S.gente.length }; anim(f, k % 3 ? 'emote-yes' : 'idle'); S.mundo.add(f.obj); S.gente.push(f); });
+    }
+    if (S.chipDia) S.chipDia.textContent = S.dia.texto;
   }
   function repoblar() { if (S && S.st) poblar(S.st).catch(e => console.warn(e)); }
 
@@ -524,10 +672,10 @@
     lienzo.append(renderer.domElement); renderer.domElement.style.touchAction = 'none';
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
-    scene.add(new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1));
+    const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
     const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
     Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; scene.add(sol);
-    S = { st, raiz, renderer, scene, camera, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
+    S = { luces: { cielo, sol }, st, raiz, renderer, scene, camera, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
@@ -544,7 +692,13 @@
       S.reloj.update(); const dt = Math.min(0.05, S.reloj.getDelta()), t = S.reloj.getElapsed();
       if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
-      S.gente.forEach(n => { if (!n.fijo) { if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); } if (!n.sentado) n.mixer.update(dt); if (n.tiro) actualizarTiro(n, dt); });
+      if (S.gente.length) actualizarGrupo(dt);
+      S.gente.forEach(n => {
+        if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
+        if (!n.sentado) n.mixer.update(dt); if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
+        if (n.cabizbajo && !n.sentado) cabeza(n, 0.8);
+      });
+      saludos(dt);
       if (S.zonas) S.zonas.forEach(z => z.obj.userData.anim(t));
       if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
@@ -589,5 +743,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _personaje: o => personaje(o), aEstrella, rejilla };
 })();

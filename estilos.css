@@ -354,3 +354,5 @@ body{background:var(--bg)}
 /* Bocadillos de las charlas en la sede */
 .sede-bocadillo{position:absolute;z-index:3;transform:translate(-50%,-100%);pointer-events:none;max-width:210px;padding:8px 12px;border-radius:14px 14px 14px 4px;background:#fffdf8;color:#1d2228;font:600 13px/1.3 var(--fb);box-shadow:0 4px 14px rgba(0,0,0,.3);white-space:normal;text-align:left}
 .sede-bocadillo::after{content:'';position:absolute;left:10px;bottom:-7px;border:7px solid transparent;border-top-color:#fffdf8;border-bottom:0;border-left:0}
+.sede-dia{flex:none;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-size:13px;font-weight:600;white-space:nowrap}
+@media (max-width:700px){.sede-dia{display:none}}
