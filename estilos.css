@@ -190,3 +190,57 @@ input,textarea,select{font-size:16px}
 .sede-ayuda{left:10px;top:calc(76px + env(safe-area-inset-top,0px));max-width:300px;font-size:12px;padding:6px 10px;border-radius:8px;background:rgba(18,22,28,.6);color:#e9edf0}
 .sede-cargando{inset:0;display:grid;place-items:center;color:#fff;font:400 22px var(--fd);background:rgba(18,22,28,.55)}
 .sede-volver{position:fixed;z-index:45;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));box-shadow:0 4px 14px rgba(0,0,0,.35)}
+/* Paneles de sala: cada uno con el aspecto del objeto de la sala */
+.sede-sala{right:12px;top:calc(76px + env(safe-area-inset-top,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(380px,calc(100% - 24px));flex-direction:column;border-radius:14px;background:#1b2027;color:#eef1f4;box-shadow:0 10px 30px rgba(0,0,0,.45);overflow:hidden;animation:spEntra .22s ease-out}
+@keyframes spEntra{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sede-sala{animation:none}}
+.sp-cab{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:4px solid var(--club);background:rgba(0,0,0,.25)}
+.sp-cab b{flex:1;font:400 20px/1.1 var(--fd)}
+.sp-x,.sp-volver{width:36px;height:36px;flex:none;display:grid;place-items:center;padding:0;border-radius:50%;background:rgba(255,255,255,.12);color:inherit;font:600 22px/1 var(--fb)}
+.sp-cuerpo{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.sp-accion{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:inherit;min-height:56px}
+.sp-accion b{font-size:15px}.sp-accion span{font-size:13px;opacity:.78}
+.sp-accion:not(:disabled):hover,.sp-accion:not(:disabled):active{background:rgba(255,255,255,.14);border-color:var(--club)}
+.sp-accion.abre b::after{content:' ›';opacity:.6}
+.sp-accion:disabled{opacity:.5}
+.sp-link{margin:0 12px 12px;padding:10px;border-radius:9px;background:none;border:1px dashed rgba(255,255,255,.3);color:#c9d1d8;font-size:13px}
+.sp-tit{margin:10px 0 2px;font:400 15px var(--fd);opacity:.85}
+.sp-fila{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.15)}
+.sp-fila>div{flex:1;display:flex;flex-direction:column}.sp-fila span{font-size:12.5px;opacity:.75}
+.sp-botones{display:flex;gap:8px;margin-top:8px}.sp-botones .btn{flex:1}
+.sp-botones .btn-sec{color:#eef1f4;border-color:rgba(238,241,244,.6)}
+/* Pizarra (pista) */
+.tema-pizarra .sp-cuerpo,.tema-pista .sp-cuerpo{background:#24382c;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:6px 6px}
+.tema-pizarra{background:#3a2b1d;border:6px solid #6b4b2e}
+.sp-tiza{display:flex;flex-wrap:wrap;gap:6px}
+.sp-tiza button{padding:8px 12px;border-radius:6px;border:2px dashed rgba(255,255,255,.45);background:none;color:#f4f1e8;font:400 15px var(--fd);min-height:44px}
+.sp-tiza button.on{border-style:solid;background:rgba(255,255,255,.15);border-color:#fff}
+.sp-quinteto{display:flex;flex-wrap:wrap;gap:6px}.sp-quinteto span{padding:5px 9px;border-radius:99px;border:1px solid rgba(255,255,255,.5);font:400 14px var(--fd)}
+/* Ordenador (despacho) */
+.tema-ordenador .sp-cuerpo{background:#0f1720}
+.sp-ventana{border-radius:8px;overflow:hidden;background:#17212c;border:1px solid #2c3b4b;padding:0 10px 10px}
+.sp-ventana .sp-barra{margin:0 -10px 8px;padding:6px 10px;background:linear-gradient(#2d4256,#22323f);font-size:12.5px;letter-spacing:.02em}
+/* Parte médico (enfermería) */
+.tema-lesionados .sp-cuerpo,.tema-fisio .sp-cuerpo{background:#f6f4ee;color:#1d2228}
+.tema-lesionados .sp-fila,.tema-fisio .sp-fila{border-bottom-color:rgba(0,0,0,.15)}
+.tema-lesionados .sp-cab{border-bottom-color:#d62d2d}
+/* Rueda de prensa */
+.sp-pregunta{position:relative;padding:14px;border-radius:12px;background:#f4f1e8;color:#1d2228;font-size:15.5px;line-height:1.4}
+.sp-pregunta span{display:block;font-size:12px;opacity:.6;margin-bottom:4px}
+.sp-pregunta::after{content:'';position:absolute;left:22px;bottom:-10px;border:10px solid transparent;border-top-color:#f4f1e8;border-bottom:0}
+.sp-respuesta{margin-top:6px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:inherit;text-align:left;font-style:italic;min-height:48px}
+.sp-respuesta:hover{border-color:var(--club)}
+/* Corcho con las fichas (vestuario) */
+.tema-plantilla .sp-cuerpo{background:#b98a55;background-image:radial-gradient(rgba(0,0,0,.12) 1px,transparent 1.5px);background-size:5px 5px}
+.sp-cartas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sp-carta{display:flex;flex-direction:column;gap:3px;padding:8px 9px;border-radius:4px;background:#fbf8f1;color:#1d2228;box-shadow:0 2px 4px rgba(0,0,0,.3);border-top:5px solid var(--club)}
+.sp-carta:nth-child(odd){transform:rotate(-1.2deg)}.sp-carta:nth-child(even){transform:rotate(1deg)}
+.sp-carta b{font:400 15px var(--fd)}.sp-carta span{font-size:12px;opacity:.7}.sp-carta em{font-size:12px;color:#c8402f;font-style:normal;font-weight:700}
+.sp-carta.lesion{border-top-color:#c8402f}
+.sp-barra-mini{display:grid;grid-template-columns:42px 1fr;align-items:center;gap:4px;font-size:11px}
+.sp-barra-mini i{height:5px;border-radius:3px;background:rgba(0,0,0,.12);overflow:hidden}.sp-barra-mini u{display:block;height:100%;background:var(--club)}
+/* Entrada del próximo partido (recepción) */
+.sp-ticket{position:relative;display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:10px;background:#f4f1e8;color:#1d2228;text-align:center;border-left:8px solid var(--club)}
+.sp-ticket b{font:400 30px var(--fd);letter-spacing:.06em}.sp-ticket span{font-size:13px}
+/* Números flotando sobre los jugadores */
+.sede-flota{position:absolute;z-index:3;transform:translate(-50%,-50%);pointer-events:none;font:700 15px var(--fb);text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap}

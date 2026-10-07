@@ -9,7 +9,10 @@
   let S = null; // escena activa
   const cache = {};
   const cargar = ruta => cache[ruta] || (cache[ruta] = new THREE.GLTFLoader().loadAsync(ruta));
-  const PERSONAJES = ['male-a', 'male-b', 'male-c', 'male-d', 'male-e', 'male-f', 'female-a', 'female-b', 'female-c', 'female-d', 'female-e', 'female-f'];
+  // Personas de Quaternius (CC0): cada una sin animaciones y un archivo de animaciones compartido (mismo esqueleto)
+  const PERSONAS = { jugador: ['h-casual_hoodie', 'h-casual_2', 'h-beach'], Recepcionista: 'm-formal', Fisioterapeuta: 'm-casual', Camarero: 'h-casual_2', 'Preparador físico': 'h-beach', 'Jefe de prensa': 'm-suit', director: 'h-suit', entrenador: 'h-casual_hoodie' };
+  const ANIM = { idle: 'Idle_Neutral', walk: 'Walk', sprint: 'Run', 'interact-right': 'Interact', 'interact-left': 'Interact', crouch: 'Interact', 'emote-yes': 'Wave', 'emote-no': 'Idle', sit: 'Idle_Neutral' };
+  const PIEL = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329', '#4b2e1e'], PELO = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#d8b46a', '#8a8a8a'];
 
   // ---------- Texturas de suelo (canvas) ----------
   const TX = {};
@@ -55,12 +58,42 @@
     o.traverse(n => { if (n.isMesh && !Array.isArray(n.material)) { const m = n.material, k = m.name + m.color.getHexString() + (m.map ? m.map.uuid : ''); n.material = MATS[k] || (MATS[k] = m); } }); o.position.set(-a[0], -a[1], -a[2]); w.add(o);
     w.scale.setScalar(GM.sedePlano.ESCALA_MUEBLES); w.tam = a[3]; return w;
   }
-  async function personaje(variante) {
-    const g = await cargar('modelos/personajes/character-' + variante + '.glb');
-    const o = THREE.clonarEsqueleto(g.scene); o.scale.setScalar(GM.sedePlano.ESCALA_PERSONAJES);
-    o.traverse(n => { if (n.isMesh) { n.castShadow = true; n.frustumCulled = false; } });
-    const mixer = new THREE.AnimationMixer(o), acc = {}; g.animations.forEach(a => { acc[a.name] = mixer.clipAction(a); });
-    return { obj: o, mixer, acc };
+  // o: { modelo, altura (cm), piel, pelo, ropa: [color principal, color secundario] }
+  async function personaje(o) {
+    const [g, an] = await Promise.all([cargar('modelos/personas/' + o.modelo + '.glb'), cargar('modelos/personas/animaciones.glb')]);
+    const obj = THREE.clonarEsqueleto(g.scene); if (!g.altoBase) g.altoBase = new THREE.Box3().setFromObject(g.scene).getSize(new THREE.Vector3()).y;
+    obj.scale.setScalar((o.altura || 178) / 100 / g.altoBase);
+    const tinta = (m, hex) => { const c = m.clone(); c.color.set(hex); return c; };
+    obj.traverse(n => {
+      if (!n.isMesh) return; n.castShadow = true; n.frustumCulled = false;
+      const nm = n.material.name || '';
+      if (o.piel && /^Skin/.test(nm)) n.material = tinta(n.material, o.piel);
+      else if (o.pelo && /Hair|Eyebrows|Moustache/.test(nm)) n.material = tinta(n.material, o.pelo);
+      else if (o.ropa && /^(Purple|Red_Dark|LightBrown)$/.test(nm)) n.material = tinta(n.material, o.ropa[0]);
+      else if (o.ropa && /^(LightBlue)$/.test(nm)) n.material = tinta(n.material, o.ropa[1]);
+    });
+    const mixer = new THREE.AnimationMixer(obj), acc = {};
+    Object.keys(ANIM).forEach(k => { const c = an.animations.find(a => a.name === ANIM[k]); if (c) acc[k] = mixer.clipAction(c); });
+    const B = {}; obj.traverse(n => { if (n.isBone) B[n.name] = n; });
+    return { obj, mixer, acc, huesos: B, altura: o.altura || 178 };
+  }
+  // Postura sentada (las animaciones no la traen): muslos al frente, pantorrillas hacia el suelo y pies al final de la pierna.
+  // En este esqueleto los pies cuelgan de Root (no de la pierna), por eso se recolocan a mano.
+  const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), ABAJO = new THREE.Vector3(0, -1, 0);
+  function sentar(p) {
+    const B = p.huesos; if (!B.UpperLegL || !B.FootL) return;
+    p.obj.updateMatrixWorld(true);
+    if (!p.pieLocal) p.pieLocal = {};
+    for (const s of ['L', 'R']) { if (!p.pieLocal[s]) p.pieLocal[s] = B['LowerLeg' + s].worldToLocal(B['Foot' + s].getWorldPosition(new THREE.Vector3())); }
+    for (const s of ['L', 'R']) B['UpperLeg' + s].rotateX(1.5);
+    p.obj.updateMatrixWorld(true);
+    for (const s of ['L', 'R']) {
+      const ll = B['LowerLeg' + s], f = B['Foot' + s], ini = ll.getWorldPosition(_v);
+      const dir = ll.localToWorld(_w.copy(p.pieLocal[s])).sub(ini).normalize();
+      _q.setFromUnitVectors(dir, ABAJO); ll.getWorldQuaternion(_q2); _q2.premultiply(_q);
+      ll.parent.getWorldQuaternion(_q).invert(); ll.quaternion.copy(_q.multiply(_q2)); ll.updateMatrixWorld(true);
+      const fin = ll.localToWorld(_w.copy(p.pieLocal[s])); f.parent.updateMatrixWorld(true); f.position.copy(f.parent.worldToLocal(fin));
+    }
   }
 
   // ---------- Cuadrícula y caminos (A*) ----------
@@ -99,6 +132,7 @@
 
   // ---------- Personajes que caminan ----------
   function anim(p, nombre) {
+    p.sentado = nombre === 'sit'; p.obj.position.y = p.sentado ? -(0.52 * (p.altura || 178) / 100 - 0.47) : 0; // cadera a la altura del asiento
     if (p.actual === nombre) return; const a = p.acc[nombre] || p.acc.idle; if (!a) return;
     a.reset().fadeIn(0.2).play(); if (p.accion) p.accion.fadeOut(0.2); p.accion = a; p.actual = nombre;
   }
@@ -167,6 +201,7 @@
       const t = o.tam, e = P.ESCALA_MUEBLES, giro = Math.abs(Math.sin(o.rotation.y)) > 0.5, w = (giro ? t.z : t.x) * e, d = (giro ? t.x : t.z) * e;
       if (!/^rug|^books|^computer|^laptop|^kitchenCoffee/.test(m[0])) G.bloquea(m[1] - w / 2 + 0.1, m[2] - d / 2 + 0.1, m[1] + w / 2 - 0.1, m[2] + d / 2 - 0.1);
     });
+    decorar(W, club, G, segs, st);
     GM.kit.fusionar(W);
     // Puntos de interacción de las salas: anillo luminoso y rótulo
     S.zonas = P.salas.map(s => {
@@ -176,6 +211,70 @@
       return { sala: s, obj: g };
     });
     return W;
+  }
+  // ---------- Decoración: lo que da vida a cada sala ----------
+  function decorar(W, club, G, segs, st) {
+    const c1 = club.colores[0], c2 = club.colores[1] || '#ffffff', oscuro = c1 === '#000000' ? '#222222' : c1;
+    const M = {}; const mat = (hex, o) => { const k = hex + JSON.stringify(o || {}); return M[k] || (M[k] = new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: 0.7 }, o || {}))); };
+    const caja = (w, h, d, m, x, y, z, ry) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m); me.position.set(x, y + h / 2, z); if (ry) me.rotation.y = ry; me.castShadow = true; me.receiveShadow = true; W.add(me); return me; };
+    const cil = (r, h, m, x, y, z, seg) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 12), typeof m === 'string' ? mat(m) : m); me.position.set(x, y + h / 2, z); me.castShadow = true; W.add(me); return me; };
+    const esfera = (r, m, x, y, z) => { const me = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), typeof m === 'string' ? mat(m) : m); me.position.set(x, y, z); me.castShadow = true; W.add(me); return me; };
+    // Cuadros y carteles en las paredes (la cara mira hacia ry)
+    const cuadro = (w, h, tex, x, y, z, ry, marco) => { const g = new THREE.Group(); if (marco) { const mq = new THREE.Mesh(new THREE.BoxGeometry(w + 0.12, h + 0.12, 0.04), mat(marco)); g.add(mq); } const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), tex ? new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }) : mat('#cccccc')); p.position.z = 0.025; g.add(p); g.position.set(x, y, z); g.rotation.y = ry; W.add(g); return g; };
+    const lienzo = (clave, w, h, dib) => textura(clave, 512, (x, n) => { x.save(); x.scale(n / w, n / h); dib(x, w, h); x.restore(); });
+    // Texturas propias del club
+    const tCartel = lienzo('cartel-' + club.siglas, 300, 420, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, oscuro); g.addColorStop(1, '#111'); x.fillStyle = g; x.fillRect(0, 0, w, h); x.fillStyle = c2 === '#ffffff' ? '#fff' : c2; x.font = 'bold 34px sans-serif'; x.textAlign = 'center'; x.fillText('TEMPORADA', w / 2, 70); x.fillText('2026-27', w / 2, 110); x.font = 'bold 120px sans-serif'; x.fillText(club.siglas, w / 2, 280); x.font = '24px sans-serif'; x.fillText(club.nombre.toUpperCase().slice(0, 18), w / 2, 360); });
+    const tAficion = lienzo('aficion-' + club.siglas, 300, 420, (x, w, h) => { x.fillStyle = '#f4f1e8'; x.fillRect(0, 0, w, h); x.fillStyle = oscuro; x.fillRect(0, 0, w, 120); x.fillStyle = '#fff'; x.font = 'bold 40px sans-serif'; x.textAlign = 'center'; x.fillText('SOMOS', w / 2, 75); x.fillStyle = oscuro; x.font = 'bold 54px sans-serif'; x.fillText(club.siglas, w / 2, 230); x.font = '22px sans-serif'; x.fillText('Abonos 2026-27', w / 2, 320); x.fillText('a la venta en recepción', w / 2, 352); });
+    const tTablon = lienzo('tablon', 400, 280, (x, w, h) => { x.fillStyle = '#b98a55'; x.fillRect(0, 0, w, h); const r = rnd(9); for (let i = 0; i < 7; i++) { x.save(); x.translate(30 + (i % 4) * 92, 30 + Math.floor(i / 4) * 120); x.rotate((r() - 0.5) * 0.15); x.fillStyle = ['#fbf8f1', '#fff4a8', '#cfe8ff'][i % 3]; x.fillRect(0, 0, 78, 96); x.fillStyle = 'rgba(0,0,0,.35)'; for (let k = 0; k < 6; k++) x.fillRect(8, 16 + k * 12, 40 + r() * 22, 3); x.fillStyle = '#c8402f'; x.beginPath(); x.arc(39, 6, 5, 0, 6.3); x.fill(); x.restore(); } });
+    const tMarcador = lienzo('marcador-' + club.siglas, 480, 160, (x, w, h) => { x.fillStyle = '#111'; x.fillRect(0, 0, w, h); x.fillStyle = '#ffb81c'; x.font = 'bold 72px monospace'; x.textAlign = 'center'; x.fillText('00', 110, 110); x.fillText('00', 370, 110); x.fillStyle = '#ff4a3a'; x.font = 'bold 44px monospace'; x.fillText('24', 240, 70); x.fillStyle = '#ddd'; x.font = 'bold 26px sans-serif'; x.fillText(club.siglas, 110, 40); x.fillText('INVIT.', 370, 40); x.fillText('10:00', 240, 130); });
+    const tMenu = lienzo('menu', 360, 260, (x, w, h) => { x.fillStyle = '#20302a'; x.fillRect(0, 0, w, h); x.fillStyle = '#f4f1e8'; x.font = 'bold 30px sans-serif'; x.textAlign = 'center'; x.fillText('MENÚ DEL DÍA', w / 2, 46); x.font = '22px sans-serif'; ['Crema de calabaza', 'Pasta con pollo', 'Fruta o yogur', 'Café: 1,20 €'].forEach((t, i) => x.fillText(t, w / 2, 100 + i * 38)); });
+    const tEscudo = lienzo('escudo-' + club.siglas, 400, 460, (x, w, h) => { x.clearRect(0, 0, w, h); x.beginPath(); x.moveTo(20, 20); x.lineTo(w - 20, 20); x.lineTo(w - 20, 250); x.quadraticCurveTo(w - 20, 400, w / 2, h - 20); x.quadraticCurveTo(20, 400, 20, 250); x.closePath(); x.fillStyle = oscuro; x.fill(); x.lineWidth = 14; x.strokeStyle = c2; x.stroke(); x.save(); x.clip(); x.fillStyle = c2; x.beginPath(); x.moveTo(w / 2, 20); x.lineTo(w - 20, 20); x.lineTo(w - 20, 250); x.lineTo(w / 2, h); x.fill(); x.restore(); x.fillStyle = '#fff'; x.strokeStyle = '#111'; x.lineWidth = 6; x.font = 'bold 110px sans-serif'; x.textAlign = 'center'; x.strokeText(club.siglas, w / 2, 230); x.fillText(club.siglas, w / 2, 230); });
+    const tCamiseta = lienzo('camiseta-' + club.siglas, 300, 340, (x, w, h) => { x.fillStyle = '#f2efe8'; x.fillRect(0, 0, w, h); x.fillStyle = oscuro; x.beginPath(); x.moveTo(70, 40); x.lineTo(110, 30); x.quadraticCurveTo(150, 60, 190, 30); x.lineTo(230, 40); x.lineTo(230, 300); x.lineTo(70, 300); x.closePath(); x.fill(); x.fillStyle = c2; x.fillRect(70, 40, 18, 260); x.fillRect(212, 40, 18, 260); x.fillStyle = '#fff'; x.font = 'bold 90px sans-serif'; x.textAlign = 'center'; x.fillText(String(4 + U.hash(club.id) % 20), 150, 200); });
+    // Sombras de contacto al pie de los muros (degradado en el suelo): dan profundidad a las salas
+    const tSombra = textura('sombra-muro', 64, (x, n) => { const g = x.createLinearGradient(0, 0, 0, n); g.addColorStop(0, 'rgba(0,0,0,0.42)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, n, n); });
+    const mSombra = new THREE.MeshBasicMaterial({ map: tSombra, transparent: true, depthWrite: false });
+    segs.forEach(([x, z, vertical]) => { for (const sgn of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.55).rotateX(-Math.PI / 2), mSombra); if (vertical) { p.rotation.y = sgn > 0 ? -Math.PI / 2 : Math.PI / 2; p.position.set(x + sgn * 0.37, 0.012, z); } else { p.rotation.y = sgn > 0 ? Math.PI : 0; p.position.set(x, 0.012, z + sgn * 0.37); } p.renderOrder = 1; W.add(p); } });
+    // Charcos de luz (luz cálida de lámparas y focos, en aditivo)
+    const tLuz = textura('charco-luz', 128, (x, n) => { const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g.addColorStop(0, 'rgba(255,236,200,0.34)'); g.addColorStop(1, 'rgba(255,236,200,0)'); x.fillStyle = g; x.fillRect(0, 0, n, n); });
+    const mLuz = new THREE.MeshBasicMaterial({ map: tLuz, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    [[-14, -9, 7], [-4, -3, 7], [6.5, -8, 6], [15.5, -2, 5], [15.5, -10, 5], [-14, 10, 6], [-3, 9.5, 6], [6, 9.5, 5], [15, 10.5, 5], [-12, 3.5, 4], [0, 3.5, 4], [12, 3.5, 4]].forEach(([x, z, r]) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(r, r).rotateX(-Math.PI / 2), mLuz); p.position.set(x, 0.015, z); p.renderOrder = 2; W.add(p); });
+    // Pasillo: carteles y tablón
+    [[-17, 2.12, 0, tCartel], [-12.5, 2.12, 0, tAficion], [-4, 2.12, 0, tCartel], [1, 2.12, 0, tAficion], [9, 2.12, 0, tCartel], [18.2, 2.12, 0, tAficion]].forEach(([x, z, ry, t]) => cuadro(0.75, 1.0, t, x, 0.62, z + 0.0, ry, '#2a2a2a'));
+    cuadro(1.6, 1.1, tTablon, -6.6, 0.62, 4.88, Math.PI, '#6b4b2e'); cuadro(0.75, 1.0, tCartel, 10.4, 0.62, 4.88, Math.PI, '#2a2a2a'); cuadro(0.75, 1.0, tAficion, 16.6, 0.62, 4.88, Math.PI, '#2a2a2a');
+    // Pista: marcador, carros de balones, conos y botellas
+    cuadro(3.2, 1.05, tMarcador, -9, 0.62, -13.88, 0, '#333');
+    const naranja = mat('#d9692b', { roughness: 0.8 });
+    for (const xr of [-19.2, 1.2]) { caja(0.5, 0.06, 1.1, '#333a40', xr, 0.35, -2.2); caja(0.05, 0.5, 1.1, '#333a40', xr - 0.22, 0, -2.2); caja(0.05, 0.5, 1.1, '#333a40', xr + 0.22, 0, -2.2); for (let i = 0; i < 6; i++) esfera(0.12, naranja, xr + ((i % 2) - 0.5) * 0.24, 0.55, -2.6 + Math.floor(i / 2) * 0.38); }
+    [[-12, -9], [-11, -9.6], [-10, -9], [-9, -9.6], [-8, -9]].forEach(([x, z]) => { const c = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.28, 10), mat('#ff7a1a')); c.position.set(x, 0.14, z); W.add(c); });
+    for (let i = 0; i < 6; i++) { cil(0.04, 0.22, mat(i % 2 ? oscuro : '#e8eef2'), -15.9 + i * 0.7, 0, 0.75); cil(0.04, 0.22, mat(i % 2 ? oscuro : '#e8eef2'), -5.9 + i * 0.7, 0, 0.75); }
+    // Gimnasio: espejo, franja del club, mancuernas y kettlebells
+    caja(6.5, 1.0, 0.04, mat('#c8dbe6', { metalness: 0.9, roughness: 0.08 }), 6.5, 0.1, -13.86); caja(8.6, 0.12, 0.03, oscuro, 6.5, 1.0, -13.85);
+    caja(1.4, 0.06, 0.4, '#333a40', 3.2, 0.5, -9.5, Math.PI / 2); for (let i = 0; i < 5; i++) { const y = 0.6, z = -10.1 + i * 0.3; cil(0.06, 0.08, mat('#1d2024'), 3.1, y, z); cil(0.06, 0.08, mat('#1d2024'), 3.35, y, z); caja(0.25, 0.03, 0.03, '#888', 3.22, y + 0.03, z); }
+    for (let i = 0; i < 4; i++) { esfera(0.11, mat('#1d2024'), 8.6 + i * 0.32, 0.11, -0.8); }
+    // Vestuario: escudo pintado en el suelo y toallas en los bancos
+    if (tEscudo) { const e = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.8).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: tEscudo, transparent: true, roughness: 0.6 })); e.position.set(15.5, 0.013, -2); W.add(e); }
+    [[13.2, -3], [15.9, -3], [17.2, -1], [13.8, -1]].forEach(([x, z], i) => caja(0.35, 0.05, 0.25, i % 2 ? oscuro : '#f2f2f2', x, 0.47, z));
+    // Enfermería: bañeras de hielo y armario de vendas
+    for (const x of [18.6, 17.2]) { cil(0.55, 0.7, mat('#c9d3d6', { metalness: 0.5, roughness: 0.3 }), x, 0, -10.6, 20); cil(0.5, 0.02, mat('#7fc6e8', { roughness: 0.1 }), x, 0.66, -10.6, 20); }
+    // Sala de prensa: micrófonos, cámaras en trípode y focos
+    for (const x of [-14.8, -14, -13.2]) { cil(0.012, 0.25, '#222', x, 0.66, 12.2); esfera(0.035, mat('#222'), x, 0.93, 12.15); }
+    for (const x of [-17.5, -10.5]) { const g = new THREE.Group(); for (let k = 0; k < 3; k++) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.3), mat('#222')); const a = k * 2.1; l.position.set(Math.cos(a) * 0.2, 0.62, Math.sin(a) * 0.2); l.rotation.set(Math.sin(a) * 0.3, 0, -Math.cos(a) * 0.3); g.add(l); } const cam = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.25, 0.5), mat('#1a1a1a')); cam.position.y = 1.35; g.add(cam); g.position.set(x, 0, 5.8); g.lookAt(-14, 0, 12.4); W.add(g); }
+    for (const x of [-18.6, -9.4]) { cil(0.02, 1.9, '#333', x, 0, 13.2); const f = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.12, 0.25, 12), mat('#222')); f.position.set(x, 1.95, 13.1); f.rotation.x = 0.6; W.add(f); }
+    // Cafetería: pizarra del menú y tazas
+    cuadro(1.8, 1.3, tMenu, -6.6, 0.65, 5.12, 0, '#6b4b2e');
+    [[-6, 8.6], [-2.6, 8.6], [-5.9, 8.7], [0, 11.5]].forEach(([x, z]) => cil(0.05, 0.08, mat('#f4f1e8'), x + 0.15, 0.62, z));
+    // Despacho: camiseta enmarcada, bandera y portátil
+    cuadro(1.0, 1.15, tCamiseta, 16, 0.65, 13.88, Math.PI, '#3a2a1a');
+    cil(0.025, 2.2, '#bfa36a', 19.4, 0, 12.6); { const b = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.6), new THREE.MeshStandardMaterial({ color: c1, side: THREE.DoubleSide })); b.position.set(19.4, 1.9, 12.15); b.rotation.y = Math.PI / 2; W.add(b); }
+    // Recepción: gran escudo del club y camisetas enmarcadas
+    if (tEscudo) { const e = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.75), new THREE.MeshStandardMaterial({ map: tEscudo, transparent: true })); e.position.set(2.13, 1.0, 11.6); e.rotation.y = Math.PI / 2; W.add(e); }
+    cuadro(0.8, 0.95, tCamiseta, 2.13, 0.62, 9.6, Math.PI / 2, '#3a2a1a');
+    // Exterior: acera, marquesina de la entrada, mástiles con banderas y árboles
+    const acera = new THREE.Mesh(new THREE.PlaneGeometry(46, 34).rotateX(-Math.PI / 2), mat('#a7a39b', { roughness: 0.95 })); acera.position.set(0, -0.005, 0); acera.receiveShadow = true; W.add(acera);
+    caja(3.0, 0.08, 1.1, oscuro, 6, 2.6, 14.9); cil(0.05, 2.4, '#555', 4.6, 0, 16.2); cil(0.05, 2.4, '#555', 7.4, 0, 16.2);
+    [[2.5, 0], [4, 1], [8, 0], [9.5, 1]].forEach(([x, k]) => { cil(0.04, 4.2, '#d7d7d7', x, 0, 16.6); const b = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.7), new THREE.MeshStandardMaterial({ color: k ? c2 : c1, side: THREE.DoubleSide })); b.position.set(x + 0.58, 3.8, 16.6); W.add(b); });
+    const tronco = mat('#6b5136'), copa = mat('#4f7f3a', { roughness: 0.9 });
+    [[-22, -12], [-22, -2], [-22, 8], [22, -12], [22, 0], [22, 10], [-14, 17.5], [-4, 17.5], [14, 17.5], [-12, -16.5], [0, -16.5], [12, -16.5]].forEach(([x, z], i) => { cil(0.12, 1.4, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.1 + (i % 3) * 0.2, 1), copa); c.position.set(x, 2.1, z); c.castShadow = true; W.add(c); });
   }
   function etiqueta(txt) {
     const c = document.createElement('canvas'); c.width = 512; c.height = 96; const x = c.getContext('2d');
@@ -192,39 +291,93 @@
     const top = h('div', { class: 'sede-hud sede-top' },
       h('button', { class: 'btn btn-sec peq', onclick: cerrar }, 'Salir'),
       h('div', { class: 'ct' }, h('b', null, club.nombre), fecha),
-      h('button', { class: 'btn peq', onclick: () => { if (GM.ui.jugarUnDia) { GM.ui.jugarUnDia(); setTimeout(() => { fecha.textContent = U.fechaLarga(st.fecha); repoblar(); }, 60); } } }, 'Avanzar un día'));
-    S.aviso = h('div', { class: 'sede-hud sede-aviso', style: { display: 'none' } });
+      h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
+    S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
     S.ficha = h('div', { class: 'sede-hud sede-ficha', style: { display: 'none' } });
-    const ayuda = h('div', { class: 'sede-hud sede-ayuda' }, 'Toca el suelo para caminar o usa WASD. Rueda o pellizco para acercar, Q y E para girar. Toca a un jugador para hablar con él.');
-    S.raiz.append(top, S.aviso, S.ficha, ayuda);
+    const ayuda = h('div', { class: 'sede-hud sede-ayuda' }, 'Toca el suelo para caminar o usa WASD (Mayúsculas para correr). Rueda para acercar, Q para girar. Pisa el círculo de una sala para ver qué puedes hacer y toca a un jugador para hablar con él.');
+    S.raiz.append(top, S.panel, S.ficha, ayuda);
   }
+  // ---------- Paneles de sala (menús dentro del mundo) ----------
+  const destino = sala => { const d = sala.destino.todos || sala.destino[S.st.modo]; return d && GM.ui.screens[d] ? d : null; };
   function mostrarAviso(zona) {
-    const h = GM.h, st = S.st;
-    if (!zona) { S.aviso.style.display = 'none'; S.zonaActual = null; return; }
-    if (S.zonaActual === zona) return; S.zonaActual = zona; S.aviso.innerHTML = '';
-    S.aviso.append(h('div', { class: 'ct' }, h('b', null, zona.sala.nombre), h('span', null, zona.sala.accion)), h('button', { class: 'btn', onclick: () => entrar(zona.sala) }, 'Entrar (E)'));
-    S.aviso.style.display = 'flex';
+    if (!zona) { if (S.zonaActual) { S.zonaActual = null; if (!S.panelFijo) S.panel.style.display = 'none'; } return; }
+    if (S.zonaActual === zona) return; S.zonaActual = zona; S.panelFijo = false; abrirSala(zona.sala);
   }
-  function entrar(sala) {
-    const st = S.st, d = sala.destino.todos || sala.destino[st.modo] || 'inicio';
-    if (d === 'lesionados' || d === 'noticias') return panelPropio(d);
-    if (!GM.ui.screens[d]) return GM.ui.toast && GM.ui.toast('Esta sala aún no tiene contenido en este modo');
-    // Se oculta la sede (sigue cargada) y se abre la pantalla clásica con un botón para volver
+  function abrirSala(sala, panelId) {
+    const h = GM.h, st = S.st, A = GM.mods.sedeAcciones, P = S.panel; P.innerHTML = ''; P.className = 'sede-hud sede-sala tema-' + (panelId || sala.id); P.style.display = 'flex';
+    P.append(h('div', { class: 'sp-cab' }, panelId ? h('button', { class: 'sp-volver', onclick: () => abrirSala(sala) }, '‹') : null, h('b', null, panelId ? (A.acciones(st, sala.id).find(x => x.id === panelId) || {}).t || sala.nombre : sala.nombre), h('button', { class: 'sp-x', 'aria-label': 'Cerrar', onclick: () => { P.style.display = 'none'; } }, '×')));
+    const cuerpo = h('div', { class: 'sp-cuerpo' }); P.append(cuerpo);
+    if (panelId) pintarPanel(panelId, cuerpo, sala);
+    else {
+      if (!A) cuerpo.append(h('p', null, sala.accion));
+      else A.acciones(st, sala.id).forEach(x => cuerpo.append(h('button', { class: 'sp-accion' + (x.panel ? ' abre' : ''), disabled: !x.disponible, onclick: () => x.panel ? abrirSala(sala, x.id) : ejecutar(x.id, sala) }, h('b', null, x.t), h('span', null, x.disponible ? x.d : x.motivo))));
+    }
+    const d = destino(sala); if (d) P.append(h('button', { class: 'sp-link', onclick: () => entrarClasica(d) }, 'Abrir la pantalla completa'));
+  }
+  function refrescarSala() { if (S.zonaActual && S.panel.style.display !== 'none' && !/tema-(rueda|ordenador|pizarra|lesionados|plantilla|partido)/.test(S.panel.className)) abrirSala(S.zonaActual.sala); }
+  function ejecutar(id, sala) {
+    const r = GM.mods.sedeAcciones.hacer(S.st, id); GM.ui.toast(r.ok ? r.texto : r.motivo);
+    if (r.ok) reaccion(r.texto, sala); abrirSala(sala);
+  }
+  // Reacción de los jugadores: saludan y les sale el efecto flotando sobre la cabeza
+  function reaccion(texto, sala) {
+    const m = /([a-zá-úñ]+) ([+−-]\d+)/i.exec(texto || ''), etq = m ? m[2] + ' ' + m[1] : '✓';
+    S.gente.filter(n => !n.fijo).forEach((n, i) => { setTimeout(() => { if (!S) return; flotar(etq, n.obj, /[−-]/.test(etq) ? '#ffb4a8' : '#b8f5c8'); if (!n.camino || !n.camino.length) { anim(n, 'emote-yes'); n.espera = 3; } }, i * 60); });
+  }
+  function flotar(txt, obj, color) {
+    const el = GM.h('div', { class: 'sede-flota', style: { color } }, txt); S.raiz.append(el);
+    S.flotantes.push({ el, obj, t: 0 });
+  }
+  function moverFlotantes(dt) {
+    const r = S.renderer.domElement.getBoundingClientRect(), v = new THREE.Vector3();
+    S.flotantes = S.flotantes.filter(f => {
+      f.t += dt; if (f.t > 1.8) { f.el.remove(); return false; }
+      v.copy(f.obj.position); v.y += 2.2 + f.t * 0.6; v.project(S.camera);
+      f.el.style.left = (v.x + 1) / 2 * r.width + 'px'; f.el.style.top = (1 - v.y) / 2 * r.height + 'px'; f.el.style.opacity = String(Math.min(1, 2.2 - f.t * 1.2)); return true;
+    });
+  }
+  function pintarPanel(id, c, sala) {
+    const h = GM.h, st = S.st, A = GM.mods.sedeAcciones, eq = st.equipos[st.clubId];
+    if (id === 'plantilla') {
+      const ps = eq.plantilla.map(i => st.jugadores[i]).filter(p => p && p.id !== 'yo').sort((a, b) => b.ovr - a.ovr);
+      c.append(h('div', { class: 'sp-cartas' }, ps.map(p => h('div', { class: 'sp-carta' + (p.estado.lesion ? ' lesion' : '') }, h('b', null, p.nombre.split(' ').slice(-1)[0]), h('span', null, p.pos + ', ' + p.ovr), barra('Ánimo', p.estado.moral), barra('Forma', p.estado.forma), p.estado.lesion ? h('em', null, 'Lesionado, ' + p.estado.lesion.dias + ' d') : null))));
+    } else if (id === 'pizarra') {
+      const t = A.pizarra(st), opc = (campo, lista) => h('div', { class: 'sp-tiza' }, lista.map(([v, txt]) => h('button', { class: t[campo] === v ? 'on' : '', onclick: () => { const r = A.fijarTactica(st, campo, v); if (!r.ok) GM.ui.toast(r.motivo); abrirSala(sala, 'pizarra'); } }, txt)));
+      c.append(h('p', { class: 'sp-tit' }, 'Ritmo'), opc('ritmo', [[2, 'Pausado'], [3, 'Normal'], [4, 'Rápido'], [5, 'A tope']]),
+        h('p', { class: 'sp-tit' }, 'Defensa'), opc('defensa', [['hombre', 'Individual'], ['zona', 'Zona'], ['mixta', 'Mixta']]),
+        h('p', { class: 'sp-tit' }, 'Ataque'), opc('foco', [['equilibrado', 'Equilibrado'], ['exterior', 'Tiro exterior'], ['interior', 'Juego interior']]),
+        h('p', { class: 'sp-tit' }, 'Quinteto'), h('div', { class: 'sp-quinteto' }, t.quinteto.map(p => h('span', null, p.pos + ' ' + p.nombre.split(' ').slice(-1)[0]))));
+    } else if (id === 'lesionados') {
+      const ls = A.lesionados(st);
+      if (!ls.length) c.append(h('p', null, 'Nadie en la camilla. El fisio aprovecha para ordenar el botiquín.'));
+      ls.forEach(p => c.append(h('div', { class: 'sp-fila' }, h('div', null, h('b', null, p.nombre), h('span', null, p.estado.lesion.tipo + ', ' + p.estado.lesion.dias + ' días' + (p.estado.lesion.tratado ? ', en tratamiento intensivo' : ''))),
+        p.estado.lesion.tratado ? null : h('button', { class: 'btn peq', onclick: () => { const r = A.tratar(st, p.id); GM.ui.toast(r.ok ? r.texto : r.motivo); abrirSala(sala, 'lesionados'); } }, 'Tratamiento intensivo, ' + U.eur(A.COSTE_TRAT)))));
+    } else if (id === 'rueda') {
+      const rp = A.ruedaPrensa(st);
+      c.append(h('div', { class: 'sp-pregunta' }, h('span', null, 'Periodista'), rp.pregunta));
+      rp.respuestas.forEach((t, i) => c.append(h('button', { class: 'sp-respuesta', onclick: () => { const r = A.responder(st, i); GM.ui.toast(r.ok ? r.texto : r.motivo); if (r.ok) reaccion(r.texto, sala); abrirSala(sala); } }, '«' + t + '»')));
+    } else if (id === 'ordenador') {
+      const o = A.ordenador(st);
+      c.append(h('div', { class: 'sp-ventana' }, h('div', { class: 'sp-barra' }, 'Gestión deportiva, ' + eq.siglas),
+        h('p', null, 'Caja ' + U.eur(o.caja) + ', masa salarial ' + U.eur(o.masa) + ' de ' + U.eur(o.tope)),
+        h('p', { class: 'sp-tit' }, 'Agentes libres'), o.libres.map(x => h('div', { class: 'sp-fila' }, h('div', null, h('b', null, x.p.nombre + ' (' + x.p.ovr + ')'), h('span', null, x.p.pos + ', ' + x.p.edad + ' años, pide ' + U.eur(x.pide) + ' al año')), h('button', { class: 'btn peq', onclick: () => { const r = A.ofrecer(st, x.p.id); GM.ui.toast(r.ok ? '¡' + x.p.nombre + ' firma por 2 temporadas!' : r.motivo); if (r.ok) repoblar(); abrirSala(sala, 'ordenador'); } }, 'Ofrecer'))),
+        h('p', { class: 'sp-tit' }, 'Contratos que acaban'), o.renov.length ? o.renov.map(x => h('div', { class: 'sp-fila' }, h('div', null, h('b', null, x.p.nombre + ' (' + x.p.ovr + ')'), h('span', null, 'Hasta ' + x.p.contrato.hasta + ', pide ' + U.eur(x.pide))), h('button', { class: 'btn peq', onclick: () => { const r = A.renovar(st, x.p.id); GM.ui.toast(r.ok ? x.p.nombre + ' renueva' : r.motivo); abrirSala(sala, 'ordenador'); } }, 'Renovar'))) : h('p', null, 'Ninguno este año.')));
+    } else if (id === 'partido') {
+      const C = GM.mods.competiciones, g = C.proximoPartido(st, st.clubId);
+      if (!g) c.append(h('p', null, 'No quedan partidos esta temporada.'));
+      else { const L = st.equipos[g.local], V = st.equipos[g.visitante]; c.append(h('div', { class: 'sp-ticket' }, h('span', null, U.fechaLarga(g.fecha) + (g.fecha === st.fecha ? ', hoy' : '')), h('b', null, L.siglas + '  vs  ' + V.siglas), h('span', null, L.nombre + ' contra ' + V.nombre), h('span', null, g.local === st.clubId ? 'En casa, ' + L.pabellon.nombre : 'Fuera, ' + L.pabellon.nombre))); }
+      c.append(h('div', { class: 'sp-botones' }, h('button', { class: 'btn', onclick: () => { avanzar(() => GM.ui.jugarUnDia()); } }, g && g.fecha === st.fecha ? 'Jugar el partido' : 'Avanzar un día'), h('button', { class: 'btn btn-sec', onclick: () => avanzar(() => GM.ui.hastaPartido()) }, 'Hasta el partido')));
+    }
+  }
+  const barra = (t, v) => GM.h('div', { class: 'sp-barra-mini' }, GM.h('span', null, t), GM.h('i', null, GM.h('u', { style: { width: Math.round(v) + '%' } })));
+  function avanzar(fn) { fn(); setTimeout(() => { if (!S) return; hud(S.st); repoblar(); if (S.zonaActual) abrirSala(S.zonaActual.sala, 'partido'); }, 80); }
+  function entrarClasica(d) {
     S.raiz.style.display = 'none'; S.pausa = true; GM.ui.navegar(d);
     if (!S.volverBtn) { S.volverBtn = GM.h('button', { class: 'btn sede-volver', onclick: volver }, 'Volver a la sede'); document.body.append(S.volverBtn); }
     S.volverBtn.style.display = 'block';
   }
-  function volver() { if (!S) return; S.raiz.style.display = ''; S.pausa = false; if (S.volverBtn) S.volverBtn.style.display = 'none'; repoblar(); S.reloj.update(); }
-  function panelPropio(tipo) {
-    const h = GM.h, st = S.st, eq = st.equipos[st.clubId], cont = h('div');
-    if (tipo === 'lesionados') {
-      const les = eq.plantilla.map(i => st.jugadores[i]).filter(p => p && p.estado && p.estado.lesion);
-      cont.append(h('h3', null, 'Enfermería'), les.length ? h('div', { class: 'lista' }, les.map(p => h('div', { class: 'item' }, h('div', { class: 'ct' }, h('b', null, p.nombre), h('span', { class: 'muted' }, p.estado.lesion.tipo + ', ' + p.estado.lesion.dias + ' días de baja'))))) : h('p', null, 'No hay ningún lesionado. El fisio se aburre.'));
-    } else {
-      cont.append(h('h3', null, 'Sala de prensa'), h('div', { class: 'lista' }, (st.noticias || []).slice(0, 12).map(n => h('div', { class: 'item' }, h('div', { class: 'ct' }, h('span', { class: 'muted' }, U.fecha(n.fecha)), h('span', null, n.texto))))));
-    }
-    GM.ui.modal(cont, [{ t: 'Cerrar', cls: 'btn-sec' }]);
-  }
+  function entrar(sala) { S.panelFijo = true; abrirSala(sala); }
+  function volver() { if (!S) return; S.raiz.style.display = ''; S.pausa = false; if (S.volverBtn) S.volverBtn.style.display = 'none'; repoblar(); S.reloj.update(); if (S.zonaActual) abrirSala(S.zonaActual.sala); }
   function fichaJugador(n) {
     const h = GM.h, st = S.st, F = S.ficha; F.innerHTML = '';
     if (!n) { F.style.display = 'none'; return; }
@@ -242,12 +395,13 @@
     const P = GM.sedePlano, eq = st.equipos[st.clubId], r = rnd(U.hash(st.clubId + st.fecha));
     S.gente.forEach(n => { S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
     const ids = eq.plantilla.filter(i => i !== 'yo').slice(0, 12);
-    const nuevos = await Promise.all(ids.map(id => personaje(PERSONAJES[U.hash(id) % 8])));
+    const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222222';
+    const nuevos = await Promise.all(ids.map(id => { const j = st.jugadores[id], h = U.hash(id), oscura = /US|SN|NG|CM|ML|CD|SS|AO|FR|DO|BR|GB/.test(j.nac || '') && h % 3 !== 0; return personaje({ modelo: PERSONAS.jugador[h % 3], altura: j.altura || 198, piel: PIEL[oscura ? 3 + (h >>> 3) % 3 : (h >>> 3) % 3], pelo: PELO[(h >>> 6) % 5], ropa: [c1, c2] }); }));
     nuevos.forEach((n, k) => {
       Object.assign(n, { jugador: ids[k], r: rnd(U.hash(ids[k] + st.fecha)), espera: 0 });
       const z = P.puntos.pasillo[k % P.puntos.pasillo.length]; n.obj.position.set(z[0] + (r() - 0.5) * 2, 0, z[1] + (r() - 0.5) * 0.8); n.obj.userData = { npc: k }; S.mundo.add(n.obj); anim(n, 'idle'); S.gente.push(n);
     });
-    const per = await Promise.all(P.personal.map((q, k) => personaje(PERSONAJES[8 + (k % 4)])));
+    const per = await Promise.all(P.personal.map((q, k) => { const h = U.hash(q[0] + st.clubId); return personaje({ modelo: PERSONAS[q[0]] || 'm-casual', altura: 165 + h % 20, piel: PIEL[h % 4], pelo: PELO[(h >>> 4) % 6], ropa: q[0] === 'Preparador físico' ? [c1, c2] : null }); }));
     per.forEach((n, k) => { const q = P.personal[k]; n.rol = q[0]; n.fijo = true; n.obj.position.set(q[2], 0, q[3]); n.obj.rotation.y = q[5] * Math.PI / 180; n.obj.userData = { npc: S.gente.length }; anim(n, q[4]); S.mundo.add(n.obj); S.gente.push(n); });
   }
   function repoblar() { if (S && S.st) poblar(S.st).catch(e => console.warn(e)); }
@@ -265,23 +419,25 @@
     scene.add(new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1));
     const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
     Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; scene.add(sol);
-    S = { st, raiz, renderer, scene, camera, gente: [], ocupados: new Set(), reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
+    S = { st, raiz, renderer, scene, camera, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, 'Abriendo la sede del club…'); raiz.append(cargando);
     construir(st).then(async () => {
-      const yo = await personaje(st.modo === 'carrera' ? 'male-a' : 'male-e'); yo.obj.position.set(GM.sedePlano.entrada.x, 0, 12.5); yo.obj.rotation.y = Math.PI; S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
-      const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / GM.sedePlano.ESCALA_PERSONAJES);
+      const pj = st.personaje || {}, OPC = GM.mods.personaje && GM.mods.personaje.OPC, club = st.equipos[st.clubId];
+      const yo = await personaje({ modelo: st.modo === 'carrera' || st.modo === 'entrenador' ? 'h-casual_hoodie' : 'h-suit', altura: st.modo === 'carrera' && st.jugadores.yo ? st.jugadores.yo.altura : 180, piel: OPC && OPC.piel[pj.piel], pelo: OPC && OPC.peloColor[pj.peloColor], ropa: st.modo === 'carrera' || st.modo === 'entrenador' ? [club.colores[0], club.colores[1] || '#222'] : null }); yo.obj.position.set(GM.sedePlano.entrada.x, 0, 12.5); yo.obj.rotation.y = Math.PI; S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
+      const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / yo.obj.scale.x);
       await poblar(st); cargando.remove();
     }).catch(e => { cargando.textContent = 'No se ha podido cargar la sede: ' + e.message; console.error(e); });
     controles(renderer.domElement);
     (function bucle() {
       if (!S || !S.vivo) return; S.raf = requestAnimationFrame(bucle); if (S.pausa) return;
       S.reloj.update(); const dt = Math.min(0.05, S.reloj.getDelta()), t = S.reloj.getElapsed();
-      if (S.yo) { teclado(dt); moverPaso(S.yo, dt); S.yo.mixer.update(dt); S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
-      S.gente.forEach(n => { if (!n.fijo) { if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); } n.mixer.update(dt); });
+      if (S.yo) { teclado(dt); moverPaso(S.yo, dt); S.yo.mixer.update(dt); if (S.yo.sentado) sentar(S.yo); S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
+      S.gente.forEach(n => { if (!n.fijo) { if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); } n.mixer.update(dt); if (n.sentado) sentar(n); });
       if (S.zonas) S.zonas.forEach(z => z.obj.userData.anim(t));
+      if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
       const inc = 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z);
       renderer.render(scene, camera);
