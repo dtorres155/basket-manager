@@ -36,7 +36,7 @@
     // ---- 3D ----
     if (GM.kit && GM.kit.disponible()) {
       try {
-        V = GM.kit.crear(vistaEl, { radio: 31, theta: 0.0, phi: 0.95, min: 14, max: 48, fondo: 0x10151b, sombras: false });
+        V = GM.kit.crear(vistaEl, { radio: window.innerWidth >= 900 ? 24 : 31, theta: 0.0, phi: 0.9, min: 10, max: 48, fondo: 0x10151b, sombras: false });
         const K = GM.kit, W3 = new THREE.Group(); V.scene.add(W3);
         const t = GM.campus && GM.campus.tex && GM.campus.tex('parqdir', 512, 256, (x, w, hh) => { for (let i = 0; i < 16; i++) { x.fillStyle = i % 2 ? '#c98d4f' : '#bf8346'; x.fillRect(0, i * 16, w, 16); } x.strokeStyle = '#fff'; x.lineWidth = 3; x.strokeRect(6, 6, w - 12, hh - 12); x.beginPath(); x.moveTo(w / 2, 6); x.lineTo(w / 2, hh - 6); x.stroke(); x.beginPath(); x.arc(w / 2, hh / 2, 34, 0, 6.3); x.stroke(); x.strokeRect(6, hh / 2 - 44, 100, 88); x.strokeRect(w - 106, hh / 2 - 44, 100, 88); });
         const pm = new THREE.Mesh(new THREE.BoxGeometry(2 * L, 0.2, 2 * W), t ? new THREE.MeshLambertMaterial({ map: t }) : K.mat(0xc98d4f)); pm.position.y = -0.1; W3.add(pm);
@@ -46,14 +46,21 @@
         // gradas
         for (let r = 0; r < 4; r++) { [-1, 1].forEach(s => { W3.add(K.caja(2 * L + 4, 0.6, 0.8, r % 2 ? 0x2d3a46 : 0x364654, 0, r * 0.6 - 0.3, s * (W + 1.6 + r * 0.9))); }); }
         jug = { A: [], B: [] };
-        ['A', 'B'].forEach(k => { const cid = k === 'A' ? g.local : g.visitante, c = col(cid); for (let i = 0; i < 5; i++) { const gr = new THREE.Group(); gr.add(K.cilindro(0.34, 1.35, c, 0, 0.2, 0, 10)); gr.add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), K.mat(0xe4b88f))); gr.children[1].position.y = 1.85; gr.position.set(0, 0, 0); W3.add(gr); jug[k].push({ g: gr, x: 0, z: 0, tx: 0, tz: 0 }); } });
+        ['A', 'B'].forEach(k => { const cid = k === 'A' ? g.local : g.visitante, c = col(cid); for (let i = 0; i < 5; i++) { const gr = new THREE.Group(); gr.add(K.cilindro(0.34, 1.35, c, 0, 0.2, 0, 10)); gr.add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), K.mat(0xe4b88f))); gr.children[1].position.y = 1.85; gr.position.set(0, 0, 0); W3.add(gr); jug[k].push({ g: gr, x: 0, z: 0, tx: 0, tz: 0, k, i }); } });
+        // Personas de verdad (Quaternius) con la camiseta de cada equipo; los cilindros quedan si no cargan
+        if (GM.sede && GM.sede.personaje) ['A', 'B'].forEach(k => { const e = st.equipos[k === 'A' ? g.local : g.visitante], c1 = e.colores[0], c2 = e.colores[1] || '#222'; jug[k].forEach((o, i) => {
+          const hsh = U.hash(e.id + i); GM.sede.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][hsh % 3], altura: 196 + hsh % 14, piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329', '#e0ac85'][(hsh >>> 3) % 5], pelo: ['#1d1510', '#3b2617', '#a9793e'][(hsh >>> 6) % 3], ropa: [c1, c2] }).then(p => {
+            if (!V) return; o.g.children.forEach(ch => { ch.visible = false; }); p.obj.scale.multiplyScalar(1.15); o.g.add(p.obj); o.p = p; GM.sede.animar(p, 'idle'); }).catch(() => {}); }); });
+        V.scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
         balon = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 10), K.mat(0xe3622b)); balon.position.set(0, 1, 0); W3.add(balon);
         ES.bx = 0; ES.bz = 0; ES.by = 1;
         // posiciones iniciales
         ['A', 'B'].forEach((k, ki) => jug[k].forEach((o, i) => { const f = formacion(k === 'A', i); o.x = o.tx = (k === 'A' ? -1 : 1) * 4 + (ki ? 1 : -1) * (i * 0.8); o.z = o.tz = (i - 2) * 2; }));
         V.anim = function (tm) {
           const dt = 0.033;
-          ['A', 'B'].forEach(k => jug[k].forEach(o => { o.x += (o.tx - o.x) * 0.12; o.z += (o.tz - o.z) * 0.12; o.g.position.set(o.x, 0, o.z); o.g.rotation.y = Math.atan2(HX * (o.tx > 0 ? 1 : -1) - o.x, -o.z) * 0; }));
+          ['A', 'B'].forEach(k => jug[k].forEach(o => { const dx = (o.tx - o.x) * 0.12, dz = (o.tz - o.z) * 0.12; o.x += dx; o.z += dz; o.g.position.set(o.x, 0, o.z); const v = Math.hypot(dx, dz) / dt;
+            if (o.p) { if (v > 0.25) { let a = Math.atan2(dx, dz) - o.g.rotation.y; while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; o.g.rotation.y += a * 0.25; } else { const hx = (ES.ataca === k ? 1 : -1) * (k === 'A' ? 1 : -1) * HX; o.g.rotation.y += (Math.atan2(hx - o.x, -o.z) - o.g.rotation.y) * 0.08; }
+              GM.sede.animar(o.p, v > 2.5 ? 'sprint' : v > 0.4 ? 'walk' : 'idle'); o.p.mixer.update(dt); } }));
           const a = ES.anim, ahora = performance.now() / 1000;
           if (a) {
             let u = (ahora - a.t0) / a.dur; if (ES.pausa) { a.t0 += dt; u = (ahora - a.t0) / a.dur; }
@@ -75,7 +82,7 @@
       const k = ev.eq, otro = k === 'A' ? 'B' : 'A', dir = k === 'A' ? 1 : -1;
       ids.A = ev.pista[0]; ids.B = ev.pista[1];
       const nj = nombre(ev.jug), txt = e => e.replace('{j}', nj);
-      if (V) colocar(k, ev);
+      ES.ataca = k; if (V) colocar(k, ev);
       let frase = '', cls = '';
       if (ev.r === 'ok') { frase = txt(pick(ev.v === 3 ? FRASES.ok3 : FRASES.ok2)) + (ev.ast ? ' (' + FRASES.ast[0].replace('{j}', nombre(ev.ast)) + ')' : '') + '.'; cls = k === lado ? 'bien' : ''; }
       else if (ev.r === 'fallo') frase = txt(pick(ev.v === 3 ? FRASES.fallo3 : FRASES.fallo2)) + (ev.tap ? ' ' + FRASES.tap[0].replace('{j}', nombre(ev.tap)) : '') + (ev.reb ? ' ' + FRASES.reb[0].replace('{j}', nombre(ev.reb)) + '.' : ev.oreb ? ' Rebote ofensivo de ' + nombre(ev.oreb) + '.' : '');

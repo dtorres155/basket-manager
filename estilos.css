@@ -371,3 +371,14 @@ body{background:var(--bg)}
 .sede-dia-nuevo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;text-align:center}
 .sede-dia-nuevo b{font:400 clamp(30px,5vw,52px) var(--fd);animation:spEntra .4s ease-out}
 .sede-dia-nuevo span{font-size:16px;opacity:.8}
+/* Partido en directo en el ordenador: pantalla completa, vista grande y narración al lado */
+@media (min-width:900px){
+  .directo{max-width:none;display:grid;grid-template-columns:1fr 380px;grid-template-rows:auto 1fr auto;overflow:hidden}
+  .directo .dir-marcador{grid-column:1/-1}
+  .directo .dir-vista{grid-column:1;grid-row:2/4;height:auto;min-height:0}
+  .directo .dir-ticker{grid-column:2;grid-row:2;overflow-y:auto;padding:14px 16px;border-left:1px solid rgba(255,255,255,.08)}
+  .directo .dir-ctrl{grid-column:2;grid-row:3;border-left:1px solid rgba(255,255,255,.08)}
+  .directo .dir-ctrl .seg.compacto{flex-wrap:wrap}
+  .directo .dir-panel{position:absolute;right:390px;bottom:16px;max-width:420px}
+  .directo .dir-panel:empty{display:none}
+}

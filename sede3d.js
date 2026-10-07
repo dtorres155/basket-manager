@@ -572,14 +572,15 @@
     if (!S.luces || !S.dia) return;
     const h = S.hora || 9, tarde = Math.max(0, Math.min(1, (h - 17.5) / 2.5)), noche = Math.max(0, Math.min(1, (h - 19.5) / 1.5)), triste = S.dia.tipo === 'derrota' ? 0.72 : S.dia.tipo === 'victoria' ? 1.08 : 1;
     S.noche = noche;
-    S.luces.sol.intensity = (2.6 * (1 - noche) + 0.35 * noche) * triste;
+    S.luces.sol.intensity = (2.6 * (1 - noche) + 0.7 * noche) * triste;
     S.luces.sol.color.setHex(noche > 0 ? mezcla(0xffa060, 0x8fa6d6, noche) : mezcla(S.dia.tipo === 'derrota' ? 0xd9e2f0 : 0xfff1dc, 0xffa060, tarde));
-    S.luces.cielo.intensity = (1.1 * (1 - noche) + 0.45 * noche) * triste;
+    S.luces.cielo.intensity = (1.1 * (1 - noche) + 0.75 * noche) * triste;
     S.luces.cielo.color.setHex(mezcla(0xdfe8f2, 0x5a6c9a, noche));
     if (S.escena === 'calle') { const f = noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0xa9c6dc, 0xf0a46a, tarde); S.scene.background = new THREE.Color(f); if (S.scene.fog) S.scene.fog.color.setHex(f); }
     else S.scene.background = new THREE.Color(noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0x9fb8c8, 0xf0a46a, tarde));
     if (S.farolas) { S.farolas.emissiveIntensity = 0.4 + noche * 3.5; }
     if (S.charcosNoche) S.charcosNoche.opacity = noche * 0.9;
+    if (S.ventanas) S.ventanas.forEach(m => { m.emissiveIntensity = (m.emissiveMap ? 1.3 : 0.25) * Math.max(0, Math.min(1, (h - 19) / 1.5)); });
     if (S.chipHora) { const hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15; S.chipHora.textContent = hh + ':' + String(mm).padStart(2, '0'); }
   }
 
@@ -802,5 +803,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { personaje: o => personaje(o), animar: (p, n) => anim(p, n), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

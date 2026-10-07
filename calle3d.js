@@ -43,6 +43,8 @@
       if (E.balcon) { x.strokeStyle = '#2a2a2a'; x.lineWidth = 2; x.strokeRect(wx - 8, wy + wh * 0.62, ww + 16, wh * 0.38); for (let i = 0; i <= 8; i++) { x.beginPath(); x.moveTo(wx - 8 + i * (ww + 16) / 8, wy + wh * 0.62); x.lineTo(wx - 8 + i * (ww + 16) / 8, wy + wh); x.stroke(); } }
     }, null);
     t.fachadas = E.muros.map((m, i) => fach(m, i));
+    t.ventanas = M.textura('ventanas-noche', 512, (x, n) => { x.fillStyle = '#000'; x.fillRect(0, 0, n, n); const r = rnd(41), b = n / 4; for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { if (r() < 0.45) continue; const ox = i * b, oy = j * b; x.fillStyle = r() < 0.7 ? '#ffd28a' : '#cfe3ff'; x.fillRect(ox + b * 0.3, oy + b * 0.18, b * 0.4, b * 0.55); } });
+    if (t.ventanas) t.ventanas.repeat.set(0.25, 0.25);
     t.cristal = M.textura('muro-cristal', 128, (x, n) => { const g = x.createLinearGradient(0, 0, n, n); g.addColorStop(0, '#5f7f96'); g.addColorStop(1, '#2c3f50'); x.fillStyle = g; x.fillRect(0, 0, n, n); x.fillStyle = '#d9dee2'; x.fillRect(0, 0, n, 5); x.fillRect(0, 0, 5, n); x.fillStyle = 'rgba(255,255,255,.18)'; x.beginPath(); x.moveTo(10, n); x.lineTo(n * 0.6, 0); x.lineTo(n * 0.75, 0); x.lineTo(30, n); x.fill(); });
     t.tienda = (fondo, clave) => M.textura('escap-' + clave, 128, (x, n) => { x.fillStyle = fondo; x.fillRect(0, 0, n, n); x.fillStyle = '#26323b'; x.fillRect(n * 0.08, n * 0.2, n * 0.84, n * 0.72); x.fillStyle = 'rgba(255,240,200,.35)'; x.fillRect(n * 0.1, n * 0.22, n * 0.8, n * 0.68); x.fillStyle = 'rgba(0,0,0,.25)'; for (let i = 1; i < 3; i++) x.fillRect(n * 0.08 + i * n * 0.28, n * 0.2, 3, n * 0.72); });
     t.persiana = M.textura('persiana-metal', 128, (x, n) => { x.fillStyle = '#8b9196'; x.fillRect(0, 0, n, n); for (let i = 0; i < 16; i++) { x.fillStyle = i % 2 ? '#7a8085' : '#9aa0a5'; x.fillRect(0, i * n / 16, n, n / 16); } x.fillStyle = 'rgba(40,40,40,.5)'; x.font = 'bold 26px sans-serif'; x.fillText(club.siglas, 20, n / 2); });
@@ -62,7 +64,8 @@
   function edificio(W, G, T, E, r, rect, pisos, lado, o) {
     o = o || {};
     const [x0, z0, x1, z1] = rect, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, hB = 3.4, hP = 3.2;
-    const fach = o.cristal ? new THREE.MeshStandardMaterial({ map: T.cristal, roughness: 0.25, metalness: 0.3 }) : new THREE.MeshStandardMaterial({ map: T.fachadas[(r() * T.fachadas.length) | 0], roughness: 0.9 });
+    const fach = o.cristal ? new THREE.MeshStandardMaterial({ map: T.cristal, roughness: 0.25, metalness: 0.3, emissive: 0xbfd8ff, emissiveIntensity: 0 }) : new THREE.MeshStandardMaterial({ map: T.fachadas[(r() * T.fachadas.length) | 0], roughness: 0.9, emissive: 0xffd28a, emissiveMap: T.ventanas || null, emissiveIntensity: 0 });
+    (S_.ventanas = S_.ventanas || []).push(fach);
     const cuerpo = new THREE.BoxGeometry(w, pisos * hP, d); uvM(cuerpo, 3, hP); cuerpo.translate(0, hB + pisos * hP / 2, 0);
     const me = new THREE.Mesh(cuerpo, fach); me.position.set(cx, 0, cz); me.castShadow = me.receiveShadow = true; W.add(me); ocluye(me);
     // Planta baja con escaparates (o persianas metálicas)
@@ -98,7 +101,9 @@
   }
 
   // ---------- Construcción ----------
+  let S_ = null;
   function construir(S, M, st) {
+    S_ = S; S.ventanas = [];
     const W = S.mundo, club = st.equipos[st.clubId], E = Object.assign({}, ESTILO.ES, ESTILO[club.pais] || {}), T = texturas(M, E, club), r = rnd(U.hash(club.id + 'calle'));
     const c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
     const ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, rep = club.reputacion || 60, afi = ciu.aficion || 50;
@@ -239,6 +244,9 @@
     g.position.y = -0.12; g.userData = { coche: true }; return g;
   }
   function siguiente(S, M, n) {
+    // De noche la calle se vacía: parte de los vecinos se van a casa (desaparecen al llegar a un portal)
+    if (S.noche > 0.4 && !n.hincha && !n.recogido && n.r() < 0.5) { const port = [[-31.5, 5.2], [35, -5.2], [-35, -5.2], [30, 5.2]][(n.r() * 4) | 0]; n.recogido = true; if (M.irA(n, port[0], port[1], () => { n.obj.visible = false; n.espera = 9999; })) return; }
+    if (n.recogido && S.noche < 0.2) { n.recogido = false; n.obj.visible = true; }
     const q = S.paseo[(n.r() * S.paseo.length) | 0];
     if (S.dia && S.dia.tipo === 'partido' && n.hincha && n.r() < 0.6) { const ok = M.irA(n, -19.5 + (n.r() - 0.5) * 8, -5.4 + (n.r() - 0.5) * 1.2, () => { M.anim(n, 'emote-yes'); n.espera = 6 + n.r() * 8; }); if (ok) return; }
     const ok = M.irA(n, q[0] + (n.r() - 0.5) * 0.8, q[1] + (n.r() - 0.5) * 0.5, () => { M.anim(n, n.r() < 0.15 ? 'emote-yes' : 'idle'); n.espera = 1 + n.r() * 6; });
