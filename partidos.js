@@ -8,8 +8,8 @@
 
   function cfg(comp) {
     return comp === 'NBA'
-      ? { q: 12, pace: 99, p3: 0.40, m3: 0.366, m2: 0.542, ast: 0.62, ha: 0.012 }
-      : { q: 10, pace: 73, p3: 0.345, m3: 0.343, m2: 0.506, ast: 0.56, ha: 0.016 };
+      ? { q: 12, pace: 96, p3: 0.40, m3: 0.366, m2: 0.542, ast: 0.62, ha: 0.008 }
+      : { q: 10, pace: 72, p3: 0.345, m3: 0.343, m2: 0.506, ast: 0.56, ha: 0.011 };
   }
   const effF = p => (0.75 + 0.25 * p.estado.forma / 100) * (1 - 0.16 * p.estado.fatiga / 100);
   const lesionado = p => p.estado.lesion && p.estado.lesion.dias > 0;
@@ -148,8 +148,8 @@
         if (last) return pts;
       } else {
         let pm = is3 ? cf.m3 : cf.m2;
-        pm += ((is3 ? at.tiro3 : at.tiro2) * f - 65) / (is3 ? 400 : 360);
-        pm -= ((is3 ? D.dP : D.dI * 0.6 + D.dP * 0.4) - 60) / (is3 ? 520 : 460);
+        pm += ((is3 ? at.tiro3 : at.tiro2) * f - 65) / (is3 ? 520 : 470); // sensibilidad al talento (recalibrada: antes 400/360 daba demasiadas palizas)
+        pm -= ((is3 ? D.dP : D.dI * 0.6 + D.dP * 0.4) - 60) / (is3 ? 680 : 600);
         pm += (O.pase - 62) / 1400 + c.ha;
         if (D.tac.defensa === 'zona') pm += is3 ? 0.008 : -0.012;
         if (O.tac.ritmo >= 4) pm -= 0.006;
@@ -192,6 +192,8 @@
       const n = Math.max(1, Math.floor(nPos + R()));
       for (let i = 0; i < n; i++) {
         const t0 = base + (i + 0.25) / n * dur, t1 = base + (i + 0.75) / n * dur;
+        // En la segunda parte, quien gana de mucho se relaja (suplentes, menos intensidad) y quien pierde aprieta: acerca los marcadores como en la realidad
+        { const dif = A.score - B.score, k = D.q >= 2 ? Math.min(0.07, Math.max(0, Math.abs(dif) - 9) * 0.006) : 0; cA.ha = cf.ha - Math.sign(dif) * k; cB.ha = -cf.ha + Math.sign(dif) * k * 0.7; }
         const pa = posesion(aA, aB, cA); A.score += pa;
         if (evs && cA.last) evs.push(Object.assign({ eq: 'A', t: Math.round(t0), pts: pa, a: A.score, b: B.score, pista: [D.enPista.A.slice(), D.enPista.B.slice()] }, cA.last));
         const pb = posesion(aB, aA, cB); B.score += pb;

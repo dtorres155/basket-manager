@@ -12,10 +12,13 @@
     try { const s = window.localStorage; s.setItem('gm1:t', '1'); s.removeItem('gm1:t'); return s; }
     catch (e) { persist = false; return { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } }; }
   }
+  const LZ = () => typeof LZString !== 'undefined';
+  function leer(txt) { return txt.slice(0, 4) === 'LZ1:' ? LZString.decompressFromUTF16(txt.slice(4)) : txt; }
   function metas(a) { try { return JSON.parse(a.getItem(META) || '{}'); } catch (e) { return {}; } }
   function guardar(slot) {
     const st = GM.state; if (!st) return { ok: false, motivo: 'No hay partida en curso.' };
-    const a = alm(), txt = JSON.stringify(st);
+    // Compresión LZ (vendor/lz-string): la partida ocupa ~10 veces menos. Prefijo LZ1: para distinguirla de las antiguas sin comprimir
+    const a = alm(), plano = JSON.stringify(st), txt = LZ() ? 'LZ1:' + LZString.compressToUTF16(plano) : plano;
     if (txt.length > MAXB) return { ok: false, motivo: 'La partida pesa demasiado (' + (txt.length / 1e6).toFixed(1) + ' MB). Exporta una copia como texto.' };
     try {
       a.setItem(PFX + slot, txt);
@@ -57,7 +60,7 @@
   function cargar(slot) {
     const a = alm(), txt = a.getItem(PFX + slot);
     if (!txt) return { ok: false, motivo: 'La ranura está vacía.' };
-    try { GM.state = migrar(JSON.parse(txt)); } catch (e) { return { ok: false, motivo: 'La partida guardada está dañada.' }; }
+    try { GM.state = migrar(JSON.parse(leer(txt))); } catch (e) { return { ok: false, motivo: 'La partida guardada está dañada.' }; }
     GM.bus.emit('partida:cargada', { slot });
     return { ok: true };
   }
@@ -65,11 +68,12 @@
   function borrar(slot) { const a = alm(); a.removeItem(PFX + slot); const m = metas(a); delete m[slot]; a.setItem(META, JSON.stringify(m)); return { ok: true }; }
   function b64(s) { return btoa(unescape(encodeURIComponent(s))); }
   function unb64(s) { return decodeURIComponent(escape(atob(s))); }
-  function exportar() { return GM.state ? 'GM1:' + b64(JSON.stringify(GM.state)) : ''; }
+  function exportar() { if (!GM.state) return ''; const j = JSON.stringify(GM.state); return LZ() ? 'GM2:' + LZString.compressToBase64(j) : 'GM1:' + b64(j); }
   function importar(texto) {
     try {
-      const t = String(texto || '').trim(); if (t.slice(0, 4) !== 'GM1:') return { ok: false, motivo: 'El texto no empieza por GM1:.' };
-      const st = JSON.parse(unb64(t.slice(4)));
+      const t = String(texto || '').trim(), pre = t.slice(0, 4); if (pre !== 'GM1:' && pre !== 'GM2:') return { ok: false, motivo: 'El texto no empieza por GM1: ni GM2:.' };
+      if (pre === 'GM2:' && !LZ()) return { ok: false, motivo: 'Esta copia está comprimida y falta el descompresor.' };
+      const st = JSON.parse(pre === 'GM2:' ? LZString.decompressFromBase64(t.slice(4)) : unb64(t.slice(4)));
       if (!st.equipos || !st.jugadores || !st.calendario) return { ok: false, motivo: 'El texto no es una partida válida.' };
       GM.state = migrar(st); GM.bus.emit('partida:cargada', { slot: -1 }); return { ok: true };
     } catch (e) { return { ok: false, motivo: 'No se ha podido leer la partida.' }; }

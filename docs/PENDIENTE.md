@@ -3,7 +3,7 @@
 ## P0 — Ver lo que se construye
 1. ~~Hecho en la fase 0~~ (capturas en `capturas/`). Abrir el juego en un navegador real y en móvil (390×844). Hacer capturas de cada pantalla y escena 3D (campus, pabellón, ciudad, calle, pueblo, casa, directo) y corregir proporciones, solapes, colores y rendimiento. Todo lo visual se ha hecho sin ver el resultado.
 2. Medido con CPU limitada (fase 1.3, `capturas/fase1/RENDIMIENTO.md`): 60 fps en calidad normal. Falta confirmarlo en un Android real.
-3. Añadir pruebas visuales automáticas (por ejemplo Playwright con capturas) a `npm test`.
+3. ~~Pruebas visuales~~: `npm run test:visual` (en local; no en GitHub Actions porque necesita navegador).
 
 ## P1 — Salto de calidad visual
 - Sustituir la geometría de cajas por **modelos glTF** y texturas reales con licencia libre (edificios, muebles, jugadores, balón, pabellones). Mantener las primitivas como alternativa de baja calidad.
@@ -49,11 +49,11 @@
 - Narración y estadísticas avanzadas en el partido en directo.
 
 ## P3 — Deuda técnica
-- `ui.js` pesa unos 120 KB y mezcla pantallas de todos los modos: dividirlo por pantallas/modos.
-- Las pruebas son scripts que imprimen resultados; convertirlas en pruebas con aserciones (el ejecutor `test_all.js` busca excepciones y marcas de fallo, no valida valores).
+- ~~Dividir `ui.js`~~: hecho (núcleo + ui_gestion, ui_ciudad, ui_presidente, ui_carrera, ui_entrenador).
+- Pruebas con aserciones: hecho en `t_aserciones.js` (estado, resultados, clasificación, medias por liga, guardado, migraciones, acciones, casa, potencial). Las demás pruebas siguen siendo de humo; ampliar aserciones poco a poco.
 - Hay varios parches aplicados por sustitución de texto sobre `ui.js`; conviene ordenar y simplificar.
-- El simulador (`partidos.js`) se rehízo por cuartos con eventos para el modo directo; recalibrar y añadir pruebas de resultados medios por liga.
-- Estado de ~1,7 MB tras una temporada: valorar comprimirlo, limitar históricos o usar IndexedDB.
+- ~~Recalibrar el simulador~~: hecho (`tools/calibrar.js`): NBA 115 pts, Euroliga 83, diferencia 10-12, local 55-59 %. Prórrogas aún algo bajas (2-4 % frente a 5-6 %); la ACB da ~80 pts (real ~83).
+- ~~Tamaño del guardado~~: hecho, comprimido con LZ-string (1,7 MB -> ~0,17 MB).
 
 ## Límites conocidos / avisos
 - Los nombres de barrios solo son reales para Badalona, Barcelona y Madrid; el resto de ciudades usa nombres genéricos. El mapa de la ciudad es estilizado.
