@@ -46,9 +46,9 @@ Las pruebas (`t_*.js`) usan jsdom con un `WebGLRenderer` simulado: verifican que
 ## Datos (qué es real y qué no)
 - NBA: base 2025-26 + movimientos de verano 2026 de NBA.com y draft 2026 (`datos_movimientos.js`). Ratings estimados.
 - Euroliga: 16 de 20 clubes con plantilla de 2026-27 (BasketNews); Efes y ASVEL, parcial. Ratings estimados.
-- ACB y Lega: clubes reales; plantillas parciales (Joventut y Unicaja revisados) y relleno ficticio.
-- GBL, BBL y BSL (`datos_ligas2.js`): clubes y pabellones aproximados, casi todo relleno; `datos_ligas3.js` añade jugadores confirmados de Peristeri, Promitheas, Aris y PAOK.
-- Los jugadores con `ficticio:true` son relleno. La BBL tiene 14 de 18 clubes y la BSL 14 de 16.
+- ACB (18), Lega (16), GBL (14), BBL (18) y BSL (16): los clubes de 2026-27. Plantillas reales de todos salvo 10 clubes de la BSL (relleno) en `datos_ligas3.js`, generado por `node tools/generar_plantillas.js` a partir de `recursos/*_2026.json` (descargados con `tools/plantillas_*.js`; `recursos/` no se sube). Nombre, posición, nacionalidad, edad y altura son reales; valoración, potencial, salario y contrato, estimados. Fuentes en `docs/FUENTES_DATOS.md`.
+- Fechas de 2026-27: Euroliga y ACB oficiales; el resto aproximadas (`FECHAS` en `competiciones.js`).
+- Los jugadores con `ficticio:true` son relleno.
 
 ## Aviso sobre el origen del código
 En el espacio de trabajo original aparecieron módulos que **no fueron escritos por el asistente en esa conversación** (`continental.js`, `pueblo.js`, `sponsor.js`, `fans.js`, `datos_ligas2.js`, las variantes de casas en `hogar*.js`, el campus «orgánico» y los cambios en `ciudad3d.js`). Pasan las pruebas, pero revísalos antes de apoyarte en ellos.

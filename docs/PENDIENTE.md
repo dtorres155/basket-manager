@@ -29,10 +29,10 @@
 - ~~Guardado seguro~~: hecho en la fase 1.4 (versión y migraciones, guardado al salir de la app, almacenamiento persistente, copia de seguridad por archivo o compartir y recordatorio semanal).
 
 ## P1 — Datos
-- Plantillas reales para BBL (alemana), BSL (turca) y el resto de GBL (griega); completar Efes, ASVEL y los clubes de ACB y Lega con relleno.
-- Revisar valoraciones (ovr/pot), edades y contratos; hoy son estimaciones.
-- Clubes que faltan: BBL tiene 14 de 18, BSL 14 de 16.
-- Calendarios con fechas reales (hoy el calendario europeo está comprimido).
+- ~~Plantillas reales~~ de BBL, GBL, Lega, ACB, Efes, ASVEL y tres clubes turcos (`tools/generar_plantillas.js`). Falta la BSL: tbf.org.tr está tras Cloudflare; los otros 10 clubes turcos siguen con relleno.
+- Valoraciones: estimadas por reputación del club, edad y si es extranjero; no hay minutos ni estadísticas. Mejorarlas con estadísticas de 2025-26 si se encuentra una fuente abierta.
+- ~~Clubes que faltan~~: hecho (BBL 18, BSL 16, GBL 14, Lega 16). Pabellones y presupuestos de los recién llegados, aproximados.
+- ~~Fechas reales~~: Euroliga y ACB oficiales (Copa del Rey del 18 al 21 de febrero); BBL, Lega, GBL y BSL aproximadas. La EuroCup real acaba la fase regular el 13 de enero; aquí se alarga.
 
 ## P1 — Equilibrio
 - Reputación del jugador (`carrera.js`), progresión, finanzas de los clubes (resultado/presupuesto), efectos de muebles, sueldo y ahorros en los modos no jugador (hoy son estimaciones).

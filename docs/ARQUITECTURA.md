@@ -71,7 +71,7 @@ LIGAS GRIEGA (GBL), ALEMANA (BBL) Y TURCA (BSL) 2026-27. Los clubes de la Euroli
 MOVIMIENTOS DE VERANO 2026 (NBA) — se aplica sobre GM.data después de cargar todas las ligas. Fuentes: listado oficial de NBA.com de traspasos, fichajes y renovaciones (actualizado el 2 de octubre de 2026) y resultados del draft 2026. Los jugadores nuevos que no estaban en la base llevan valoraciones estimadas.
 
 ### `datos_ligas3.js`
-DATOS: jugadores reales confirmados de clubes de la liga griega (Peristeri, Promitheas, Aris y PAOK) — se añaden sobre los clubes de datos_ligas2.js. Fuentes: plantillas publicadas para 2026-27 (RealGM, Eurohoops, Wikipedia). Las valoraciones son estimaciones y las plantillas, parciales: el resto sigue siendo relleno.
+DATOS: plantillas reales 2026-27 de 60 clubes (ACB, Lega, GBL, BBL, Efes, ASVEL, Tofaş, Türk Telekom y Bahçeşehir), generado por `tools/generar_plantillas.js`. Sustituye la plantilla de cada club; el relleno solo completa hasta 12. Valoraciones, salarios y contratos estimados.
 
 ### `three_kit.js`
 KIT 3D (GM.kit) Utilidades comunes de los módulos 8 y 9: helper DOM h(), vista Three.js (0.186; intensidades de luz en escala clásica, el kit las multiplica por π) con cámara orbital propia (un dedo gira, dos dedos acercan, toque = selección), primitivas low-poly y liberación de recursos. Si Three.js o WebGL no están disponibles, disponible() devuelve false y los módulos usan su panel de lista.

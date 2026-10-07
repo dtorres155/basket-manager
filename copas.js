@@ -7,7 +7,7 @@
   const U = GM.util;
   const yearOf = st => parseInt(st.temporada.slice(0, 4), 10);
   const DEF = {
-    COPA_REY: { liga: 'ACB', nombre: 'Copa del Rey', fecha: y => (y + 1) + '-02-11', min: 14 },
+    COPA_REY: { liga: 'ACB', nombre: 'Copa del Rey', fecha: y => (y + 1) + '-02-18', min: 14 }, // 2027: 18-21 de febrero, Roig Arena (Valencia)
     NBA_CUP: { liga: 'NBA', nombre: 'NBA Cup', fecha: y => y + '-12-02', min: 20 },
     COPA_GRECIA: { liga: 'GBL', nombre: 'Copa de Grecia', fecha: y => (y + 1) + '-02-20', min: 14 },
     POKAL: { liga: 'BBL', nombre: 'BBL-Pokal', fecha: y => (y + 1) + '-02-18', min: 14 },

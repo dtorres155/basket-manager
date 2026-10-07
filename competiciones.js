@@ -19,6 +19,16 @@
     liga_simple: { ini: y => y + '-10-04', paso: 7.2, snap: true, po: y => (y + 1) + '-04-20',
       rondas: [{ n: 'Semifinales', m: 3 }, { n: 'Final', m: 3 }] }
   };
+  // Fechas de 2026-27 por liga (inicio, última jornada y comienzo de los playoffs). ACB: calendario oficial (26 de septiembre
+  // al 22 de mayo, playoffs desde el 25 de mayo). BBL: 19 de septiembre en realidad, pero la partida empieza el 24. El resto, aproximadas.
+  const FECHAS = {
+    ACB: { ini: '-09-26', fin: '-05-22', po: '-05-25' },
+    BBL: { ini: '-09-26', fin: '-05-02', po: '-05-08' },
+    LEGA: { ini: '-10-03', fin: '-05-03', po: '-05-09' },
+    GBL: { ini: '-10-03', fin: '-04-18', po: '-04-25' },
+    BSL: { ini: '-10-03', fin: '-05-09', po: '-05-15' }
+  };
+  const fechaLiga = (comp, k, y) => FECHAS[comp] ? (k === 'ini' ? y : y + 1) + FECHAS[comp][k] : null;
   const ORDEN = { nba: 0, euroliga: 1, acb: 2, liga_simple: 3 };
 
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = GM.rng.int(0, i); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -57,8 +67,9 @@
       if (liga.formato === 'nba') rondas = rondas.concat(rr.slice(0, 82 - rondas.length).map((r, i) => i % 2 ? r : r.map(swap)));
       st.clasificaciones[comp] = ids.map(id => ({ equipoId: id, pj: 0, g: 0, p: 0, pf: 0, pc: 0 }));
       let count = 0;
+      const ini = fechaLiga(comp, 'ini', y) || F.ini(y), paso = FECHAS[comp] ? U.diffDays(ini, fechaLiga(comp, 'fin', y)) / (rondas.length - 1) : F.paso;
       rondas.forEach((games, r) => {
-        let d0 = U.addDays(F.ini(y), Math.floor(r * F.paso));
+        let d0 = U.addDays(ini, Math.floor(r * paso));
         if (F.snap) while ([0, 6].indexOf(U.weekday(d0)) < 0) d0 = U.addDays(d0, 1);
         games.forEach((g, i) => {
           let d = F.dos && i >= games.length / 2 ? U.addDays(d0, 1) : d0;
@@ -122,7 +133,7 @@
   function crearRonda(st, po, idx, pares) {
     const y = yearOf(st), F = FORM[po.formato], cfg = F.rondas[idx];
     let ini = U.addDays(st.fecha, idx === 0 ? 1 : 2);
-    if (idx === 0) ini = mx(ini, F.po(y));
+    if (idx === 0) ini = mx(ini, fechaLiga(po.comp, 'po', y) || F.po(y));
     if (cfg.min) ini = mx(ini, cfg.min(y));
     po.ri = idx; po.fase = 'rondas';
     po.rondas.push({ nombre: cfg.n, mejorDe: cfg.m, series: pares.map((p, i) => {
