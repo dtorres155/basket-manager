@@ -366,3 +366,8 @@ body{background:var(--bg)}
 .sp-fecha{display:block;text-align:center;font-size:12px;margin:4px 0 10px;opacity:.7}
 .sp-periodico p{margin:0 0 8px;font-size:14px;line-height:1.35;border-bottom:1px solid rgba(0,0,0,.12);padding-bottom:8px}
 .sp-periodico p.portada{font:700 18px/1.25 Georgia,serif}
+/* Sede y calle: reloj y tarjeta del día nuevo */
+.sede-hora{flex:none;min-width:58px;text-align:center;padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font:400 16px var(--fd);font-variant-numeric:tabular-nums}
+.sede-dia-nuevo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;text-align:center}
+.sede-dia-nuevo b{font:400 clamp(30px,5vw,52px) var(--fd);animation:spEntra .4s ease-out}
+.sede-dia-nuevo span{font-size:16px;opacity:.8}

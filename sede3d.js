@@ -342,7 +342,7 @@
     const fecha = h('span', null, U.fechaLarga(st.fecha));
     const top = h('div', { class: 'sede-hud sede-top' },
       h('button', { class: 'btn btn-sec peq', onclick: cerrar }, 'Salir'),
-      h('div', { class: 'ct' }, h('b', null, S.escena === 'calle' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
+      h('div', { class: 'ct' }, h('b', null, S.escena === 'calle' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('span', { class: 'sede-hora' }, '9:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
     S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
     S.ficha = h('div', { class: 'sede-hud sede-ficha', style: { display: 'none' } });
@@ -426,7 +426,19 @@
     }
   }
   const barra = (t, v) => GM.h('div', { class: 'sp-barra-mini' }, GM.h('span', null, t), GM.h('i', null, GM.h('u', { style: { width: Math.round(v) + '%' } })));
-  function avanzar(fn) { fn(); setTimeout(() => { if (!S) return; hud(S.st); repoblar(); if (S.zonaActual) abrirSala(S.zonaActual.sala, 'partido'); }, 80); }
+  function avanzar(fn) {
+    if (!S || S.cambiando) return; S.cambiando = true;
+    const velo = GM.h('div', { class: 'sede-velo sede-dia-nuevo' }); S.raiz.append(velo);
+    setTimeout(() => {
+      fn();
+      setTimeout(() => {
+        if (!S) return; const d = estadoDia(S.st);
+        velo.append(GM.h('b', null, U.fechaLarga(S.st.fecha)), GM.h('span', null, d.texto));
+        S.hora = 9; hud(S.st); repoblar(); if (S.zonaActual) abrirSala(S.zonaActual.sala, 'partido');
+        setTimeout(() => { velo.classList.add('fuera'); setTimeout(() => velo.remove(), 450); if (S) S.cambiando = false; }, 1200);
+      }, 80);
+    }, 300);
+  }
   function entrarClasica(d) {
     S.raiz.style.display = 'none'; S.pausa = true; GM.ui.navegar(d);
     if (!S.volverBtn) { S.volverBtn = GM.h('button', { class: 'btn sede-volver', onclick: volver }, 'Volver a la sede'); document.body.append(S.volverBtn); }
@@ -553,10 +565,22 @@
     }
     return { tipo: 'normal', texto: 'Día de entrenamiento' };
   }
+  // La luz depende de la hora (9:00 a 23:00; una hora de juego dura 40 s reales) y del ambiente del día
+  const _cA = new THREE.Color(), _cB = new THREE.Color();
+  function mezcla(a, b, t) { return _cA.setHex(a).lerp(_cB.setHex(b), Math.max(0, Math.min(1, t))).getHex(); }
   function aplicarAmbiente() {
-    const d = S.dia; if (!S.luces) return;
-    S.luces.cielo.intensity = d.tipo === 'derrota' ? 0.75 : 1.1; S.luces.sol.intensity = d.tipo === 'derrota' ? 1.7 : d.tipo === 'victoria' ? 2.9 : 2.6;
-    S.luces.sol.color.setHex(d.tipo === 'derrota' ? 0xd9e2f0 : 0xfff1dc);
+    if (!S.luces || !S.dia) return;
+    const h = S.hora || 9, tarde = Math.max(0, Math.min(1, (h - 17.5) / 2.5)), noche = Math.max(0, Math.min(1, (h - 19.5) / 1.5)), triste = S.dia.tipo === 'derrota' ? 0.72 : S.dia.tipo === 'victoria' ? 1.08 : 1;
+    S.noche = noche;
+    S.luces.sol.intensity = (2.6 * (1 - noche) + 0.35 * noche) * triste;
+    S.luces.sol.color.setHex(noche > 0 ? mezcla(0xffa060, 0x8fa6d6, noche) : mezcla(S.dia.tipo === 'derrota' ? 0xd9e2f0 : 0xfff1dc, 0xffa060, tarde));
+    S.luces.cielo.intensity = (1.1 * (1 - noche) + 0.45 * noche) * triste;
+    S.luces.cielo.color.setHex(mezcla(0xdfe8f2, 0x5a6c9a, noche));
+    if (S.escena === 'calle') { const f = noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0xa9c6dc, 0xf0a46a, tarde); S.scene.background = new THREE.Color(f); if (S.scene.fog) S.scene.fog.color.setHex(f); }
+    else S.scene.background = new THREE.Color(noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0x9fb8c8, 0xf0a46a, tarde));
+    if (S.farolas) { S.farolas.emissiveIntensity = 0.4 + noche * 3.5; }
+    if (S.charcosNoche) S.charcosNoche.opacity = noche * 0.9;
+    if (S.chipHora) { const hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15; S.chipHora.textContent = hh + ':' + String(mm).padStart(2, '0'); }
   }
 
   // ---------- Ánimo: cabeza baja y saludos ----------
@@ -594,8 +618,11 @@
     libres.sort((a, b) => ((b.punto && b.punto[2] === 'tiro') ? 1 : 0) - ((a.punto && a.punto[2] === 'tiro') ? 1 : 0)).slice(0, S.grupo.max).forEach(unir);
     entrenadorDice(tipo === 'rueda' ? '¡Rueda de pases! Balón rápido' : '¡Tres contra tres a media pista!');
   }
+  function peto(n, on) {
+    n.obj.traverse(m => { if (!m.isMesh) return; if (on && /^(Purple|Red_Dark|LightBrown)$/.test(m.material.name) && !m._matOriginal) { m._matOriginal = m.material; m.material = m.material.clone(); m.material.color.set('#ff7a1a'); } else if (!on && m._matOriginal) { m.material.dispose(); m.material = m._matOriginal; m._matOriginal = null; } });
+  }
   function disolver() {
-    const G = S.grupo; if (!G) return;
+    const G = S.grupo; if (!G) return; G.miembros.forEach(n => peto(n, false));
     G.miembros.forEach(n => { n.grupo = null; n.grupoBrazos = 0; n.espera = 0.5 + Math.random() * 2; n.camino = null; anim(n, 'idle'); });
     S.mundo.remove(G.balon); G.balon.geometry.dispose(); S.grupo = null; S.tGrupo = 18 + Math.random() * 10;
     entrenadorDice('Bien. Agua y estiramientos');
@@ -613,7 +640,7 @@
     if (S.entrenador && S.entrenador.tGesto !== undefined && (S.entrenador.tGesto -= dt) <= 0) { S.entrenador.tGesto = undefined; anim(S.entrenador, 'idle'); }
     if (!S.grupo) { S.tGrupo = (S.tGrupo === undefined ? 6 : S.tGrupo) - dt; if (S.tGrupo <= 0) { S.tGrupo = 30; crearGrupo(); } return; }
     const G = S.grupo, b = G.balon; G.t += dt;
-    if (G.fase === 'reclutar') { if (G.miembros.length && G.miembros.every(n => n.listo)) { G.fase = 'juego'; G.t = 0; G.poseedor = G.miembros[0]; } else if (G.t > 25) disolver(); return; }
+    if (G.fase === 'reclutar') { if (G.miembros.length && G.miembros.every(n => n.listo)) { G.fase = 'juego'; G.t = 0; G.poseedor = G.miembros[0]; if (G.tipo === 'partidillo') { G.miembros.slice(3).forEach(n => peto(n, true)); entrenadorDice('Los de naranja, con peto. ¡A jugar!'); } } else if (G.t > 25) disolver(); return; }
     if (G.t > G.dura) return disolver();
     // Balón en vuelo (pase o tiro)
     if (G.vuelo) { const V = G.vuelo; V.t += dt; const u = Math.min(1, V.t / V.dur); b.position.lerpVectors(V.ini, V.fin, u); b.position.y += V.arco * 4 * u * (1 - u); b.rotation.x -= dt * 10; if (u >= 1) { G.vuelo = null; V.alFin(); } }
@@ -704,7 +731,7 @@
     const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
     const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
     Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; scene.add(sol, sol.target);
-    S = { luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: 'sede', gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
+    S = { hora: 9, luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: 'sede', gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
@@ -721,6 +748,7 @@
       S.reloj.update(); const dt = Math.min(0.05, S.reloj.getDelta()), t = S.reloj.getElapsed();
       if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
+      S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente(); }
       if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
       { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }

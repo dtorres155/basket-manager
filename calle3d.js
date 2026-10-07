@@ -151,7 +151,10 @@
       const x = s * (12 + k * (26 / nArb)); if ((z < 0 && x > 25 && x < 31) || (z > 0 && x > 16 && x < 22)) continue;
       caja(W, 1.2, 0.02, 1.2, '#5a4632', x, 0.001, z, 0, false); cil(W, 0.14, 2.2, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), copas[k % 3]); c.position.set(x, 3.0, z); c.scale.y = 0.9; c.castShadow = true; W.add(c); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3);
     }
-    const farola = (x, z, ry) => { cil(W, 0.07, 4.6, '#2a2f35', x, 0, z, 8); const b = caja(W, 1.1, 0.08, 0.12, '#2a2f35', x + Math.sin(ry) * 0.5, 4.5, z + Math.cos(ry) * 0.5, ry); caja(W, 0.55, 0.14, 0.3, '#2a2f35', x + Math.sin(ry) * 1.0, 4.42, z + Math.cos(ry) * 1.0, ry); caja(W, 0.45, 0.03, 0.22, mat('#fff6d6', { emissive: 0xfff1c4, emissiveIntensity: 0.6 }), x + Math.sin(ry) * 1.0, 4.39, z + Math.cos(ry) * 1.0, ry, false); G.bloquea(x - 0.2, z - 0.2, x + 0.2, z + 0.2); };
+    S.farolas = new THREE.MeshStandardMaterial({ color: 0xfff6d6, emissive: 0xffd99a, emissiveIntensity: 0.4 });
+    const tLuz = M.textura('charco-farola', 128, (x, n) => { const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g.addColorStop(0, 'rgba(255,214,150,0.75)'); g.addColorStop(1, 'rgba(255,214,150,0)'); x.fillStyle = g; x.fillRect(0, 0, n, n); });
+    S.charcosNoche = new THREE.MeshBasicMaterial({ map: tLuz, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+    const farola = (x, z, ry) => { cil(W, 0.07, 4.6, '#2a2f35', x, 0, z, 8); const b = caja(W, 1.1, 0.08, 0.12, '#2a2f35', x + Math.sin(ry) * 0.5, 4.5, z + Math.cos(ry) * 0.5, ry); caja(W, 0.55, 0.14, 0.3, '#2a2f35', x + Math.sin(ry) * 1.0, 4.42, z + Math.cos(ry) * 1.0, ry); caja(W, 0.45, 0.03, 0.22, S.farolas, x + Math.sin(ry) * 1.0, 4.39, z + Math.cos(ry) * 1.0, ry, false); const ch = new THREE.Mesh(new THREE.PlaneGeometry(7, 7).rotateX(-Math.PI / 2), S.charcosNoche); ch.position.set(x + Math.sin(ry) * 1.0, 0.02, z + Math.cos(ry) * 1.0); ch.renderOrder = 2; W.add(ch); G.bloquea(x - 0.2, z - 0.2, x + 0.2, z + 0.2); };
     for (let x = -36; x <= 36; x += 12) { if (Math.abs(x) < 6) continue; farola(x + 2, -3.4, 0); farola(x - 2, 3.4, Math.PI); }
     const banco = (x, z, ry) => { const g = new THREE.Group(); [[0, 0.42, 0, 1.6, 0.06, 0.45], [0, 0.7, -0.2, 1.6, 0.4, 0.05]].forEach(([px, py, pz, w, h, d]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat('#7a5638')); m.position.set(px, py, pz); g.add(m); }); for (const s of [-0.7, 0.7]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.42, 0.45), mat('#2a2f35')); p.position.set(s, 0.21, 0); g.add(p); } g.position.set(x, 0, z); g.rotation.y = ry; g.traverse(m => { if (m.isMesh) m.castShadow = true; }); W.add(g); G.bloquea(x - 0.8, z - 0.3, x + 0.8, z + 0.3); };
     banco(-26, -5.6, 0); banco(-13, -5.6, 0); banco(-24, 5.6, Math.PI); banco(34, 5.6, Math.PI); banco(36, -5.6, 0);
@@ -213,8 +216,18 @@
     // Coches
     S.coches = []; const colores = ['#c8102e', '#f4f4f4', '#1d2024', '#2f6f9e', '#8a8f94', '#e8b923', '#3a5a3a', '#7a2f22'];
     const carriles = [['x', 1, 1.5], ['x', -1, -1.5], ['z', 1, -1.5], ['z', -1, 1.5]];
-    carriles.forEach(([eje, dir, c], ci) => { const largo = eje === 'x' ? 88 : 48; for (let i = 0; i < (eje === 'x' ? 3 : 2); i++) { const obj = coche(colores[(ci * 3 + i) % colores.length]); S.mundo.add(obj); S.coches.push({ obj, eje, dir, c, pos: -largo / 2 + i * (largo / 3) + r() * 4, vel: 6, largo }); } });
+    carriles.forEach(([eje, dir, c], ci) => { const largo = eje === 'x' ? 88 : 48; for (let i = 0; i < (eje === 'x' ? 3 : 2); i++) { const obj = coche(colores[(ci * 3 + i) % colores.length]); S.mundo.add(obj); S.coches.push({ obj, eje, dir, c, pos: -largo / 2 + i * (largo / 3) + r() * 4, vel: 6, largo, len: 4.1 }); } });
+    // Autobús urbano con el anuncio del club: carril sur de la avenida, para en la parada
+    { const obj = autobus(club); S.mundo.add(obj); S.coches.push({ obj, eje: 'x', dir: 1, c: 1.5, pos: -20, vel: 5, largo: 88, len: 10.5, bus: true, parada: -36, tParada: 0 }); }
     S.tSem = 0;
+  }
+  function autobus(club) {
+    const g = new THREE.Group(), c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0];
+    const B = (w, h, d, m, x, y, z) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.castShadow = true; g.add(me); return me; };
+    B(2.5, 2.6, 10.4, mat('#e9edf0', { roughness: 0.4 }), 0, 1.65, 0); B(2.52, 0.9, 10.2, mat('#22303a', { roughness: 0.1, metalness: 0.5 }), 0, 2.2, 0.1); B(2.54, 0.35, 10.42, mat(c1), 0, 0.7, 0);
+    B(2.4, 0.06, 10.2, mat('#c9cdd1'), 0, 2.98, 0);
+    for (const [x, z] of [[-1.1, 3.6], [1.1, 3.6], [-1.1, -3.4], [1.1, -3.4]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 14), mat('#151515')); w.rotation.z = Math.PI / 2; w.position.set(x, 0.5, z); g.add(w); }
+    g.position.y = -0.12; g.userData = { coche: true }; return g;
   }
   function coche(color) {
     const g = new THREE.Group(), cuerpo = mat(color, { roughness: 0.35, metalness: 0.4 }), cristal = mat('#22303a', { roughness: 0.1, metalness: 0.6 }), rueda = mat('#151515');
@@ -238,9 +251,14 @@
     S.semaforos.forEach(s => { const v = s.eje === 'x' ? verdeX : verdeZ; s.verde.material.emissiveIntensity = v ? 2.5 : 0; s.roja.material.emissiveIntensity = v ? 0 : 2.5; });
     S.coches.forEach(c => {
       const verde = c.eje === 'x' ? verdeX : verdeZ, delante = c.dir * c.pos;
-      let objetivo = 7;
-      if (!verde && delante > -16 && delante < -10.6) objetivo = Math.max(0, (-10.8 - delante) * 1.6);
-      S.coches.forEach(o => { if (o === c || o.eje !== c.eje || o.dir !== c.dir) return; let gap = c.dir * (o.pos - c.pos); if (gap < 0) gap += c.largo; if (gap < 7) objetivo = Math.min(objetivo, Math.max(0, (gap - 5.2) * 2)); });
+      let objetivo = c.bus ? 5.5 : 7;
+      // Ceder el paso: pasos de peatones a 6,5-9,5 m del cruce en cada eje
+      const frente = delante + c.len / 2;
+      for (const ini of [-9.5, 6.5]) { const dist = ini - frente; if (dist > -0.5 && dist < 4) { const ocupado = (S.gente.concat(S.yo ? [S.yo] : [])).some(p => { const a = c.eje === 'x' ? p.obj.position.x : p.obj.position.z, b = c.eje === 'x' ? p.obj.position.z : p.obj.position.x; return Math.abs(b) < 3.2 && c.dir * a > ini - 0.3 && c.dir * a < ini + 3.3; }); if (ocupado) objetivo = Math.min(objetivo, Math.max(0, dist * 1.5)); } }
+      // Autobús: parada de 6 s en la marquesina
+      if (c.bus) { const d = c.parada - c.pos; if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else if (d > 0 && d < 0.6 && c.vel < 1.5) { c.tParada = 6; } else if (d > 0 && d < 12) objetivo = Math.min(objetivo, Math.max(0.4, d * 0.6)); }
+      if (!verde && delante > -16 && delante < -10.6) objetivo = Math.min(objetivo, Math.max(0, (-10.8 - delante) * 1.6));
+      S.coches.forEach(o => { if (o === c || o.eje !== c.eje || o.dir !== c.dir) return; let gap = c.dir * (o.pos - c.pos); if (gap < 0) gap += c.largo; const hueco = gap - (c.len + o.len) / 2; if (hueco < 4) objetivo = Math.min(objetivo, Math.max(0, (hueco - 1.2) * 2)); });
       c.vel += Math.max(-9 * dt, Math.min(3 * dt, objetivo - c.vel)); c.pos += c.dir * c.vel * dt;
       if (c.pos > c.largo / 2) c.pos -= c.largo; if (c.pos < -c.largo / 2) c.pos += c.largo;
       if (c.eje === 'x') { c.obj.position.set(c.pos, -0.12, c.c); c.obj.rotation.y = c.dir > 0 ? Math.PI / 2 : -Math.PI / 2; } else { c.obj.position.set(c.c, -0.12, c.pos); c.obj.rotation.y = c.dir > 0 ? 0 : Math.PI; }

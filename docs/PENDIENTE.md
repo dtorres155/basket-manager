@@ -15,8 +15,7 @@
 - **Pueblo 3D:** construir el nivel 5 tarda ~1,2 s con CPU x4 y se reconstruye tras cada acción del panel; cachear la geometría o actualizar solo lo que cambia.
 
 ## Próximo cambio (pedido por el usuario)
-- Sede: petos de colores para distinguir los dos equipos del 3 contra 3.
-- Sede: transición suave al cambiar de día (hoy la gente reaparece de golpe al repoblar).
+- ~~Petos en el 3 contra 3~~ y ~~transición entre días~~: hechos.
 
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
