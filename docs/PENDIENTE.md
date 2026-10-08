@@ -28,6 +28,8 @@
 - **Creación del personaje más completa:** hoy hay piel (5), peinado (6), color de pelo (6), barba (4), gafas (3) y ropa (4), pero el modelo 3D solo usa la piel y el color de pelo. Añadir altura y complexión, cara, peinados y barba en el modelo 3D, tatuajes, accesorios (cinta, muñequeras, zapatillas), dorsal y estilo de ropa fuera de la pista.
 - **Pueblo explorable:** pasear por el pueblo de colina (estilo Monteriggioni) con el motor del mundo (como la sede y la calle), y no solo verlo desde arriba.
 - **Obras con tiempo:** hoy invertir en el pueblo es instantáneo. Que cada obra dure semanas o meses, con fases visibles (solar, cimientos, estructura, andamios, acabado), obreros trabajando y una evolución progresiva del pueblo.
+- **Mapa interactivo** en el mundo explorable (calle, barrio, pueblo): puntos destacados (sede, pabellón, casa, tienda, peña, obras), dónde estás tú y tocar un punto para ir andando hasta él, en vez de orientarse a ojo.
+- **Transporte** cuando la ciudad o el pueblo crezcan: bici, bus o metro con paradas, para moverse entre barrios sin cruzar todo andando.
 - **Mejorar la sede:** salas más detalladas y con más vida, mejor distribución (ya corregido: el banco de pesas del gimnasio tapaba la puerta de la enfermería), más interacciones por sala.
 - **Interiores en más sitios:** entrar en el pabellón, la tienda, la peña, el ayuntamiento, el bar y las casas del pueblo y la ciudad, con el mismo motor de la sede.
 - **Más que negocios:** además de bar, tienda u hotel, construir instalaciones públicas (plaza, parque, escuela, biblioteca, centro de día, carretera, iluminación), casas para tus padres y amigos, y que los vecinos reaccionen a lo que haces.
