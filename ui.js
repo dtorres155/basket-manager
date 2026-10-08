@@ -161,20 +161,21 @@
       op('carrera', 'Carrera de jugador', 'Sé un jugador: de la cantera o la universidad a la Liga Endesa, la Euroliga y, si llegas, la NBA.', 'Tu jugador'))), [{ t: 'Cancelar', cls: 'btn-sec' }]);
   }
   function personajeModal(pj, titulo, fin, edit, modo) {
+    if (pj.cara === undefined) pj.cara = 0; if (pj.zapas === undefined) pj.zapas = 0;
     const OP = M().personaje.OPC, cuerpo = h('div'), ni = h('input', { class: 'sel', placeholder: 'Nombre', value: pj.nombre, maxlength: 18 }), na = h('input', { class: 'sel', placeholder: 'Apellido', value: pj.apellido, maxlength: 20 });
     const campo = (lbl, key, n, nom) => h('div', { class: 'ajuste' }, h('b', null, lbl), h('div', { class: 'seg' }, Array.from({ length: n }, (_, i) => h('button', { class: 'tab' + (pj[key] === i ? ' on' : ''), 'aria-label': lbl + ' ' + (i + 1), onclick: () => { pj.nombre = ni.value; pj.apellido = na.value; pj[key] = i; pintar(); } }, nom(i)))));
     const punto = c => h('span', { style: { display: 'inline-block', width: '18px', height: '18px', borderRadius: '50%', background: c, border: '1px solid rgba(0,0,0,.3)', verticalAlign: 'middle' } });
     function pintar() {
       cuerpo.innerHTML = '';
       cuerpo.append(h('div', { class: 'centro' }, avatarEl(pj, 120, edit && edit.camiseta ? { camiseta: true, numero: 7 } : {})),
-        h('div', { class: 'filtros' }, ni, na), campo('Piel', 'piel', 5, i => punto(OP.piel[i])), campo('Peinado', 'pelo', 6, i => OP.pelo[i]), campo('Color de pelo', 'peloColor', 6, i => punto(OP.peloColor[i])),
+        h('div', { class: 'filtros' }, ni, na), campo('Piel', 'piel', 5, i => punto(OP.piel[i])), campo('Cara', 'cara', 4, i => OP.cara[i]), campo('Peinado', 'pelo', 6, i => OP.pelo[i]), campo('Color de pelo', 'peloColor', 6, i => punto(OP.peloColor[i])),
         modo === 'carrera' ? null : campo('Cuerpo', 'cuerpo', 2, i => OP.cuerpo[i]), modo === 'carrera' ? null : campo('Altura', 'altura', 3, i => OP.altura[i]),
         campo('Complexión', 'complexion', 3, i => OP.complexion[i]), pj.cuerpo === 1 ? null : campo('Barba', 'barba', 4, i => OP.barba[i]), campo('Gafas', 'gafas', 3, i => OP.gafas[i]),
-        campo(modo === 'carrera' ? 'Ropa de calle' : 'Ropa', 'ropa', 4, i => OP.ropa[i]), campo('Accesorios', 'accesorio', 4, i => OP.accesorio[i]), campo('Tatuajes', 'tatuaje', 4, i => OP.tatuaje[i]));
+        campo(modo === 'carrera' ? 'Ropa de calle' : 'Ropa', 'ropa', 4, i => OP.ropa[i]), campo('Accesorios', 'accesorio', 4, i => OP.accesorio[i]), campo('Tatuajes', 'tatuaje', 4, i => OP.tatuaje[i]), campo('Zapatillas', 'zapas', 4, i => OP.zapas[i]));
     }
     pintar();
     modal(h('div', null, h('h3', null, titulo), cuerpo), [{ t: edit ? 'Guardar' : 'Continuar', fn: () => { pj.nombre = ni.value.trim(); pj.apellido = na.value.trim(); if (!pj.nombre) { toast('Escribe un nombre'); return false; } setTimeout(() => fin(pj), 0); } },
-      { t: 'Aspecto aleatorio', cls: 'btn-sec', queda: true, fn: () => { const a = M().personaje.aleatorio(); ['piel', 'pelo', 'peloColor', 'barba', 'gafas', 'ropa', 'complexion', 'accesorio', 'tatuaje'].forEach(k => { pj[k] = a[k]; }); pj.nombre = ni.value; pj.apellido = na.value; pintar(); return false; } },
+      { t: 'Aspecto aleatorio', cls: 'btn-sec', queda: true, fn: () => { const a = M().personaje.aleatorio(); ['piel', 'pelo', 'peloColor', 'barba', 'gafas', 'ropa', 'complexion', 'accesorio', 'tatuaje', 'cara', 'zapas'].forEach(k => { pj[k] = a[k]; }); pj.nombre = ni.value; pj.apellido = na.value; pintar(); return false; } },
       { t: 'Cancelar', cls: 'btn-sec' }], { alta: true });
   }
   function perfilModal() {

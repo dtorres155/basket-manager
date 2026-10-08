@@ -206,7 +206,7 @@
   function construir(v, W, st, ctx) {
     const K = GM.kit, nivel = ctx.nivel, E = Object.assign({ clave: ctx.estilo }, ESTILOS[ctx.estilo]), M = materiales(E, ctx.S), r = rnd(U.hash(ctx.nombre + 'p3d'));
     const RW = RADIO_MURO[nivel], ocupado = [], libre = (x, z, rr) => ocupado.every(o => Math.hypot(o[0] - x, o[1] - z) > o[2] + rr), ocupa = (x, z, rr) => ocupado.push([x, z, rr]);
-    const yC = alt(0, 0);
+    const yC = alt(0, 0), nvE = tp => ((ctx.edificios || []).find(b => b.tipo === tp) || {}).nivel || 0;
     // Cielo y luz de tarde dorada
     const cielo = textura('cielo', (x, n) => { const g = x.createLinearGradient(0, 0, 0, n); g.addColorStop(0, '#6fa6d6'); g.addColorStop(0.55, '#b9d4e8'); g.addColorStop(1, '#efe2c8'); x.fillStyle = g; x.fillRect(0, 0, n, n); }, 128);
     if (cielo) { cielo.wrapS = cielo.wrapT = THREE.ClampToEdgeWrapping; v.scene.background = cielo; }
@@ -239,7 +239,7 @@
     // Puerta de la muralla mirando al sur-este (hacia la cámara) y camino que baja hasta el puente
     const aP = 0.95, gx = Math.cos(aP) * (RW || 9), gz = Math.sin(aP) * (RW || 9);
     const xP = 18, zP = zRio(xP), camino = curva([[gx * 0.55, gz * 0.55], [gx, gz], [gx + 5, gz + 4], [gx + 2, gz + 11], [xP - 2, zP - 7], [xP, zP], [xP + 2, zP + 9], [xP + 10, T / 2]], 140);
-    W.add(cinta(camino, 2.2, liso(E.tierra), 0.08, 2));
+    W.add(cinta(camino, nvE('carretera') ? 2.6 : 2.2, liso(nvE('carretera') ? '#5d5f63' : E.tierra), 0.08, 2));
     caja(W, 2.8, 0.4, 6, M.piedra, xP, zRio(xP) - 3.5 + alt(xP, zP) + 0.5 - 0.4 - zRio(xP) + 3.5, zP, 0);
     camino.forEach(([x, z], i) => { if (i % 4 === 2 && i > 8) { ocupa(x, z, 0.9); } });
     // Plaza mayor empedrada
@@ -260,14 +260,21 @@
     // Infraestructuras del jugador en sitios fijos (seleccionables)
     const sitios = {
       canasta: [RP * 0.62, RP * 0.15, -Math.PI / 2, yC + 0.12], bar: [RP + 2.2, -1.8, -Math.PI / 2], mural: [Math.cos(aP + 0.32) * (RW + 1.4), Math.sin(aP + 0.32) * (RW + 1.4), -aP - 0.32 + Math.PI / 2],
-      escuela: [gx + 12, gz + 1, -0.6], ambulatorio: [gx + 12, gz + 11, -1.4], tienda: [gx - 2.6, gz + 5.2, -2.6], hotel: [xP - 12, zP - 11, 0.4], polideportivo: [xP + 15, zP + 10, 0], pabellon: [xP - 17, zP + 11, 0]
+      escuela: [gx + 12, gz + 1, -0.6], ambulatorio: [gx + 12, gz + 11, -1.4], tienda: [gx - 2.6, gz + 5.2, -2.6], hotel: [xP - 12, zP - 11, 0.4], polideportivo: [xP + 15, zP + 10, 0], pabellon: [xP - 17, zP + 11, 0],
+      // servicios públicos y casas de los tuyos: la biblioteca y el centro de día dentro del casco; el parque y las casas junto al camino
+      plaza: [0, 0, 0, yC + 0.12], biblioteca: [Math.cos(aP + 0.8) * (RP + 4.3), Math.sin(aP + 0.8) * (RP + 4.3), -(aP + 0.8) - Math.PI / 2], centrodia: [Math.cos(aP + 4.5) * (RP + 4.6), Math.sin(aP + 4.5) * (RP + 4.6), -(aP + 4.5) - Math.PI / 2],
+      parque: [gx - 9, gz + 8, 0.3], casapadres: [gx + 7.5, gz + 7, -1.2], casaamigos: [gx - 16, gz + 10, 0.7],
+      carretera: (() => { const i = 96, p = camino[i], q = camino[i + 1], l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, nx = -(q[1] - p[1]) / l, nz = (q[0] - p[0]) / l; return [p[0] + nx * 2.4, p[1] + nz * 2.4, Math.atan2(nx, nz)]; })()
     };
     V_edificios.length = 0;
+    const nAl = nvE('alumbrado');
+    if (nAl) { const fa = new THREE.Group(); calles.forEach(c => { for (let k = 3; k < c.length - 1; k += nAl > 1 ? 4 : 7) { const p = c[k], q = c[k + 1], l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, x = p[0] - (q[1] - p[1]) / l * 1.15, z = p[1] + (q[0] - p[0]) / l * 1.15; if (Math.hypot(x, z) < RP - 0.3) continue; farola(fa, M, x, alt(x, z), z, nAl); } }); fa.userData = { tipo: 'alumbrado' }; W.add(fa); V_edificios.push(fa); }
     (ctx.edificios || []).forEach(b => {
-      const s = sitios[b.tipo]; if (!s) return; const [x, z, ry, y0] = s;
-      const g = b.nivel ? (infra(b.tipo, b.nivel, E, M, ctx.S, ctx.jugador, r) || ctx.edificio(b.tipo, b.nivel, ctx.S)) : solar(M);
+      const s = sitios[b.tipo]; if (!s || (b.tipo === 'plaza' && !b.nivel && !b.obra)) return; const [x, z, ry, y0] = s;
+      const g = b.nivel ? (infra(b.tipo, b.nivel, E, M, ctx.S, ctx.jugador, r) || ctx.edificio(b.tipo, b.nivel, ctx.S)) : solar(M, b.obra);
+      if (b.nivel && b.obra) { const an = solar(M, b.obra); an.position.set(3, 0, 2.2); g.add(an); }
       g.position.set(x, y0 !== undefined ? y0 : alt(x, z) + 0.02, z); g.rotation.y = ry;
-      g.userData = { tipo: b.tipo }; W.add(g); ocupa(x, z, b.tipo === 'canasta' ? 2.6 : b.tipo === 'mural' ? 4.5 : b.tipo === 'pabellon' || b.tipo === 'polideportivo' ? 6 : 3.6); V_edificios.push(g);
+      g.userData = { tipo: b.tipo }; W.add(g); if (b.tipo !== 'plaza') ocupa(x, z, b.tipo === 'canasta' ? 2.6 : b.tipo === 'mural' ? 4.5 : b.tipo === 'carretera' ? 1.6 : b.tipo === 'pabellon' || b.tipo === 'polideportivo' ? 6 : 3.6); V_edificios.push(g);
     });
     // Muralla con torres (desde villa; en «pueblo» quedan restos)
     if (RW) {
@@ -415,11 +422,57 @@
         const cup = new THREE.Mesh(new THREE.SphereGeometry(R, 28, 10, 0, Math.PI * 2, 0, Math.PI / 2), liso('#c9cdd1')); cup.scale.set(1, 0.32, 0.72); cup.position.y = alto; g.add(cup);
         plano(g, 5, 1.25, rotuloTex('PABELLÓN ' + J.apellido.toUpperCase(), S.h1, '#ffffff'), S.c1, 0, 1.6, R * 0.72 + 0.05);
         break; }
+      case 'plaza': { // bancos y faroles alrededor de la fuente; con el segundo nivel, soportales y guirnaldas de luces
+        for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + 0.95, rr = 3.1; const bq = new THREE.Group(); caja(bq, 1.1, 0.08, 0.36, M.madera, 0, 0.36, 0); caja(bq, 1.1, 0.3, 0.06, M.madera, 0, 0.46, -0.16); for (const s of [-1, 1]) caja(bq, 0.08, 0.36, 0.3, M.hierro, s * 0.45, 0, 0); bq.position.set(Math.cos(a) * rr, 0, Math.sin(a) * rr); bq.rotation.y = -a - Math.PI / 2; g.add(bq); }
+        if (nv > 1) { for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + 0.6; farola(g, M, Math.cos(a) * 4.1, 0, Math.sin(a) * 4.1, 2); }
+          const luz = liso('#ffe7a3'); for (let i = 0; i < 8; i++) { const a0 = i / 8 * Math.PI * 2 + 0.6, a1 = a0 + Math.PI * 2 / 8; for (let k = 1; k < 5; k++) { const tt = k / 5, a = a0 + (a1 - a0) * tt, rr = 4.1 - Math.sin(tt * Math.PI) * 0.15; caja(g, 0.1, 0.1, 0.1, luz, Math.cos(a) * rr, 2.45 - Math.sin(tt * Math.PI) * 0.35, Math.sin(a) * rr); } } }
+        break; }
+      case 'parque': {
+        caja(g, 6, 0.08, 4.6, liso('#6f9a4a'), 0, -0.02, 0); caja(g, 6, 0.1, 0.9, liso(E.tierra), 0, 0, 0.4); caja(g, 0.9, 0.1, 4.6, liso(E.tierra), -0.6, 0, 0);
+        for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; caja(g, 0.12, 0.5, 0.12, M.madera, Math.cos(a) * 2.9, 0, Math.sin(a) * 2.2); }
+        const col = new THREE.Group(); caja(col, 2.2, 0.08, 0.08, M.hierro, 0, 1.8, 0); for (const s of [-1, 1]) { caja(col, 0.08, 1.85, 0.08, M.hierro, s * 1.05, 0, 0.35); caja(col, 0.08, 1.85, 0.08, M.hierro, s * 1.05, 0, -0.35); caja(col, 0.02, 1.3, 0.02, M.hierro, s * 0.45, 0.5, 0); caja(col, 0.45, 0.05, 0.22, liso(S.h1), s * 0.45, 0.48, 0); } col.position.set(1.8, 0, -1.2); g.add(col);
+        caja(g, 0.9, 0.5, 0.9, liso('#e3cf9a'), -2, 0, -1.3); caja(g, 0.3, 0.05, 1.1, liso('#d0533a'), -2, 0.55, -1.3).rotation.x = 0.4;
+        arbolPlaza(g, -2.2, 0, 1.6, 0.9); arbolPlaza(g, 2.4, 0, 1.7, 0.8); arbolPlaza(g, 0.6, 0, -1.8, 0.7);
+        if (nv > 1) { const est = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.08, 20), M.agua); est.position.set(1.3, 0.06, 1.3); est.scale.z = 0.7; g.add(est); caja(g, 2.4, 0.06, 1.6, liso('#9aa3ab'), -1.5, 0.02, -1.6); for (let i = 0; i < 3; i++) caja(g, 0.5, 0.3, 0.4, liso(i % 2 ? '#d0533a' : '#3a78b0'), -2.2 + i * 0.7, 0.05, -1.6); }
+        break; }
+      case 'biblioteca': {
+        const piedra = M.piedra; caja(g, 4.6, 2.8 + 1.6, 3, piedra, 0, -1.6, 0); tejado(g, 4.6, 3, 0.9, tj, 2.8);
+        for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.3, 10), blanco); c.position.set(-1.35 + i * 0.9, 1.15, 1.75); g.add(c); }
+        caja(g, 3.4, 0.35, 0.6, blanco, 0, 2.3, 1.75); caja(g, 3.6, 0.15, 1.2, piedra, 0, -0.1, 1.9);
+        for (const s of [-1, 1]) caja(g, 0.5, 1.2, 0.05, M.cristal, s * 1.8, 0.7, 1.52);
+        caja(g, 0.9, 1.6, 0.05, M.oscuro || M.madera, 0, 0, 1.52); plano(g, 2.4, 0.6, rotuloTex('BIBLIOTECA', '#f4efe3', '#2a2a2a'), '#f4efe3', 0, 2.95, 1.6);
+        if (nv > 1) { caja(g, 2.6, 2.2 + 1.6, 2.6, blanco, 3.7, -1.6, -0.2); caja(g, 2.2, 1.5, 0.05, M.cristal, 3.7, 0.4, 1.12); caja(g, 2.8, 0.12, 2.8, liso('#c9c4b8'), 3.7, 2.2, -0.2); }
+        break; }
+      case 'centrodia': {
+        const hC = nv > 1 ? 3.3 : 1.9; caja(g, 6, hC + 1.6, 3, muro, 0, -1.6, 0); tejado(g, 6, 3, 0.8, tj, hC);
+        for (let i = 0; i < 5; i++) caja(g, 0.7, 0.8, 0.05, M.cristal, -2.4 + i * 1.2, 0.6, 1.52);
+        caja(g, 6.2, 0.1, 1.4, M.madera, 0, 1.6, 2.2); for (let i = 0; i < 4; i++) caja(g, 0.1, 1.6, 0.1, M.madera, -2.9 + i * 1.93, 0, 2.85);
+        plano(g, 2.6, 0.55, rotuloTex(nv > 1 ? 'RESIDENCIA' : 'CENTRO DE DÍA', '#f4efe3', '#2a2a2a'), '#f4efe3', 0, 1.35, 1.53);
+        for (let i = 0; i < 2; i++) { const m = new THREE.Group(); caja(m, 0.8, 0.06, 0.8, M.madera, 0, 0.7, 0); caja(m, 0.08, 0.7, 0.08, M.madera, 0, 0, 0); m.position.set(-1.5 + i * 3, 0, 3.6); g.add(m); }
+        if (nv > 1) { for (let i = 0; i < 5; i++) caja(g, 0.7, 0.7, 0.05, M.cristal, -2.4 + i * 1.2, 2.3, 1.52); arbolPlaza(g, -3.8, 0, 3.4, 0.8); arbolPlaza(g, 3.8, 0, 3.4, 0.8); }
+        break; }
+      case 'carretera': { // parada del autobús junto al camino; con el segundo nivel, el autobús esperando
+        caja(g, 2.4, 0.12, 1.2, liso('#b9b3a6'), 0, 0, 0); for (const s of [-1, 1]) caja(g, 0.08, 2.1, 0.08, M.hierro, s * 1.05, 0, -0.45);
+        caja(g, 2.4, 0.08, 1.2, liso(S.h1), 0, 2.1, -0.05); caja(g, 2.2, 1.6, 0.04, M.cristal, 0, 0.4, -0.55); caja(g, 1.6, 0.08, 0.36, M.madera, 0, 0.45, -0.3);
+        caja(g, 0.06, 2.4, 0.06, M.hierro, 1.6, 0, 0.4); caja(g, 0.5, 0.5, 0.04, liso('#1d5a8a'), 1.6, 2.1, 0.4);
+        if (nv > 1) { const bus = new THREE.Group(); caja(bus, 6.5, 2.2, 2.1, liso(S.h1), 0, 0.3, 0); caja(bus, 6.3, 0.7, 2.14, M.cristal, 0, 1.4, 0); caja(bus, 6.6, 0.1, 2.2, blanco, 0, 2.5, 0); for (const xx of [-2.2, 2.2]) for (const zz of [-1.05, 1.05]) { const rd = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.25, 12), M.oscuro || gris); rd.rotation.x = Math.PI / 2; rd.position.set(xx, 0.42, zz); bus.add(rd); } bus.position.set(0.4, 0, 2.3); g.add(bus); }
+        break; }
+      case 'casapadres': {
+        g.add(casa(E, M, nv > 1 ? 3.4 : 2.6, nv > 1 ? 3 : 2.4, nv > 1 ? 2 : 1, r, { balcon: nv > 1 ? 1 : 0 }));
+        if (nv > 2) { const vl = liso('#f2efe8'); for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; caja(g, 0.1, 0.7, 0.1, vl, Math.cos(a) * 3.6, 0, Math.sin(a) * 3.2 + 0.8); }
+          for (let i = 0; i < 4; i++) caja(g, 2.2, 0.22, 0.35, liso('#6b4a2e'), 1.2, 0, 2.2 + i * 0.6); for (let i = 0; i < 4; i++) for (let k = 0; k < 4; k++) caja(g, 0.25, 0.25, 0.25, liso('#5f9a3e'), 0.45 + k * 0.5, 0.2, 2.2 + i * 0.6);
+          arbolPlaza(g, -2.2, 0, 2.6, 0.9); }
+        break; }
+      case 'casaamigos': {
+        g.add(casa(E, M, 2.6, 2.4, 2, r, { balcon: 1 }));
+        if (nv > 1) { const c2 = casa(E, M, 2.6, 2.4, 2, r, { balcon: 1, bandera: 1 }); c2.position.x = 2.9; g.add(c2); caja(g, 2.4, 0.08, 1.6, M.madera, 1.45, 0, 2.2); const som = new THREE.Mesh(new THREE.ConeGeometry(0.9, 0.4, 8), liso(S.h1)); som.position.set(1.45, 2, 2.2); g.add(som); caja(g, 0.05, 2, 0.05, M.hierro, 1.45, 0, 2.2); }
+        break; }
       default: return null;
     }
     return g;
   }
-  function solar(M) { const g = new THREE.Group(); caja(g, 2.4, 0.06, 2.2, liso('#b9ab8c'), 0, 0, 0); for (let i = 0; i < 4; i++) caja(g, 0.06, 0.7, 0.06, M.madera, (i % 2 ? 1 : -1) * 1.1, 0, (i < 2 ? 1 : -1) * 1.0); caja(g, 0.9, 0.5, 0.04, liso('#f2e8d0'), 0, 0.6, 1.02); return g; }
+  function farola(g, M, x, y, z, nv) { caja(g, 0.09, 2.3, 0.09, M.hierro, x, y, z); caja(g, 0.3, 0.32, 0.3, liso(nv > 1 ? '#ffe7a3' : '#f2e2b0'), x, y + 2.3, z); caja(g, 0.38, 0.06, 0.38, M.hierro, x, y + 2.62, z); }
+  function solar(M, obra) { const g = new THREE.Group(); if (obra) { const am = liso('#e2b33c'); for (let i = 0; i < 3; i++) for (let k = 0; k < 2; k++) caja(g, 0.08, 2.4, 0.08, M.hierro, -1 + i, 0, -0.9 + k * 1.8); for (let p = 1; p < 3; p++) caja(g, 2.2, 0.06, 2, am, 0, p * 1.1, 0); caja(g, 0.18, 5, 0.18, am, 1.6, 0, -1.2); caja(g, 3.4, 0.16, 0.16, am, 0.6, 5, -1.2); } caja(g, 2.4, 0.06, 2.2, liso('#b9ab8c'), 0, 0, 0); for (let i = 0; i < 4; i++) caja(g, 0.06, 0.7, 0.06, M.madera, (i % 2 ? 1 : -1) * 1.1, 0, (i < 2 ? 1 : -1) * 1.0); caja(g, 0.9, 0.5, 0.04, liso('#f2e8d0'), 0, 0.6, 1.02); return g; }
   const V_edificios = [];
   GM.pueblo3d = { construir, estiloDe, alt, ESTILOS, edificios: V_edificios };
 })();

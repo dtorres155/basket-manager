@@ -2,7 +2,7 @@
 const assert = require('assert');
 global.LZString = require('lz-string');
 const L = require('./load');
-L(['core', 'datos_util', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'social', 'sponsor', 'pueblo', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d']);
+L(['core', 'datos_util', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'social', 'sponsor', 'pueblo', 'gente', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d']);
 let n = 0; const ok = (nombre, fn) => { fn(); n++; console.log('  ok', nombre); };
 const U = GM.util, C = GM.mods.competiciones;
 
@@ -111,5 +111,18 @@ ok('pueblo: invertir abre una obra y al terminar sube el nivel', () => {
   sc.fecha = U.addDays(en.obra.fin, 0); Pm.terminarObras(sc);
   const fin = Pm.edificios(sc).find(b => b.tipo === 'parque'); assert.strictEqual(fin.nivel, 1, 'inaugurado'); assert.ok(!fin.obra);
   assert.ok(Pm.diasObra(5) >= 14 && Pm.diasObra(2000) <= 150);
+});
+// ---- Gente de la calle: charlas y encargos ----
+ok('gente: charla semanal y encargo que se cumple con un partido', () => {
+  GM.rng.seed(8); const sg = GM.newGame('joventut-badalona', 8, { modo: 'carrera', personaje: { nombre: 'Marc', apellido: 'Soler' }, carrera: { origen: 'europa', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
+  const Gn = GM.mods.gente, ps = Gn.personas(sg, 'calle');
+  assert.strictEqual(ps.length, 4); assert.strictEqual(ps.find(p => p.id === 'leyenda').nombre, 'Jordi Villacampa');
+  assert.strictEqual(Gn.personas(sg, 'pueblo').length, 2, 'en el pueblo: primer entrenador y alcalde');
+  const f = Gn.ficha(sg, 'leyenda'); assert.ok(f.acciones[0].fn().ok); assert.ok(!Gn.ficha(sg, 'leyenda').acciones[0].disponible, 'una charla por semana');
+  const acepta = Gn.ficha(sg, 'leyenda').acciones.find(a => /^Aceptar encargo/.test(a.t)); assert.ok(acepta, 'ofrece un encargo'); acepta.fn();
+  const e = Gn.estado(sg).encargo; assert.strictEqual(e.tipo, 'puntos'); const r0 = Gn.estado(sg).rel.leyenda;
+  const g0 = sg.calendario.find(g => g.local === sg.clubId); GM.bus.emit('partido:jugado', { partido: Object.assign({}, g0, { resultado: { local: 80, visitante: 70, stats: { yo: { min: 30, pts: e.n + 1 } } } }) });
+  assert.strictEqual(Gn.estado(sg).encargo, null, 'encargo resuelto'); assert.ok(Gn.estado(sg).rel.leyenda > r0 + 10, 'la relación sube'); assert.strictEqual(Gn.estado(sg).hechos, 1);
+  assert.strictEqual(Gn.casual(sg, { hincha: true }).length, 2);
 });
 console.log('aserciones', n, 'de', n);

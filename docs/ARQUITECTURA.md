@@ -12,6 +12,7 @@ Resumen: un núcleo (`core.js`) con RNG, bus de eventos, utilidades y `newGame`;
 | `temporada:nueva` | `competiciones.nuevaTemporada` | reinicio de copas, competiciones europeas y calendario |
 | `partida:cargada` | `guardado` | reinstalar accesores y refrescar la interfaz |
 | `fichaje:hecho`, `instalacion:mejorada`, `dinero:cambio`, `copa:fin` | varios | notificaciones entre módulos |
+| `sala:abierta` | `sede3d.abrirSala` | se abre una zona del mundo (encargos de `gente.js`) |
 
 ## Forma del estado (GM.state)
 
@@ -162,6 +163,9 @@ ACCIONES DE LA SEDE (GM.mods.sedeAcciones): lo que se hace en cada sala sin men�
 
 ### `pueblo3d.js`
 PUEBLO 3D (GM.pueblo3d): escena del pueblo natal. Colina con relieve y campos, olivos y cipreses instanciados, río con puente, camino a la puerta, muralla con torres (desde villa), plaza mayor con fuente, iglesia y ayuntamiento con soportales, torre del homenaje, calles empedradas y casas texturizadas (teja árabe, postigos, balcones con macetas, banderas del club según el cariño). Estilo por región (`estiloDe`): piedra catalana, ocre castellano, blanco andaluz, toscano. Las infraestructuras del jugador tienen modelo propio (mural con su dorsal, pabellón y hospital con su apellido) y llevan `userData.tipo`. Azar local con semilla: no usa `GM.rng`. No escribe en el estado.
+
+### `gente.js`
+GENTE (GM.mods.gente) — personas con nombre con las que hablar por la calle y en tu pueblo: leyenda del club, utillero, peña y periodista; en el pueblo, primer entrenador y alcalde. Saludo según la relación y el último partido, charla semanal con un efecto pequeño y encargos con plazo (ganar, ganar en casa, meter puntos, ir a la peña, empezar una obra). Vecinos y aficionados: saludar y autógrafos. Expone: personas, ficha, casual, estado, selfTest. Escribe state.gente = { rel, charla, encargo, hechos, firmas } (se crea al usarse).
 
 ### `pueblo.js`
 TU PUEBLO (GM.mods.pueblo) — modo carrera Tu pueblo natal crece con tu reputación y con lo que inviertas: de aldea a ciudad del baloncesto. Con más nivel, más casas, mejores edificios y nuevas infraestructuras interactivas (canasta, polideportivo, escuela, ambulatorio, mural y estatua, bar de la peña, tienda, hotel, pabellón con tu nombre). Acciones: visitar, fiesta en tu honor, clínic con los niños e inversiones. Los edificios dan renta, cariño y reputación cada mes. Expone: estado, nivel, edificios, invertir, visitar, fiesta, clinic, mount, unmount, selfTest. Escribe state.carrera.pueblo.

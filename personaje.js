@@ -1,7 +1,7 @@
 /* PERSONAJE (GM.mods.personaje)
    Avatar vectorial (SVG en línea) personalizable: piel, peinado y color, barba, gafas y vestimenta. Se viste con los colores del club mediante las
    variables CSS --club, --club2 y --club-ink. Expone: crear, avatar(pj, opciones), nombre, OPC, aleatorio, selfTest.
-   Se guarda en state.personaje = { nombre, apellido, piel, pelo, peloColor, barba, gafas, ropa }. */
+   Se guarda en state.personaje = { nombre, apellido, piel, pelo, peloColor, barba, gafas, ropa, cuerpo, altura, complexion, accesorio, tatuaje, cara, zapas }. */
 (function () {
   const OPC = {
     piel: ['#f3d6bc', '#e4b98f', '#c88f62', '#8f5d3c', '#5c3b27'],
@@ -15,14 +15,17 @@
     altura: ['Baja', 'Media', 'Alta'],              // en el modo carrera manda la altura del jugador
     complexion: ['Delgada', 'Atlética', 'Fuerte'],
     accesorio: ['Ninguno', 'Cinta', 'Muñequeras', 'Cinta y muñequeras'],
-    tatuaje: ['Sin tatuajes', 'Un brazo', 'Los dos brazos', 'Cuello']
+    tatuaje: ['Sin tatuajes', 'Un brazo', 'Los dos brazos', 'Cuello'],
+    cara: ['Ovalada', 'Redonda', 'Alargada', 'Cuadrada'],
+    zapas: ['Blancas', 'Negras', 'Del club', 'Fosforito']
   };
+  const ZAPAS = ['#f1f1ee', '#1e1f22', null, '#c6f23a'];   // «Del club»: el color principal del club
   const ALTURAS = [168, 180, 192];
   let uid = 0;
   const clamp = (v, n) => ((v % n) + n) % n;
   function oscuro(hex, t) { const n = parseInt(hex.slice(1), 16); const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v * (1 - t))); return '#' + c.map(v => v.toString(16).padStart(2, '0')).join(''); }
-  function crear(extra) { return Object.assign({ nombre: '', apellido: '', piel: 1, pelo: 1, peloColor: 1, barba: 0, gafas: 0, ropa: 0, cuerpo: 0, altura: 1, complexion: 1, accesorio: 0, tatuaje: 0 }, extra || {}); }
-  function aleatorio() { return crear({ piel: GM.rng.int(0, 4), pelo: GM.rng.int(0, 5), peloColor: GM.rng.int(0, 5), barba: GM.rng.int(0, 3), gafas: GM.rng.int(0, 2), ropa: GM.rng.int(0, 3), complexion: GM.rng.int(0, 2), accesorio: GM.rng.int(0, 3), tatuaje: GM.rng.int(0, 3) }); }
+  function crear(extra) { return Object.assign({ nombre: '', apellido: '', piel: 1, pelo: 1, peloColor: 1, barba: 0, gafas: 0, ropa: 0, cuerpo: 0, altura: 1, complexion: 1, accesorio: 0, tatuaje: 0, cara: 0, zapas: 0 }, extra || {}); }
+  function aleatorio() { return crear({ piel: GM.rng.int(0, 4), pelo: GM.rng.int(0, 5), peloColor: GM.rng.int(0, 5), barba: GM.rng.int(0, 3), gafas: GM.rng.int(0, 2), ropa: GM.rng.int(0, 3), complexion: GM.rng.int(0, 2), accesorio: GM.rng.int(0, 3), tatuaje: GM.rng.int(0, 3), cara: GM.rng.int(0, 3), zapas: GM.rng.int(0, 3) }); }
   function nombre(p) { return ((p && p.nombre ? p.nombre : '') + ' ' + (p && p.apellido ? p.apellido : '')).trim(); }
 
   function avatar(p, o) {
@@ -45,7 +48,8 @@
     else if (ropa === 'chandal') s += '<path d="M36 70 Q50 86 64 70" fill="' + sh + '"/><path d="M50 82 L50 100" stroke="rgba(255,255,255,.7)" stroke-width="2"/>';
     else { s += '<path d="M36 70 Q50 88 64 70" fill="' + sh + '"/><path d="M36 70 Q50 88 64 70" fill="none" style="stroke:var(--club2)" stroke-width="3"/>'; if (o.numero !== undefined) s += '<text x="50" y="96" text-anchor="middle" font-size="20" font-weight="700" font-family="Graduate,Georgia,serif" style="fill:var(--club-ink)">' + o.numero + '</text>'; }
     // cabeza
-    s += '<ellipse cx="50" cy="44" rx="19" ry="22" fill="' + skin + '"/><circle cx="31.5" cy="46" r="4" fill="' + skin + '"/><circle cx="68.5" cy="46" r="4" fill="' + skin + '"/>';
+    const cara = clamp(p.cara || 0, 4);
+    s += (cara === 3 ? '<rect x="31" y="22" width="38" height="44" rx="11" fill="' + skin + '"/>' : '<ellipse cx="50" cy="44" rx="' + [19, 21, 17, 19][cara] + '" ry="' + [22, 20.5, 24, 22][cara] + '" fill="' + skin + '"/>') + '<circle cx="31.5" cy="46" r="4" fill="' + skin + '"/><circle cx="68.5" cy="46" r="4" fill="' + skin + '"/>';
     // pelo
     const pelo = [
       '<path d="M31 40 Q32 23 50 23 Q68 23 69 40 Q60 32 50 32 Q40 32 31 40Z" fill="' + hair + '" opacity=".55"/>',
@@ -73,5 +77,5 @@
     const a = avatar(crear({ piel: 2, pelo: 3, barba: 2, gafas: 1, ropa: 3 }), { size: 40 }), b = avatar({ ropa: 0 }, { camiseta: true, numero: 7 });
     return a.indexOf('<svg') === 0 && a.indexOf(OPC.piel[2]) > 0 && a.indexOf('width="40"') > 0 && b.indexOf('>7<') > 0 && nombre({ nombre: 'Ana', apellido: 'Ruiz' }) === 'Ana Ruiz';
   }
-  GM.register('personaje', { crear, avatar, nombre, aleatorio, OPC, ALTURAS, selfTest });
+  GM.register('personaje', { crear, avatar, nombre, aleatorio, OPC, ALTURAS, ZAPAS, selfTest });
 })();

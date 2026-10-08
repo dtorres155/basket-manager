@@ -68,6 +68,8 @@
     // Antes eran ~11 mallas por persona (y el doble con sombras). Se guardan los tramos de ropa para los petos.
     const color = n => { const nm = n.material.name || ''; if (o.piel && /^Skin/.test(nm)) return o.piel; if (o.pelo && /Hair|Eyebrows|Moustache/.test(nm)) return o.pelo; if (o.ropa && /^(Purple|Red_Dark|LightBrown)$/.test(nm)) return o.ropa[0]; if (o.ropa && /^(LightBlue)$/.test(nm)) return o.ropa[1]; return '#' + n.material.color.getHexString(); };
     const piezas = []; obj.traverse(n => { if (n.isSkinnedMesh) piezas.push(n); });
+    const pies = new Set(); if (o.zapas && piezas[0]) piezas[0].skeleton.bones.forEach((b, i) => { if (/^(Foot|PT)/.test(b.name)) pies.add(i); });
+    const ccZ = new THREE.Color(o.zapas || '#ffffff');
     let rangosRopa = [];
     try {
       const geos = [], cc = new THREE.Color(); let base = 0;
@@ -78,7 +80,8 @@
         const si = g0.attributes.skinIndex, sw = g0.attributes.skinWeight, si2 = new Uint16Array(cnt * 4), sw2 = new Float32Array(cnt * 4);
         for (let i = 0; i < cnt; i++) for (let k = 0; k < 4; k++) { si2[i * 4 + k] = si.getComponent(i, k); sw2[i * 4 + k] = sw.getComponent(i, k); }
         g1.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si2, 4)); g1.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw2, 4));
-        cc.set(color(n)); const cols = new Float32Array(cnt * 3); for (let i = 0; i < cnt; i++) { cols[i * 3] = cc.r; cols[i * 3 + 1] = cc.g; cols[i * 3 + 2] = cc.b; }
+        cc.set(color(n)); const cols = new Float32Array(cnt * 3), zap = pies.size && !/^Skin/.test(n.material.name || '');
+        for (let i = 0; i < cnt; i++) { let c = cc; if (zap) { let mx = 0, hb = -1; for (let k = 0; k < 4; k++) if (sw2[i * 4 + k] > mx) { mx = sw2[i * 4 + k]; hb = si2[i * 4 + k]; } if (pies.has(hb) && mx > 0.5) c = ccZ; } cols[i * 3] = c.r; cols[i * 3 + 1] = c.g; cols[i * 3 + 2] = c.b; }
         g1.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
         if (/^(Purple|Red_Dark|LightBrown)$/.test(n.material.name || '')) rangosRopa.push([base, cnt]);
         base += cnt; geos.push(g1);
@@ -100,6 +103,7 @@
       const sb = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9).rotateX(-Math.PI / 2), _mSombra); sb.position.y = 0.02 / obj.scale.x; sb.scale.setScalar(1 / obj.scale.x); sb.renderOrder = 1; obj.add(sb);
     }
     if (o.complexion !== undefined) { const k = [0.93, 1, 1.08][o.complexion] || 1; obj.scale.x *= k; obj.scale.z *= k; }
+    if (o.cara && B.Head) { const e = [null, [1.07, 0.95, 1.04], [0.94, 1.07, 0.98], [1.09, 1.0, 1.03]][o.cara]; if (e) B.Head.scale.set(e[0], e[1], e[2]); }
     complementos(obj, B, o);
     return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa, ropa: o.ropa };
   }
@@ -123,7 +127,8 @@
     return { modelo, altura: st.modo === 'carrera' && st.jugadores.yo ? st.jugadores.yo.altura : (GM.mods.personaje.ALTURAS || [168, 180, 192])[pj.altura === undefined ? 1 : pj.altura] - (mujer ? 8 : 0),
       piel: OPC && OPC.piel[pj.piel], pelo: OPC && OPC.peloColor[pj.peloColor], sinPelo: pj.pelo === 0 || pj.pelo === 5,
       ropa: jugador || ropa === 3 ? [c1, c2 === c1 ? '#222' : c2] : null, complexion: pj.complexion, gafas: pj.gafas || 0, barba: mujer ? 0 : pj.barba || 0,
-      cinta: acc === 1 || acc === 3 ? c2 : null, munequeras: acc === 2 || acc === 3 ? c1 : null, tatuaje: pj.tatuaje || 0 };
+      cinta: acc === 1 || acc === 3 ? c2 : null, munequeras: acc === 2 || acc === 3 ? c1 : null, tatuaje: pj.tatuaje || 0, cara: pj.cara || 0,
+      zapas: (GM.mods.personaje.ZAPAS || [])[pj.zapas || 0] || c1 };
   }
   // Persona real para las escenas antiguas (campus, mapa de la ciudad, casa): devuelve un grupo al momento, con la figura de cajas
   // si se pasa, y la sustituye por el modelo cuando carga. alto: altura en unidades de esa escena. El movimiento se pone en
@@ -458,6 +463,7 @@
     if (S.zonaActual === zona) return; S.zonaActual = zona; S.panelFijo = false; abrirSala(zona.sala);
   }
   function abrirSala(sala, panelId) {
+    if (!panelId) GM.bus.emit('sala:abierta', { id: sala.id, escena: S.escena });
     const h = GM.h, st = S.st, A = GM.mods.sedeAcciones, P = S.panel; P.innerHTML = ''; P.className = 'sede-hud sede-sala tema-' + (panelId || sala.id); P.style.display = 'flex';
     P.append(h('div', { class: 'sp-cab' }, panelId ? h('button', { class: 'sp-volver', onclick: () => abrirSala(sala) }, '‹') : null, h('b', null, panelId ? (A.acciones(st, sala.id).find(x => x.id === panelId) || {}).t || sala.nombre : sala.nombre), h('button', { class: 'sp-x', 'aria-label': 'Cerrar', onclick: () => { P.style.display = 'none'; } }, '×')));
     const cuerpo = h('div', { class: 'sp-cuerpo' }); P.append(cuerpo);
@@ -551,13 +557,27 @@
   function volver() { if (!S) return; S.raiz.style.display = ''; S.pausa = false; if (S.volverBtn) S.volverBtn.style.display = 'none'; repoblar(); S.reloj.update(); if (S.zonaActual) abrirSala(S.zonaActual.sala); }
   function fichaJugador(n) {
     const h = GM.h, st = S.st, F = S.ficha; F.innerHTML = '';
-    if (!n) { F.style.display = 'none'; return; }
+    F.classList.remove('ficha-gente'); if (!n) { F.style.display = 'none'; return; }
     const p = n.jugador && st.jugadores[n.jugador];
+    if (!p && GM.mods.gente && (n.charla || S.escena === 'calle' || S.escena === 'pueblo')) return fichaGente(n);
     st.sede = st.sede || { charlas: {} };
     const hoy = st.fecha, ult = p && st.sede.charlas[p.id], puede = p && (!ult || U.diffDays(ult, hoy) >= 7);
     F.append(h('div', { class: 'ct' }, h('b', null, p ? p.nombre : n.rol), h('span', { class: 'muted' }, p ? [p.pos, p.edad + ' años', 'nivel ' + p.ovr, (p.estado.moral < 45 ? 'desanimado' : p.estado.moral > 78 ? 'muy animado' : 'ánimo') + ' ' + Math.round(p.estado.moral), p.estado.lesion ? 'lesionado' : 'forma ' + Math.round(p.estado.forma)].join(', ') : 'Personal del club')),
       p ? h('button', { class: 'btn peq', disabled: !puede, onclick: () => { st.sede.charlas[p.id] = hoy; p.estado.moral = Math.min(100, p.estado.moral + 3); anim(n, 'emote-yes'); n.espera = 3; GM.ui.toast(p.nombre.split(' ')[0] + ' agradece la charla (+3 de ánimo)'); fichaJugador(n); } }, puede ? 'Charlar' : 'Ya hablasteis esta semana') : null,
       h('button', { class: 'btn btn-sec peq', onclick: () => fichaJugador(null) }, 'Cerrar'));
+    F.style.display = 'flex';
+  }
+
+  function fichaGente(n) {
+    const h = GM.h, st = S.st, F = S.ficha, Gn = GM.mods.gente, f = n.charla ? Gn.ficha(st, n.charla) : null; F.innerHTML = ''; F.classList.add('ficha-gente');
+    const acc = f ? f.acciones : Gn.casual(st, n);
+    F.append(h('div', { class: 'ct' }, h('b', null, f ? f.nombre : n.rol), h('span', { class: 'muted' }, f ? f.rol + ', ' + f.relTexto.toLowerCase() + ' (' + Math.round(f.rel) + ')' : '')));
+    if (f) { F.append(h('p', { class: 'ficha-dice' }, '«' + f.texto + '»')); if (!n.saludado) { n.saludado = true; bocadillo(f.texto, n.obj); } }
+    acc.forEach(x => F.append(h('button', { class: 'btn peq' + (x.disponible ? '' : ' btn-sec'), disabled: !x.disponible, title: x.disponible ? x.d : x.motivo, onclick: () => {
+      const r = x.fn(); if (!r || !r.ok) return; anim(n, 'emote-yes'); n.espera = 3;
+      if (r.bocadillo) bocadillo(r.texto, n.obj); else GM.ui.toast(r.texto + (r.efectos && r.efectos.length ? ' (+' + r.efectos.join(', ') + ')' : ''));
+      fichaGente(n); } }, x.disponible ? x.t : x.t + ' (' + x.motivo.toLowerCase() + ')')));
+    F.append(h('button', { class: 'btn btn-sec peq', onclick: () => fichaJugador(null) }, 'Cerrar'));
     F.style.display = 'flex';
   }
 
@@ -800,8 +820,8 @@
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
     S.dia = estadoDia(st); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
     if (S.escena === 'casa') { if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
-    if (S.escena === 'calle') { await GM.calle.poblar(S, motor(), st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
-    if (S.escena === 'pueblo') { await GM.puebloMundo.poblar(S, motor(), st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
+    if (S.escena === 'calle') { await GM.calle.poblar(S, motor(), st); await conNombre(st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
+    if (S.escena === 'pueblo') { await GM.puebloMundo.poblar(S, motor(), st); await conNombre(st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     let ids = eq.plantilla.filter(i => i !== 'yo').slice(0, 12);
     if (S.dia.tipo === 'derrota') ids = ids.filter(id => U.hash(id + st.fecha) % 100 > 30); // tras perder, algunos ni aparecen
     const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222222';
@@ -827,6 +847,20 @@
       fans.forEach((f, k) => { f.rol = 'Aficionado'; f.fijo = true; f.aficionado = true; f.obj.position.set(1.8 + (k % 4) * 1.6 + (k >> 2) * 0.7, 0, 17.4 + (k >> 2) * 1.2); f.obj.rotation.y = Math.PI + (k % 3 - 1) * 0.3; f.obj.userData = { npc: S.gente.length }; anim(f, k % 3 ? 'emote-yes' : 'idle'); S.mundo.add(f.obj); S.gente.push(f); });
     }
     if (S.chipDia) S.chipDia.textContent = S.dia.texto;
+  }
+  // Gente con nombre (gente.js): leyenda, utillero, peña, periodista; en el pueblo, tu primer entrenador y el alcalde.
+  // Se colocan en el punto de paseo más cercano a su zona (a más de 1,6 m para no tapar el círculo) con su nombre encima.
+  async function conNombre(st) {
+    const Gn = GM.mods.gente; if (!Gn || !S.paseo) return;
+    for (const d of Gn.personas(st, S.escena)) {
+      const z = S.zonas && S.zonas.find(z => z.sala.id === d.zona); if (!z) continue; const zp = z.obj.position;
+      let q = null, dm = 1e9; S.paseo.forEach(p => { const dd = Math.hypot(p[0] - zp.x, p[1] - zp.z); if (dd > 1.6 && dd < dm && !S.gente.some(n => n.charla && Math.hypot(n.obj.position.x - p[0], n.obj.position.z - p[1]) < 1.5)) { dm = dd; q = p; } });
+      if (!q) continue;
+      const n = await personaje(d.aspecto); Object.assign(n, { fijo: true, rol: d.rol, charla: d.id });
+      n.obj.position.set(q[0], 0, q[1]); n.obj.lookAt(zp.x, 0, zp.z); n.obj.rotation.y += Math.PI; n.obj.userData = { npc: S.gente.length };
+      const et = etiqueta(d.nombre), k = 1 / n.obj.scale.x; et.scale.multiplyScalar(0.8 * k); et.position.y = 2.25 / n.obj.scale.y; n.obj.add(et);
+      anim(n, 'idle'); S.mundo.add(n.obj); S.gente.push(n);
+    }
   }
   function repoblar() { if (S && S.st) poblar(S.st).catch(e => console.warn(e)); }
 

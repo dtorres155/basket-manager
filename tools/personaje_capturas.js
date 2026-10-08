@@ -1,14 +1,14 @@
-// Capturas de tu personaje en 3D (sede) con distintos aspectos: complementos, complexión, cuerpo y ropa.
+// Capturas de tu personaje en 3D (sede) con distintos aspectos: complementos, complexión, cuerpo, ropa, cara y zapatillas.
 // Uso: node tools/personaje_capturas.js   (requiere `npm run serve`)
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
 const DIR = path.join(__dirname, '..', 'capturas', 'personaje'); fs.mkdirSync(DIR, { recursive: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const CASOS = [
-  ['completo', 'gestor', { pelo: 0, gafas: 2, barba: 2, accesorio: 3, tatuaje: 2, complexion: 2, ropa: 3, piel: 3 }],
-  ['traje', 'gestor', { pelo: 1, gafas: 1, barba: 3, accesorio: 0, tatuaje: 3, complexion: 0, ropa: 0, piel: 0, altura: 2 }],
+  ['completo', 'gestor', { pelo: 0, gafas: 2, barba: 2, accesorio: 3, tatuaje: 2, complexion: 2, ropa: 3, piel: 3, cara: 1, zapas: 3 }],
+  ['traje', 'gestor', { pelo: 1, gafas: 1, barba: 3, accesorio: 0, tatuaje: 3, complexion: 0, ropa: 0, piel: 0, altura: 2, cara: 2, zapas: 1 }],
   ['femenino', 'presidente', { cuerpo: 1, pelo: 3, gafas: 1, ropa: 1, piel: 2, altura: 0 }],
-  ['jugador', 'carrera', { pelo: 2, accesorio: 3, tatuaje: 1, complexion: 1, piel: 4 }]
+  ['jugador', 'carrera', { pelo: 2, accesorio: 3, tatuaje: 1, complexion: 1, piel: 4, cara: 3, zapas: 2 }]
 ];
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
