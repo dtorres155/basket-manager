@@ -27,6 +27,7 @@ node tools/generar_plantillas.js          # recursos/*_2026.json -> datos_ligas3
 node tools/finanzas_calibrar.js           # resultado económico de una temporada por liga
 node tools/sim_fama.js [temporadas] [origen]   # cómo sube la fama del jugador y sus saltos más grandes
 node tools/personaje_capturas.js          # tu personaje en 3D con distintos aspectos (complementos, cuerpo, ropa)
+node tools/clasif_capturas.js [club] [dias]   # Calendario: clasificaciones (también EuroCup y Champions) y líderes
 ```
 **Publicación:** repositorio público `dtorres155/basket-manager`; `.github/workflows/pages.yml` pasa las pruebas y publica `dist/` en **https://dtorres155.github.io/basket-manager/** en cada push a `main`. No subas datos personales del usuario (nombre, pueblo, correo); `PROMPT_CLAUDE_CODE.txt` está en `.gitignore`. Instrucciones para el usuario: `INSTALAR_EN_MOVIL.md`.
 
@@ -57,6 +58,7 @@ Las pruebas (`t_*.js`) usan jsdom con un `WebGLRenderer` simulado: verifican que
 - Fechas de 2026-27: Euroliga y ACB oficiales; el resto aproximadas (`FECHAS` en `competiciones.js`).
 - Los jugadores con `ficticio:true` son relleno.
 - **Potencial:** el del jugador del usuario se mueve ±15 según sus decisiones (`carrera.js`); el de todos los menores de 25, según minutos, club y un talento tardío oculto (`potAnual` en cantera.js). Draft con aviso el 15 de abril (19 a 22 años, desde la universidad o Europa).
+- **Estadísticas por competición:** `st.estComp[comp][jugador] = [pj, min, pts, reb, ast, rob, tap]` (se reinicia cada temporada); `C.lideres(st, comp, cat)` en competiciones.js.
 - **Aspecto del personaje en 3D:** `GM.sede.aspecto(st)` traduce `st.personaje` (y el modo) a las opciones del modelo: modelo según ropa y cuerpo, altura, pelo oculto si es rapado o calvo, complexión y complementos pegados a los huesos (`complementos` en sede3d.js).
 - **Escenas antiguas con modelos:** `GM.sede.figura(o, alto, primitiva, vista)` pone una persona real (con la figura de cajas mientras carga) y `GM.sede.modeloMueble(nombre)` un mueble de Kenney.
 

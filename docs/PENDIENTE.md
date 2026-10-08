@@ -58,6 +58,7 @@
 - Draft: elegible de 19 a 22 años desde la universidad o desde Europa; aviso el 15 de abril con la proyección (top 3, lotería, primera, segunda o sin elegir). Si no te eligen desde Europa, sigues en tu club. Si te eligen desde Europa decides: irte ya o quedarte un año («stash»); el equipo NBA guarda tus derechos y te ofrece contrato el verano siguiente. Antes del draft: pruebas físicas (10 de mayo) y entrevistas con los equipos (24 de mayo), que suman o restan en el informe de los ojeadores; si dices que solo quieres un equipo, ese equipo empuja para elegirte.
 
 ## P2 — Funcionalidad que se pidió y no está completa
+- ~~Líderes y clasificaciones de todas las competiciones~~: en Calendario, líderes por competición (puntos, rebotes, asistencias, robos y tapones; las copas no cuentan para la liga) y clasificación y eliminatorias también de EuroCup y Champions, con todos los grupos. Capturas: `node tools/clasif_capturas.js [club] [días]`.
 - ~~Universidad y cantera partido a partido~~: un partido cada sábado contra rivales reales (universidades de la NCAA o canteras de clubes de tu país), con tu línea estadística; si ganáis el 70 % hay torneo de la NCAA (marzo) o fase final de la categoría (mayo), ronda a ronda. El historial usa esas medias.
 - ~~Pantalla de retirada~~: «Tu legado» en Carrera (`legado` en carrera.js): veredicto del salón de la fama, nivel máximo, totales y medias, draft, mejor partido, clubes y títulos.
 - Modo entrenador más profundo (plantilla propia, rotaciones por rol, rueda de prensa más rica).

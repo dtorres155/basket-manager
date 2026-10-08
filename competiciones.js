@@ -216,6 +216,9 @@
       for (const pid in sim.stats) {
         const s = sim.stats[pid], t = st.estadisticas[pid] || (st.estadisticas[pid] = { pj: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fal: 0 });
         t.pj++; t.min += s.min; t.pts += s.pts; t.reb += s.reb; t.ast += s.ast; t.stl += s.stl; t.blk += s.blk; t.tov += s.tov; t.fal += s.fal;
+        // Por competición (líderes): [pj, min, pts, reb, ast, rob, tap]; las copas no cuentan para los líderes de la liga
+        const k = g.cont || (g.fase === 'copa' ? null : g.comp);
+        if (k && s.min > 0) { const E = st.estComp || (st.estComp = {}), c = E[k] || (E[k] = {}), a = c[pid] || (c[pid] = [0, 0, 0, 0, 0, 0, 0]); a[0]++; a[1] += s.min; a[2] += s.pts; a[3] += s.reb; a[4] += s.ast; a[5] += s.stl; a[6] += s.blk; }
       }
       if (g.fase === 'regular') { anota(st, g, sim); st.pendReg[g.comp]--; }
       GM.bus.emit('partido:jugado', { partido: g });
@@ -262,12 +265,12 @@
     st.temporada = y + '-' + String((y + 1) % 100).padStart(2, '0');
     const base = y + '-07-01';
     if (st.fecha < base) st.fecha = base;
-    st.estadisticas = {};
+    st.estadisticas = {}; st.estComp = {};
     generarCalendario(st);
     GM.noticia(st, 'Arranca la temporada ' + st.temporada + '.');
     GM.bus.emit('temporada:nueva', { temporada: st.temporada });
   }
-  function nuevaPartida(st) { st.estadisticas = {}; generarCalendario(st); }
+  function nuevaPartida(st) { st.estadisticas = {}; st.estComp = {}; generarCalendario(st); }
 
   function selfTest() {
     if (!GM.mkJugador || !GM.mods.partidos) return false;
@@ -287,5 +290,11 @@
     return st.temporadaTerminada && rows.every(r => r.pj === 10) && !!st.playoffs.L.campeon;
   }
 
-  GM.register('competiciones', { generarCalendario, proximoPartido, clasificacion, playoffs, jugarDia, avanzarHastaPartido, calendarioClub, finTemporada, nuevaTemporada, nuevaPartida, selfTest, FORM });
+  const COL = { pts: 2, reb: 3, ast: 4, rob: 5, tap: 6 };
+  function lideres(st, comp, cat, n) {
+    const c = (st.estComp || {})[comp]; if (!c) return [];
+    const ids = Object.keys(c).filter(i => st.jugadores[i]), max = ids.reduce((m, i) => Math.max(m, c[i][0]), 0), min = Math.max(1, Math.ceil(max * 0.4)), k = COL[cat];
+    return ids.filter(i => c[i][0] >= min).map(i => ({ id: i, pj: c[i][0], media: c[i][k] / c[i][0], total: c[i][k], min: c[i][1] / c[i][0] })).sort((a, b) => b.media - a.media).slice(0, n || 10);
+  }
+  GM.register('competiciones', { lideres, generarCalendario, proximoPartido, clasificacion, playoffs, jugarDia, avanzarHastaPartido, calendarioClub, finTemporada, nuevaTemporada, nuevaPartida, selfTest, FORM });
 })();

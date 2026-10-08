@@ -146,8 +146,9 @@
     el.append(seccion('Tus rivalidades', rv.length ? h('div', { class: 'lista' }, rv.map(r => h('div', { class: 'item' }, escudo(r.equipoId), h('div', { class: 'ct' }, h('b', null, eq(r.equipoId).nombre), h('span', { class: 'muted' }, r.nombre)), h('b', null, r.hist[club] + '-' + r.hist[r.equipoId]), r.i === 2 ? chip('Clásico', 'ok') : null))) : h('p', { class: 'muted' }, 'Tu club no tiene rivalidades marcadas todavía.')));
   }
   function calendario(el, st) {
-    const club = st.clubId, C = M().competiciones, ligas = Object.keys(st.ligas);
-    if (!ui.comp || !st.ligas[ui.comp]) ui.comp = GM.ligasDe(st, club)[0] || ligas[0];
+    const club = st.clubId, C = M().competiciones, CN = M().continental, conts = Object.keys(st.continental || {}), ligas = Object.keys(st.ligas).concat(conts);
+    const esCont = id => conts.indexOf(id) >= 0, nombreComp = id => esCont(id) ? st.continental[id].nombre : st.ligas[id].nombre;
+    if (!ui.comp || ligas.indexOf(ui.comp) < 0) ui.comp = GM.ligasDe(st, club)[0] || ligas[0];
     if (carrera() && st.carrera.fase === 'ncaa' && ui.tab.calendario === 'partidos') ui.tab.calendario = 'tabla';
     el.append(pestanas([['partidos', 'Partidos'], ['tabla', 'Clasificación'], ['playoffs', 'Playoffs'], ['copas', 'Copas y derbis'], ['lideres', 'Líderes']], ui.tab.calendario, t => { ui.tab.calendario = t; refrescar(true); }));
     if (ui.tab.calendario === 'copas') { copasPantalla(el, st); return; }
@@ -159,17 +160,33 @@
       el.append(seccion('Próximos partidos', h('div', { class: 'lista' }, prox.slice(0, 10).map(g => { const rival = g.local === club ? g.visitante : g.local; return h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(g.fecha)), escudo(rival), h('div', { class: 'ct' }, h('b', null, (g.local === club ? 'vs ' : '@ ') + clip(eq(rival).nombre, 20)), h('span', { class: 'muted' }, (CORTO[g.comp] || g.comp) + etqFase(g, st)))); }))));
     } else if (t === 'tabla') {
       if (ui.comp === 'NBA') ['E', 'O'].forEach(c => { const tb = C.clasificacion(st, 'NBA', c); el.append(seccion('Conferencia ' + (c === 'E' ? 'Este' : 'Oeste'), tablaClasif(st, tb, tb, club))); });
+      else if (esCont(ui.comp)) {
+        const c = st.continental[ui.comp], G = c.grupos || [];
+        if (!G.length) el.append(seccion(c.nombre, h('p', { class: 'muted' }, c.estado === 'previa' ? 'Se juega la fase previa; los grupos empiezan después.' : 'Los grupos todavía no se han sorteado.')));
+        G.forEach((g, gi) => { const tb = CN.tablaGrupo(st, ui.comp, gi); el.append(seccion(c.nombre + ', grupo ' + 'ABCDEFGH'[gi], tablaClasif(st, tb, tb, club))); });
+      }
       else { const tb = C.clasificacion(st, ui.comp); el.append(seccion(st.ligas[ui.comp].nombre, tablaClasif(st, tb, tb, club))); }
     } else if (t === 'playoffs') {
+      if (esCont(ui.comp)) {
+        const c = st.continental[ui.comp], serie = s => h('div', { class: 'item serie' + (s.a === club || s.b === club ? ' mio' : '') }, escudo(s.a), h('b', null, s.g.map(i => { const g = st.calendario.find(x => x.id === i); return g && g.resultado ? (g.local === s.a ? g.resultado.local : g.resultado.visitante) + '-' + (g.local === s.a ? g.resultado.visitante : g.resultado.local) : '-'; }).join(', ')), escudo(s.b), s.ganador ? chip(eq(s.ganador).siglas, 'ok') : null);
+        if (!(c.ko || []).length) el.append(seccion(c.nombre, h('p', { class: 'muted' }, 'Las eliminatorias empiezan al acabar la fase de grupos.')));
+        (c.ko || []).slice().reverse().forEach(r => el.append(seccion(c.nombre + ', ' + r.nombre.toLowerCase(), h('div', { class: 'lista' }, r.series.map(serie)))));
+        if (c.campeon) el.append(aviso('🏆 Campeón: ' + eq(c.campeon).nombre, 'ok'));
+        return;
+      }
       const po = C.playoffs(st, ui.comp);
       if (!po) { el.append(seccion('Playoffs', h('p', { class: 'muted' }, 'Empezarán cuando termine la fase regular.'))); return; }
       if (po.playin && po.fase === 'playin') el.append(seccion('Play-in', po.playin.map(gr => h('div', { class: 'tarjeta' }, h('b', null, gr.conf ? (gr.conf === 'E' ? 'Este' : 'Oeste') : 'Euroliga'), h('p', { class: 'muted' }, 'Del 7º al 10º: ' + gr.seeds.slice(6).map(i => eq(i).siglas).join(', '))))));
       po.rondas.slice().reverse().forEach(r => el.append(seccion(r.nombre + ' (al mejor de ' + r.mejorDe + ')', h('div', { class: 'lista' }, r.series.map(s => h('div', { class: 'item serie' }, escudo(s.a), h('b', null, s.wa), h('span', { class: 'muted' }, '-'), h('b', null, s.wb), escudo(s.b), s.ganador ? chip(eq(s.ganador).siglas + ' pasa', 'ok') : null))))));
       if (po.campeon) el.append(aviso('🏆 Campeón: ' + eq(po.campeon).nombre, 'ok'));
     } else {
-      const liga = st.ligas[ui.comp], mia = new Set(liga.equipos);
-      const l = Object.keys(st.estadisticas).filter(i => st.jugadores[i] && mia.has(st.jugadores[i].equipoId) && st.estadisticas[i].pj >= 5).sort((a, b) => st.estadisticas[b].pts / st.estadisticas[b].pj - st.estadisticas[a].pts / st.estadisticas[a].pj).slice(0, 12);
-      el.append(seccion('Máximos anotadores', h('div', { class: 'lista' }, l.length ? l.map((i, k) => { const p = st.jugadores[i], s = st.estadisticas[i]; return h('button', { class: 'jug', onclick: () => detalleJugador(i) }, h('span', { class: 'pos' }, k + 1), escudo(p.equipoId), h('span', { class: 'ct' }, h('b', null, p.nombre), h('span', { class: 'muted' }, s.pj + ' pj, ' + (s.reb / s.pj).toFixed(1) + ' reb, ' + (s.ast / s.pj).toFixed(1) + ' ast')), h('b', null, (s.pts / s.pj).toFixed(1))); }) : [h('p', { class: 'muted' }, 'Aún no hay estadísticas.')])));
+      const CATS = [['pts', 'Máximos anotadores', 'puntos'], ['reb', 'Rebotes', 'rebotes'], ['ast', 'Asistencias', 'asistencias'], ['rob', 'Robos', 'robos'], ['tap', 'Tapones', 'tapones']];
+      let alguno = false;
+      CATS.forEach(([cat, tit, und]) => {
+        const l = C.lideres(st, ui.comp, cat, cat === 'pts' ? 10 : 5); if (!l.length) return; alguno = true;
+        el.append(seccion(tit + ', ' + nombreComp(ui.comp), h('div', { class: 'lista' }, l.map((x, k) => { const p = st.jugadores[x.id]; return h('button', { class: 'jug' + (p.equipoId === club ? ' mio' : ''), onclick: () => detalleJugador(x.id) }, h('span', { class: 'pos' }, k + 1), escudo(p.equipoId), h('span', { class: 'ct' }, h('b', null, p.nombre), h('span', { class: 'muted' }, x.pj + ' partidos, ' + x.total + ' ' + und + ' en total')), h('b', null, x.media.toFixed(1))); }))));
+      });
+      if (!alguno) el.append(seccion('Líderes', h('p', { class: 'muted' }, 'Aún no se ha jugado ningún partido de ' + nombreComp(ui.comp) + '.')));
     }
   }
 
