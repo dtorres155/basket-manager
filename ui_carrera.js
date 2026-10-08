@@ -16,6 +16,7 @@
         h('div', { class: 'chips' }, chip('Nivel ' + p.ovr + ', potencial ' + p.pot), chip('Reputación: ' + gf.nombre)),
         p.edad < 18 ? h('p', { class: 'muted' }, 'A los 18 llegarán las ofertas: contrato profesional, universidad en EE. UU. o un año más en el filial.') : h('p', { class: 'aviso med' }, 'Con ' + p.edad + ' años es el momento de decidir tu futuro. Mira las ofertas de tu representante.'),
         st.temporadaTerminada ? h('button', { class: 'btn grande', onclick: nuevaTemporada }, 'Empezar la temporada siguiente') : h('div', { class: 'par' }, h('button', { class: 'btn', onclick: () => { for (let i = 0; i < 7 && !st.temporadaTerminada; i++) M().competiciones.jugarDia(st); refrescar(); } }, 'Avanzar una semana'), h('button', { class: 'btn btn-sec', onclick: () => { let n = 0; while (!st.temporadaTerminada && n < 400) { M().competiciones.jugarDia(st); n++; } refrescar(true); } }, 'Hasta el final')))));
+      partidosJuveniles(el, st);
       if (st.noticias.length) el.append(seccion('Noticias', h('div', { class: 'lista noticias' }, st.noticias.slice(0, 5).map(n => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(n.fecha)), h('span', null, n.texto))))));
       return true;
     }
@@ -25,6 +26,7 @@
         h('p', null, st.temporadaTerminada ? 'El curso ha terminado.' : 'El curso va avanzando. Entrena cada semana y decide si te declaras para el draft.'),
         h('p', { class: 'muted' }, 'Proyección del draft: ' + mk.proyeccion + (mk.pick <= 60 ? ' (puesto ' + mk.pick + ')' : '') + '.'),
         st.temporadaTerminada ? h('button', { class: 'btn grande', onclick: nuevaTemporada }, 'Empezar curso siguiente') : h('div', { class: 'par' }, h('button', { class: 'btn', onclick: () => { for (let i = 0; i < 7 && !st.temporadaTerminada; i++) M().competiciones.jugarDia(st); refrescar(); } }, 'Avanzar una semana'), h('button', { class: 'btn btn-sec', onclick: () => { let n = 0; while (!st.temporadaTerminada && n < 400) { M().competiciones.jugarDia(st); n++; } refrescar(true); } }, 'Hasta el final')))));
+      partidosJuveniles(el, st);
       if (st.noticias.length) el.append(seccion('Noticias', h('div', { class: 'lista noticias' }, st.noticias.slice(0, 5).map(n => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(n.fecha)), h('span', null, n.texto))))));
       return true;
     }
@@ -109,6 +111,13 @@
             [{ t: 'Firmar', fn: () => { const r = SP.firmar(st, k.cat, o.id); if (!r.ok) { toast(r.motivo); return false; } toast('Patrocinio firmado'); refrescar(); } }, { t: 'Cancelar', cls: 'btn-sec' }]) }, h('div', { class: 'fila' }, h('b', null, o.marca), h('b', null, o.importe + ' k€')), h('span', { class: 'muted' }, o.etq + ', ' + o.anos + (o.anos === 1 ? ' temporada' : ' temporadas')))))))); }
     el.append(seccion('Contrato', h('div', { class: 'tarjeta' }, p.equipoId ? [h('div', { class: 'fila' }, h('b', null, eq(p.equipoId).nombre), escudo(p.equipoId)), h('p', { class: 'muted' }, K.NOMLIGA[K.liga(st)] + ', ' + U.eur(p.contrato.salario) + ' al año, hasta ' + p.contrato.hasta)] : h('p', null, 'No tienes equipo.'))));
     el.append(seccion('Ofertas', c.ofertas.length ? h('div', { class: 'lista' }, c.ofertas.map(o => h('button', { class: 'item', onclick: () => ofertaModal(o) }, escudo(o.clubId), h('div', { class: 'ct' }, h('b', null, eq(o.clubId).nombre), h('span', { class: 'muted' }, o.tipo + ', ' + K.NOMLIGA[o.liga] + ', ' + U.eur(o.salario) + ', ' + o.anos + (o.anos === 1 ? ' año' : ' años'))), o.liga === 'NBA' ? chip('NBA', 'ok') : chip(o.rol)))) : [h('p', { class: 'muted' }, c.fase === 'libre' ? 'Sin ofertas todavía.' : 'Las ofertas llegan al final de la temporada o cuando tu contrato se acerca a su fin.'), c.fase === 'libre' ? h('button', { class: 'btn', onclick: () => { K.generarOfertas(st); refrescar(); } }, 'Pedir ofertas a mi representante') : null]));
+  }
+  function partidosJuveniles(el, st) {
+    const K = M().carrera, r = K.resumenJuvenil(st), c = st.carrera; if (!r) return;
+    const R = r.torneo ? (r.torneo.vivo ? (c.etapa === 'cantera' ? 'En la fase final' : 'En el torneo de la NCAA') : r.torneo.campeon ? 'Campeones' : r.torneo.pct >= 70 ? 'Eliminados en el torneo' : 'Sin torneo') : null;
+    el.append(seccion('Tus partidos', h('div', { class: 'tarjeta' },
+      h('div', { class: 'chips' }, chip(r.g + '-' + r.p, r.g > r.p ? 'ok' : ''), chip(r.pts + ' pts'), chip(r.reb + ' reb'), chip(r.ast + ' ast'), chip(Math.round(r.min) + ' min'), R ? chip(R, r.torneo.campeon ? 'ok' : '') : null),
+      h('div', { class: 'lista' }, r.partidos.slice(-6).reverse().map(g => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(g.fecha)), h('span', { class: 'ct' }, h('b', null, (g.gana ? 'G ' : 'P ') + g.res[0] + '-' + g.res[1]), ' contra ' + g.rival + (g.ronda ? ' (' + g.ronda + ')' : '')), h('span', { class: 'muted' }, g.min ? g.pts + ' pts, ' + g.reb + ' reb, ' + g.ast + ' ast' : 'no juegas')))))));
   }
   function trayectoriaEntrenador(el, st) {
     const c = st.entrenador, E = M().entrenador;

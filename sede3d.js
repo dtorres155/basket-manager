@@ -72,6 +72,7 @@
     try {
       const geos = [], cc = new THREE.Color(); let base = 0;
       piezas.forEach(n => {
+        if (o.sinPelo && /^Hair/.test(n.material.name || '')) { n.visible = false; return; }
         let g0 = n.geometry.index ? n.geometry.toNonIndexed() : n.geometry.clone(); const cnt = g0.attributes.position.count, g1 = new THREE.BufferGeometry();
         g1.setAttribute('position', g0.attributes.position); g1.setAttribute('normal', g0.attributes.normal);
         const si = g0.attributes.skinIndex, sw = g0.attributes.skinWeight, si2 = new Uint16Array(cnt * 4), sw2 = new Float32Array(cnt * 4);
@@ -85,7 +86,7 @@
       const fundida = THREE.mergeGeometries(geos); if (!fundida) throw new Error('no fusiona');
       const m0 = piezas[0], malla = new THREE.SkinnedMesh(fundida, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 }));
       malla.bind(m0.skeleton, m0.bindMatrix); malla.castShadow = true; malla.frustumCulled = false; malla.name = 'persona';
-      m0.parent.add(malla); piezas.forEach(n => n.parent.remove(n));
+      m0.parent.add(malla); piezas.forEach(n => n.parent && n.parent.remove(n));
     } catch (e) { // si algo falla, se queda como antes (piezas separadas)
       rangosRopa = null;
       const tinta = (m, hex) => { const c = m.clone(); c.color.set(hex); return c; };
@@ -98,7 +99,31 @@
       if (!_mSombra) { const t = textura('sombra-pies', 64, (x, n) => { const g2 = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g2.addColorStop(0, 'rgba(0,0,0,0.45)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g2; x.fillRect(0, 0, n, n); }); _mSombra = new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false }); }
       const sb = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9).rotateX(-Math.PI / 2), _mSombra); sb.position.y = 0.02 / obj.scale.x; sb.scale.setScalar(1 / obj.scale.x); sb.renderOrder = 1; obj.add(sb);
     }
+    if (o.complexion !== undefined) { const k = [0.93, 1, 1.08][o.complexion] || 1; obj.scale.x *= k; obj.scale.z *= k; }
+    complementos(obj, B, o);
     return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa, ropa: o.ropa };
+  }
+  // Gafas, cinta, muñequeras, barba y tatuajes (geometría sencilla pegada a los huesos; medidas en metros)
+  const _mats = {}; const matC = c => _mats[c] || (_mats[c] = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }));
+  function complementos(obj, B, o) {
+    const inv = 1 / obj.scale.y, pega = (hueso, malla, x, y, z) => { if (!hueso) return; malla.position.set(x * inv, y * inv, z * inv); malla.scale.setScalar(inv); hueso.add(malla); };
+    if (o.gafas) { [-1, 1].forEach(sx => { const m = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.0045, 6, o.gafas === 1 ? 16 : 4), matC('#1d2630')); if (o.gafas === 2) m.rotation.z = Math.PI / 4; pega(B.Head, m, sx * 0.036, 0.108, 0.122); }); pega(B.Head, new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.005, 0.005), matC('#1d2630')), 0, 0.11, 0.124); }
+    if (o.cinta) { const m = new THREE.Mesh(new THREE.TorusGeometry(0.098, 0.013, 6, 24), matC(o.cinta)); m.rotation.x = Math.PI / 2; pega(B.Head, m, 0, 0.17, 0.01); }
+    if (o.munequeras) ['WristL', 'WristR'].forEach(w => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.06, 10), matC(o.munequeras)); m.rotation.z = Math.PI / 2; pega(B[w], m, 0, 0, 0); });
+    if (o.barba) { const t = [0, [0.03, 0.035, 0.02], [0.1, 0.05, 0.05], [0.11, 0.09, 0.06]][o.barba], m = new THREE.Mesh(new THREE.BoxGeometry(t[0], t[1], t[2]), matC(o.pelo || '#2a1f18')); pega(B.Head, m, 0, 0.035 - t[1] / 3, 0.085); }
+    if (o.tatuaje) (o.tatuaje === 2 ? ['LowerArmL', 'LowerArmR'] : o.tatuaje === 1 ? ['LowerArmR'] : []).forEach(a => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.07, 10, 1, true), new THREE.MeshStandardMaterial({ color: '#25303b', transparent: true, opacity: 0.55 })); pega(B[a], m, 0, 0.12, 0); });
+    if (o.tatuaje === 3) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.03, 12, 1, true), new THREE.MeshStandardMaterial({ color: '#25303b', transparent: true, opacity: 0.5 })); pega(B.Neck, m, 0, 0.03, 0); }
+  }
+  // Opciones del modelo de tu personaje a partir de su aspecto (st.personaje) y del modo de juego
+  function aspecto(st) {
+    const pj = st.personaje || {}, OPC = GM.mods.personaje && GM.mods.personaje.OPC, club = st.equipos[st.clubId], jugador = st.modo === 'carrera' || st.modo === 'entrenador';
+    const mujer = pj.cuerpo === 1 && st.modo !== 'carrera', ropa = pj.ropa || 0;
+    const modelo = jugador ? (mujer ? 'm-casual' : 'h-casual_hoodie') : mujer ? ['m-suit', 'm-formal', 'm-casual', 'm-casual'][ropa] : ['h-suit', 'h-adventurer', 'h-casual_2', 'h-casual_hoodie'][ropa];
+    const c1 = club.colores[0], c2 = club.colores[1] || '#ffffff', acc = pj.accesorio || 0;
+    return { modelo, altura: st.modo === 'carrera' && st.jugadores.yo ? st.jugadores.yo.altura : (GM.mods.personaje.ALTURAS || [168, 180, 192])[pj.altura === undefined ? 1 : pj.altura] - (mujer ? 8 : 0),
+      piel: OPC && OPC.piel[pj.piel], pelo: OPC && OPC.peloColor[pj.peloColor], sinPelo: pj.pelo === 0 || pj.pelo === 5,
+      ropa: jugador || ropa === 3 ? [c1, c2 === c1 ? '#222' : c2] : null, complexion: pj.complexion, gafas: pj.gafas || 0, barba: mujer ? 0 : pj.barba || 0,
+      cinta: acc === 1 || acc === 3 ? c2 : null, munequeras: acc === 2 || acc === 3 ? c1 : null, tatuaje: pj.tatuaje || 0 };
   }
   // Persona real para las escenas antiguas (campus, mapa de la ciudad, casa): devuelve un grupo al momento, con la figura de cajas
   // si se pasa, y la sustituye por el modelo cuando carga. alto: altura en unidades de esa escena. El movimiento se pone en
@@ -110,7 +135,7 @@
     let mixer = null, t0 = null;
     g.userData.anim = t => { if (g.userData.mover) g.userData.mover(t); if (mixer) { const dt = t0 === null ? 0 : Math.min(0.1, t - t0); t0 = t; mixer.update(dt); } };
     if (!THREE.GLTFLoader || !THREE.clonarEsqueleto || typeof fetch !== 'function') return g;
-    personaje({ modelo: o.modelo || MODELOS_GENTE[h % MODELOS_GENTE.length], altura, piel: o.piel || PIEL[(h >>> 4) % PIEL.length], pelo: o.pelo || PELO[(h >>> 7) % PELO.length], ropa: o.ropa }).then(p => {
+    personaje(Object.assign({}, o, { modelo: o.modelo || MODELOS_GENTE[h % MODELOS_GENTE.length], altura, piel: o.piel || PIEL[(h >>> 4) % PIEL.length], pelo: o.pelo || PELO[(h >>> 7) % PELO.length], ropa: o.ropa })).then(p => {
       p.obj.scale.multiplyScalar(alto / (altura / 100));
       while (g.children.length) g.remove(g.children[0]);
       g.add(p.obj); g.userData.real = true; if (o.suelo !== undefined) g.position.y = o.suelo;
@@ -794,8 +819,7 @@
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, 'Abriendo la sede del club…'); raiz.append(cargando);
     construir(st).then(async () => {
-      const pj = st.personaje || {}, OPC = GM.mods.personaje && GM.mods.personaje.OPC, club = st.equipos[st.clubId];
-      const yo = await personaje({ modelo: st.modo === 'carrera' || st.modo === 'entrenador' ? 'h-casual_hoodie' : 'h-suit', altura: st.modo === 'carrera' && st.jugadores.yo ? st.jugadores.yo.altura : 180, piel: OPC && OPC.piel[pj.piel], pelo: OPC && OPC.peloColor[pj.peloColor], ropa: st.modo === 'carrera' || st.modo === 'entrenador' ? [club.colores[0], club.colores[1] || '#222'] : null }); yo.obj.position.set(GM.sedePlano.entrada.x, 0, 12.5); yo.obj.rotation.y = Math.PI; S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
+      const yo = await personaje(aspecto(st)); yo.obj.position.set(GM.sedePlano.entrada.x, 0, 12.5); yo.obj.rotation.y = Math.PI; S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
       const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / yo.obj.scale.x);
       await poblar(st); cargando.remove();
     }).catch(e => { cargando.textContent = 'No se ha podido cargar la sede: ' + e.message; console.error(e); });
@@ -863,5 +887,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

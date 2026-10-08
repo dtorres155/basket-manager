@@ -114,8 +114,8 @@
     g.userData.anim = t => { g.position.y = Math.abs(Math.sin(t * 1.6)) * 0.02; g.rotation.y = Math.sin(t * 0.5) * 0.4; };
     if (!GM.sede || !GM.sede.figura || !st) return g;
     // Tu personaje real (el mismo modelo que en la sede y la calle); la figura de cajas queda mientras carga
-    const carrera = st.modo === 'carrera' || st.modo === 'entrenador', club = st.equipos[st.clubId], alt = st.modo === 'carrera' && st.jugadores.yo ? st.jugadores.yo.altura : 180;
-    const r = GM.sede.figura({ modelo: carrera ? 'h-casual_hoodie' : 'h-suit', altura: alt, piel: OP && pj ? OP.piel[pj.piel] : null, pelo: OP && pj ? OP.peloColor[pj.peloColor] : null, ropa: carrera ? [club.colores[0], club.colores[1] || '#222'] : null, anim: 'idle' }, alt / 100, g, V && V.vista);
+    const asp = Object.assign(GM.sede.aspecto(st), { anim: 'idle' });
+    const r = GM.sede.figura(asp, asp.altura / 100, g, V && V.vista);
     r.userData.mover = t => { r.rotation.y = Math.sin(t * 0.5) * 0.4; };
     return r;
   }

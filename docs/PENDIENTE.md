@@ -25,7 +25,7 @@
 - Decisión abierta: si Three.js se queda corto, pasar a Godot 4 (APK) reutilizando modelos y diseño.
 
 ## Ideas del usuario (octubre de 2026)
-- **Creación del personaje más completa:** hoy hay piel (5), peinado (6), color de pelo (6), barba (4), gafas (3) y ropa (4), pero el modelo 3D solo usa la piel y el color de pelo. Añadir altura y complexión, cara, peinados y barba en el modelo 3D, tatuajes, accesorios (cinta, muñequeras, zapatillas), dorsal y estilo de ropa fuera de la pista.
+- ~~Creación del personaje más completa~~: cuerpo masculino o femenino y altura (fuera del modo carrera), complexión, accesorios (cinta, muñequeras) y tatuajes, además de lo que había. El modelo 3D ya refleja peinado (rapado y calvo sin pelo), barba, gafas, cinta, muñequeras, complexión, tatuajes (si llevas los brazos al aire) y la ropa (traje, chaqueta, polo o chándal). Capturas: `node tools/personaje_capturas.js`. Falta: forma de la cara y zapatillas.
 - **Pueblo explorable:** pasear por el pueblo de colina (estilo Monteriggioni) con el motor del mundo (como la sede y la calle), y no solo verlo desde arriba.
 - **Obras con tiempo:** hoy invertir en el pueblo es instantáneo. Que cada obra dure semanas o meses, con fases visibles (solar, cimientos, estructura, andamios, acabado), obreros trabajando y una evolución progresiva del pueblo.
 - **Disciplinado o rebelde, y que se note:** hoy la diferencia está escondida en números (intensidad del entreno, constancia, ánimo, mentor, fiestas en la vida social y algún evento) y solo se ve en el potencial a largo plazo. Hace falta: un indicador visible de tu estilo (de «profesional ejemplar» a «chico malo»), consecuencias claras en las dos direcciones (el rebelde gana fama, seguidores y patrocinios de cierto tipo, pero arriesga multas, suplencias, lesiones y potencial; el disciplinado, al revés) y planes divertidos de rebelde: salir de fiesta, viaje improvisado, tatuaje, coche caro, polémica en redes, plantar a la prensa, pelea con el entrenador.
@@ -50,15 +50,15 @@
 
 ## P1 — Equilibrio
 - ~~Finanzas de los clubes~~: antes todos ganaban mucho (Euroliga +31 % del presupuesto, NBA +15 %). Ahora los ingresos comerciales van por liga (`BASE_LIGA` en finanzas.js): de septiembre a junio, entre +3 % y +11 %, y contando el verano el año queda cerca del equilibrio; hay clubes en pérdidas. Medir con `node tools/finanzas_calibrar.js`.
-- Reputación del jugador (`carrera.js`), efectos de muebles, sueldo y ahorros en los modos no jugador (hoy son estimaciones).
+- ~~Reputación del jugador~~: revisada con `node tools/sim_fama.js` (8 temporadas): sube poco a poco (de 21 a 63) y el mayor salto en un día es +5 (un título). La única caída brusca es al dar el salto a la NBA (-10), a propósito.
+- ~~Muebles, sueldo y ahorros~~: los muebles daban casi +1,4 de nivel al año en el modo carrera (ahora ~+0,6); en los modos de gestión hay gastos de vida al mes según el nivel de vida (antes los ahorros solo subían).
 - ~~Tiempo hasta la NBA por origen~~: con `node tools/sim_potencial.js` todos los perfiles llegan por el draft a los 20-21 años si se presentan, pero el puesto cambia: perfecto 13-14 (cantera o universidad) o 31 (Europa), normal 19-42, juerguista 22-45. El informe de los ojeadores (`informeOjeadores`) suma o resta según la calidad de tu temporada y tu fama.
-- Revisar si algún efecto antiguo sigue dando mucha fama de golpe.
 - ~~Progresión del jugador~~: rehecha. El margen del potencial es de ±15 (máximo 99) y lo que subes cada verano depende de la calidad de tu temporada (intensidad, constancia, ánimo, minutos, mentor; `progresoAnual` en carrera.js). En `node tools/sim_potencial.js 9`: perfil perfecto 97-99 a los 25-27 (europa, 89), normal 79-90, juerguista 74-83.
 - Potencial dinámico de todos los jugadores hasta los 24 años (`potAnual` en cantera.js): minutos por partido, instalaciones o reputación del club y un «talento tardío» oculto (8 %) que puede convertir a un segunda ronda en estrella si juega. Los jóvenes de la IA crecen según su margen: los primeros del draft rondan 87-90 a los 25. Seis temporadas simuladas: el top 10 de la liga se mantiene en 90-91.
-- Draft: elegible de 19 a 22 años desde la universidad o desde Europa; aviso el 15 de abril con la proyección (top 3, lotería, primera, segunda o sin elegir). Si no te eligen desde Europa, sigues en tu club. Si te eligen desde Europa decides: irte ya o quedarte un año («stash»); el equipo NBA guarda tus derechos y te ofrece contrato el verano siguiente. Falta: entrevistas o pruebas previas al draft.
+- Draft: elegible de 19 a 22 años desde la universidad o desde Europa; aviso el 15 de abril con la proyección (top 3, lotería, primera, segunda o sin elegir). Si no te eligen desde Europa, sigues en tu club. Si te eligen desde Europa decides: irte ya o quedarte un año («stash»); el equipo NBA guarda tus derechos y te ofrece contrato el verano siguiente. Antes del draft: pruebas físicas (10 de mayo) y entrevistas con los equipos (24 de mayo), que suman o restan en el informe de los ojeadores; si dices que solo quieres un equipo, ese equipo empuja para elegirte.
 
 ## P2 — Funcionalidad que se pidió y no está completa
-- Etapa universitaria sin partidos jugados (se resume por curso).
+- ~~Universidad y cantera partido a partido~~: un partido cada sábado contra rivales reales (universidades de la NCAA o canteras de clubes de tu país), con tu línea estadística; si ganáis el 70 % hay torneo de la NCAA (marzo) o fase final de la categoría (mayo), ronda a ronda. El historial usa esas medias.
 - ~~Pantalla de retirada~~: «Tu legado» en Carrera (`legado` en carrera.js): veredicto del salón de la fama, nivel máximo, totales y medias, draft, mejor partido, clubes y títulos.
 - Modo entrenador más profundo (plantilla propia, rotaciones por rol, rueda de prensa más rica).
 - Ciudad que crece también en los modos de gestión (hoy solo crece el pueblo del jugador).
@@ -73,6 +73,5 @@
 - ~~Tamaño del guardado~~: hecho, comprimido con LZ-string (1,7 MB -> ~0,17 MB).
 
 ## Límites conocidos / avisos
-- Los nombres de barrios solo son reales para Badalona, Barcelona y Madrid; el resto de ciudades usa nombres genéricos. El mapa de la ciudad es estilizado.
+- Barrios reales en 54 ciudades (todas las españolas, las de Euroliga y las grandes europeas); las ciudades pequeñas y las de la NBA siguen con nombres genéricos. El mapa de la ciudad es estilizado.
 - Los pabellones y campus de cada club son inspirados, no réplicas; solo la ciudad deportiva del Barça y el pabellón de Joventut se basaron en información real.
-- La cantera/universidad no se juega partido a partido.

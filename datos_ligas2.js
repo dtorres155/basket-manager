@@ -48,7 +48,7 @@
     ['aliaga', 'Aliağa Petkimspor', 'ALI', 'Aliağa', ['#c8102e', '#ffffff'], 44, 4, 'Pabellón de Aliağa', 2500],
     ['bursaspor', 'Bursaspor', 'BRS', 'Bursa', ['#00a859', '#ffffff'], 46, 4, 'Pabellón de Bursa Norte', 3000],
     ['korfez', 'Kocaeli Körfez', 'KRF', 'Körfez', ['#00539f', '#ffd200'], 44, 3.5, 'Pabellón de Körfez', 2500],
-    ['cayirova', 'Çayırova Belediyesi', 'CAY', 'Çayırova', ['#c8102e', '#00539f'], 42, 3, 'Pabellón de Çayırova', 2000],
+    ['cayirova', 'Çayırova Belediyespor', 'CAY', 'Çayırova', ['#008751', '#0054a6'], 44, 3.5, 'Çayırova Akse Kapalı Spor Salonu', 3500],
     ['bandirma', 'Bandırma Bordo', 'BAN', 'Bandırma', ['#7a1f3d', '#ffffff'], 46, 4, 'Kara Ali Acar Spor Salonu', 3000],
     ['erokspor', 'Esenler Erokspor', 'ERO', 'Estambul', ['#00539f', '#ffffff'], 46, 4.5, 'Pabellón de Esenler', 3000],
     ['trabzonspor', 'Trabzonspor', 'TRA', 'Trebisonda', ['#7a1f3d', '#00a3e0'], 50, 5, 'Hayri Gür Arena', 7500]

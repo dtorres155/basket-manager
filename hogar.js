@@ -48,7 +48,10 @@
     I('barbacoa', 'Barbacoa', ['terraza', 'jardin'], 2, 0.8, 1, { moral: 0.3 }), I('tumbona', 'Tumbonas', ['terraza', 'jardin', 'piscina'], 2, 0.6, 2, { moral: 0.3 }), I('jacuzzi', 'Jacuzzi', ['terraza', 'jardin', 'piscina', 'gimnasio'], 5, 15, 2, { recup: 4, moral: 0.6 }),
     I('mesaext', 'Mesa de exterior', ['terraza', 'jardin'], 1, 0.4, 1, {}), I('arbol', 'Árbol frutal', ['jardin'], 2, 0.5, 1, { moral: 0.2 })
   ];
-  const TOPES = { moral: 3, recup: 8, xp: 0.12, conf: 1.2, fama: 0.6 };
+  // xp: antes 0,12 al mes (unos +1,4 de nivel al año solo por los muebles, casi como entrenar); ahora ~+0,6
+  const TOPES = { moral: 3, recup: 8, xp: 0.05, conf: 1.2, fama: 0.6 };
+  // Gastos de vida al mes (miles de euros) según el nivel de vida, en los modos de gestión: antes los ahorros solo subían
+  const GASTOS_VIDA = [0.6, 1.0, 1.8, 3.0, 5.0, 8.0];
   const hog = st => (st.hogar = st.hogar || { ahorros: null, casa: null, muebles: {} });
   const club = st => st.equipos[st.clubId];
   const modoCar = st => st.modo === 'carrera' && !!st.carrera;
@@ -170,7 +173,7 @@
     const st = GM.state; if (!st || !st.equipos) return;
     if (U.weekday(st.fecha) === 1 && st.hogar) st.hogar.energia = 3;
     if (st.fecha.slice(8) !== '01') return;
-    if (modoCar(st)) { if (C(st).fase === 'retirado') return; } else ingresar(st, Math.round(salarioAnual(st) / 12 * 10) / 10);
+    if (modoCar(st)) { if (C(st).fase === 'retirado') return; } else { ingresar(st, Math.round(salarioAnual(st) / 12 * 10) / 10); gastar(st, GASTOS_VIDA[nivel(st)] || 1); }
     const casa = casaActual(st), e = efectos(st);
     if (!modoCar(st) && (casa.modo === 'alquiler' || casa.modo === 'hipoteca') && hog(st).casa) gastar(st, hog(st).casa.cuota || hog(st).casa.alquiler || Math.max(1, Math.round(hog(st).casa.precio * 0.005 * 10) / 10));
     if (modoCar(st)) {

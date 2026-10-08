@@ -12,6 +12,6 @@ Consultadas en octubre de 2026. Los scripts guardan lo descargado en `recursos/`
 | Clubes y pabellones | Wikipedia (páginas de cada liga 2026-27) | a mano | lista de clubes, ascensos y descensos |
 | Fechas | Euroliga, EuroCup y ACB: calendarios oficiales publicados en verano de 2026 | a mano | inicio, Final Four, Copa del Rey, playoffs |
 
-La web de la federación turca (tbf.org.tr) y RealGM están protegidas por Cloudflare y no se ha intentado saltarlas. Çayırova no tiene plantilla publicada y sigue con relleno; los jugadores sin artículo en la Wikipedia (sobre todo jóvenes turcos) llevan edad y posición estimadas.
+La web de la federación turca (tbf.org.tr) y RealGM están protegidas por Cloudflare y no se ha intentado saltarlas. Çayırova (campeón de la segunda división turca en 2025-26) no tiene plantilla publicada en ninguna Wikipedia y sigue con relleno; su pabellón, aforo y colores sí son reales (Wikipedia en turco); los jugadores sin artículo en la Wikipedia (sobre todo jóvenes turcos) llevan edad y posición estimadas.
 
 **Estimado, no real:** valoración, potencial, perfil de juego, salario y fin de contrato (salvo en la Lega). La media de los 8 mejores de cada club se fija por su reputación y liga; los extranjeros suben, los menores de 23 bajan y tienen más potencial. Si un jugador ya estaba en los datos con valoración hecha a mano en el mismo club, se conserva.
