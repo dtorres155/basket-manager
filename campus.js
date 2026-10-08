@@ -80,11 +80,11 @@
   const estilo = eq => ESTILOS[eq.pais] || ESTILOS.DEF;
 
   // ---------- Layouts ----------
-  const NOMBRE = { pista: 'Pabellón de entrenamiento', gimnasio: 'Gimnasio y preparación física', medico: 'Centro médico', residencia: 'Residencia de jugadores', cantera: 'Academia de cantera', oficinas: 'Oficinas del club', tienda: 'Tienda oficial', fans: 'Zona de aficionados', parking: 'Aparcamiento y accesos', emblema: 'Edificio emblemático' };
+  const NOMBRE = { pista: 'Pabellón de entrenamiento', gimnasio: 'Gimnasio y preparación física', medico: 'Centro médico', residencia: 'Residencia de jugadores', cantera: 'Academia de cantera', oficinas: 'Oficinas del club', tienda: 'Tienda oficial', fans: 'Zona de aficionados', parking: 'Aparcamiento y accesos', emblema: 'Edificio emblemático', museo: 'Museo del club', hotel: 'Hotel de concentración', prensa: 'Sala de prensa y medios' };
   const EMB = { masia: 'La Masia', ausias: 'Pavelló Ausiàs March', museo: 'Museo y sala de trofeos', casa: 'Casa del club' };
-  const ORDEN = ['tienda', 'fans', 'cantera', 'residencia', 'emblema', 'pista', 'gimnasio', 'medico', 'oficinas', 'parking'];
+  const ORDEN = ['tienda', 'museo', 'fans', 'cantera', 'residencia', 'emblema', 'hotel', 'pista', 'gimnasio', 'medico', 'prensa', 'oficinas', 'parking'];
   const EMBLEMA = { 'fc-barcelona': 'masia', 'joventut-badalona': 'ausias', 'real-madrid': 'museo' };
-  const NOMB_CLUB = { 'fc-barcelona': { tienda: 'Barça Store' }, 'joventut-badalona': { tienda: 'Botiga de la Penya', fans: 'Espai Penya' } };
+  const NOMB_CLUB = { 'fc-barcelona': { tienda: 'Barça Store' }, 'joventut-badalona': { tienda: 'Botiga de la Penya', fans: 'Espai Penya', museo: 'Museu de la Penya' }, 'real-madrid': { museo: 'Museo de la sección' } };
   const DECOR = {
     'fc-barcelona': [{ t: 'pitch', x: -5, z: -31, w: 13, d: 7.5 }, { t: 'pitch', x: 9, z: -31, w: 7, d: 7.5 }],
     'real-madrid': [{ t: 'pitch', x: -5, z: -31, w: 13, d: 7.5 }, { t: 'pitch', x: 9, z: -31, w: 7, d: 7.5 }],
@@ -93,10 +93,10 @@
   // Campus orgánico: los edificios se reparten en arco alrededor de una plaza, mirando hacia ella, con la entrada al sur.
   function layout(eq) {
     const h = U.hash(eq.id), flip = h % 2 ? -1 : 1, cz = -1.5;
-    const variante = EMBLEMA[eq.id] || (h % 3 ? 'casa' : 'museo');
+    const variante = EMBLEMA[eq.id] || 'casa';
     const n = ORDEN.length, a0 = Math.PI / 2 + 0.6, a1 = Math.PI / 2 + 2 * Math.PI - 0.6;
     const slots = ORDEN.map((id, i) => {
-      const ang = a0 + (a1 - a0) * (i / (n - 1)) + (((h >>> i) % 7) - 3) * 0.04, r = 14.2 + (i % 2 ? 1.5 : -1.5) + (((h >>> (i + 4)) % 5) - 2) * 0.25;
+      const ang = a0 + (a1 - a0) * (i / (n - 1)) + (((h >>> i) % 7) - 3) * 0.015, r = 17.4 + (i % 2 ? 0.8 : -0.8) + (((h >>> (i + 4)) % 5) - 2) * 0.25;
       const x = Math.cos(ang) * r * 1.25 * flip, z = Math.sin(ang) * r * 0.95 + cz;
       const rot = Math.atan2(-x, -(z - cz)) + 0.1 * Math.sin(i * 2 + (h % 7));
       const nombre = id === 'emblema' ? EMB[variante] : ((NOMB_CLUB[eq.id] || {})[id] || null);
@@ -246,6 +246,48 @@
       }
     }
   };
+  // Museo, hotel de concentración y sala de prensa (se añadieron después: ver ciudad_deportiva.js)
+  Object.assign(M, {
+    museo(g, n, S) {
+      const e = S.e, w = 3.2 + (n >= 2 ? 0.4 : 0);
+      F(g, w, 1.1, 2.4, 'liso', 0xeee8dc, -0.2, 0.05, 0);
+      B(g, w + 0.3, 0.14, 2.7, 0xd6cdbb, -0.2, 1.15, 0);                       // cornisa
+      B(g, w + 0.5, 0.12, 1.0, 0xd6cdbb, -0.2, 0.0, 1.6);                      // escalinata
+      B(g, w + 0.2, 0.12, 0.7, 0xe3dccd, -0.2, 0.12, 1.55);
+      for (let i = 0; i < 5; i++) g.add(K().cilindro(0.09, 1.0, 0xf5f1e8, -0.2 - w / 2 + 0.35 + i * (w - 0.7) / 4, 0.24, 1.38, 10));   // columnas
+      B(g, 0.7, 0.75, 0.04, 0x39424d, -0.2, 0.24, 1.22);
+      rotulo(g, 'MUSEO', 1.1, 0.24, S.c1, 0xffffff, -0.2, 1.0, 1.23);
+      // trofeo en la entrada
+      B(g, 0.5, 0.35, 0.5, 0xdfe3e8, 1.7, 0.05, 1.7); mesh(g, new THREE.CylinderGeometry(0.16, 0.1, 0.35, 10), K().mat(0xe8b923), 1.7, 0.58, 1.7); mesh(g, new THREE.SphereGeometry(0.15, 10, 8), K().mat(0xe8b923), 1.7, 0.88, 1.7);
+      if (n >= 2) { mesh(g, new THREE.SphereGeometry(0.9, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), K().mat(0xcfe0ea), -0.2, 1.29, -0.1); }   // cúpula de cristal
+      if (n >= 3) { F(g, 1.2, 0.8, 1.8, 'oficina', 0xcfe8f6, 2.3, 0.05, -0.5); B(g, 1.3, 0.06, 1.9, S.c2, 2.3, 0.85, -0.5); bandera(g, -2.2, 1.6, 1.8, S.c1); }
+    },
+    hotel(g, n, S) {
+      const e = S.e, pl = 2 + n;
+      for (let f = 0; f < pl; f++) { F(g, 2.6, 0.55, 2.0, 'oficina', f % 2 ? e.muro[1] : 0xf1ece2, -0.6, 0.05 + f * 0.58, 0); for (let i = 0; i < 4; i++) B(g, 0.42, 0.04, 0.2, 0xd9dee4, -1.5 + i * 0.6, 0.05 + f * 0.58 + 0.02, 1.1); }   // balcones
+      const top = 0.05 + pl * 0.58;
+      B(g, 2.8, 0.12, 2.2, 0x4b5866, -0.6, top, 0); rotulo(g, 'HOTEL', 1.2, 0.26, S.c1, 0xffffff, -0.6, top + 0.3, 0.9);
+      B(g, 1.6, 0.06, 0.9, S.c1, -0.6, 0.62, 1.45); [-1.3, 0.1].forEach(x => B(g, 0.05, 0.58, 0.05, 0xdfe3e8, x, 0.05, 1.85));   // marquesina
+      B(g, 0.8, 0.5, 0.03, 0x39424d, -0.6, 0.05, 1.01);
+      B(g, 1.2, 0.03, 1.6, 0x59b4e6, 1.85, 0.06, 0.2); B(g, 1.4, 0.05, 1.8, 0xe9e4d8, 1.85, 0.03, 0.2);   // piscina
+      if (n >= 2) for (let i = 0; i < 3; i++) B(g, 0.22, 0.06, 0.5, 0xffffff, 1.4 + i * 0.45, 0.05, 1.4);   // tumbonas
+      if (n >= 3) { F(g, 1.2, 0.6, 1.0, 'liso', 0xdfe8ee, 1.85, 0.05, -1.4); B(g, 1.3, 0.05, 1.1, S.c2, 1.85, 0.65, -1.4); }   // spa
+    },
+    prensa(g, n, S) {
+      const e = S.e;
+      F(g, 2.8, 1.0, 2.0, 'oficina', 0x2f3e4e, -0.4, 0.05, 0);
+      B(g, 2.9, 0.08, 2.1, S.c1, -0.4, 1.05, 0);
+      B(g, 2.0, 0.6, 0.04, 0x1c2733, -0.4, 0.2, 1.02);                       // cristalera
+      rotulo(g, 'PRENSA', 1.2, 0.24, S.c1, 0xffffff, -0.4, 0.92, 1.03);
+      // antena parabólica y mástil
+      const dish = mesh(g, new THREE.SphereGeometry(0.35, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2.6), K().mat(0xeef1f4), 0.6, 1.4, -0.4); dish.rotation.x = -1.0;
+      g.add(K().cilindro(0.04, 0.3, 0x9aa3ad, 0.6, 1.1, -0.4, 6));
+      // furgoneta de televisión
+      B(g, 0.5, 0.45, 1.0, 0xf4f6f8, 1.9, 0.05, 0.9); B(g, 0.52, 0.1, 0.4, S.c1, 1.9, 0.25, 0.9); g.add(K().cilindro(0.03, 0.6, 0x9aa3ad, 1.9, 0.5, 0.7, 5));
+      if (n >= 2) { F(g, 1.3, 0.8, 1.4, 'oficina', 0xcfd8e2, 1.9, 0.05, -1.0); B(g, 1.4, 0.06, 1.5, 0x4b5866, 1.9, 0.85, -1.0); }
+      if (n >= 3) { g.add(K().cilindro(0.05, 2.6, 0xc9ced6, -1.6, 1.1, -0.7, 6)); B(g, 0.9, 0.5, 0.05, S.c2, -0.4, 1.2, 0.6); }   // antena del canal y pantalla
+    }
+  });
   function suelo(g, color) { const m = mesh(g, new THREE.CylinderGeometry(3.25, 3.25, 0.05, 28), K().mat(color || 0xcfd6c7), 0, 0.025, 0); m.scale.set(1, 1, 0.88); }
   function modelo(tipo, nivel, S) {
     const g = new THREE.Group(); suelo(g);
@@ -344,9 +386,10 @@
       c.userData.anim = t => { const u = ((t * 0.1 + i * 0.5) % 1), zz = z1 + 12 - u * (z1 + 12 - (L.cz + 5)); c.position.set(3.2 * Math.sin(u * 3.4) + (i ? 0.6 : -0.6), 0, zz); c.rotation.y = Math.PI; };
     });
     for (let i = 0; i < 7; i++) {
-      const p = new THREE.Group(); p.add(k.caja(0.14, 0.22, 0.1, i % 2 ? S.c1 : S.c2, 0, 0.1, 0)); p.add(k.cilindro(0.055, 0.1, 0xe8c19c, 0, 0.32, 0, 6)); world.add(p);
+      const prim = new THREE.Group(); prim.add(k.caja(0.14, 0.22, 0.1, i % 2 ? S.c1 : S.c2, 0, 0.1, 0)); prim.add(k.cilindro(0.055, 0.1, 0xe8c19c, 0, 0.32, 0, 6));
+      const p = GM.sede && GM.sede.figura ? GM.sede.figura({ semilla: 7919 * (i + 1), ropa: [i % 2 ? S.c1 : S.c2, 0x2f3a46] }, 0.4, prim) : prim; world.add(p);   // personas reales (modelos de la sede)
       const f = i * 1.7;
-      p.userData.anim = t => { const a = t * 0.12 + f; p.position.set(Math.cos(a) * 8.6 * (1 + (i % 3) * 0.02), 0.02, Math.sin(a) * 7.4 * (1 + (i % 3) * 0.02) + L.cz); p.rotation.y = -a + Math.PI; };
+      p.userData.mover = t => { const a = t * 0.12 + f; p.position.set(Math.cos(a) * 8.6 * (1 + (i % 3) * 0.02), 0.02, Math.sin(a) * 7.4 * (1 + (i % 3) * 0.02) + L.cz); p.rotation.y = -a + Math.PI; };
     }
   }
   function animables(world) { const l = []; world.traverse(o => { if (o.userData && typeof o.userData.anim === 'function') l.push(o.userData.anim); }); return l; }

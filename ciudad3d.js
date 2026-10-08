@@ -189,9 +189,11 @@
     return GM.rng.pick(base);
   }
   function persona(W, S, x, z, col, cam, msg) {
-    const K = GM.kit, g = new THREE.Group();
-    g.add(K.caja(0.2, 0.34, 0.14, col, 0, 0.16, 0)); g.add(K.cilindro(0.075, 0.14, 0xe0b48f, 0, 0.5, 0, 8)); g.add(K.caja(0.18, 0.18, 0.12, 0x2f3a46, 0, 0, 0));
-    g.position.set(x, 0.1, z); g.userData = { persona: true, msg }; W.add(g); return g;
+    // Persona real (modelos de la sede) con la figura de cajas mientras carga o si no hay modelos
+    const K = GM.kit, prim = new THREE.Group();
+    prim.add(K.caja(0.2, 0.34, 0.14, col, 0, 0.16, 0)); prim.add(K.cilindro(0.075, 0.14, 0xe0b48f, 0, 0.5, 0, 8)); prim.add(K.caja(0.18, 0.18, 0.12, 0x2f3a46, 0, 0, 0));
+    const g = GM.sede && GM.sede.figura ? GM.sede.figura({ semilla: U.hash('cp' + x + ',' + z + ',' + col + ',' + (V ? V.personas.length : 0)), ropa: [col, 0x2f3a46], suelo: 0.02 }, 0.62, prim, V && V.vista) : prim;
+    g.position.set(x, 0.1, z); Object.assign(g.userData, { persona: true, msg }); W.add(g); return g;
   }
   // La calle serpentea: z(x) sinusoidal. Todo se coloca siguiendo su tangente y su normal.
   const curva = x => 3.4 * Math.sin(x * 0.085), pend = x => 3.4 * 0.085 * Math.cos(x * 0.085);
@@ -237,7 +239,7 @@
       const h = U.hash(eq.id + 'p' + bi + i) >>> 0, hincha = (h % 100) < afi * 0.85, camisa = hincha ? ((h >>> 5) % 2 ? S.c1 : S.c2) : neutros[(h >>> 5) % 6];
       const p = persona(W, S, 0, 0, camisa, null, null), lane = ((h >>> 9) % 2 ? 1 : -1) * (2.2 + ((h >>> 12) % 3) * 0.35), vel = 0.5 + ((h >>> 15) % 5) * 0.12, dir = (h >>> 18) % 2 ? 1 : -1;
       p.userData.msg = null; p.userData.barrio = b;
-      p.userData.anim = t => { const x = ((((t * vel * dir + i * 6.3) % 70) + 70) % 70) - 35, f = marco(x); p.position.set(f.x + f.nx * lane, 0.1 + Math.abs(Math.sin(t * 6 + i)) * 0.03, f.z + f.nz * lane); p.rotation.y = Math.atan2(f.tx * dir, f.tz * dir); };
+      p.userData.mover = t => { const x = ((((t * vel * dir + i * 6.3) % 70) + 70) % 70) - 35, f = marco(x); p.position.set(f.x + f.nx * lane, p.userData.real ? 0.02 : 0.1 + Math.abs(Math.sin(t * 6 + i)) * 0.03, f.z + f.nz * lane); p.rotation.y = Math.atan2(f.tx * dir, f.tz * dir); };
       V.personas.push(p);
     }
     if (afi < 35) { const f = marco(-3); for (let i = 0; i < 5; i++) { const px = f.x + f.tx * i * 0.5 + f.nx * 1.2, pz = f.z + f.tz * i * 0.5 + f.nz * 1.2, p = persona(W, S, px, pz, 0xd94f4f, null, null); p.userData.barrio = b; W.add(K.caja(0.5, 0.3, 0.03, 0xd62d2d, px, 0.95, pz)); W.add(K.cilindro(0.015, 0.6, 0xdfe3e8, px, 0.45, pz, 4)); } }

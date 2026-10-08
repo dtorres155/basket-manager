@@ -14,7 +14,10 @@
     { tipo: 'parking', nombre: 'Aparcamiento y accesos', coste: 300000, nivelMax: 3, ef: { ciudad: 0.01 }, desc: 'Llegar al pabellón es más fácil: algo más de público.', niveles: ['Aparcamiento', 'Aparcamiento ampliado', 'Aparcamiento con marquesina solar'] },
     { tipo: 'fans', nombre: 'Zona de aficionados', coste: 500000, nivelMax: 3, ef: { ciudad: 0.03 }, desc: 'Un punto de encuentro que alimenta el ambiente.', niveles: ['Plaza con banderas', 'Escenario para actos', 'Mural y espacio de peña'] },
     { tipo: 'oficinas', nombre: 'Oficinas del club', coste: 350000, nivelMax: 3, ef: { ingresos: 0.015 }, desc: 'Mejor gestión comercial.', niveles: ['Oficinas', 'Torre de oficinas', 'Sede corporativa'] },
-    { tipo: 'emblema', nombre: 'Edificio emblemático', coste: 500000, nivelMax: 3, ef: { ciudad: 0.04, ingresos: 0.01, cantera: 0.03 }, desc: 'El edificio que representa la historia del club: refuerza el arraigo con la ciudad y da prestigio.', niveles: ['Edificio histórico', 'Edificio rehabilitado', 'Edificio emblemático'] }
+    { tipo: 'emblema', nombre: 'Edificio emblemático', coste: 500000, nivelMax: 3, ef: { ciudad: 0.04, ingresos: 0.01, cantera: 0.03 }, desc: 'El edificio que representa la historia del club: refuerza el arraigo con la ciudad y da prestigio.', niveles: ['Edificio histórico', 'Edificio rehabilitado', 'Edificio emblemático'] },
+    { tipo: 'museo', nombre: 'Museo del club', coste: 650000, nivelMax: 3, ef: { ciudad: 0.02, ingresos: 0.01 }, desc: 'Trofeos, camisetas históricas y la memoria del club: orgullo en la ciudad e ingresos por visitas.', niveles: ['Sala de trofeos', 'Museo del club', 'Museo interactivo'] },
+    { tipo: 'hotel', nombre: 'Hotel de concentración', coste: 1000000, nivelMax: 3, ef: { recuperacion: 0.03, entrenamiento: 0.02 }, desc: 'El equipo descansa y se concentra en el propio campus antes de los partidos.', niveles: ['Habitaciones de concentración', 'Hotel del club', 'Hotel con spa'] },
+    { tipo: 'prensa', nombre: 'Sala de prensa y medios', coste: 350000, nivelMax: 3, ef: { ingresos: 0.01, ciudad: 0.01 }, desc: 'Ruedas de prensa, entrevistas y el canal del club: mejor imagen y más valor para los patrocinadores.', niveles: ['Sala de prensa', 'Centro de medios', 'Plató del canal del club'] },
   ];
   const DIAS = [0, 12, 18, 25, 34, 45];
   // Actividades de cada edificio: cuestan dinero, tienen enfriamiento y dan efectos temporales o inmediatos.
@@ -28,7 +31,10 @@
     parking: [{ id: 'bus', t: 'Lanzadera gratuita al pabellón', coste: 9000, cd: 30, ef: { aficion: 1.5, ambiente: 1 }, desc: 'Más gente llega con facilidad al próximo partido.' }],
     fans: [{ id: 'acto', t: 'Acto con las peñas', coste: 8000, cd: 30, ef: { penas: 6, aficion: 1 }, desc: 'Convives con las peñas del club.' }],
     oficinas: [{ id: 'reunion', t: 'Reunión con patrocinadores', coste: 0, cd: 60, ef: { ingreso: 0.004 }, desc: 'Una ronda de contactos que mejora los ingresos comerciales.' }],
-    emblema: [{ id: 'visita', t: 'Visita guiada abierta al público', coste: 2000, cd: 20, ef: { aficion: 1.5, ingreso: 0.0015 }, desc: 'La historia del club, abierta a socios y turistas.' }]
+    emblema: [{ id: 'visita', t: 'Visita guiada abierta al público', coste: 2000, cd: 20, ef: { aficion: 1.5, ingreso: 0.0015 }, desc: 'La historia del club, abierta a socios y turistas.' }],
+    museo: [{ id: 'exposicion', t: 'Exposición temporal', coste: 10000, cd: 45, ef: { ingreso: 0.003, aficion: 1, apoyo: 1 }, desc: 'Una muestra sobre una época dorada del club: visitas, colegios y titulares.' }],
+    hotel: [{ id: 'concentracion', t: 'Concentración antes de un partido grande', coste: 14000, cd: 30, ef: { buff: ['recuperacion', 0.08, 14] }, desc: 'Dos noches en el hotel del club: el equipo llega descansado al próximo partido importante.' }],
+    prensa: [{ id: 'medios', t: 'Jornada de puertas abiertas a los medios', coste: 6000, cd: 30, ef: { aficion: 1, ingreso: 0.002 }, desc: 'Entrevistas y reportajes con los jugadores: buena prensa durante semanas.' }],
   };
   let V = null;
 

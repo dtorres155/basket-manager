@@ -10,9 +10,10 @@
 - ~~Jugadores del partido en directo con figuras reales~~ (hecho: personas, gestos de tiro y pase, grada y banquillos). Falta: jugadas con más sentido táctico, repetición de canastas y cámara que siga la jugada.
 - Formas más orgánicas en campus, ciudad y casas: curvas, `LatheGeometry`, `ExtrudeGeometry`, `InstancedMesh`, vegetación y relieve.
 - Casas: más personalización (color de paredes y suelos, iluminación), más piezas por habitación, objetos con modelos de mayor detalle.
-- Edificios del campus que se pensaron y no están: museo, hotel de concentración, sala de prensa.
+- ~~Edificios del campus que faltaban~~: museo, hotel de concentración y sala de prensa (catálogo y actividades en ciudad_deportiva.js, dibujo en campus.js; 13 parcelas). Capturas: `node tools/campus_capturas.js [nivel] [club]`.
+- Personas y muebles reales en las escenas antiguas: gente de Quaternius en el mapa de la ciudad (vista Calle), el campus, el pabellón (jugadores calentando dentro, aficionados fuera) y tu personaje en la casa antigua (`GM.sede.figura`); muebles de Kenney en la casa antigua con la tela del color elegido (`aModelo` en hogar3d.js; capturas con `node tools/hogar_capturas.js`). Falta: edificios con modelos glTF y el público de la grada (150 figuras: con modelos sería demasiado pesado; habría que usar InstancedMesh).
 
-- **Pueblo 3D:** construir el nivel 5 tarda ~1,2 s con CPU x4 y se reconstruye tras cada acción del panel; cachear la geometría o actualizar solo lo que cambia.
+- ~~Pueblo 3D lento al usar el panel~~: ya solo se reconstruye si cambia algo visible (nivel, estilo, edificios o el cariño de 10 en 10). Construirlo la primera vez tarda 0,1 s en ordenador y 0,4-0,7 s con CPU x4 (`node tools/pueblo_tiempo.js --lento`).
 
 ## Mundo explorable (sede, calle, barrio, casa)
 - Modo construcción también en el despacho y otras salas del club; paredes interiores, color de paredes y suelos en casa.

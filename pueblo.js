@@ -165,7 +165,10 @@
       } catch (e) { V.vista = null; }
     }
     if (!V.vista) vistaEl.append(h('div', { class: 'vacio' }, 'La vista 3D no está disponible en este dispositivo o sin conexión. Gestiona tu pueblo desde la lista.'));
-    V.refrescar = () => { if (V.vista) escena(st); panel(st); }; V.refrescar(); return true;
+    // La escena solo se reconstruye si cambia algo que se ve (nivel, estilo, nombre, edificios o el cariño de 10 en 10):
+    // las acciones del panel que no lo cambian ya no rehacen el pueblo entero (tardaba más de 1 s en móvil).
+    const clave = () => { const p = P(st), e = estado(st); return [e.nivel, p.nombre, p.nac, Math.round(p.cariño / 10), edificios(st).map(b => b.tipo + b.nivel).join(',')].join('|'); };
+    V.refrescar = () => { if (V.vista) { const k = clave(); if (k !== V.clave) { V.clave = k; escena(st); } } panel(st); }; V.refrescar(); return true;
   }
   function unmount() { if (!V) return; if (V.vista) V.vista.dispose(); if (V.raiz && V.raiz.parentNode) V.raiz.parentNode.removeChild(V.raiz); V = null; }
   function selfTest() { return Object.keys(EDI).every(k => EDI[k].niv.length === EDI[k].max) && UMBRAL.length === NIVELES.length; }

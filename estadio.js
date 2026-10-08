@@ -136,6 +136,18 @@
       const q = U.hash(id + 'p' + i) >>> 0, r = q % filas, lado = (q >>> 3) % 2 ? 1 : -1, pos = ((q >>> 6) % 100) / 100 * 2 * L - L;
       W.add(K.caja(0.18, 0.28, 0.18, cols[(q >>> 9) % 4], pos, 0.3 + r * 0.3 - 0.05, lado * (ZW + 0.6 + r * 0.55 + 0.05)));
     }
+    // jugadores del club calentando en la pista (personas reales de la sede; 1 unidad son unos 1,55 m)
+    if (GM.sede && GM.sede.figura && !partido && inte) {
+      const pl = eq.plantilla.map(i => st.jugadores[i]).filter(Boolean).sort((a, b) => b.ovr - a.ovr).slice(0, 5);
+      pl.forEach((j, i) => {
+        const hh = U.hash(j.id) >>> 0, cx = (i % 2 ? 1 : -1) * (L - 3.2), cz = (i - 2) * 1.4, r0 = 1.1 + (hh % 5) * 0.2, vel = 0.25 + (hh % 3) * 0.08;
+        const f = GM.sede.figura({ semilla: hh, modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][hh % 3], altura: j.altura || 200, ropa: [eq.colores[0], eq.colores[1] || '#222'], suelo: 0.08 }, (j.altura || 200) / 155, null, v);
+        f.position.set(cx, 0.08, cz);
+        if (i % 2 === 0) f.userData.mover = t => { const a = t * vel + i; f.position.set(cx + Math.cos(a) * r0, 0.08, cz * 0.6 + Math.sin(a) * r0); f.rotation.y = -a; };
+        else f.rotation.y = cx > 0 ? -Math.PI / 2 : Math.PI / 2;
+        W.add(f);
+      });
+    }
     // banderines: títulos y camisetas retiradas
     const titulos = st.historial.filter(x => x.campeon === id).length, ret = st.legado && st.legado.camisetas ? st.legado.camisetas.length : 0;
     for (let i = 0; i < Math.min(8, titulos + ret); i++) W.add(K.caja(0.5, 0.8, 0.04, i < titulos ? S.c1 : 0xf2f2f2, -L + 2 + i * 1.1, topInf + (sup ? 2.2 : 1.2), -(ZW + 0.6 + filas * 0.55 + (sup ? 3.4 : 0.8))));
@@ -173,6 +185,13 @@
       }
       if (forma !== 'redondo') for (let i = 0; i < 12; i++) W.add(K.caja(1.1, alto + 0.4, 0.05, i % 2 ? S.c2 : S.c1, -rx + 1.2 + i * (2 * rx - 2.4) / 11, 0, rz + 0.18));
       const g2 = new T.Group(); CP.rotulo(g2, eq.pabellon.nombre.slice(0, 22), 6, 0.9, S.c1, 0xffffff, 0, alto - 0.5, rz + 0.25); W.add(g2);
+      // aficionados paseando delante de la fachada (personas reales; más cuanto más lleno suele estar)
+      if (GM.sede && GM.sede.figura) for (let i = 0; i < 4 + Math.round(lleno * 6); i++) {
+        const hh = U.hash(id + 'ext' + i) >>> 0, carril = rz + 2.2 + (hh % 4) * 0.7, vel = 0.5 + (hh % 5) * 0.12, dir = hh % 2 ? 1 : -1, ancho = rx + 6;
+        const f = GM.sede.figura({ semilla: hh, ropa: [hh % 3 ? S.c1 : 0x2f3a46, (hh >>> 3) % 2 ? S.c2 : 0x2f3a46] }, 1.15, null, v);
+        f.userData.mover = t => { const x = ((((t * vel * dir + i * 3.1) % (2 * ancho)) + 2 * ancho) % (2 * ancho)) - ancho; f.position.set(x, 0, carril); f.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2; };
+        f.userData.mover(0); W.add(f);
+      }
       if (tiene(p, 'tienda')) { W.add(K.caja(2.4, 1.1, 1.6, 0xf2e6d0, rx + 2.5, 0, rz - 1)); W.add(K.caja(2.6, 0.12, 0.8, S.c1, rx + 2.5, 1.0, rz - 0.2)); }
       if (tiene(p, 'accesos')) for (let i = 0; i < 8; i++) W.add(K.caja(0.7, 0.3, 1.2, [0xd94f4f, 0xf2c14e, 0x4a90d9, 0xeeeeee][i % 4], -rx - 2.5, 0, -6 + i * 1.7));
       if (tiene(p, 'cubierta')) W.add(K.caja(2 * rx + 1.4, 0.2, 2 * rz + 1.4, 0x394049, 0, alto + 1.4, 0, 0.8));
@@ -187,7 +206,8 @@
     });
     CP.ambiente(v, partido ? 'noche' : 'dia');
     if (partido) { v.amb.intensity = 0.38 + luz * 0.06; v.sun.intensity = 0.22; v.renderer.setClearColor(0x0e1626); }
-    v.anim = (haces.length || cinta) ? (t => { haces.forEach((c, i) => { c.position.x = Math.cos(c.userData.a + t * 0.6) * 5; c.position.z = Math.sin(c.userData.a + t * 0.6) * 3.2; c.rotation.z = Math.sin(t * 0.8 + i) * 0.25; }); if (cinta) cinta.forEach((m, i) => m.material.color.setHex(Math.sin(t * 2 + i) > 0 ? S.c1 : S.c2)); }) : null;
+    const gente = []; W.children.forEach(o => { if (o.userData && typeof o.userData.anim === 'function') gente.push(o.userData.anim); });
+    v.anim = (haces.length || cinta || gente.length) ? (t => { gente.forEach(f => f(t)); haces.forEach((c, i) => { c.position.x = Math.cos(c.userData.a + t * 0.6) * 5; c.position.z = Math.sin(c.userData.a + t * 0.6) * 3.2; c.rotation.z = Math.sin(t * 0.8 + i) * 0.25; }); if (cinta) cinta.forEach((m, i) => m.material.color.setHex(Math.sin(t * 2 + i) > 0 ? S.c1 : S.c2)); }) : null;
     if (CP.config.calidad === 'alta') K.sombrear(W);
     if (partido) { /* ya oscurecido */ }
     V.vista.dibujar();

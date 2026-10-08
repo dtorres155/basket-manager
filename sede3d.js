@@ -100,6 +100,25 @@
     }
     return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa, ropa: o.ropa };
   }
+  // Persona real para las escenas antiguas (campus, mapa de la ciudad, casa): devuelve un grupo al momento, con la figura de cajas
+  // si se pasa, y la sustituye por el modelo cuando carga. alto: altura en unidades de esa escena. El movimiento se pone en
+  // userData.mover(t) (el grupo ya trae userData.anim, que mueve y anima). Con modelo cargado, userData.real = true (pies en y = 0).
+  const MODELOS_GENTE = ['h-casual_2', 'm-casual', 'h-beach', 'm-formal', 'h-casual_hoodie', 'm-punk', 'h-farmer', 'm-adventurer'];
+  function figura(o, alto, primitiva, vista) {
+    const g = new THREE.Group(); if (primitiva) g.add(primitiva);
+    const h = (o.semilla || 0) >>> 0, altura = o.altura || 165 + h % 30;
+    let mixer = null, t0 = null;
+    g.userData.anim = t => { if (g.userData.mover) g.userData.mover(t); if (mixer) { const dt = t0 === null ? 0 : Math.min(0.1, t - t0); t0 = t; mixer.update(dt); } };
+    if (!THREE.GLTFLoader || !THREE.clonarEsqueleto || typeof fetch !== 'function') return g;
+    personaje({ modelo: o.modelo || MODELOS_GENTE[h % MODELOS_GENTE.length], altura, piel: o.piel || PIEL[(h >>> 4) % PIEL.length], pelo: o.pelo || PELO[(h >>> 7) % PELO.length], ropa: o.ropa }).then(p => {
+      p.obj.scale.multiplyScalar(alto / (altura / 100));
+      while (g.children.length) g.remove(g.children[0]);
+      g.add(p.obj); g.userData.real = true; if (o.suelo !== undefined) g.position.y = o.suelo;
+      const a = p.acc[o.anim || (g.userData.mover ? 'walk' : 'idle')] || p.acc.idle; if (a) { a.play(); a.time = (h % 97) / 40; }
+      p.mixer.update(0); mixer = p.mixer; if (vista) vista.need = true;
+    }).catch(() => { });
+    return g;
+  }
   // Postura sentada (las animaciones no la traen): muslos al frente, pantorrillas hacia el suelo y pies al final de la pierna.
   // En este esqueleto los pies cuelgan de Root (no de la pierna), por eso se recolocan a mano.
   const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), ABAJO = new THREE.Vector3(0, -1, 0);
@@ -844,5 +863,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

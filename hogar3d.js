@@ -58,7 +58,22 @@
       case 'arbol': g.add(K.cilindro(0.1, 0.8, 0x6b4a2b, 0, 0, 0, 6)); g.add(K.cono(0.7, 1.4, 0x2f8f4f, 0, 0.7, 0, 7)); for (let i = 0; i < 3; i++) luz(g, Math.sin(i * 2.1) * 0.3, 1.0 + i * 0.15, Math.cos(i * 2.1) * 0.3, 0.08, 0.08, 0.08, 0xe8541a); break;
       default: caja(g, 0.7, 0.7, 0.7, C, 0, 0, 0);
     }
+    if (MODELO[id] && GM.sede && GM.sede.modeloMueble && THREE.GLTFLoader && typeof fetch === 'function') aModelo(g, MODELO[id], C);
     return g;
+  }
+  // Muebles con modelo real (Kenney, CC0, los mismos de la sede): se ajustan a la huella de la versión de cajas y la tela
+  // toma el color elegido. Mientras carga (o si falla) se ve la versión de cajas.
+  const MODELO = { cama1: 'bedSingle', cama2: 'bedSingle', cama3: 'bedSingle', sofa1: 'loungeSofa', sofa2: 'loungeSofa', sofa3: 'loungeSofa', butaca: 'loungeChair', mesa1: 'tableRound', mesa2: 'table', nevera: 'kitchenFridge', escritorio: 'desk', planta: 'pottedPlant', alfombra: 'rugRectangle', lampara: 'lampRoundFloor' };
+  function aModelo(g, nombre, color) {
+    const caja0 = new THREE.Box3().setFromObject(g), tam0 = caja0.getSize(new THREE.Vector3()), cen = caja0.getCenter(new THREE.Vector3());
+    GM.sede.modeloMueble(nombre).then(m => {
+      const t = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3()), sx = tam0.x / t.x, sz = tam0.z / t.z;
+      m.scale.set(m.scale.x * sx, m.scale.y * Math.min(sx, sz, 1.6), m.scale.z * sz);
+      m.traverse(n => { if (n.isMesh && /^carpet/.test(n.material.name || '')) { n.material = n.material.clone(); n.material.color.set(color); if (/Darker/.test(n.material.name)) n.material.color.multiplyScalar(0.7); } });
+      while (g.children.length) g.remove(g.children[0]);
+      m.position.set(cen.x, 0, cen.z); g.add(m);
+      if (V && V.vista) V.vista.need = true;
+    }).catch(() => { });
   }
   // ---------- Habitaciones ----------
   function cuarto(hab, lujo, ext, cond, W, D, est) {
@@ -97,7 +112,12 @@
     const cab = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), K.mat(K.color(piel))); cab.position.y = 1.7; g.add(cab);
     const ps = new THREE.Mesh(new THREE.SphereGeometry(0.235, 12, 6, 0, 6.3, 0, 1.4), K.mat(K.color(pelo))); ps.position.y = 1.72; g.add(ps);
     g.userData.anim = t => { g.position.y = Math.abs(Math.sin(t * 1.6)) * 0.02; g.rotation.y = Math.sin(t * 0.5) * 0.4; };
-    return g;
+    if (!GM.sede || !GM.sede.figura || !st) return g;
+    // Tu personaje real (el mismo modelo que en la sede y la calle); la figura de cajas queda mientras carga
+    const carrera = st.modo === 'carrera' || st.modo === 'entrenador', club = st.equipos[st.clubId], alt = st.modo === 'carrera' && st.jugadores.yo ? st.jugadores.yo.altura : 180;
+    const r = GM.sede.figura({ modelo: carrera ? 'h-casual_hoodie' : 'h-suit', altura: alt, piel: OP && pj ? OP.piel[pj.piel] : null, pelo: OP && pj ? OP.peloColor[pj.peloColor] : null, ropa: carrera ? [club.colores[0], club.colores[1] || '#222'] : null, anim: 'idle' }, alt / 100, g, V && V.vista);
+    r.userData.mover = t => { r.rotation.y = Math.sin(t * 0.5) * 0.4; };
+    return r;
   }
   function exterior(casa, st) {
     const g = new THREE.Group(), K = GM.kit, L = casa.lujo, cond = casa.cond, t = casa.tipo, e = (casa.variante && casa.variante.est.ext) || '';
