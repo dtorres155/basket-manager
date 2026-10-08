@@ -226,6 +226,14 @@
         ficha(st, c.p, id, c.ask, GM.rng.int(1, 2));
       }
     });
+    // Tu club con menos de 8 jugadores no puede jugar: la directiva firma agentes libres baratos hasta llegar a 8
+    const tuyo = st.equipos[st.clubId];
+    if (tuyo && ids.indexOf(st.clubId) < 0) while (tuyo.plantilla.length < 8) {
+      let c = mejorLibre(st, st.clubId, 0);
+      if (!c) { const p = nuevoLibre(st, GM.rng.int(48, 58), GM.rng.int(21, 32)); c = { p, ask: Math.max(MINSAL[ligaDe(st, st.clubId)], 100000) }; }
+      ficha(st, c.p, st.clubId, c.ask, 1);
+      GM.noticia(st, 'Con la plantilla bajo mínimos, la directiva firma a ' + c.p.nombre + ' por un año.');
+    }
     if (mes >= 7 && mes <= 9) {
       for (let k = 0; k < 6; k++) {
         const id = GM.rng.pick(ids), eq = st.equipos[id];
@@ -243,10 +251,11 @@
   function claseDraft(st) {
     const y = yearOf(st) + 1, pros = [];
     const paises = ['US', 'US', 'US', 'US', 'US', 'FR', 'ES', 'RS', 'GR', 'LT', 'DE', 'IT', 'TR', 'IL', 'GEN'];
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 72; i++) { // 72 candidatos para 60 puestos: quien no tiene nivel se queda sin elegir
       const h = U.hash('dr' + y + i), pos = POS[h % 5], pa = paises[h % paises.length];
-      const q = 1 - i / 60;
-      const ovr = Math.round(46 + q * 18 + (h % 5) - 2), pot = Math.round(Math.min(94, ovr + 6 + q * 22 + (h >>> 3) % 7));
+      const q = 1 - i / 72;
+      // Los primeros puestos pueden traer una promesa generacional (techo de 96 o 97); los demás, como mucho 94
+      const gen = i < 2 && h % 3 === 0, ovr = Math.round(51 + q * 14 + (h % 5) - 2 + (gen ? 3 : 0)), pot = Math.round(Math.min(gen ? 97 : 94, ovr + 12 + q * 16 + (h >>> 3) % 7 + (gen ? 4 : 0)));
       const p = GM.mkJugador('dr' + y, i + 1, GM.nombreAleatorio(pa, h), pos, 19 + (h >>> 5) % 4, GM.alturaPos(pos, h), pa === 'GEN' ? 'PL' : pa, GM.pasaporte(pa === 'GEN' ? 'PL' : pa), ovr, pot, ['T', 'P', 'D', 'R', 'E'][(h >>> 7) % 5], 0, 0);
       p.ficticio = true; pros.push(p);
     }

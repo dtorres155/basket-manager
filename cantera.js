@@ -90,18 +90,37 @@
     if (U.weekday(st.fecha) === 1) progresionDiaria(st);
   });
 
+  // Potencial dinámico de todos los jugadores hasta los 24 años: depende de los minutos que reciben (decisión del entrenador
+  // o del club), del nivel de desarrollo del club (instalaciones del tuyo, reputación del resto) y de un talento tardío oculto
+  // (algunos jugadores, también de segunda ronda, explotan si juegan). Se aplica antes de cumplir años.
+  function potAnual(st, p) {
+    if (p.esYo || p.edad > 24 || !p.equipoId || !st.equipos[p.equipoId]) return;
+    if (!st.estadisticas) return;                                       // sin estadísticas (pruebas): neutral
+    const s = st.estadisticas[p.id], mpg = s && s.pj ? s.min / s.pj : 0, eq = st.equipos[p.equipoId];
+    let d = mpg >= 26 ? 1.6 : mpg >= 18 ? 0.9 : mpg >= 10 ? 0.2 : s && s.pj >= 10 ? -0.6 : -1.4;
+    d += p.equipoId === st.clubId ? (eff(st, p.equipoId).entrenamiento - 1) * 12 : (eq.reputacion - 60) / 40;
+    const chispa = (U.hash('chispa' + p.id) % 1000) / 1000;
+    if (chispa > 0.92 && mpg >= 14) d += 2 + (chispa - 0.92) * 40;      // talento tardío: hasta +5 al año si juega
+    else if (chispa < 0.12) d -= 1;                                      // se estanca antes de lo previsto
+    d += GM.rng.next() * 1.4 - 0.7;
+    p.pot = U.clamp(p.pot + Math.round(U.clamp(d, -4, 6)), p.ovr, 99);
+  }
   function progresionAnual(st) {
     for (const id in st.jugadores) {
       const p = st.jugadores[id];
       if (p.prospecto) continue;
+      potAnual(st, p);
       p.edad++;
       let d;
       if (p.edad <= 21) d = GM.rng.int(1, 4); else if (p.edad <= 24) d = GM.rng.int(0, 3);
       else if (p.edad <= 28) d = GM.rng.int(-1, 1); else if (p.edad <= 31) d = GM.rng.int(-2, 0); else d = GM.rng.int(-4, -1);
+      // Los jóvenes crecen según su margen: un 68 con 94 de techo puede ser estrella a los 22-23
+      if (!p.esYo && p.edad <= 26 && p.pot - p.ovr > 4) d = Math.max(d, Math.round((p.pot - p.ovr) * (p.edad <= 21 ? 0.3 : p.edad <= 24 ? 0.24 : 0.18) + GM.rng.int(-1, 1)));
+      // Tu jugador: lo que sube depende de cómo has llevado la temporada (carrera.js, progresoAnual)
+      if (p.esYo && GM.mods.carrera && GM.mods.carrera.progresoAnual) d = GM.mods.carrera.progresoAnual(st, p);
       if (d > 0) d = Math.min(d, Math.max(0, p.pot - p.ovr + (p.edad >= 25 ? 1 : 0)));
-      if (p.esYo) d = p.edad <= 18 ? Math.min(4, d + 1) : Math.min(3, d);
       p.ovr = U.clamp(p.ovr + d, p.esYo ? 35 : 40, 99);
-      if (p.edad >= 25) p.pot = Math.max(p.ovr, p.pot - 1);
+      if (p.edad >= (p.esYo ? 28 : 25)) p.pot = Math.max(p.ovr, p.pot - 1);
       Object.keys(p.att).forEach(k => { p.att[k] = U.clamp(p.att[k] + d + GM.rng.int(-1, 1), 20, 99); });
       p.xp = 0;
     }
@@ -130,5 +149,5 @@
     const jovenes = st.equipos.a.plantilla.map(i => st.jugadores[i]).filter(p => p.edad <= 25);
     return grupo(p => p.edad <= 25) >= y0 - 1 && grupo(p => p.edad >= 36) <= o0 + 1 && st.cantera.a.juveniles.length === 6 && jovenes.length > 0;
   }
-  GM.register('cantera', { generarJuveniles, ojear, ficharJuvenil, subirAlPrimerEquipo, soltarJuvenil, fijarFoco, progresionDiaria, progresionAnual, nuevaPartida, selfTest, FOCOS, ZONAS });
+  GM.register('cantera', { generarJuveniles, ojear, ficharJuvenil, subirAlPrimerEquipo, soltarJuvenil, fijarFoco, progresionDiaria, progresionAnual, potAnual, nuevaPartida, selfTest, FOCOS, ZONAS });
 })();

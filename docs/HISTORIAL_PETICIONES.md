@@ -14,6 +14,7 @@
 12. Pregunta final: ¿hay una herramienta de Claude con más movilidad (menos cuadrícula) y más resolución? Respuesta: Claude Code. Este paquete es el traspaso.
 
 13. **Claude Code (oct 2026):** fases 0 y 1 (PWA publicada en GitHub Pages), potencial dinámico, motor Three.js 0.186, pueblo de colina amurallado con estilo regional. Después: que el juego sea como **Big Ambitions** (moverse por el mundo en vez de solo menús), primero en PC y más adelante como app (APK). Se valoró Godot 4; por ahora se sigue con Three.js y se empieza por la sede del club explorable.
+14. **Potencial coherente y draft (oct 2026):** que el jugador pueda llegar a ser el mejor del juego con las decisiones correctas (y que en presidente o entrenador cada jugador dependa de las decisiones que se tomen con él); que un joven reciba un aviso para presentarse al draft con una proyección lógica: lotería o top 3 (un futuro Luka o Wemby), segunda ronda que acabe siendo un Jokic, o sin nivel para ser elegido.
 
 ## Preferencias del usuario
 Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.

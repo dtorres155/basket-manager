@@ -57,10 +57,10 @@ ok('tratamiento intensivo acorta la baja', () => { const A = GM.mods.sedeAccione
 // ---- Casa ----
 ok('casa: muebles iniciales y confort', () => { const d = GM.casa.datos(st); assert.ok(d.muebles.length >= 4); assert.ok(GM.casa.confort(st) > 0); assert.ok(GM.casa.CATALOGO.every(c => c[2] > 0)); });
 // ---- Carrera: potencial dinámico acotado ----
-ok('potencial dinámico entre ±8', () => {
+ok('potencial dinámico entre ±15', () => {
   GM.rng.seed(3); const sc = GM.newGame('joventut-badalona', 3, { modo: 'carrera', personaje: { nombre: 'Marc', apellido: 'Soler' }, carrera: { origen: 'cantera', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
-  const K = GM.mods.carrera, p0 = sc.jugadores.yo.pot; for (let i = 0; i < 40; i++) K.ajustarPot(sc, 1, 'prueba'); assert.strictEqual(sc.jugadores.yo.pot, p0 + 8);
-  for (let i = 0; i < 80; i++) K.ajustarPot(sc, -1, 'prueba'); assert.ok(sc.jugadores.yo.pot >= p0 - 8 && sc.jugadores.yo.pot >= sc.jugadores.yo.ovr);
+  const K = GM.mods.carrera, p0 = sc.jugadores.yo.pot; for (let i = 0; i < 40; i++) K.ajustarPot(sc, 1, 'prueba'); assert.strictEqual(sc.jugadores.yo.pot, Math.min(99, p0 + K.POT_MAX));
+  for (let i = 0; i < 80; i++) K.ajustarPot(sc, -1, 'prueba'); assert.ok(sc.jugadores.yo.pot >= p0 - K.POT_MAX && sc.jugadores.yo.pot >= sc.jugadores.yo.ovr);
   assert.strictEqual(sc.carrera.dinero, 4, 'ahorros iniciales de cantera');
 });
 console.log('aserciones', n, 'de', n);

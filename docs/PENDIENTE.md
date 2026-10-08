@@ -38,7 +38,9 @@
 - Reputación del jugador (`carrera.js`), progresión, finanzas de los clubes (resultado/presupuesto), efectos de muebles, sueldo y ahorros en los modos no jugador (hoy son estimaciones).
 - Comprobar que llegar a la NBA lleve el tiempo esperado en distintos orígenes.
 - Revisar si algún efecto antiguo sigue dando mucha fama de golpe.
-- **Progresión todavía rápida con entrenamiento intenso:** en `tools/sim_potencial.js`, el perfil disciplinado de cantera pasa de 61 a 77 entre los 19 y los 22 años (el diseño pide 73 a los 23). Ya se limitó la experiencia de la vida social (tope semanal en `social.js`, antes «pedir consejo» al mentor daba más nivel que entrenar). Falta revisar la intensidad (x1,5) y el crecimiento por edad.
+- ~~Progresión del jugador~~: rehecha. El margen del potencial es de ±15 (máximo 99) y lo que subes cada verano depende de la calidad de tu temporada (intensidad, constancia, ánimo, minutos, mentor; `progresoAnual` en carrera.js). En `node tools/sim_potencial.js 9`: perfil perfecto 97-99 a los 25-27 (europa, 89), normal 79-90, juerguista 74-83.
+- Potencial dinámico de todos los jugadores hasta los 24 años (`potAnual` en cantera.js): minutos por partido, instalaciones o reputación del club y un «talento tardío» oculto (8 %) que puede convertir a un segunda ronda en estrella si juega. Los jóvenes de la IA crecen según su margen: los primeros del draft rondan 87-90 a los 25. Seis temporadas simuladas: el top 10 de la liga se mantiene en 90-91.
+- Draft: elegible de 19 a 22 años desde la universidad o desde Europa; aviso el 15 de abril con la proyección (top 3, lotería, primera, segunda o sin elegir). Si no te eligen desde Europa, sigues en tu club. Falta: que te elijan y te dejen en Europa un año («stash»), y entrevistas o pruebas previas al draft.
 
 ## P2 — Funcionalidad que se pidió y no está completa
 - Etapa universitaria sin partidos jugados (se resume por curso).

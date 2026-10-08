@@ -92,6 +92,13 @@
       return;
     }
     if (c.fase === 'retirado') { el.append(aviso('Te has retirado.', 'med')); return; }
+    if (K.elegibleDraft(st)) {
+      const mk = K.mock(st);
+      el.append(seccion('El draft de la NBA', h('div', { class: 'tarjeta' },
+        h('p', null, 'Con ' + p.edad + ' años puedes presentarte al draft desde Europa. Si no te eligen, sigues en tu club y podrás intentarlo hasta los 22.'),
+        h('div', { class: 'chips' }, chip('Proyección: ' + mk.proyeccion, mk.pick <= 30 ? 'ok' : ''), mk.pick <= 60 ? chip('Puesto ' + mk.pick) : null),
+        h('button', { class: 'btn' + (c.declarado ? '' : ' btn-sec'), onclick: () => { K.declararse(st); refrescar(); } }, c.declarado ? 'Te presentas al draft (tocar para retirarte)' : 'Presentarme al draft'))));
+    }
     { const SP = M().sponsor, cats = SP.categorias(st), tot = SP.activos(st).reduce((a, s) => a + s.importe, 0);
       el.append(seccion('Patrocinadores personales', h('p', { class: 'muted' }, 'Marcas que te patrocinan a ti. Cada categoría ofrece tres alternativas incompatibles. Ingresos actuales: ' + Math.round(tot).toLocaleString('es-ES') + ' mil € al año.'),
         cats.map(k => h('div', { class: 'tarjeta' }, h('div', { class: 'fila' }, h('b', null, k.nombre), k.activo ? chip('Activo', 'ok') : k.bloqueo && !k.ofertas.length ? chip('Bloqueado') : chip('Libre')),

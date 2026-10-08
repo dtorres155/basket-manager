@@ -90,9 +90,10 @@
 
   // ---------- Entrenamiento y vida diaria ----------
   // ---------- Potencial dinámico ----------
-  // Lo que haces mueve tu techo como mucho ±8 sobre el de partida, hasta los 27 años. Los cambios se acumulan en fracciones
+  // Lo que haces mueve tu techo hasta ±15 sobre el de partida (con 99 como máximo), hasta los 27 años: con las decisiones
+  // correctas cualquier origen puede acabar siendo el mejor jugador del juego, y con las malas te quedas muy por debajo. Los cambios se acumulan en fracciones
   // (c.potencial.resto) y el potencial sube o baja de punto en punto. El mes se resume en c.potencial.historial con sus motivos.
-  const POT_MAX = 8, POT_EDAD = 27;
+  const POT_MAX = 15, POT_EDAD = 27;
   function potEstado(st) { const c = C(st); if (!c.potencial) c.potencial = { ajuste: 0, resto: 0, mes: {}, historial: [] }; return c.potencial; }
   function ajustarPot(st, delta, motivo) {
     const c = C(st), p = YO(st); if (!p || !delta || c.fase === 'retirado' || p.edad > POT_EDAD) return 0;
@@ -106,25 +107,45 @@
   }
   function potSemana(st) {
     const c = C(st), p = YO(st), P = potEstado(st), e = c.entreno, joven = p.edad <= 23;
-    if (e.intensidad === 'intensa' && !p.estado.lesion) ajustarPot(st, 0.005, 'Entrenas a tope');
-    if (e.intensidad === 'suave' && joven) ajustarPot(st, -0.006, 'Entrenas con el freno puesto');
+    if (e.intensidad === 'intensa' && !p.estado.lesion) ajustarPot(st, 0.01, 'Entrenas a tope');
+    if (e.intensidad === 'suave' && joven) ajustarPot(st, -0.012, 'Entrenas con el freno puesto');
     P.foco = P.foco === e.foco ? P.foco : (P.semanas = 0, e.foco); P.semanas = (P.semanas || 0) + 1;
-    if (P.semanas >= 4) ajustarPot(st, 0.003, 'Constancia en el entrenamiento');
-    if (c.moral >= 70) ajustarPot(st, 0.002, 'Buen ánimo');
+    if (P.semanas >= 4) ajustarPot(st, 0.006, 'Constancia en el entrenamiento');
+    if (c.moral >= 70) ajustarPot(st, 0.004, 'Buen ánimo');
     else if (c.moral < 30) ajustarPot(st, -0.006, 'Ánimo por los suelos');
     if (p.estado.fatiga > 85) ajustarPot(st, -0.005, 'Juegas reventado de cansancio');
     const men = c.social && c.social.contactos && c.social.contactos.find(k => k.tipo === 'mentor');
-    if (men && men.rel >= 70) ajustarPot(st, 0.004, 'Lo que aprendes de tu mentor');
+    if (men && men.rel >= 70) ajustarPot(st, 0.008, 'Lo que aprendes de tu mentor');
+    // Calidad de la temporada (0 a 1): decide cuánto subes de nivel al acabarla (progresoAnual)
+    const r = rol(st);
+    let q = { intensa: 0.3, normal: 0.2, suave: 0.05 }[e.intensidad] || 0.2;
+    if (P.semanas >= 4) q += 0.1;
+    q += U.clamp((c.moral - 30) / 50, 0, 1) * 0.2;
+    q += c.fase === 'ncaa' ? 0.22 : r === 'Titular' ? 0.3 : r === 'Rotación' ? 0.2 : r === 'Banquillo' ? 0.08 : 0;
+    if (men && men.rel >= 70) q += 0.1;
+    if (p.estado.fatiga > 85 || p.estado.lesion) q -= 0.15;
+    const T = c.temp || (c.temp = { q: 0, n: 0 }); T.q += U.clamp(q, 0, 1); T.n++;
+  }
+  // Nivel que ganas (o pierdes) al acabar la temporada; p.edad ya es la nueva. cantera.js lo limita por tu potencial.
+  function progresoAnual(st, p) {
+    const c = C(st); if (!c) return 0;
+    const T = c.temp || { q: 0, n: 0 }, q = T.n ? T.q / T.n : 0.5; c.temp = { q: 0, n: 0 }; c.calidad = Math.round(q * 100);
+    const base = p.edad <= 18 ? 4 : p.edad <= 21 ? 3.5 : p.edad <= 24 ? 2.5 : p.edad <= 27 ? 1 : p.edad <= 30 ? 0 : p.edad <= 33 ? -1.5 : -3;
+    const d = base >= 0 ? base * (0.2 + 1.3 * q) : base * (1.5 - q);   // temporada perfecta x1,5; desastrosa x0,2
+    return Math.round(d + GM.rng.next() - 0.5);
   }
   function potMes(st) {
     const c = C(st), p = YO(st), P = potEstado(st);
     if (p.edad <= 22) {
       const r = rol(st);
       if (c.fase === 'ncaa') ajustarPot(st, c.etapa === 'cantera' ? 0.015 : 0.025, c.etapa === 'cantera' ? 'Juegas en tu categoría' : 'Minutos en la universidad');
-      else if (r === 'Titular') ajustarPot(st, 0.04, 'Minutos de titular siendo joven');
-      else if (r === 'Rotación') ajustarPot(st, 0.02, 'Minutos en la rotación');
-      else if (r === 'Banquillo') ajustarPot(st, -0.02, 'Pocos minutos');
-      else if (r) ajustarPot(st, -0.04, 'Sin jugar');
+      else if (r === 'Titular') ajustarPot(st, 0.08, 'Minutos de titular siendo joven');
+      else if (r === 'Rotación') ajustarPot(st, 0.04, 'Minutos en la rotación');
+      else if (r === 'Banquillo') ajustarPot(st, -0.03, 'Pocos minutos');
+      else if (r) ajustarPot(st, -0.06, 'Sin jugar');
+      const s = stats(st), lg = liga(st);
+      if (r === 'Titular' && (lg === 'NBA' || lg === 'EUROLIGA')) ajustarPot(st, 0.03, 'Titular joven en la élite');
+      if (s.pj >= 5 && s.pts >= 15) ajustarPot(st, 0.03, 'Rindes como una estrella');
     }
     const ks = Object.keys(P.mes), tot = ks.reduce((s, k) => s + P.mes[k], 0);
     if (ks.length) {
@@ -153,7 +174,7 @@
     if (c.entreno.intensidad === 'intensa' && !p.estado.lesion && GM.rng.next() < (c.prevencion ? 0.004 : 0.012)) { p.estado.lesion = { tipo: 'Sobrecarga', dias: GM.rng.int(10, 24) }; GM.noticia(st, 'Te lesionas por sobrecarga: ' + p.estado.lesion.dias + ' días de baja.'); }
   }
   function declararse(st) {
-    const c = C(st); if (c.fase !== 'ncaa' || c.etapa === 'cantera') return { ok: false, motivo: 'Solo puedes declararte desde la universidad.' };
+    const c = C(st); if (!elegibleDraft(st)) return { ok: false, motivo: 'Puedes presentarte al draft con 19 a 22 años, desde la universidad o desde un club europeo.' };
     c.declarado = !c.declarado; c.hitos.unshift({ fecha: st.fecha, texto: c.declarado ? 'Te declaras elegible para el draft de la NBA.' : 'Decides seguir otro año en la universidad.' });
     return { ok: true, declarado: c.declarado };
   }
@@ -171,6 +192,7 @@
       entrenar(st);
       if (c.pend.length < 2 && U.diffDays(c.ultimoEvento, st.fecha) >= 10 && GM.rng.next() < 0.22) nuevoEvento(st);
     }
+    if (st.fecha.slice(5) === '04-15') avisoDraft(st);
     if (st.fecha.slice(8) === '01') {
       potMes(st);
       if (p.contrato && p.contrato.salario) c.dinero += Math.round(p.contrato.salario * 0.58 / 12 / 1000);
@@ -186,23 +208,43 @@
   function mock(st) {
     const p = YO(st), clase = M().claseDraft(st), sc = x => x.pot * 0.6 + x.ovr * 0.4, mio = sc(p);
     const mejores = clase.filter(x => sc(x) > mio).length;
-    return { pick: Math.min(61, mejores + 1), top: clase.slice(0, 8).map(x => ({ nombre: x.nombre, ovr: x.ovr, pot: x.pot, pos: x.pos })), proyeccion: mejores < 14 ? 'Primera ronda alta' : mejores < 30 ? 'Primera ronda' : mejores < 60 ? 'Segunda ronda' : 'Sin elegir' };
+    return { pick: Math.min(61, mejores + 1), top: clase.slice(0, 8).map(x => ({ nombre: x.nombre, ovr: x.ovr, pot: x.pot, pos: x.pos })), proyeccion: mejores < 3 ? 'Top 3: la gran promesa del draft' : mejores < 14 ? 'Lotería' : mejores < 30 ? 'Primera ronda' : mejores < 60 ? 'Segunda ronda' : 'Sin elegir: aún no tienes nivel' };
+  }
+  // Elegible con 19 a 22 años desde la universidad o desde un club europeo (no desde la NBA ni desde cadete o junior).
+  // El 15 de abril llega el aviso con la proyección y decides si te presentas (evento 'draft').
+  function elegibleDraft(st) {
+    const c = C(st), p = YO(st); if (!c || !p || c.fase === 'retirado' || c.draftPick || p.edad < 19 || p.edad > 22) return false;
+    if (c.fase === 'ncaa') return c.etapa !== 'cantera';
+    return c.fase === 'pro' && !!p.equipoId && liga(st) !== 'NBA';
+  }
+  function avisoDraft(st) {
+    const c = C(st); if (!elegibleDraft(st) || c.declarado || c.pend.some(x => x.id === 'draft') || (c.fase === 'ncaa' && c.curso >= 3)) return;
+    c.pend.unshift({ id: 'draft', fecha: st.fecha });
+    const mk = mock(st);
+    GM.noticia(st, 'Se abre el plazo del draft de la NBA. Tu proyección: ' + mk.proyeccion.toLowerCase() + (mk.pick <= 60 ? ' (puesto ' + mk.pick + ')' : '') + '. ¿Te presentas?');
   }
   function preDraft(st) {
     if (st.modo !== 'carrera' || !st.carrera) return null;
-    const c = C(st); if (c.fase !== 'ncaa' || c.etapa === 'cantera') return null;
-    c._fueNcaa = true;
-    if (c.declarado || c.curso >= 3) { c._enDraft = true; return YO(st); }
+    const c = C(st); c.pend = c.pend.filter(x => x.id !== 'draft');
+    if (!elegibleDraft(st)) { c.declarado = false; return null; }
+    if (c.fase === 'ncaa') c._fueNcaa = true;
+    if (c.declarado || (c.fase === 'ncaa' && c.curso >= 3)) { c._enDraft = true; c._clubAntes = c.fase === 'pro' ? YO(st).equipoId : null; return YO(st); }
     return null;
   }
   function postDraft(st, picks) {
     const c = st.carrera; if (!c || !c._enDraft) return;
     c._enDraft = false;
-    const k = picks.find(x => x.jugadorId === 'yo'), p = YO(st);
+    const k = picks.find(x => x.jugadorId === 'yo'), p = YO(st), antes = c._clubAntes; c._clubAntes = null;
+    if (k && antes && st.equipos[antes]) st.equipos[antes].plantilla = st.equipos[antes].plantilla.filter(i => i !== 'yo');
+    if (!k && antes) {
+      c.declarado = false; p.equipoId = antes;
+      c.hitos.unshift({ fecha: st.fecha, texto: 'No te eligen en el draft. Sigues en ' + st.equipos[antes].nombre + ' y podrás intentarlo otra vez.' });
+      GM.noticia(st, p.nombre + ' no es elegido en el draft de la NBA y sigue en ' + st.equipos[antes].nombre + '.'); return;
+    }
     if (k) {
       c.fase = 'pro'; c.fichado = k.equipoId; st.clubId = k.equipoId; c.declarado = false; st.equipos[k.equipoId].tactica = null;
       c.hitos.unshift({ fecha: st.fecha, texto: 'Eliges en el draft de la NBA: nº ' + k.n + ' para ' + st.equipos[k.equipoId].nombre + '.' });
-      c.draftPick = k.n; c.fama = Math.min(100, c.fama + (k.n <= 14 ? 25 : 12));
+      c.draftPick = k.n; c.fama = Math.min(100, c.fama + (k.n <= 3 ? 32 : k.n <= 14 ? 25 : k.n <= 30 ? 16 : 10));
       GM.noticia(st, '¡Draft de la NBA! ' + p.nombre + ' es elegido en el puesto ' + k.n + ' por ' + st.equipos[k.equipoId].nombre + '.');
     } else {
       c.fase = 'libre'; c.declarado = false; p.equipoId = null; p.libre = true; p.contrato = { salario: 0, hasta: 0 };
@@ -435,6 +477,8 @@
 
   // ---------- Eventos personales ----------
   const EVENTOS = [
+    { id: 'draft', t: 'El draft de la NBA', q: 'Tu representante', d: 'Se abre el plazo para presentarse al draft.', ops: [
+      { t: 'Presentarme al draft', d: 'Si te eligen, das el salto a la NBA. Si no, sigues donde estás.', ef: { draft: true } }, { t: 'Esperar un año', d: 'Sigues creciendo y lo intentas más adelante.', ef: { draft: false } }] },
     { id: 'zapatillas', t: 'Contrato de zapatillas', q: 'Tu representante', d: 'Tres marcas quieren que lleves sus zapatillas esta temporada.', ops: [
       { t: 'Marca global', d: 'Mucho dinero y proyección.', ef: { dinero: 90, fama: 3, moral: -2 } }, { t: 'Marca local', d: 'Menos dinero, más cercanía.', ef: { dinero: 35, fama: 1, moral: 4 } }, { t: 'Las que yo quiera', d: 'Libertad total.', ef: { moral: 5 } }] },
     { id: 'redes', t: 'Polémica en redes', q: 'Departamento de comunicación', d: 'Un comentario tuyo se ha sacado de contexto y la afición discute.', ops: [
@@ -455,12 +499,12 @@
       { t: 'Comprarlo', d: 'Una inversión grande.', ef: { dinero: -120, moral: 6 } }, { t: 'Alquilar', d: 'Más flexible.', ef: { dinero: -20, moral: 2 } }] }
   ];
   function nuevoEvento(st) {
-    const c = C(st), usados = new Set(c.res.slice(-4).map(r => r.id)), lista = EVENTOS.filter(e => !usados.has(e.id) && !c.pend.some(p => p.id === e.id));
+    const c = C(st), usados = new Set(c.res.slice(-4).map(r => r.id)), lista = EVENTOS.filter(e => e.id !== 'draft' && !usados.has(e.id) && !c.pend.some(p => p.id === e.id));
     if (!lista.length) return;
     const e = GM.rng.pick(lista); c.pend.push({ id: e.id, fecha: st.fecha }); c.ultimoEvento = st.fecha;
     GM.noticia(st, 'Tienes una decisión personal: ' + e.t + '.');
   }
-  function eventos(st) { return C(st).pend.map(p => { const e = EVENTOS.find(x => x.id === p.id); return { id: e.id, titulo: e.t, quien: e.q, texto: e.d, opciones: e.ops.map((o, i) => ({ i, t: o.t, d: o.d })) }; }); }
+  function eventos(st) { return C(st).pend.map(p => { const e = EVENTOS.find(x => x.id === p.id), mk = e.id === 'draft' ? mock(st) : null; return { id: e.id, titulo: e.t, quien: e.q, texto: mk ? 'Se abre el plazo del draft. Las previsiones te sitúan en: ' + mk.proyeccion.toLowerCase() + (mk.pick <= 60 ? ' (puesto ' + mk.pick + ' de 60)' : '') + '. Tienes ' + YO(st).ovr + ' de nivel y ' + YO(st).pot + ' de potencial.' : e.d, opciones: e.ops.map((o, i) => ({ i, t: o.t, d: o.d })) }; }); }
   function elegirEvento(st, id, i) {
     const c = C(st), p = YO(st), idx = c.pend.findIndex(x => x.id === id), e = EVENTOS.find(x => x.id === id);
     if (idx < 0 || !e || !e.ops[i]) return { ok: false, motivo: 'Decisión no disponible.' };
@@ -472,6 +516,7 @@
     if (ef.foco) { c.entreno.foco = ef.foco; out.push('entrenas ' + ef.foco); }
     if (ef.agente) { c.agente.perfil = ef.agente; out.push('nuevo representante'); }
     if (ef.prevencion) c.prevencion = true;
+    if (ef.draft !== undefined) { c.declarado = ef.draft; c.hitos.unshift({ fecha: st.fecha, texto: ef.draft ? 'Te presentas al draft de la NBA.' : 'Decides esperar un año para el draft.' }); out.push(ef.draft ? 'te presentas al draft' : 'esperas un año'); }
     c.pend.splice(idx, 1); c.res.push({ id, i, fecha: st.fecha }); if (c.res.length > 40) c.res.shift();
     return { ok: true, efectos: out };
   }
@@ -480,5 +525,5 @@
     return a && FOCOS.tiro.length === 3 && TIPOS_VIV.atico.base > TIPOS_VIV.piso.base;
   }
   GM.bus.on('partida:cargada', function () { const st = GM.state; if (st && st.modo === 'carrera' && st.carrera) { instalaFama(st.carrera); if (!st.carrera.clubes) st.carrera.clubes = {}; actualizaTier(st); } });
-  GM.register('carrera', { ajustarPot, potEstado, POT_MAX, gradoFama, estatusClub, impacto, GRADOS, ESTATUS, instalaFama, invitarEquipo, TIPOS_VIV, COCHES, barriosVivienda, precioVivienda, comprarVivienda, gestionarPropiedad, comprarCoche, crearFundacion, fijarAporte, estado, stats, rol, liga, retrato, entrenar, declararse, mock, preDraft, postDraft, preCierre, generarOfertas, aceptar, cerrar, retirarse, eventos, elegirEvento, nuevaPartida, selfTest, AGENTES, ORIGENES, NOMLIGA, NIVEL, MIN, FOCOS, INTENS });
+  GM.register('carrera', { progresoAnual, elegibleDraft, avisoDraft, ajustarPot, potEstado, POT_MAX, gradoFama, estatusClub, impacto, GRADOS, ESTATUS, instalaFama, invitarEquipo, TIPOS_VIV, COCHES, barriosVivienda, precioVivienda, comprarVivienda, gestionarPropiedad, comprarCoche, crearFundacion, fijarAporte, estado, stats, rol, liga, retrato, entrenar, declararse, mock, preDraft, postDraft, preCierre, generarOfertas, aceptar, cerrar, retirarse, eventos, elegirEvento, nuevaPartida, selfTest, AGENTES, ORIGENES, NOMLIGA, NIVEL, MIN, FOCOS, INTENS });
 })();
