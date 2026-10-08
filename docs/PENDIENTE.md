@@ -24,6 +24,12 @@
 - Adaptar todo el mundo explorable al móvil (controles táctiles, tamaños de paneles); hasta ahora se ha afinado en PC.
 - Decisión abierta: si Three.js se queda corto, pasar a Godot 4 (APK) reutilizando modelos y diseño.
 
+## Ideas del usuario (octubre de 2026)
+- **Creación del personaje más completa:** hoy hay piel (5), peinado (6), color de pelo (6), barba (4), gafas (3) y ropa (4), pero el modelo 3D solo usa la piel y el color de pelo. Añadir altura y complexión, cara, peinados y barba en el modelo 3D, tatuajes, accesorios (cinta, muñequeras, zapatillas), dorsal y estilo de ropa fuera de la pista.
+- **Pueblo explorable:** pasear por el pueblo de colina (estilo Monteriggioni) con el motor del mundo (como la sede y la calle), y no solo verlo desde arriba.
+- **Obras con tiempo:** hoy invertir en el pueblo es instantáneo. Que cada obra dure semanas o meses, con fases visibles (solar, cimientos, estructura, andamios, acabado), obreros trabajando y una evolución progresiva del pueblo.
+- **Más que negocios:** además de bar, tienda u hotel, construir instalaciones públicas (plaza, parque, escuela, biblioteca, centro de día, carretera, iluminación), casas para tus padres y amigos, y que los vecinos reaccionen a lo que haces.
+
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
 - ~~PWA con modo sin conexión~~: hecho en la fase 1.2 (manifiesto, iconos, service worker con caché versionada y aviso de nueva versión). Publicada por HTTPS (1.5) en https://dtorres155.github.io/basket-manager/ (GitHub Actions publica dist/ en cada push a main).
