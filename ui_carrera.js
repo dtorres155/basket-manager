@@ -122,7 +122,16 @@
     const nivelAct = c.fase === 'ncaa' ? 0 : lg ? (lg === 'NBA' ? 3 : lg === 'EUROLIGA' ? 2 : 1) : 0;
     const PELD = [['Cantera o universidad', 'Aprendes el oficio'], ['Liga Endesa o Lega', 'Primeros minutos como profesional'], ['Euroliga', 'La élite europea'], ['NBA', 'El sueño']];
     el.append(seccion(c.fase === 'retirado' ? 'Salón de la fama' : 'El camino', h('div', { class: 'tarjeta' }, h('div', { class: 'escalera' }, PELD.map((d, i) => h('div', { class: 'peldano' + (i === nivelAct ? ' act' : i < nivelAct ? ' sup' : '') }, h('b', null, d[0]), h('span', { class: 'muted' }, d[1]))).reverse()),
-      c.fase === 'retirado' ? h('p', null, 'Te retiraste con ' + c.retiro.edad + ' años y un nivel ' + c.retiro.ovr + '. Fama final: ' + Math.round(c.fama) + '. Títulos: ' + c.historial.filter(x => x.titulo).length + '.') : h('p', { class: 'muted' }, 'Para jugar en la NBA suele hacer falta un nivel de ' + K.MIN.NBA + ' o más, o un potencial muy alto siendo joven. En la Euroliga, ' + K.MIN.EUROLIGA + '.'))));
+      c.fase === 'retirado' ? h('p', null, 'Te retiraste con ' + c.retiro.edad + ' años y un nivel ' + c.retiro.ovr + '.') : h('p', { class: 'muted' }, 'Para jugar en la NBA suele hacer falta un nivel de ' + K.MIN.NBA + ' o más, o un potencial muy alto siendo joven. En la Euroliga, ' + K.MIN.EUROLIGA + '.'))));
+    if (c.fase === 'retirado') { // salón de la fama: el resumen de tu carrera
+      const lg = K.legado(st), fila = (k, v) => h('div', { class: 'fila' }, h('span', { class: 'muted' }, k), h('b', null, v));
+      el.append(seccion('Tu legado', h('div', { class: 'tarjeta' },
+        h('h3', null, lg.veredicto), h('div', { class: 'chips' }, chip(lg.grado, lg.salon ? 'ok' : ''), chip('Fama ' + lg.fama), lg.mejorDelJuego ? chip('Llegaste a ser el mejor del juego', 'ok') : null),
+        fila('Nivel máximo', lg.pico), fila('Temporadas como profesional', lg.temporadas + (lg.temporadasNBA ? ', ' + lg.temporadasNBA + ' en la NBA' : '')),
+        fila('Partidos y puntos', lg.pj + ' partidos, ' + lg.puntosTotales.toLocaleString('es-ES') + ' puntos'), fila('Medias', lg.pts + ' pts, ' + lg.reb + ' reb, ' + lg.ast + ' ast'),
+        lg.draft ? fila('Draft de la NBA', 'número ' + lg.draft) : null, lg.mejorPartido ? fila('Mejor partido', lg.mejorPartido.pts + ' puntos') : null,
+        fila('Clubes', lg.clubes.length ? lg.clubes.join(', ') : 'ninguno'), fila('Títulos', lg.titulos.length ? lg.titulos.join(', ') : 'ninguno'))));
+    }
     el.append(seccion('Temporadas', c.historial.length ? h('table', { class: 'tabla' }, h('tr', null, h('th', { class: 'iz' }, 'Temp.'), h('th', { class: 'iz' }, 'Club'), h('th', null, 'PJ'), h('th', null, 'Pts'), h('th', null, 'Reb'), h('th', null, 'Ast')),
       c.historial.slice().reverse().map(x => h('tr', null, h('td', { class: 'iz' }, x.temporada.slice(2)), h('td', { class: 'iz' }, (x.titulo ? '🏆 ' : '') + clip(x.club, 16) + ' (' + x.liga + ')'), h('td', null, x.pj), h('td', null, x.pts), h('td', null, x.reb), h('td', null, x.ast)))) : h('p', { class: 'muted' }, 'Aún no has completado ninguna temporada.')));
     el.append(seccion('Hitos', h('div', { class: 'lista' }, c.hitos.slice(0, 12).map(x => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(x.fecha)), h('span', { class: 'ct' }, x.texto))))));

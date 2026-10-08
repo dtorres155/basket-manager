@@ -194,7 +194,7 @@
     }
     if (st.fecha.slice(5) === '04-15') avisoDraft(st);
     if (st.fecha.slice(8) === '01') {
-      potMes(st);
+      potMes(st); c.pico = Math.max(c.pico || 0, p.ovr);
       if (p.contrato && p.contrato.salario) c.dinero += Math.round(p.contrato.salario * 0.58 / 12 / 1000);
       efectosVivienda(st); ingresosVivienda(st);
       const r = rol(st), objetivo = r === 'Titular' ? 75 : r === 'Rotación' ? 60 : r === 'Banquillo' ? 44 : c.fase === 'ncaa' ? 62 : 32;
@@ -205,8 +205,14 @@
   });
 
   // ---------- Draft ----------
+  // Informe de los ojeadores: además de nivel y potencial, miran cómo llevas la temporada (calidad de tus decisiones) y tu fama.
+  // Entre -4 y +6 puntos de valoración: un juerguista cae puestos y uno disciplinado sube.
+  function informeOjeadores(st) {
+    const c = C(st), T = c.temp, q = T && T.n ? T.q / T.n : (c.calidad !== undefined ? c.calidad / 100 : 0.5);
+    return Math.round(((q - 0.5) * 8 + U.clamp((c.fama - 30) * 0.04, -1, 2)) * 10) / 10;
+  }
   function mock(st) {
-    const p = YO(st), clase = M().claseDraft(st), sc = x => x.pot * 0.6 + x.ovr * 0.4, mio = sc(p);
+    const p = YO(st), clase = M().claseDraft(st), sc = x => x.pot * 0.6 + x.ovr * 0.4, mio = sc(p) + informeOjeadores(st);
     const mejores = clase.filter(x => sc(x) > mio).length;
     return { pick: Math.min(61, mejores + 1), top: clase.slice(0, 8).map(x => ({ nombre: x.nombre, ovr: x.ovr, pot: x.pot, pos: x.pos })), proyeccion: mejores < 3 ? 'Top 3: la gran promesa del draft' : mejores < 14 ? 'Lotería' : mejores < 30 ? 'Primera ronda' : mejores < 60 ? 'Segunda ronda' : 'Sin elegir: aún no tienes nivel' };
   }
@@ -228,14 +234,24 @@
     const c = C(st); c.pend = c.pend.filter(x => x.id !== 'draft');
     if (!elegibleDraft(st)) { c.declarado = false; return null; }
     if (c.fase === 'ncaa') c._fueNcaa = true;
-    if (c.declarado || (c.fase === 'ncaa' && c.curso >= 3)) { c._enDraft = true; c._clubAntes = c.fase === 'pro' ? YO(st).equipoId : null; return YO(st); }
+    if (c.declarado || (c.fase === 'ncaa' && c.curso >= 3)) { c._enDraft = true; YO(st).ojeo = informeOjeadores(st); c._clubAntes = c.fase === 'pro' ? YO(st).equipoId : null; c._contratoAntes = Object.assign({}, YO(st).contrato); return YO(st); }
     return null;
   }
   function postDraft(st, picks) {
     const c = st.carrera; if (!c || !c._enDraft) return;
     c._enDraft = false;
     const k = picks.find(x => x.jugadorId === 'yo'), p = YO(st), antes = c._clubAntes; c._clubAntes = null;
-    if (k && antes && st.equipos[antes]) st.equipos[antes].plantilla = st.equipos[antes].plantilla.filter(i => i !== 'yo');
+    if (k && antes && st.equipos[antes]) {
+      // Desde Europa: te eligen, pero puedes quedarte un año más («stash»). Mientras decides, sigues en tu club.
+      const nba = st.equipos[k.equipoId]; nba.plantilla = nba.plantilla.filter(i => i !== 'yo');
+      c.stash = { equipoId: k.equipoId, n: k.n, contrato: p.contrato, temporada: st.temporada };
+      p.equipoId = antes; p.contrato = c._contratoAntes || p.contrato; c.declarado = false; c.draftPick = k.n;
+      c.fama = Math.min(100, c.fama + (k.n <= 3 ? 32 : k.n <= 14 ? 25 : k.n <= 30 ? 16 : 10));
+      c.pend = c.pend.filter(x => x.id !== 'stash'); c.pend.unshift({ id: 'stash', fecha: st.fecha });
+      c.hitos.unshift({ fecha: st.fecha, texto: 'Te elige ' + nba.nombre + ' con el número ' + k.n + ' del draft.' });
+      GM.noticia(st, '¡Draft de la NBA! ' + p.nombre + ' es elegido en el puesto ' + k.n + ' por ' + nba.nombre + '. Puede irse ya o seguir un año en Europa.');
+      return;
+    }
     if (!k && antes) {
       c.declarado = false; p.equipoId = antes;
       c.hitos.unshift({ fecha: st.fecha, texto: 'No te eligen en el draft. Sigues en ' + st.equipos[antes].nombre + ' y podrás intentarlo otra vez.' });
@@ -243,7 +259,7 @@
     }
     if (k) {
       c.fase = 'pro'; c.fichado = k.equipoId; st.clubId = k.equipoId; c.declarado = false; st.equipos[k.equipoId].tactica = null;
-      c.hitos.unshift({ fecha: st.fecha, texto: 'Eliges en el draft de la NBA: nº ' + k.n + ' para ' + st.equipos[k.equipoId].nombre + '.' });
+      c.hitos.unshift({ fecha: st.fecha, texto: 'Te elige ' + st.equipos[k.equipoId].nombre + ' con el número ' + k.n + ' del draft de la NBA.' });
       c.draftPick = k.n; c.fama = Math.min(100, c.fama + (k.n <= 3 ? 32 : k.n <= 14 ? 25 : k.n <= 30 ? 16 : 10));
       GM.noticia(st, '¡Draft de la NBA! ' + p.nombre + ' es elegido en el puesto ' + k.n + ' por ' + st.equipos[k.equipoId].nombre + '.');
     } else {
@@ -251,6 +267,16 @@
       c.hitos.unshift({ fecha: st.fecha, texto: 'No te eligen en el draft. Tocará buscar tu camino en el mercado.' });
       GM.noticia(st, p.nombre + ' no es elegido en el draft de la NBA.');
     }
+  }
+
+  function irNBA(st, eqId, contrato) {
+    const c = C(st), p = YO(st), antes = p.equipoId, nba = st.equipos[eqId];
+    if (antes && st.equipos[antes]) st.equipos[antes].plantilla = st.equipos[antes].plantilla.filter(i => i !== 'yo');
+    if (nba.plantilla.length >= 15) quitarPeor(st, eqId); if (nba.plantilla.indexOf('yo') < 0) nba.plantilla.push('yo');
+    if (!c.clubes) c.clubes = {}; if (antes) ajusteMovimiento(st, antes, eqId);
+    p.equipoId = eqId; p.libre = false; p.contrato = contrato; st.clubId = eqId; c.fase = 'pro'; c.fichado = eqId; nba.tactica = null;
+    c.stash = null; c.derechos = null;
+    c.hitos.unshift({ fecha: st.fecha, texto: 'Das el salto a la NBA con ' + nba.nombre + '.' }); GM.noticia(st, p.nombre + ' se marcha a la NBA: ficha por ' + nba.nombre + '.');
   }
 
   // ---------- Cierre de temporada ----------
@@ -336,6 +362,11 @@
       const tipo = k.lg === 'NBA' ? (p.ovr < 72 ? 'Contrato de dos vías' : 'Contrato NBA') : 'Contrato profesional';
       return { id: 'o' + (++seq), clubId: k.id, liga: k.lg, tipo, rol: k.r, salario: k.lg === 'NBA' && p.ovr < 72 ? 1.2e6 : sal, anos: joven ? GM.rng.int(2, 4) : GM.rng.int(1, 3), nota: k.lg === 'NBA' ? 'Cumples el sueño de llegar a la NBA.' : k.lg === 'EUROLIGA' ? 'Competición de máximo nivel en Europa.' : 'Más minutos para crecer.', impacto: impactoDe(k.id) };
     });
+    // el equipo NBA que tiene tus derechos del draft te llama al verano siguiente
+    if (c.derechos && c.derechos.temporada !== st.temporada && st.equipos[c.derechos.equipoId]) {
+      const d = c.derechos, sal = d.n <= 30 ? Math.round(12e6 * Math.pow(0.93, d.n - 1) / 1e4) * 1e4 : 1.8e6;
+      c.ofertas.unshift({ id: 'o' + (++seq), clubId: d.equipoId, liga: 'NBA', tipo: 'Contrato NBA (tus derechos del draft)', rol: p.ovr >= 76 ? 'Rotación' : 'Banquillo', salario: sal, anos: 3, nota: 'El equipo que te eligió en el draft te quiere ya en la NBA.' });
+    }
     // renovación con el club actual
     if (club && p.contrato.hasta <= y + 1 && p.contrato.hasta > 0) {
       const eq = st.equipos[club], lg = M().ligaDe(st, club), r = rol(st);
@@ -366,7 +397,7 @@
     if (antes !== o.clubId) { if (nuevo.plantilla.length >= 15) quitarPeor(st, o.clubId); if (nuevo.plantilla.indexOf('yo') < 0) nuevo.plantilla.push('yo'); }
     st.mercado.libres = st.mercado.libres.filter(i => i !== 'yo');
     p.equipoId = o.clubId; p.libre = false; p.contrato = { salario: o.salario, hasta: yearOf(st) + o.anos };
-    nuevo.tactica = null; st.clubId = o.clubId; c.fase = 'pro'; c.fichado = o.clubId;
+    nuevo.tactica = null; st.clubId = o.clubId; c.fase = 'pro'; c.fichado = o.clubId; if (o.liga === 'NBA') { c.derechos = null; c.stash = null; }
     c.dinero += Math.round(o.salario * 0.05 / 1000);
     const nueva = o.tipo !== 'Renovación';
     c.hitos.unshift({ fecha: st.fecha, texto: (nueva ? 'Fichas por ' : 'Renuevas con ') + nuevo.nombre + ' (' + NOMLIGA[o.liga] + ').' });
@@ -393,10 +424,24 @@
   function retirarse(st) {
     const c = C(st), p = YO(st); if (c.fase === 'retirado') return { ok: false, motivo: 'Ya estás retirado.' };
     if (p.equipoId) st.equipos[p.equipoId].plantilla = st.equipos[p.equipoId].plantilla.filter(i => i !== 'yo');
-    p.equipoId = null; c.fase = 'retirado'; c.retiro = { temporada: st.temporada, edad: p.edad, ovr: p.ovr }; c.ofertas = [];
+    p.equipoId = null; c.fase = 'retirado'; c.pico = Math.max(c.pico || 0, p.ovr); c.retiro = { temporada: st.temporada, edad: p.edad, ovr: p.ovr, pico: c.pico }; c.ofertas = [];
     c.hitos.unshift({ fecha: st.fecha, texto: 'Te retiras con ' + p.edad + ' años.' });
     GM.noticia(st, p.nombre + ' anuncia su retirada.');
     return { ok: true };
+  }
+
+  // ---------- Salón de la fama ----------
+  // Resumen de la carrera al retirarte: totales, medias, títulos, clubes, pico de nivel y si entras en el salón de la fama.
+  function legado(st) {
+    const c = C(st), p = YO(st), H = c.historial.filter(x => x.liga !== 'NCAA' && !/^(Cadete|Junior|Filial)$/.test(x.liga));
+    const pj = H.reduce((s, x) => s + (x.pj || 0), 0), tot = k => H.reduce((s, x) => s + (x[k] || 0) * (x.pj || 0), 0);
+    const titulos = c.historial.filter(x => x.titulo), clubes = [...new Set(H.map(x => x.club))], nba = H.filter(x => x.liga === 'NBA').length;
+    const pico = Math.max(c.pico || 0, c.retiro ? c.retiro.pico || c.retiro.ovr : p.ovr, p.ovr);
+    const mejorJuego = Object.values(st.jugadores).filter(j => !j.esYo && j.equipoId).reduce((m, j) => Math.max(m, j.ovr), 0);
+    const puntos = pico * 0.6 + c.fama * 0.25 + titulos.length * 4 + nba * 1.5;
+    const veredicto = puntos >= 85 ? 'Leyenda: entras en el salón de la fama por la puerta grande' : puntos >= 72 ? 'Entras en el salón de la fama' : puntos >= 60 ? 'Una gran carrera, a las puertas del salón de la fama' : puntos >= 48 ? 'Un profesional respetado' : 'Una carrera discreta';
+    return { temporadas: H.length, pj, pts: pj ? Math.round(tot('pts') / pj * 10) / 10 : 0, reb: pj ? Math.round(tot('reb') / pj * 10) / 10 : 0, ast: pj ? Math.round(tot('ast') / pj * 10) / 10 : 0, puntosTotales: Math.round(tot('pts')),
+      titulos: titulos.map(x => x.temporada + ' ' + x.club), clubes, temporadasNBA: nba, pico, mejorDelJuego: pico >= mejorJuego, draft: c.draftPick || null, mejorPartido: c.mejor, grado: gradoFama(c).nombre, fama: Math.round(c.fama), veredicto, salon: puntos >= 72 };
   }
 
   // ---------- Vivienda y estilo de vida ----------
@@ -477,6 +522,8 @@
 
   // ---------- Eventos personales ----------
   const EVENTOS = [
+    { id: 'stash', t: 'Te han elegido en el draft', q: 'Tu representante', d: 'Un equipo de la NBA tiene tus derechos.', ops: [
+      { t: 'Irme ya a la NBA', d: 'Contrato de novato. Si no tienes nivel, te costará jugar.', ef: { stash: 'ir' } }, { t: 'Un año más en Europa', d: 'Sigues con minutos en tu club; el equipo NBA conserva tus derechos y te llamará el próximo verano.', ef: { stash: 'quedar' } }] },
     { id: 'draft', t: 'El draft de la NBA', q: 'Tu representante', d: 'Se abre el plazo para presentarse al draft.', ops: [
       { t: 'Presentarme al draft', d: 'Si te eligen, das el salto a la NBA. Si no, sigues donde estás.', ef: { draft: true } }, { t: 'Esperar un año', d: 'Sigues creciendo y lo intentas más adelante.', ef: { draft: false } }] },
     { id: 'zapatillas', t: 'Contrato de zapatillas', q: 'Tu representante', d: 'Tres marcas quieren que lleves sus zapatillas esta temporada.', ops: [
@@ -499,12 +546,12 @@
       { t: 'Comprarlo', d: 'Una inversión grande.', ef: { dinero: -120, moral: 6 } }, { t: 'Alquilar', d: 'Más flexible.', ef: { dinero: -20, moral: 2 } }] }
   ];
   function nuevoEvento(st) {
-    const c = C(st), usados = new Set(c.res.slice(-4).map(r => r.id)), lista = EVENTOS.filter(e => e.id !== 'draft' && !usados.has(e.id) && !c.pend.some(p => p.id === e.id));
+    const c = C(st), usados = new Set(c.res.slice(-4).map(r => r.id)), lista = EVENTOS.filter(e => e.id !== 'draft' && e.id !== 'stash' && !usados.has(e.id) && !c.pend.some(p => p.id === e.id));
     if (!lista.length) return;
     const e = GM.rng.pick(lista); c.pend.push({ id: e.id, fecha: st.fecha }); c.ultimoEvento = st.fecha;
     GM.noticia(st, 'Tienes una decisión personal: ' + e.t + '.');
   }
-  function eventos(st) { return C(st).pend.map(p => { const e = EVENTOS.find(x => x.id === p.id), mk = e.id === 'draft' ? mock(st) : null; return { id: e.id, titulo: e.t, quien: e.q, texto: mk ? 'Se abre el plazo del draft. Las previsiones te sitúan en: ' + mk.proyeccion.toLowerCase() + (mk.pick <= 60 ? ' (puesto ' + mk.pick + ' de 60)' : '') + '. Tienes ' + YO(st).ovr + ' de nivel y ' + YO(st).pot + ' de potencial.' : e.d, opciones: e.ops.map((o, i) => ({ i, t: o.t, d: o.d })) }; }); }
+  function eventos(st) { return C(st).pend.map(p => { const e = EVENTOS.find(x => x.id === p.id), mk = e.id === 'draft' ? mock(st) : null, sh = e.id === 'stash' && C(st).stash; return { id: e.id, titulo: e.t, quien: e.q, texto: sh ? st.equipos[sh.equipoId].nombre + ' te ha elegido con el número ' + sh.n + '. Puedes irte ya o seguir un año más en ' + st.equipos[YO(st).equipoId].nombre + ': ellos conservan tus derechos.' : mk ? 'Se abre el plazo del draft. Las previsiones te sitúan en: ' + mk.proyeccion.toLowerCase() + (mk.pick <= 60 ? ' (puesto ' + mk.pick + ' de 60)' : '') + '. Tienes ' + YO(st).ovr + ' de nivel y ' + YO(st).pot + ' de potencial.' : e.d, opciones: e.ops.map((o, i) => ({ i, t: o.t, d: o.d })) }; }); }
   function elegirEvento(st, id, i) {
     const c = C(st), p = YO(st), idx = c.pend.findIndex(x => x.id === id), e = EVENTOS.find(x => x.id === id);
     if (idx < 0 || !e || !e.ops[i]) return { ok: false, motivo: 'Decisión no disponible.' };
@@ -516,6 +563,10 @@
     if (ef.foco) { c.entreno.foco = ef.foco; out.push('entrenas ' + ef.foco); }
     if (ef.agente) { c.agente.perfil = ef.agente; out.push('nuevo representante'); }
     if (ef.prevencion) c.prevencion = true;
+    if (ef.stash && c.stash) {
+      if (ef.stash === 'ir') { irNBA(st, c.stash.equipoId, c.stash.contrato); out.push('te vas a la NBA'); }
+      else { c.derechos = { equipoId: c.stash.equipoId, n: c.stash.n, temporada: c.stash.temporada }; c.hitos.unshift({ fecha: st.fecha, texto: 'Decides seguir un año más en Europa; ' + st.equipos[c.stash.equipoId].nombre + ' guarda tus derechos.' }); c.stash = null; out.push('un año más en Europa'); }
+    }
     if (ef.draft !== undefined) { c.declarado = ef.draft; c.hitos.unshift({ fecha: st.fecha, texto: ef.draft ? 'Te presentas al draft de la NBA.' : 'Decides esperar un año para el draft.' }); out.push(ef.draft ? 'te presentas al draft' : 'esperas un año'); }
     c.pend.splice(idx, 1); c.res.push({ id, i, fecha: st.fecha }); if (c.res.length > 40) c.res.shift();
     return { ok: true, efectos: out };
@@ -525,5 +576,5 @@
     return a && FOCOS.tiro.length === 3 && TIPOS_VIV.atico.base > TIPOS_VIV.piso.base;
   }
   GM.bus.on('partida:cargada', function () { const st = GM.state; if (st && st.modo === 'carrera' && st.carrera) { instalaFama(st.carrera); if (!st.carrera.clubes) st.carrera.clubes = {}; actualizaTier(st); } });
-  GM.register('carrera', { progresoAnual, elegibleDraft, avisoDraft, ajustarPot, potEstado, POT_MAX, gradoFama, estatusClub, impacto, GRADOS, ESTATUS, instalaFama, invitarEquipo, TIPOS_VIV, COCHES, barriosVivienda, precioVivienda, comprarVivienda, gestionarPropiedad, comprarCoche, crearFundacion, fijarAporte, estado, stats, rol, liga, retrato, entrenar, declararse, mock, preDraft, postDraft, preCierre, generarOfertas, aceptar, cerrar, retirarse, eventos, elegirEvento, nuevaPartida, selfTest, AGENTES, ORIGENES, NOMLIGA, NIVEL, MIN, FOCOS, INTENS });
+  GM.register('carrera', { informeOjeadores, legado, progresoAnual, elegibleDraft, avisoDraft, ajustarPot, potEstado, POT_MAX, gradoFama, estatusClub, impacto, GRADOS, ESTATUS, instalaFama, invitarEquipo, TIPOS_VIV, COCHES, barriosVivienda, precioVivienda, comprarVivienda, gestionarPropiedad, comprarCoche, crearFundacion, fijarAporte, estado, stats, rol, liga, retrato, entrenar, declararse, mock, preDraft, postDraft, preCierre, generarOfertas, aceptar, cerrar, retirarse, eventos, elegirEvento, nuevaPartida, selfTest, AGENTES, ORIGENES, NOMLIGA, NIVEL, MIN, FOCOS, INTENS });
 })();

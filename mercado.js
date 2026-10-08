@@ -271,7 +271,7 @@
     for (let ronda = 0; ronda < 2; ronda++) {
       equipos.forEach((eqId, k) => {
         const n = ronda * 30 + k + 1;
-        pros.sort((a, b) => (b.pot * 0.6 + b.ovr * 0.4 + (U.hash(b.id + eqId) % 5)) - (a.pot * 0.6 + a.ovr * 0.4 + (U.hash(a.id + eqId) % 5)));
+        pros.sort((a, b) => (b.pot * 0.6 + b.ovr * 0.4 + (b.ojeo || 0) + (U.hash(b.id + eqId) % 5)) - (a.pot * 0.6 + a.ovr * 0.4 + (a.ojeo || 0) + (U.hash(a.id + eqId) % 5)));   // ojeo: informe de los ojeadores sobre tu jugador (carrera.js)
         const p = pros.shift();
         p.equipoId = eqId; p.libre = false;
         p.contrato = { salario: Math.round(ronda === 0 ? 12e6 * Math.pow(0.93, k) : 1.8e6), hasta: y + 3 };

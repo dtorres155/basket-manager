@@ -9,7 +9,7 @@
   function cfg(comp) {
     return comp === 'NBA'
       ? { q: 12, pace: 96, p3: 0.40, m3: 0.366, m2: 0.542, ast: 0.62, ha: 0.008 }
-      : { q: 10, pace: 72, p3: 0.345, m3: 0.343, m2: 0.506, ast: 0.56, ha: 0.011 };
+      : { q: 10, pace: comp === 'ACB' ? 73.8 : 72, p3: 0.345, m3: 0.343, m2: 0.506, ast: 0.56, ha: 0.011 };   // la ACB juega algo más rápido (unos 83 puntos)
   }
   const effF = p => (0.75 + 0.25 * p.estado.forma / 100) * (1 - 0.16 * p.estado.fatiga / 100);
   const lesionado = p => p.estado.lesion && p.estado.lesion.dias > 0;
@@ -132,7 +132,7 @@
     let pts = 0;
     for (let chain = 0; chain < 4; chain++) {
       const si = wp(O.wUse), sh = O.L[si], at = sh.p.att, f = sh.f;
-      let p3 = cf.p3 + (at.tiro3 - at.tiro2) / 300;
+      let p3 = cf.p3 + (at.tiro3 - at.tiro2) / 300; if (c.triple) p3 = 0.9;   // perdiendo de 3 al final: a por el triple
       if (O.tac.foco === 'exterior') p3 += 0.06; else if (O.tac.foco === 'interior') p3 -= 0.06;
       if (D.tac.defensa === 'zona') p3 += 0.025;
       const is3 = R() < U.clamp(p3, 0.12, 0.55);
@@ -193,7 +193,11 @@
       for (let i = 0; i < n; i++) {
         const t0 = base + (i + 0.25) / n * dur, t1 = base + (i + 0.75) / n * dur;
         // En la segunda parte, quien gana de mucho se relaja (suplentes, menos intensidad) y quien pierde aprieta: acerca los marcadores como en la realidad
-        { const dif = A.score - B.score, k = D.q >= 2 ? Math.min(0.07, Math.max(0, Math.abs(dif) - 9) * 0.006) : 0; cA.ha = cf.ha - Math.sign(dif) * k; cB.ha = -cf.ha + Math.sign(dif) * k * 0.7; }
+        { const dif = A.score - B.score, k = D.q >= 2 ? Math.min(0.07, Math.max(0, Math.abs(dif) - 9) * 0.006) : 0; cA.ha = cf.ha - Math.sign(dif) * k; cB.ha = -cf.ha + Math.sign(dif) * k * 0.7;
+          // Final apretado (último tramo del último cuarto o de la prórroga): quien pierde de 1 a 5 arriesga y quien gana se protege; da prórrogas como en la realidad (5-6 %)
+          const final = (D.q === 3 ? base >= dur * 2 - 1 : D.q >= 4) && i >= n * (D.q === 3 ? 0.4 : 0.6);
+          cA.triple = cB.triple = false;
+          if (final && Math.abs(dif) >= 1 && Math.abs(dif) <= 5) { const gana = dif > 0 ? cA : cB, pierde = dif > 0 ? cB : cA; gana.ha -= 0.05; pierde.ha += 0.14; pierde.triple = Math.abs(dif) === 3; } }
         const pa = posesion(aA, aB, cA); A.score += pa;
         if (evs && cA.last) evs.push(Object.assign({ eq: 'A', t: Math.round(t0), pts: pa, a: A.score, b: B.score, pista: [D.enPista.A.slice(), D.enPista.B.slice()] }, cA.last));
         const pb = posesion(aB, aA, cB); B.score += pb;

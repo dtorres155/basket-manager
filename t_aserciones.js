@@ -63,4 +63,41 @@ ok('potencial dinámico entre ±15', () => {
   for (let i = 0; i < 80; i++) K.ajustarPot(sc, -1, 'prueba'); assert.ok(sc.jugadores.yo.pot >= p0 - K.POT_MAX && sc.jugadores.yo.pot >= sc.jugadores.yo.ovr);
   assert.strictEqual(sc.carrera.dinero, 4, 'ahorros iniciales de cantera');
 });
+// ---- Datos y calendario 2026-27 ----
+ok('ligas de 2026-27 y fechas reales', () => {
+  const tam = { ACB: 18, LEGA: 16, GBL: 14, BBL: 18, BSL: 16, EUROLIGA: 20 };
+  for (const l in tam) assert.strictEqual(st.ligas[l].equipos.length, tam[l], l + ': número de clubes');
+  const primera = comp => st.calendario.filter(g => g.comp === comp && g.fase === 'regular').reduce((m, g) => g.fecha < m ? g.fecha : m, '9999');
+  assert.strictEqual(primera('ACB'), '2026-09-26', 'la ACB empieza el 26 de septiembre');
+  assert.strictEqual(primera('EUROLIGA'), '2026-09-24', 'la Euroliga empieza el 24 de septiembre');
+  const reales = st.equipos['leyma-coruna'].plantilla.map(i => st.jugadores[i]).filter(j => !j.ficticio).length;
+  assert.ok(reales >= 10, 'Leyma Coruña con plantilla real');
+});
+// ---- Draft ----
+ok('clase del draft: 72 candidatos y techo lógico', () => {
+  const cl = GM.mods.mercado.claseDraft(st);
+  assert.strictEqual(cl.length, 72);
+  assert.ok(cl.every(p => p.pot >= p.ovr && p.pot <= 97 && p.edad >= 19 && p.edad <= 22));
+  assert.ok(cl[0].pot > cl[60].pot, 'los primeros tienen más techo');
+});
+ok('draft: elegibilidad, informe de ojeadores y proyección', () => {
+  GM.rng.seed(5); const sc = GM.newGame('joventut-badalona', 5, { modo: 'carrera', personaje: { nombre: 'Marc', apellido: 'Soler' }, carrera: { origen: 'europa', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
+  const K = GM.mods.carrera, p = sc.jugadores.yo;
+  assert.strictEqual(K.elegibleDraft(sc), true, 'con 20 años desde la ACB');
+  p.edad = 23; assert.strictEqual(K.elegibleDraft(sc), false, 'con 23 ya no'); p.edad = 20;
+  const o = K.informeOjeadores(sc); assert.ok(o >= -5 && o <= 6, 'informe acotado');
+  p.ovr = 74; p.pot = 94; const alto = K.mock(sc).pick; p.ovr = 55; p.pot = 66; const bajo = K.mock(sc).pick;
+  assert.ok(alto <= 5, 'un 74/94 sale en el top 5 (' + alto + ')'); assert.ok(bajo > 50, 'un 55/66 apenas tiene sitio (' + bajo + ')');
+  // Retirada: el salón de la fama resume la carrera
+  K.retirarse(sc); const lg = K.legado(sc);
+  assert.ok(lg.veredicto && lg.pico >= 55 && lg.clubes !== undefined && typeof lg.salon === 'boolean');
+});
+ok('potencial dinámico: minutos y talento tardío', () => {
+  GM.rng.seed(9); const sc = GM.newGame('unicaja', 9, { modo: 'gestor', personaje: { nombre: 'M' } }), Ca = GM.mods.cantera;
+  const jov = Object.values(sc.jugadores).filter(j => j.edad <= 22 && j.equipoId && !j.esYo).slice(0, 200);
+  let conMin = 0, sinMin = 0;
+  jov.forEach((j, i) => { const pot0 = j.pot; sc.estadisticas[j.id] = i % 2 ? { pj: 30, min: 30 * 28 } : { pj: 30, min: 0 }; Ca.potAnual(sc, j); if (i % 2) conMin += j.pot - pot0; else sinMin += j.pot - pot0; });
+  assert.ok(conMin / 100 > sinMin / 100 + 1, 'jugar sube el potencial y no jugar lo baja (' + (conMin / 100).toFixed(2) + ' frente a ' + (sinMin / 100).toFixed(2) + ')');
+  assert.ok(jov.every(j => j.pot >= j.ovr && j.pot <= 99));
+});
 console.log('aserciones', n, 'de', n);

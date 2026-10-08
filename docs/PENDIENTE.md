@@ -37,15 +37,15 @@
 
 ## P1 — Equilibrio
 - Reputación del jugador (`carrera.js`), progresión, finanzas de los clubes (resultado/presupuesto), efectos de muebles, sueldo y ahorros en los modos no jugador (hoy son estimaciones).
-- Comprobar que llegar a la NBA lleve el tiempo esperado en distintos orígenes.
+- ~~Tiempo hasta la NBA por origen~~: con `node tools/sim_potencial.js` todos los perfiles llegan por el draft a los 20-21 años si se presentan, pero el puesto cambia: perfecto 13-14 (cantera o universidad) o 31 (Europa), normal 19-42, juerguista 22-45. El informe de los ojeadores (`informeOjeadores`) suma o resta según la calidad de tu temporada y tu fama.
 - Revisar si algún efecto antiguo sigue dando mucha fama de golpe.
 - ~~Progresión del jugador~~: rehecha. El margen del potencial es de ±15 (máximo 99) y lo que subes cada verano depende de la calidad de tu temporada (intensidad, constancia, ánimo, minutos, mentor; `progresoAnual` en carrera.js). En `node tools/sim_potencial.js 9`: perfil perfecto 97-99 a los 25-27 (europa, 89), normal 79-90, juerguista 74-83.
 - Potencial dinámico de todos los jugadores hasta los 24 años (`potAnual` en cantera.js): minutos por partido, instalaciones o reputación del club y un «talento tardío» oculto (8 %) que puede convertir a un segunda ronda en estrella si juega. Los jóvenes de la IA crecen según su margen: los primeros del draft rondan 87-90 a los 25. Seis temporadas simuladas: el top 10 de la liga se mantiene en 90-91.
-- Draft: elegible de 19 a 22 años desde la universidad o desde Europa; aviso el 15 de abril con la proyección (top 3, lotería, primera, segunda o sin elegir). Si no te eligen desde Europa, sigues en tu club. Falta: que te elijan y te dejen en Europa un año («stash»), y entrevistas o pruebas previas al draft.
+- Draft: elegible de 19 a 22 años desde la universidad o desde Europa; aviso el 15 de abril con la proyección (top 3, lotería, primera, segunda o sin elegir). Si no te eligen desde Europa, sigues en tu club. Si te eligen desde Europa decides: irte ya o quedarte un año («stash»); el equipo NBA guarda tus derechos y te ofrece contrato el verano siguiente. Falta: entrevistas o pruebas previas al draft.
 
 ## P2 — Funcionalidad que se pidió y no está completa
 - Etapa universitaria sin partidos jugados (se resume por curso).
-- Pantalla final de retirada («salón de la fama»).
+- ~~Pantalla de retirada~~: «Tu legado» en Carrera (`legado` en carrera.js): veredicto del salón de la fama, nivel máximo, totales y medias, draft, mejor partido, clubes y títulos.
 - Modo entrenador más profundo (plantilla propia, rotaciones por rol, rueda de prensa más rica).
 - Ciudad que crece también en los modos de gestión (hoy solo crece el pueblo del jugador).
 - Más ligas europeas y más copas; Final Four con sede, Supercopa, etc.
@@ -53,9 +53,9 @@
 
 ## P3 — Deuda técnica
 - ~~Dividir `ui.js`~~: hecho (núcleo + ui_gestion, ui_ciudad, ui_presidente, ui_carrera, ui_entrenador).
-- Pruebas con aserciones: hecho en `t_aserciones.js` (estado, resultados, clasificación, medias por liga, guardado, migraciones, acciones, casa, potencial). Las demás pruebas siguen siendo de humo; ampliar aserciones poco a poco.
+- Pruebas con aserciones: hecho en `t_aserciones.js` (15: estado, resultados, clasificación, medias por liga, guardado, migraciones, acciones, casa, potencial, ligas y fechas 2026-27, clase del draft, elegibilidad y proyección, salón de la fama, potencial por minutos). Las demás pruebas siguen siendo de humo; ampliar aserciones poco a poco.
 - Hay varios parches aplicados por sustitución de texto sobre `ui.js`; conviene ordenar y simplificar.
-- ~~Recalibrar el simulador~~: hecho (`tools/calibrar.js`): NBA 115 pts, Euroliga 83, diferencia 10-12, local 55-59 %. Prórrogas aún algo bajas (2-4 % frente a 5-6 %); la ACB da ~80 pts (real ~83).
+- ~~Recalibrar el simulador~~: hecho (`tools/calibrar.js`): NBA 115 pts, Euroliga 83, diferencia 10-12, local 55-59 %. Final apretado (quien pierde de 1 a 5 arriesga, de 3 va a por el triple): prórrogas ~4,6 % (real 5-6 %). La ACB juega algo más rápido: ~82,5 pts (real 83).
 - ~~Tamaño del guardado~~: hecho, comprimido con LZ-string (1,7 MB -> ~0,17 MB).
 
 ## Límites conocidos / avisos
