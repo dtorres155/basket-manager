@@ -16,8 +16,21 @@
     polideportivo: { n: 'Polideportivo municipal', req: 3, coste: 160, max: 3, niv: ['Polideportivo básico', 'Polideportivo con piscina', 'Complejo deportivo con ciudad deportiva'], ef: { cariño: 0.5, fama: 0.1, dinero: 1.5 }, uso: ['Entrenar en el polideportivo', { xp: 0.06, moral: 1.5 }] },
     tienda: { n: 'Tienda de deportes', req: 3, coste: 70, max: 2, niv: ['Tienda con tu camiseta', 'Tienda oficial con tu marca'], ef: { dinero: 4, fama: 0.05 }, uso: ['Firmar camisetas en la tienda', { fama: 0.3, cariño: 1 }] },
     hotel: { n: 'Hotel y turismo', req: 4, coste: 260, max: 2, niv: ['Hotel rural', 'Gran hotel con balcón al pabellón'], ef: { dinero: 9, fama: 0.1 }, uso: ['Recibir a invitados del hotel', { fama: 0.4, moral: 1 }] },
-    pabellon: { n: 'Pabellón con tu nombre', req: 4, coste: 420, max: 2, niv: ['Pabellón municipal', 'Pabellón de 4.000 localidades'], ef: { cariño: 0.8, fama: 0.2 }, uso: ['Jugar un partido benéfico', { moral: 3, fama: 0.5, cariño: 3 }] }
+    pabellon: { n: 'Pabellón con tu nombre', req: 4, coste: 420, max: 2, niv: ['Pabellón municipal', 'Pabellón de 4.000 localidades'], ef: { cariño: 0.8, fama: 0.2 }, uso: ['Jugar un partido benéfico', { moral: 3, fama: 0.5, cariño: 3 }] },
+    // Servicios públicos: no dan dinero, sí cariño del pueblo y calidad de vida
+    plaza: { n: 'Plaza mayor', cat: 'publico', req: 1, coste: 8, max: 2, niv: ['Plaza empedrada con bancos', 'Plaza con fuente y arcos iluminados'], ef: { cariño: 0.5 }, uso: ['Pasear por la plaza y saludar', { moral: 1.5, cariño: 1 }] },
+    parque: { n: 'Parque', cat: 'publico', req: 1, coste: 10, max: 2, niv: ['Parque con columpios', 'Parque con estanque y pista de patinaje'], ef: { cariño: 0.4, moral: 0.2 }, uso: ['Jugar con los niños en el parque', { moral: 2, cariño: 1 }] },
+    alumbrado: { n: 'Alumbrado y calles', cat: 'publico', req: 2, coste: 25, max: 2, niv: ['Farolas nuevas en el casco antiguo', 'Calles adoquinadas e iluminadas'], ef: { cariño: 0.4 }, uso: ['Pasear de noche por el casco antiguo', { moral: 1.5 }] },
+    biblioteca: { n: 'Biblioteca', cat: 'publico', req: 2, coste: 35, max: 2, niv: ['Biblioteca municipal', 'Biblioteca con aula de estudio'], ef: { cariño: 0.4, fama: 0.03 }, uso: ['Leer cuentos a los niños', { cariño: 1.5, moral: 1 }] },
+    centrodia: { n: 'Centro de día', cat: 'publico', req: 3, coste: 60, max: 2, niv: ['Centro de día para mayores', 'Residencia con jardín'], ef: { cariño: 0.6 }, uso: ['Jugar a las cartas con los abuelos', { moral: 2, cariño: 2 }] },
+    carretera: { n: 'Carretera y autobús', cat: 'publico', req: 3, coste: 90, max: 2, niv: ['Carretera arreglada hasta la ciudad', 'Línea de autobús diaria'], ef: { cariño: 0.3, dinero: 1 }, uso: ['Inaugurar la parada del autobús', { fama: 0.1, cariño: 1 }] },
+    // Casas de los tuyos
+    casapadres: { n: 'Casa de tus padres', cat: 'casa', req: 1, coste: 30, max: 3, niv: ['Reformas en casa de tus padres', 'Casa nueva para tus padres', 'Casa con jardín y huerto'], ef: { moral: 0.4 }, uso: ['Comer en casa de tus padres', { moral: 4 }] },
+    casaamigos: { n: 'Casa de tus amigos de siempre', cat: 'casa', req: 2, coste: 40, max: 2, niv: ['Ayudas a un amigo a arreglar su piso', 'Casa para tu grupo de amigos'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Cenar con los amigos de siempre', { moral: 3, amigos: 6 }] }
   };
+  // Obras: lo que inviertes no se estrena al momento. Dura de 2 semanas a 5 meses según el coste; se ve por fases en el pueblo.
+  const diasObra = coste => U.clamp(Math.round(14 + coste * 0.35), 14, 150);
+  const obras = st => (P(st).obras = P(st).obras || []);
   const act = st => st.modo === 'carrera' && !!st.carrera && !!st.carrera.pueblo;
   const P = st => C(st).pueblo;
   function nuevaPartida(st) {
@@ -35,19 +48,35 @@
     const p = P(st), n = nivel(st);
     return Object.keys(EDI).map(k => {
       const e = EDI[k], b = p.edificios.find(x => x.tipo === k), nv = b ? b.nivel : 0, coste = Math.round(e.coste * Math.pow(nv + 1, 1.6));
-      let motivo = null; if (n < e.req) motivo = 'Requiere que el pueblo sea ' + NIVELES[e.req - 1].toLowerCase(); else if (nv >= e.max) motivo = 'Nivel máximo'; else if (GM.mods.hogar.dinero(st) < coste) motivo = 'Te faltan ' + Math.round(coste - GM.mods.hogar.dinero(st)) + ' mil €';
-      return { tipo: k, nombre: e.n, nivel: nv, max: e.max, actual: nv ? e.niv[nv - 1] : null, proximo: nv < e.max ? e.niv[nv] : null, coste, req: e.req, motivo, uso: nv ? e.uso[0] : null };
+      const ob = (p.obras || []).find(o => o.tipo === k), obra = ob ? { dest: ob.dest, inicio: ob.inicio, fin: ob.fin, progreso: U.clamp(U.diffDays(ob.inicio, st.fecha) / Math.max(1, U.diffDays(ob.inicio, ob.fin)), 0, 1), proximo: e.niv[ob.dest - 1] } : null;
+      let motivo = null; if (obra) motivo = 'En obras hasta el ' + U.fechaLarga(obra.fin); else if (n < e.req) motivo = 'Requiere que el pueblo sea ' + NIVELES[e.req - 1].toLowerCase(); else if (nv >= e.max) motivo = 'Nivel máximo'; else if (GM.mods.hogar.dinero(st) < coste) motivo = 'Te faltan ' + Math.round(coste - GM.mods.hogar.dinero(st)) + ' mil €';
+      return { tipo: k, nombre: e.n, cat: e.cat || 'negocio', obra, dias: diasObra(coste), nivel: nv, max: e.max, actual: nv ? e.niv[nv - 1] : null, proximo: nv < e.max ? e.niv[nv] : null, coste, req: e.req, motivo, uso: nv ? e.uso[0] : null };
     });
   }
   function invertir(st, tipo) {
     const e = edificios(st).find(x => x.tipo === tipo); if (!e) return { ok: false, motivo: 'Edificio desconocido.' }; if (e.motivo) return { ok: false, motivo: e.motivo };
-    const c = C(st), p = P(st), antes = nivel(st); c.dinero -= e.coste; p.aportado += e.coste;
-    const b = p.edificios.find(x => x.tipo === tipo); if (b) b.nivel++; else p.edificios.push({ tipo, nivel: 1 });
-    p.cariño = U.clamp(p.cariño + 4, 0, 100); c.fama = c.fama + 0.4;
-    p.hitos.unshift({ fecha: st.fecha, texto: 'Inviertes en ' + e.nombre.toLowerCase() + ': ' + e.proximo + '.' }); c.hitos.unshift({ fecha: st.fecha, texto: 'En ' + p.nombre + ' se estrena: ' + e.proximo.toLowerCase() + '.' });
-    GM.noticia(st, p.nombre + ' estrena ' + e.proximo.toLowerCase() + ' gracias a ' + st.jugadores.yo.nombre + '.');
+    const c = C(st), p = P(st); c.dinero -= e.coste; p.aportado += e.coste;
+    const fin = U.addDays(st.fecha, e.dias); obras(st).push({ tipo, dest: e.nivel + 1, inicio: st.fecha, fin });
+    p.cariño = U.clamp(p.cariño + 1, 0, 100);
+    p.hitos.unshift({ fecha: st.fecha, texto: 'Empiezan las obras: ' + e.proximo.toLowerCase() + '.' });
+    GM.noticia(st, 'Empiezan las obras en ' + p.nombre + ': ' + e.proximo.toLowerCase() + ' (' + e.dias + ' días).');
+    return { ok: true, texto: 'Empiezan las obras', efectos: ['inauguración el ' + U.fechaLarga(fin)] };
+  }
+  // Inauguración: al acabar la obra sube el nivel del edificio y el pueblo lo celebra
+  function terminarObras(st) {
+    const c = C(st), p = P(st), lista = obras(st), hechas = lista.filter(o => o.fin <= st.fecha); if (!hechas.length) return;
+    const antes = nivel(st);
+    hechas.forEach(o => {
+      const e = EDI[o.tipo], b = p.edificios.find(x => x.tipo === o.tipo); if (b) b.nivel = Math.max(b.nivel, o.dest); else p.edificios.push({ tipo: o.tipo, nivel: o.dest });
+      p.cariño = U.clamp(p.cariño + (e.cat === 'publico' ? 5 : 3), 0, 100); c.fama = c.fama + 0.4;
+      if (o.tipo === 'casaamigos' && c.social) c.social.contactos.filter(k => k.tipo === 'amigo').forEach(k => { k.rel = U.clamp(k.rel + 10, 0, 100); });
+      if (o.tipo === 'casapadres' && c.social) c.social.contactos.filter(k => k.tipo === 'familia').forEach(k => { k.rel = U.clamp(k.rel + 10, 0, 100); });
+      const nom = e.niv[o.dest - 1];
+      p.hitos.unshift({ fecha: st.fecha, texto: 'Se inaugura: ' + nom.toLowerCase() + '.' }); c.hitos.unshift({ fecha: st.fecha, texto: 'En ' + p.nombre + ' se inaugura: ' + nom.toLowerCase() + '.' });
+      GM.noticia(st, p.nombre + ' inaugura ' + nom.toLowerCase() + ' gracias a ' + st.jugadores.yo.nombre + '.');
+    });
+    p.obras = lista.filter(o => o.fin > st.fecha);
     const ahora = nivel(st); if (ahora > antes) { p.hitos.unshift({ fecha: st.fecha, texto: p.nombre + ' pasa a ser ' + NIVELES[ahora - 1].toLowerCase() + '.' }); GM.noticia(st, p.nombre + ' crece: ahora es ' + NIVELES[ahora - 1].toLowerCase() + '.'); }
-    return { ok: true };
   }
   function gasta(st, k) { const c = C(st); if (c.dinero < k) return false; c.dinero -= k; return true; }
   function cd(st, id, dias) { const p = P(st); if (p.cd[id] && U.diffDays(p.cd[id], st.fecha) < dias) return dias - U.diffDays(p.cd[id], st.fecha); return 0; }
@@ -64,12 +93,14 @@
   function usar(st, tipo) {
     const e = edificios(st).find(x => x.tipo === tipo); if (!e || !e.nivel) return { ok: false, motivo: 'Aún no está construido.' };
     const u = EDI[tipo].uso[1], c = C(st), p = P(st);
-    return accion(st, 'uso-' + tipo, 10, 0, () => { if (u.moral) c.moral = U.clamp(c.moral + u.moral, 0, 100); if (u.cariño) p.cariño = U.clamp(p.cariño + u.cariño, 0, 100); if (u.fama) c.fama = c.fama + u.fama; if (u.xp) st.jugadores.yo.xp = (st.jugadores.yo.xp || 0) + u.xp; return { ok: true, texto: EDI[tipo].uso[0], efectos: Object.keys(u).map(k => ({ moral: 'ánimo', cariño: 'cariño', fama: 'reputación', xp: 'progresión' }[k])) }; });
+    return accion(st, 'uso-' + tipo, 10, 0, () => { if (u.moral) c.moral = U.clamp(c.moral + u.moral, 0, 100); if (u.cariño) p.cariño = U.clamp(p.cariño + u.cariño, 0, 100); if (u.fama) c.fama = c.fama + u.fama; if (u.xp) st.jugadores.yo.xp = (st.jugadores.yo.xp || 0) + u.xp; if (u.amigos && c.social) c.social.contactos.filter(k => k.tipo === 'amigo').forEach(k => { k.rel = U.clamp(k.rel + u.amigos, 0, 100); }); return { ok: true, texto: EDI[tipo].uso[0], efectos: Object.keys(u).map(k => ({ moral: 'ánimo', cariño: 'cariño', fama: 'reputación', xp: 'progresión' }[k])) }; });
   }
   GM.bus.on('dia:avanzado', function () {
-    const st = GM.state; if (!st || !act(st) || st.fecha.slice(8) !== '15') return;
+    const st = GM.state; if (!st || !act(st)) return;
+    terminarObras(st);
+    if (st.fecha.slice(8) !== '15') return;
     const c = C(st), p = P(st); if (c.fase === 'retirado' && false) return;
-    p.edificios.forEach(b => { const e = EDI[b.tipo].ef; if (e.dinero) c.dinero += e.dinero * b.nivel; if (e.fama) c.fama = c.fama + e.fama * b.nivel; if (e.moral) c.moral = U.clamp(c.moral + e.moral * b.nivel, 0, 100); if (e.cariño) p.cariño = U.clamp(p.cariño + e.cariño * b.nivel * 0.3, 0, 100); });
+    p.edificios.forEach(b => { if (!EDI[b.tipo]) return; const e = EDI[b.tipo].ef; if (e.dinero) c.dinero += e.dinero * b.nivel; if (e.fama) c.fama = c.fama + e.fama * b.nivel; if (e.moral) c.moral = U.clamp(c.moral + e.moral * b.nivel, 0, 100); if (e.cariño) p.cariño = U.clamp(p.cariño + e.cariño * b.nivel * 0.3, 0, 100); });
     p.cariño = U.clamp(p.cariño + (30 - p.cariño) * 0.04, 0, 100);
     const n = nivel(st); if (n > p.nivel) { p.nivel = n; p.hitos.unshift({ fecha: st.fecha, texto: p.nombre + ' crece y pasa a ser ' + NIVELES[n - 1].toLowerCase() + '.' }); GM.noticia(st, p.nombre + ' crece: ahora es ' + NIVELES[n - 1].toLowerCase() + '.'); }
   });
@@ -150,9 +181,17 @@
     Pn.append(h('div', { class: 'fila' }, h('span', { class: 'muted' }, 'Cariño del pueblo'), h('b', null, Math.round(e.cariño))), h('span', { class: 'barra ' + (e.cariño >= 60 ? 'verde' : 'ambar') }, h('i', { style: { width: e.cariño + '%' } })));
     Pn.append(h('div', { class: 'fila' }, h('span', { class: 'muted' }, e.sig ? 'Crecimiento hacia ' + NIVELES[e.nivel] : 'Nivel máximo'), h('b', null, Math.round(e.frac * 100) + ' %')), h('span', { class: 'barra' }, h('i', { style: { width: e.frac * 100 + '%' } })));
     Pn.append(h('div', { class: 'seg' }, [['Visitar el pueblo, 0,8 k€', () => visitar(st)], ['Fiesta en tu honor, 15 k€', () => fiesta(st)], ['Clínic con los niños, 2 k€', () => clinic(st)]].map(a => h('button', { class: 'tab', onclick: () => resp(a[1]()) }, a[0]))));
-    Pn.append(h('h4', null, 'Infraestructuras'));
-    Pn.append(h('div', { class: 'lista' }, edificios(st).map(b => h('div', { class: 'item col' }, h('div', { class: 'fila' }, h('b', null, (b.nivel ? '' : '🔒 ') + b.nombre), b.nivel ? h('span', { class: 'chip ok' }, 'Nivel ' + b.nivel + '/' + b.max) : h('span', { class: 'muted' }, 'Sin construir')), h('span', { class: 'muted' }, b.actual ? b.actual : b.motivo || 'Disponible'),
-      h('div', { class: 'par' }, b.proximo ? h('button', { class: 'btn peq', disabled: !!b.motivo, onclick: () => resp(invertir(st, b.tipo)) }, (b.nivel ? 'Mejorar' : 'Construir') + ', ' + b.coste + ' k€') : null, b.uso ? h('button', { class: 'btn peq btn-sec', onclick: () => resp(usar(st, b.tipo)) }, b.uso) : null)))));
+    if (GM.sede && GM.puebloMundo) Pn.append(h('button', { class: 'btn', onclick: () => GM.sede.abrir(st, 'pueblo') }, 'Pasear por el pueblo'));
+    // Por categorías, con el avance de las obras
+    const fila = b => h('div', { class: 'item col' },
+      h('div', { class: 'fila' }, h('b', null, (b.nivel || b.obra ? '' : '🔒 ') + b.nombre), b.obra ? h('span', { class: 'chip' }, 'En obras') : b.nivel ? h('span', { class: 'chip ok' }, 'Nivel ' + b.nivel + '/' + b.max) : h('span', { class: 'muted' }, 'Sin construir')),
+      b.obra ? [h('span', { class: 'muted' }, b.obra.proximo + ': ' + Math.round(b.obra.progreso * 100) + ' %, inauguración el ' + U.fechaLarga(b.obra.fin)), h('span', { class: 'barra' }, h('i', { style: { width: Math.round(b.obra.progreso * 100) + '%' } }))]
+        : h('span', { class: 'muted' }, b.actual ? b.actual : b.motivo || 'Disponible'),
+      h('div', { class: 'par' }, b.proximo && !b.obra ? h('button', { class: 'btn peq', disabled: !!b.motivo, onclick: () => resp(invertir(st, b.tipo)) }, (b.nivel ? 'Mejorar' : 'Construir') + ', ' + b.coste + ' k€, ' + b.dias + ' días') : null, b.uso ? h('button', { class: 'btn peq btn-sec', onclick: () => resp(usar(st, b.tipo)) }, b.uso) : null));
+    [['negocio', 'Deporte y negocios'], ['publico', 'Servicios públicos'], ['casa', 'Casas de los tuyos']].forEach(([cat, tit]) => {
+      const l = edificios(st).filter(b => b.cat === cat); if (!l.length) return;
+      Pn.append(h('h4', null, tit)); Pn.append(h('div', { class: 'lista' }, l.map(fila)));
+    });
     const hi = P(st).hitos.slice(0, 5); if (hi.length) { Pn.append(h('h4', null, 'Historia del pueblo')); Pn.append(h('div', { class: 'lista' }, hi.map(x => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(x.fecha)), h('span', { class: 'ct' }, x.texto))))); }
     Pn.append(msg);
   }
@@ -172,5 +211,5 @@
   }
   function unmount() { if (!V) return; if (V.vista) V.vista.dispose(); if (V.raiz && V.raiz.parentNode) V.raiz.parentNode.removeChild(V.raiz); V = null; }
   function selfTest() { return Object.keys(EDI).every(k => EDI[k].niv.length === EDI[k].max) && UMBRAL.length === NIVELES.length; }
-  GM.register('pueblo', { estado, nivel, edificios, invertir, visitar, fiesta, clinic, usar, mount, unmount, nuevaPartida, selfTest, EDI, NIVELES });
+  GM.register('pueblo', { terminarObras, diasObra, estado, nivel, edificios, invertir, visitar, fiesta, clinic, usar, mount, unmount, nuevaPartida, selfTest, EDI, NIVELES });
 })();

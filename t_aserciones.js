@@ -100,4 +100,16 @@ ok('potencial dinámico: minutos y talento tardío', () => {
   assert.ok(conMin / 100 > sinMin / 100 + 1, 'jugar sube el potencial y no jugar lo baja (' + (conMin / 100).toFixed(2) + ' frente a ' + (sinMin / 100).toFixed(2) + ')');
   assert.ok(jov.every(j => j.pot >= j.ovr && j.pot <= 99));
 });
+// ---- Pueblo: obras con tiempo ----
+ok('pueblo: invertir abre una obra y al terminar sube el nivel', () => {
+  GM.rng.seed(6); const sc = GM.newGame('joventut-badalona', 6, { modo: 'carrera', personaje: { nombre: 'Marc', apellido: 'Soler' }, carrera: { origen: 'europa', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
+  const Pm = GM.mods.pueblo; sc.carrera.dinero = 500;
+  const antes = Pm.edificios(sc).find(b => b.tipo === 'parque'); assert.strictEqual(antes.nivel, 0); assert.strictEqual(antes.cat, 'publico');
+  const r = Pm.invertir(sc, 'parque'); assert.ok(r.ok, r.motivo);
+  const en = Pm.edificios(sc).find(b => b.tipo === 'parque'); assert.strictEqual(en.nivel, 0, 'no se estrena al momento'); assert.ok(en.obra && en.obra.dest === 1 && en.motivo, 'obra en marcha');
+  assert.ok(!Pm.invertir(sc, 'parque').ok, 'no se puede invertir dos veces en la misma obra');
+  sc.fecha = U.addDays(en.obra.fin, 0); Pm.terminarObras(sc);
+  const fin = Pm.edificios(sc).find(b => b.tipo === 'parque'); assert.strictEqual(fin.nivel, 1, 'inaugurado'); assert.ok(!fin.obra);
+  assert.ok(Pm.diasObra(5) >= 14 && Pm.diasObra(2000) <= 150);
+});
 console.log('aserciones', n, 'de', n);

@@ -396,3 +396,12 @@ body{background:var(--bg)}
 .cc-item.on{border-color:#4cd07d;background:rgba(76,208,125,.15)}.cc-item:disabled{opacity:.4}
 .cc-sel{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cc-sel b{margin-right:auto;font-size:16px}
 .cc-sel .btn-sec{color:#eef1f4;border-color:rgba(238,241,244,.6)}
+
+/* Mapa interactivo del mundo explorable (sede3d.js, mapa) */
+.sede-mapa { position: absolute; inset: 64px 12px 12px 12px; background: rgba(22,28,36,.94); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; gap: 10px; z-index: 30; color: #f3efe6; }
+.sede-mapa .mapa-cab { display: flex; align-items: center; gap: 10px; }
+.sede-mapa .mapa-cab span { opacity: .7; font-size: 13px; flex: 1; }
+.sede-mapa .mapa-lienzo { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.sede-mapa canvas { max-width: 100%; max-height: 100%; border-radius: 12px; cursor: pointer; touch-action: manipulation; }
+.sede-mapa .mapa-lista { display: flex; flex-wrap: wrap; gap: 6px; max-height: 92px; overflow-y: auto; }
+.sede-mapa .mapa-lista .btn { background: rgba(255,255,255,.12); color: #f3efe6; border-color: rgba(255,255,255,.28); }
