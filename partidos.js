@@ -203,6 +203,13 @@
         const pb = posesion(aB, aA, cB); B.score += pb;
         if (evs && cB.last) evs.push(Object.assign({ eq: 'B', t: Math.round(t1), pts: pb, a: A.score, b: B.score, pista: [D.enPista.A.slice(), D.enPista.B.slice()] }, cB.last));
       }
+      // Último minuto del partido: quien pierde de 1 a 3 hace faltas y gana hasta dos posesiones más (a por el triple si pierde de 3)
+      if (D.q === 3 && base >= dur * 2 - 1) for (let x = 0; x < 2; x++) {
+        const dif = A.score - B.score; if (Math.abs(dif) < 1 || Math.abs(dif) > 3 || R() < 0.62) break;
+        const atA = dif < 0, c = atA ? cA : cB; c.ha = (atA ? cf.ha : -cf.ha) + 0.12; c.triple = Math.abs(dif) === 3;
+        const pp = atA ? posesion(aA, aB, cA) : posesion(aB, aA, cB); if (atA) A.score += pp; else B.score += pp;
+        if (evs && c.last) evs.push(Object.assign({ eq: atA ? 'A' : 'B', t: Math.round(base + dur - 5 + x * 2), pts: pp, a: A.score, b: B.score, pista: [D.enPista.A.slice(), D.enPista.B.slice()] }, c.last));
+      }
     };
     D.jugarCuarto = function () {
       if (D.terminado) return null;

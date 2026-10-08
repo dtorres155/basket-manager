@@ -17,6 +17,7 @@
 14. **Potencial coherente y draft (oct 2026):** que el jugador pueda llegar a ser el mejor del juego con las decisiones correctas (y que en presidente o entrenador cada jugador dependa de las decisiones que se tomen con él); que un joven reciba un aviso para presentarse al draft con una proyección lógica: lotería o top 3 (un futuro Luka o Wemby), segunda ronda que acabe siendo un Jokic, o sin nivel para ser elegido.
 15. **Ideas para el pueblo y el personaje (oct 2026):** más personalización al crear el personaje; pasear por el pueblo propio (estilo Monteriggioni) y verlo crecer; que las obras tarden y se vea a la gente trabajando, con evolución progresiva; poder construir instalaciones públicas y casas de amigos, no solo negocios.
 16. **Sede, interiores, mapa y transporte (oct 2026):** mejorar la sede y añadir interiores a más sitios; corregido el banco de pesas que tapaba la enfermería; mapa interactivo con los puntos destacados de la ciudad; transporte (bici, bus, metro) cuando el pueblo o la ciudad crezcan.
+17. **Estilo de vida y vida en la calle (oct 2026):** que se note ser disciplinado o rebelde (y que el rebelde tenga cosas divertidas), eventos que lleguen al móvil del personaje, personas interactivas por la calle y gente icónica de cada club.
 
 ## Preferencias del usuario
 Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.

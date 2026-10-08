@@ -23,7 +23,8 @@ node tools/sim_potencial.js [temporadas]  # carreras con hábitos distintos (per
 node tools/campus_capturas.js [nivel] [club]   # ciudad deportiva con los 13 edificios a un nivel
 node tools/hogar_capturas.js              # casa antigua amueblada (modelos de Kenney)
 node tools/pueblo_tiempo.js [--lento]     # tiempo de construir el pueblo y si se reconstruye al usar el panel
-node tools/generar_plantillas.js          # recursos/*_2026.json -> datos_ligas3.js (plantillas reales)
+node tools/generar_plantillas.js          # recursos/*_2026.json -> datos_ligas3.js (plantillas reales; la BSL sale de node tools/plantillas_bsl_wiki.js)
+node tools/finanzas_calibrar.js           # resultado económico de una temporada por liga
 ```
 **Publicación:** repositorio público `dtorres155/basket-manager`; `.github/workflows/pages.yml` pasa las pruebas y publica `dist/` en **https://dtorres155.github.io/basket-manager/** en cada push a `main`. No subas datos personales del usuario (nombre, pueblo, correo); `PROMPT_CLAUDE_CODE.txt` está en `.gitignore`. Instrucciones para el usuario: `INSTALAR_EN_MOVIL.md`.
 
@@ -50,7 +51,7 @@ Las pruebas (`t_*.js`) usan jsdom con un `WebGLRenderer` simulado: verifican que
 ## Datos (qué es real y qué no)
 - NBA: base 2025-26 + movimientos de verano 2026 de NBA.com y draft 2026 (`datos_movimientos.js`). Ratings estimados.
 - Euroliga: 18 clubes con plantilla de 2026-27 de BasketNews; Efes y ASVEL, de sportschau.de. Ratings estimados.
-- ACB (18), Lega (16), GBL (14), BBL (18) y BSL (16): los clubes de 2026-27. Plantillas reales de todos salvo 10 clubes de la BSL (relleno) en `datos_ligas3.js`, generado por `node tools/generar_plantillas.js` a partir de `recursos/*_2026.json` (descargados con `tools/plantillas_*.js`; `recursos/` no se sube). Nombre, posición, nacionalidad, edad y altura son reales; valoración, potencial, salario y contrato, estimados. Fuentes en `docs/FUENTES_DATOS.md`.
+- ACB (18), Lega (16), GBL (14), BBL (18) y BSL (16): los clubes de 2026-27. Plantillas reales de todos salvo Çayırova (BSL, relleno) en `datos_ligas3.js`, generado por `node tools/generar_plantillas.js` a partir de `recursos/*_2026.json` (descargados con `tools/plantillas_*.js`; `recursos/` no se sube). Nombre, posición, nacionalidad, edad y altura son reales; valoración, potencial, salario y contrato, estimados. Fuentes en `docs/FUENTES_DATOS.md`.
 - Fechas de 2026-27: Euroliga y ACB oficiales; el resto aproximadas (`FECHAS` en `competiciones.js`).
 - Los jugadores con `ficticio:true` son relleno.
 - **Potencial:** el del jugador del usuario se mueve ±15 según sus decisiones (`carrera.js`); el de todos los menores de 25, según minutos, club y un talento tardío oculto (`potAnual` en cantera.js). Draft con aviso el 15 de abril (19 a 22 años, desde la universidad o Europa).

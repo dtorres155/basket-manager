@@ -8,9 +8,10 @@ Consultadas en octubre de 2026. Los scripts guardan lo descargado en `recursos/`
 | Lega | legabasket.it (API pública de su web) | `tools/plantillas_lba_gbl.js` | nombre, posición, nacionalidad, nacimiento, altura, fin de contrato, entrenador |
 | GBL | esake.gr (ficha de cada club) | `tools/plantillas_lba_gbl.js` | nombre, posición, nacionalidad, nacimiento, altura |
 | BBL, Euroliga, EuroCup | sportschau.de (convocatorias de la jornada) | `tools/plantillas_sportschau.js` | nombre, base/alero/pívot, nacionalidad, nacimiento, cuerpo técnico |
+| BSL | Wikipedia en inglés (plantillas «current roster» y fichas de los jugadores, API) | `tools/plantillas_bsl_wiki.js` | nombre, posición, nacionalidad o país de nacimiento, nacimiento, altura |
 | Clubes y pabellones | Wikipedia (páginas de cada liga 2026-27) | a mano | lista de clubes, ascensos y descensos |
 | Fechas | Euroliga, EuroCup y ACB: calendarios oficiales publicados en verano de 2026 | a mano | inicio, Final Four, Copa del Rey, playoffs |
 
-Sin fuente abierta: la liga turca (tbf.org.tr está protegido por Cloudflare y no se ha intentado saltar). Sus clubes, salvo Fenerbahçe, Efes, Beşiktaş y los tres de la EuroCup, siguen con relleno.
+La web de la federación turca (tbf.org.tr) y RealGM están protegidas por Cloudflare y no se ha intentado saltarlas. Çayırova no tiene plantilla publicada y sigue con relleno; los jugadores sin artículo en la Wikipedia (sobre todo jóvenes turcos) llevan edad y posición estimadas.
 
 **Estimado, no real:** valoración, potencial, perfil de juego, salario y fin de contrato (salvo en la Lega). La media de los 8 mejores de cada club se fija por su reputación y liga; los extranjeros suben, los menores de 23 bajan y tienen más potencial. Si un jugador ya estaba en los datos con valoración hecha a mano en el mismo club, se conserva.

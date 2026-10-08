@@ -383,6 +383,11 @@
       // Ceder el paso: pasos de peatones a 6,5-9,5 m del cruce en cada eje
       const frente = delante + c.len / 2;
       for (const ini of [-9.5, 6.5]) { const dist = ini - frente; if (dist > -0.5 && dist < 4) { const ocupado = (S.gente.concat(S.yo ? [S.yo] : [])).some(p => { const a = c.eje === 'x' ? p.obj.position.x : p.obj.position.z, b = c.eje === 'x' ? p.obj.position.z : p.obj.position.x; return Math.abs(b) < 3.2 && c.dir * a > ini - 0.3 && c.dir * a < ini + 3.3; }); if (ocupado) objetivo = Math.min(objetivo, Math.max(0, dist * 1.5)); } }
+      // Cualquier peatón en su carril (también fuera de los pasos): frena y espera a que pase
+      for (const p of S.gente.concat(S.yo ? [S.yo] : [])) {
+        const o = p.obj.position, lat = c.eje === 'x' ? o.z - c.c : o.x - c.c, lon = c.dir * ((c.eje === 'x' ? o.x : o.z) - c.pos) - c.len / 2;
+        if (Math.abs(lat) < 1.15 && lon > -0.3 && lon < 6) objetivo = Math.min(objetivo, Math.max(0, (lon - 1.4) * 1.5));
+      }
       // Autobús: parada de 6 s en la marquesina
       if (c.bus) { const d = c.parada - c.pos; if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else if (d > 0 && d < 0.6 && c.vel < 1.5) { c.tParada = 6; } else if (d > 0 && d < 12) objetivo = Math.min(objetivo, Math.max(0.4, d * 0.6)); }
       if (!verde && delante > -16 && delante < -10.6) objetivo = Math.min(objetivo, Math.max(0, (-10.8 - delante) * 1.6));

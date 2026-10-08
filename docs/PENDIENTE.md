@@ -19,8 +19,8 @@
 - Modo construcción también en el despacho y otras salas del club; paredes interiores, color de paredes y suelos en casa.
 - Más ciudad: otros barrios conectados, el pabellón por dentro con esta vista (entrar desde la calle), el campus/ciudad deportiva explorable.
 - La ciudad del club cambia con la reputación más allá de banderas/árboles/mural (comercios nuevos, obras, grada de aficionados en la calle).
-- Rendimiento en móvil: la calle va a ~25 fps con CPU x4; probar en un Android real y bajar más (instanciar vecinos lejanos, LOD).
-- Los coches no esquivan a los peatones fuera de los pasos; el músico usa una postura por código, sin animación propia.
+- Rendimiento en móvil: la calle va a 13-30 fps con CPU x4 según la carga del ordenador (la medida varía mucho). Probado: congelar las matrices de lo estático gana ~1 fps y bajar a resolución 1x ~4 fps; no compensa sin medir en un Android real. Si allí va mal: LOD de personas y vecinos lejanos instanciados.
+- ~~Coches y peatones~~: los coches frenan ante cualquier peatón en su carril, también fuera de los pasos. El músico sigue con una postura por código (no hay animación de guitarra en el paquete de Quaternius).
 - Adaptar todo el mundo explorable al móvil (controles táctiles, tamaños de paneles); hasta ahora se ha afinado en PC.
 - Decisión abierta: si Three.js se queda corto, pasar a Godot 4 (APK) reutilizando modelos y diseño.
 
@@ -28,6 +28,9 @@
 - **Creación del personaje más completa:** hoy hay piel (5), peinado (6), color de pelo (6), barba (4), gafas (3) y ropa (4), pero el modelo 3D solo usa la piel y el color de pelo. Añadir altura y complexión, cara, peinados y barba en el modelo 3D, tatuajes, accesorios (cinta, muñequeras, zapatillas), dorsal y estilo de ropa fuera de la pista.
 - **Pueblo explorable:** pasear por el pueblo de colina (estilo Monteriggioni) con el motor del mundo (como la sede y la calle), y no solo verlo desde arriba.
 - **Obras con tiempo:** hoy invertir en el pueblo es instantáneo. Que cada obra dure semanas o meses, con fases visibles (solar, cimientos, estructura, andamios, acabado), obreros trabajando y una evolución progresiva del pueblo.
+- **Disciplinado o rebelde, y que se note:** hoy la diferencia está escondida en números (intensidad del entreno, constancia, ánimo, mentor, fiestas en la vida social y algún evento) y solo se ve en el potencial a largo plazo. Hace falta: un indicador visible de tu estilo (de «profesional ejemplar» a «chico malo»), consecuencias claras en las dos direcciones (el rebelde gana fama, seguidores y patrocinios de cierto tipo, pero arriesga multas, suplencias, lesiones y potencial; el disciplinado, al revés) y planes divertidos de rebelde: salir de fiesta, viaje improvisado, tatuaje, coche caro, polémica en redes, plantar a la prensa, pelea con el entrenador.
+- **Tu móvil dentro del juego:** mensajes y notificaciones de amigos, representante, entrenador, prensa y aficionados (estilo chat), con decisiones que puedes aceptar o ignorar, en lugar de solo eventos en una lista.
+- **Personas con las que hablar por la calle:** vecinos, aficionados, periodistas y gente icónica de cada club (leyendas, el utillero de toda la vida, el líder de la peña) que te reconocen, te piden cosas y dan pequeñas misiones o eventos.
 - **Mapa interactivo** en el mundo explorable (calle, barrio, pueblo): puntos destacados (sede, pabellón, casa, tienda, peña, obras), dónde estás tú y tocar un punto para ir andando hasta él, en vez de orientarse a ojo.
 - **Transporte** cuando la ciudad o el pueblo crezcan: bici, bus o metro con paradas, para moverse entre barrios sin cruzar todo andando.
 - **Mejorar la sede:** salas más detalladas y con más vida, mejor distribución (ya corregido: el banco de pesas del gimnasio tapaba la puerta de la enfermería), más interacciones por sala.
@@ -40,13 +43,14 @@
 - ~~Guardado seguro~~: hecho en la fase 1.4 (versión y migraciones, guardado al salir de la app, almacenamiento persistente, copia de seguridad por archivo o compartir y recordatorio semanal).
 
 ## P1 — Datos
-- ~~Plantillas reales~~ de BBL, GBL, Lega, ACB, Efes, ASVEL y tres clubes turcos (`tools/generar_plantillas.js`). Falta la BSL: tbf.org.tr está tras Cloudflare; los otros 10 clubes turcos siguen con relleno.
+- ~~Plantillas reales~~ de BBL, GBL, Lega, ACB, Efes, ASVEL y la BSL (`tools/generar_plantillas.js`; la liga turca, desde las plantillas «current roster» de la Wikipedia con `tools/plantillas_bsl_wiki.js`, porque tbf.org.tr y RealGM están tras Cloudflare). Solo Çayırova sigue con relleno (no tiene plantilla publicada).
 - Valoraciones: estimadas por reputación del club, edad y si es extranjero; no hay minutos ni estadísticas. Mejorarlas con estadísticas de 2025-26 si se encuentra una fuente abierta.
 - ~~Clubes que faltan~~: hecho (BBL 18, BSL 16, GBL 14, Lega 16). Pabellones y presupuestos de los recién llegados, aproximados.
 - ~~Fechas reales~~: Euroliga y ACB oficiales (Copa del Rey del 18 al 21 de febrero); BBL, Lega, GBL y BSL aproximadas. La EuroCup real acaba la fase regular el 13 de enero; aquí se alarga.
 
 ## P1 — Equilibrio
-- Reputación del jugador (`carrera.js`), progresión, finanzas de los clubes (resultado/presupuesto), efectos de muebles, sueldo y ahorros en los modos no jugador (hoy son estimaciones).
+- ~~Finanzas de los clubes~~: antes todos ganaban mucho (Euroliga +31 % del presupuesto, NBA +15 %). Ahora los ingresos comerciales van por liga (`BASE_LIGA` en finanzas.js): de septiembre a junio, entre +3 % y +11 %, y contando el verano el año queda cerca del equilibrio; hay clubes en pérdidas. Medir con `node tools/finanzas_calibrar.js`.
+- Reputación del jugador (`carrera.js`), efectos de muebles, sueldo y ahorros en los modos no jugador (hoy son estimaciones).
 - ~~Tiempo hasta la NBA por origen~~: con `node tools/sim_potencial.js` todos los perfiles llegan por el draft a los 20-21 años si se presentan, pero el puesto cambia: perfecto 13-14 (cantera o universidad) o 31 (Europa), normal 19-42, juerguista 22-45. El informe de los ojeadores (`informeOjeadores`) suma o resta según la calidad de tu temporada y tu fama.
 - Revisar si algún efecto antiguo sigue dando mucha fama de golpe.
 - ~~Progresión del jugador~~: rehecha. El margen del potencial es de ±15 (máximo 99) y lo que subes cada verano depende de la calidad de tu temporada (intensidad, constancia, ánimo, minutos, mentor; `progresoAnual` en carrera.js). En `node tools/sim_potencial.js 9`: perfil perfecto 97-99 a los 25-27 (europa, 89), normal 79-90, juerguista 74-83.
@@ -64,8 +68,8 @@
 ## P3 — Deuda técnica
 - ~~Dividir `ui.js`~~: hecho (núcleo + ui_gestion, ui_ciudad, ui_presidente, ui_carrera, ui_entrenador).
 - Pruebas con aserciones: hecho en `t_aserciones.js` (15: estado, resultados, clasificación, medias por liga, guardado, migraciones, acciones, casa, potencial, ligas y fechas 2026-27, clase del draft, elegibilidad y proyección, salón de la fama, potencial por minutos). Las demás pruebas siguen siendo de humo; ampliar aserciones poco a poco.
-- Hay varios parches aplicados por sustitución de texto sobre `ui.js`; conviene ordenar y simplificar.
-- ~~Recalibrar el simulador~~: hecho (`tools/calibrar.js`): NBA 115 pts, Euroliga 83, diferencia 10-12, local 55-59 %. Final apretado (quien pierde de 1 a 5 arriesga, de 3 va a por el triple): prórrogas ~4,6 % (real 5-6 %). La ACB juega algo más rápido: ~82,5 pts (real 83).
+- ~~Parches en `ui.js`~~: revisado tras dividirlo; no quedan funciones sin usar ni envolturas en tiempo de ejecución.
+- ~~Recalibrar el simulador~~: hecho (`tools/calibrar.js`): NBA 115 pts, Euroliga 83, diferencia 10-12, local 55-59 %. Final apretado (quien pierde de 1 a 5 arriesga, de 3 va a por el triple, y en el último minuto hace faltas para ganar una o dos posesiones): prórrogas ~5,7 % (real 5-6 %). La ACB juega algo más rápido: ~82,5 pts (real 83).
 - ~~Tamaño del guardado~~: hecho, comprimido con LZ-string (1,7 MB -> ~0,17 MB).
 
 ## Límites conocidos / avisos

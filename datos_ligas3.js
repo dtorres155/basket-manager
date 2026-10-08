@@ -1,6 +1,6 @@
 /* DATOS: plantillas reales 2026-27 (generado por tools/generar_plantillas.js; no lo edites a mano si vas a regenerarlo).
    Se aplican sobre los clubes de datos_ligas.js, datos_ligas2.js y datos_euroliga.js: sustituyen su plantilla (los de relleno solo completan hasta 12).
-   Fuentes (ver docs/FUENTES_DATOS.md): acb.com, legabasket.it, esake.gr y sportschau.de (BBL, Euroliga y EuroCup), consultadas en octubre de 2026.
+   Fuentes (ver docs/FUENTES_DATOS.md): acb.com, legabasket.it, esake.gr, sportschau.de (BBL, Euroliga y EuroCup) y la Wikipedia en inglés (liga turca), consultadas en octubre de 2026.
    Reales: nombre, posición (en BBL, Euroliga y EuroCup solo base/alero/pívot; el reparto entre PG/SG y SF/PF es aproximado), nacionalidad, edad y altura.
    ESTIMADOS: valoración, potencial, perfil, salario y fin de contrato (salvo en la Lega, donde el contrato es el publicado).
    Fila: [nombre, pos, edad, altura|0, nac, ovr, pot, perfil, salario M€, fin contrato]; perfil 0 = el jugador ya existía y conserva sus datos. */
@@ -1036,5 +1036,157 @@
     ["Mateusz Ponitka","SF",33,0,"PL",56,56,"E",0.05,2027],
     ["Can Mutaf","PF",35,0,"TR",55,55,"R",0.05,2028],
     ["Furkan Haltali","C",23,0,"TR",55,61,"E",0.05,2027]
+  ]);
+  // BSL
+  R("galatasaray", [
+    ["Vrenz Bleijenbergh","SF",25,211,"BE",71,75,"D",1.08,2029],
+    ["Alen Smailagić","PF",26,208,"RS",68,68,"R",0.73,2027],
+    ["Nikola Ivanović","PG",32,190,"ME",68,68,"P",0.73,2029],
+    ["Dyshawn Pierre","SF",32,198,"CA",68,68,"E",0.73,2029],
+    ["Jerome Robinson","SG",29,193,"US",67,67,"T",0.62,2028],
+    ["Chimezie Metu","PF",29,208,"NG",67,67,"D",0.62,2027],
+    ["Buğrahan Tuncer","PG",33,193,"TR",67,67,"P",0.62,2029],
+    ["Zekeriya Yiğit Tekin","SF",24,0,"TR",65,68,"E",0.44,2027],
+    ["Berkan Durmaz","PF",29,206,"TR",64,64,"E",0.36,2029],
+    ["Şehmus Hazer","PG",27,191,"TR",61,61,"P",0.18,2028],
+    ["Can Korkmaz","PG",33,188,"TR",61,61,"P",0.18,2028],
+    ["Oumar Ballo","C",24,213,"ML",61,64,"R",0.18,2027],
+    ["Aleksej Nikolić","PG",31,191,"SI",60,60,"P",0.13,2027],
+    ["Efe Şekeroğlu","PF",24,0,"TR",60,63,"R",0.13,2029]
+  ]);
+  // BSL
+  R("karsiyaka", [
+    ["Rashard Kelly","SF",31,201,"US",71,71,"D",0.91,2029],
+    ["Markel Starks","PG",24,188,"US",69,73,"P",0.71,2027],
+    ["Xavier Munford","PG",34,193,"US",67,67,"P",0.53,2029],
+    ["Brianté Weber","PG",33,188,"US",63,63,"T",0.25,2028],
+    ["Steven Enoch","C",29,208,"US",63,63,"D",0.25,2028],
+    ["Kendall Munson","SG",24,0,"TR",63,68,"T",0.25,2028],
+    ["Ishmael El-Amin","PG",27,189,"US",62,62,"T",0.2,2028],
+    ["Eylem Eminoğlu","PF",24,0,"TR",61,65,"E",0.15,2027],
+    ["Hakan Sayılı","SF",24,0,"TR",60,63,"T",0.11,2027],
+    ["Muhaymin Mustafa","SG",26,201,"SD",59,59,"T",0.08,2027],
+    ["Yalın Yıldız","PF",24,0,"TR",59,63,"E",0.08,2028],
+    ["Yavuz Gültekin","SF",24,0,"TR",59,62,"E",0.08,2027]
+  ]);
+  // BSL
+  R("merkezefendi", [
+    ["Victor Bailey Jr.","SG",28,193,"US",69,69,"T",0.6,2029],
+    ["Brae Ivey","PF",24,0,"TR",64,69,"R",0.26,2028],
+    ["Mahir Agva","C",30,206,"TR",64,64,"R",0.26,2028],
+    ["Özolcay","SF",24,0,"TR",64,69,"E",0.26,2027],
+    ["Erten Gazi","SG",29,191,"TR",61,61,"T",0.13,2028],
+    ["Egemen Güven","C",30,213,"TR",61,61,"R",0.13,2027],
+    ["Head coach: Aktaş","SG",24,0,"TR",60,65,"T",0.1,2029],
+    ["Denizli Basket#Current roster","PF",24,0,"TR",60,64,"E",0.1,2027],
+    ["John Meeks","SF",27,198,"US",60,60,"E",0.1,2029],
+    ["Marko Pecarski","PF",26,208,"RS",59,59,"E",0.07,2028],
+    ["Yaman Alişan","SF",24,0,"TR",59,62,"T",0.07,2029],
+    ["Mustapha Amzil","PF",25,208,"FI",59,62,"D",0.07,2028],
+    ["Jhonathan Dunn","SG",24,0,"TR",56,61,"T",0.04,2027],
+    ["Assistant coaches: Yetim","PF",24,0,"TR",56,61,"R",0.04,2028],
+    ["Horuz","SG",24,0,"TR",56,60,"T",0.04,2029]
+  ]);
+  // BSL
+  R("aliaga", [
+    ["Nathan Mensah","C",28,210,"GH",66,66,"R",0.41,2027],
+    ["Chris Horton","PF",32,203,"US",63,63,"R",0.23,2029],
+    ["Max Abmas","PG",25,180,"US",63,67,"P",0.23,2029],
+    ["Olivier Hanlan","PG",33,193,"CA",62,62,"P",0.18,2029],
+    ["Keandre Cook","SG",29,196,"US",62,62,"T",0.18,2027],
+    ["Yusuf Gündüz","PF",24,0,"TR",61,63,"R",0.14,2029],
+    ["Tibet Görener","SF",24,0,"TR",60,62,"T",0.1,2029],
+    ["Yiğit Onan","SF",24,208,"TR",60,62,"E",0.1,2029],
+    ["Khyri Thomas","SG",30,191,"US",58,58,"T",0.06,2028],
+    ["Jarrod Uthoff","PF",33,206,"US",58,58,"E",0.06,2028],
+    ["Ozan Yılmaz","PF",24,0,"TR",56,60,"R",0.04,2028],
+    ["Anžejs Pasečņiks","PF",30,216,"LV",56,56,"E",0.04,2029],
+    ["Thomas Akyazılı","SG",24,0,"TR",54,59,"T",0.04,2027]
+  ]);
+  // BSL
+  R("bursaspor", [
+    ["Buğra Çal","SG",24,0,"TR",66,68,"E",0.37,2029],
+    ["Brandon Taylor (basketball, born January 1994)","PG",32,178,"US",65,65,"E",0.31,2027],
+    ["Leyton Hammonds","SF",24,0,"TR",65,69,"E",0.31,2027],
+    ["Javon Freeman-Liberty","PG",26,191,"US",63,63,"E",0.21,2027],
+    ["Nate Watson","C",27,208,"US",63,63,"R",0.21,2029],
+    ["Mike Moore","PF",24,203,"US",60,63,"D",0.09,2029],
+    ["Warren Washington","SG",24,0,"TR",60,65,"T",0.09,2028],
+    ["Mete Paçacı","SF",24,0,"TR",58,61,"E",0.05,2028],
+    ["Loïc Schwartz","SG",33,198,"BE",57,57,"D",0.04,2029],
+    ["Yağız Baykurt","PF",24,0,"TR",57,60,"R",0.04,2027],
+    ["Ergi Tırpancı","SF",26,201,"TR",56,56,"E",0.04,2027],
+    ["Ömercan İlyasoğlu","PG",25,193,"TR",56,58,"T",0.04,2027]
+  ]);
+  // BSL
+  R("korfez", [
+    ["Boo Buie","PG",26,188,"US",65,65,"T",0.29,2029],
+    ["Oscar Cluff","C",24,211,"AU",64,68,"R",0.24,2028],
+    ["Alex Reese","PF",27,206,"US",63,63,"D",0.19,2027],
+    ["Johnny Davis (basketball, born 2002)","SG",24,193,"US",62,66,"T",0.15,2029],
+    ["Matt Mitchell","SF",27,198,"US",62,62,"E",0.15,2027],
+    ["Efe Sarıca","SF",24,0,"TR",60,64,"D",0.09,2027],
+    ["Paulius Danusevičius","PF",25,206,"LT",60,64,"E",0.09,2027],
+    ["Mert Akay","PG",26,196,"TR",59,59,"E",0.06,2027],
+    ["Assistant coaches: * Ateşdağlı","SF",24,0,"TR",59,61,"T",0.06,2029],
+    ["Türel","SG",24,0,"TR",59,63,"D",0.06,2027],
+    ["Altan Çamoğlu","SG",24,0,"TR",58,62,"T",0.05,2028],
+    ["Berk Akın","SF",24,0,"TR",56,60,"T",0.04,2029],
+    ["Head coach: Kavut","PF",24,0,"TR",56,59,"R",0.04,2028],
+    ["Mert Emre Ekşioğlu","SG",24,188,"TR",54,58,"T",0.04,2028],
+    ["Filip Barna","PF",24,0,"TR",52,55,"R",0.04,2028]
+  ]);
+  // BSL
+  R("bandirma", [
+    ["Damien Jefferson","SF",28,196,"US",64,64,"D",0.22,2028],
+    ["Zach Hankins","C",30,211,"US",64,64,"R",0.22,2028],
+    ["Q. J. Peterson","PG",24,183,"US",64,68,"P",0.22,2028],
+    ["Ty Gordon","PG",27,185,"US",63,63,"E",0.18,2027],
+    ["Alex Pérez","PG",33,191,"US",63,63,"T",0.18,2029],
+    ["Boubacar Toure","C",30,213,"SN",62,62,"R",0.14,2027],
+    ["Peyton Aldridge","PF",30,203,"US",61,61,"R",0.11,2028],
+    ["Berkay Sinirlioğlu","SG",24,0,"TR",61,63,"T",0.11,2029],
+    ["Okben Ulubay","SF",30,200,"TR",59,59,"E",0.06,2029],
+    ["Edon Maxhuni","PG",28,188,"FI",59,59,"P",0.06,2027],
+    ["Akın Kandemir","SF",24,0,"TR",59,61,"D",0.06,2028],
+    ["Berk Demir","PF",31,203,"TR",59,59,"D",0.06,2028],
+    ["Özgür Şahin","SG",24,0,"TR",59,61,"T",0.06,2028],
+    ["Yıldırım","PF",24,0,"TR",59,61,"R",0.06,2027],
+    ["Mehmet Kızıl","PF",24,0,"TR",58,60,"R",0.04,2027]
+  ]);
+  // BSL
+  R("erokspor", [
+    ["Jordan Usher","SF",24,201,"US",66,69,"E",0.4,2028],
+    ["Kevin Yebo","PF",29,202,"DE",64,64,"R",0.27,2029],
+    ["Errick McCollum","PG",24,188,"US",63,67,"T",0.22,2029],
+    ["Yunus Emre Sonsırma","PG",33,192,"TR",63,63,"E",0.22,2027],
+    ["Metehan Akyel","C",30,206,"TR",63,63,"R",0.22,2028],
+    ["Amadou Sow","SG",24,0,"TR",61,66,"D",0.13,2028],
+    ["Dallas Moore","PG",31,185,"US",61,61,"P",0.13,2029],
+    ["Mike Davis Jr.","SF",24,0,"TR",60,64,"D",0.1,2027],
+    ["Keye van der Vuurst","PG",24,191,"NL",59,63,"T",0.07,2028],
+    ["Egehan Arna","SF",29,203,"TR",59,59,"T",0.07,2029],
+    ["James Webb III","SF",33,206,"US",58,58,"E",0.05,2029],
+    ["Muhsin Yaşar","C",30,208,"TR",56,56,"R",0.04,2028],
+    ["Ataberk Aksu","SG",24,0,"TR",55,59,"D",0.04,2028],
+    ["Melih Tunca","SG",24,0,"TR",55,60,"T",0.04,2029]
+  ]);
+  // BSL
+  R("trabzonspor", [
+    ["Marcus Keene","PG",31,175,"US",65,65,"P",0.31,2029],
+    ["Xavier Tillman","PF",27,203,"US",65,65,"R",0.31,2027],
+    ["Akwasi Yeboah","SF",29,198,"GB",65,65,"T",0.31,2027],
+    ["Shaquille Harrison","PG",32,193,"US",64,64,"P",0.25,2028],
+    ["Troy Caupain","PG",30,193,"US",63,63,"T",0.2,2029],
+    ["Emanuel Terry","PF",30,206,"US",63,63,"D",0.2,2027],
+    ["Isaiah Canaan","SG",35,183,"US",62,62,"E",0.16,2029],
+    ["Yiğit Arslan","SG",30,193,"TR",61,61,"T",0.12,2029],
+    ["Brady Manek","PF",28,206,"US",60,60,"D",0.09,2029],
+    ["İsmail Cem Ulusoy","PG",29,183,"TR",60,60,"T",0.09,2029],
+    ["Rıdvan Öncel","PG",29,191,"TR",58,58,"E",0.05,2029],
+    ["Batu Bircan","PF",24,0,"TR",56,59,"E",0.04,2028],
+    ["Yiğit Hamza Mestoğlu","SF",22,203,"TR",56,64,"E",0.04,2028],
+    ["Tolga Geçim","SF",30,206,"TR",53,53,"E",0.04,2029],
+    ["Ege Arar","PF",30,208,"TR",52,52,"R",0.04,2028]
   ]);
 })();

@@ -6,6 +6,10 @@
   const U = GM.util;
   const ESC = { NBA: { precio: 82, merch: 12, tv: 1.0e6 }, EUROLIGA: { precio: 34, merch: 5, tv: 0.14e6 }, ACB: { precio: 23, merch: 3, tv: 0.05e6 }, LEGA: { precio: 19, merch: 2, tv: 0.04e6 }, GBL: { precio: 18, merch: 2, tv: 0.04e6 }, BBL: { precio: 24, merch: 3, tv: 0.05e6 }, BSL: { precio: 20, merch: 2.5, tv: 0.05e6 } };
   const BASE = 0.44, OPEX = 0.28;
+  // Ingresos comerciales (parte del presupuesto) por liga, calibrados para que la media de cada liga cierre con un beneficio
+  // pequeño (~3 % del presupuesto) y algunos clubes pierdan dinero (tools/finanzas_calibrar.js). Antes todos ganaban mucho.
+  const BASE_LIGA = { NBA: 0.32, EUROLIGA: 0.17, ACB: 0.26, LEGA: 0.39, GBL: 0.42, BBL: 0.18, BSL: 0.34 };
+  const baseDe = (st, id) => { const m = GM.mods.mercado, lg = m && m.ligaDe && st.ligas ? m.ligaDe(st, id) : null; return BASE_LIGA[lg] !== undefined ? BASE_LIGA[lg] : BASE; };
   const MARCAS = ['Nexora', 'Aurelia Seguros', 'Banco Levante', 'Volta Energía', 'Cierzo Bebidas', 'Ibérica Telecom', 'Delta Motor', 'Atlas Logística', 'Mistral Aerolíneas', 'Lumen Salud', 'Orbis Tecnología', 'Costa Dorada Hoteles'];
   const yearOf = st => parseInt(st.temporada.slice(0, 4), 10);
   const M = () => GM.mods;
@@ -96,7 +100,7 @@
       registrar(st, id, 'Sueldos de la plantilla', -sal);
       registrar(st, id, 'Gastos de estructura y viajes', -eq.presupuesto * OPEX / 12);
       if (mant) registrar(st, id, 'Mantenimiento de instalaciones', -mant);
-      registrar(st, id, 'Ingresos comerciales y derechos', eq.presupuesto * BASE / 12);
+      registrar(st, id, 'Ingresos comerciales y derechos', eq.presupuesto * baseDe(st, id) / 12);
       if (pat) registrar(st, id, 'Patrocinios', pat);
     });
   }

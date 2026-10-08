@@ -30,7 +30,11 @@ const MAPA = [
   ['gbl', 'ΗΡΑΚΛΗΣ', 'iraklis', 'GBL'], ['gbl', 'ΚΑΡΔΙΤΣΑ ΙΑΠΩΝΙΚΗ', 'karditsa', 'GBL'], ['gbl', 'ΚΟΛΟΣΣΟΣ H HOTELS COLLECTION', 'kolossos', 'GBL'],
   ['gbl', 'ΜΑΡΟΥΣΙ', 'maroussi', 'GBL'], ['gbl', 'ΜΥΚΟΝΟΣ Betsson BC', 'mykonos', 'GBL'], ['gbl', 'ΠΑΟΚ', 'paok', 'GBL'],
   ['gbl', 'ΠΕΡΙΣΤΕΡΙ Betsson', 'peristeri', 'GBL'], ['gbl', 'ΠΡΟΜΗΘΕΑΣ ΠΑΤΡΑΣ ΒΙΚΟΣ COLA', 'promitheas', 'GBL'],
-  ['eurocup', 'Tofas SK', 'tofas', 'BSL'], ['eurocup', 'Türk Telekom Ankara', 'turk-telekom', 'BSL'], ['eurocup', 'Bahçeşehir Koleji', 'bahcesehir', 'BSL']
+  ['eurocup', 'Tofas SK', 'tofas', 'BSL'], ['eurocup', 'Türk Telekom Ankara', 'turk-telekom', 'BSL'], ['eurocup', 'Bahçeşehir Koleji', 'bahcesehir', 'BSL'],
+  // Liga turca desde la Wikipedia (tools/plantillas_bsl_wiki.js); Çayırova no tiene plantilla publicada
+  ['bsl', 'Galatasaray MCT Technic', 'galatasaray', 'BSL'], ['bsl', 'Karşıyaka Basket', 'karsiyaka', 'BSL'], ['bsl', 'Yukatel Denizli Basket', 'merkezefendi', 'BSL'],
+  ['bsl', 'Petkim Spor', 'aliaga', 'BSL'], ['bsl', 'Bursaspor Basketbol', 'bursaspor', 'BSL'], ['bsl', 'Biotekno Körfez Basket', 'korfez', 'BSL'],
+  ['bsl', 'Pizza Bulls Bordo Bandırma', 'bandirma', 'BSL'], ['bsl', 'Safiport Erokspor', 'erokspor', 'BSL'], ['bsl', 'Trabzonspor', 'trabzonspor', 'BSL']
 ];
 // Media objetivo de los 8 mejores: base + reputación × 0,25 (Euroliga: 60 + rep × 0,15)
 const AJUSTE = { ACB: 1.5, LEGA: 0, BBL: -0.5, GBL: -1, BSL: 0 };
@@ -50,6 +54,8 @@ const PAIS = {
   CD: 'Kongo|COD', ML: 'Mali|MLI', AO: 'Angola|ΑΝΓΚΟΛΑ', GA: 'Gabun', FI: 'Finnland', CV: 'Kap Verde', BS: 'Bahamas', BY: 'ΛΕΥΚΟΡΩΣΙΑ', CY: 'ΚΥΠΡΟΣ', CO: 'COL'
 };
 const ISO = {}; for (const k in PAIS) PAIS[k].split('|').forEach(n => { ISO[n] = k; });
+// Nombres en inglés de la Wikipedia (nacionalidad o país de nacimiento)
+Object.assign(ISO, { American: 'US', 'U.S.': 'US', 'U. S.': 'US', US: 'US', Turkish: 'TR', Turkey: 'TR', Spain: 'ES', Croatia: 'HR', Croatian: 'HR', Greece: 'GR', France: 'FR', French: 'FR', Angola: 'AO', 'The Bahamas': 'BS', Serbian: 'RS', Serbia: 'RS', Canada: 'CA', Poland: 'PL', Finnish: 'FI', Senegal: 'SN', Irish: 'IE', Nigerian: 'NG', Nigeria: 'NG', 'South Sudanese': 'SS', Mali: 'ML', Belgium: 'BE', Dutch: 'NL', Sudanese: 'SD', German: 'DE', Germany: 'DE', Italy: 'IT', Gabon: 'GA', Lithuania: 'LT', Slovenian: 'SI', Montenegrin: 'ME', Macedonian: 'MK', 'Queensland)': 'AU', England: 'GB', British: 'GB', Mexico: 'MX', Latvia: 'LV', Ghana: 'GH' });
 const POS = { Base: 'PG', Escolta: 'SG', Alero: 'SF', 'Ala-pívot': 'PF', 'Pívot': 'C', 'Play/Guardia': 'PG', 'Guardia/Ala': 'SG', PG: 'PG', SG: 'SG', SF: 'SF', PF: 'PF', C: 'C' };
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 const limpiaNombre = s => s.replace(/&amp;/g, '&').replace(/&#x27;|&#39;/g, "'").replace(/\bMc ([A-Z])/g, 'Mc$1').replace(/\s+/g, ' ').trim()
@@ -118,7 +124,7 @@ traspasos.forEach(t => console.log('Traspaso:', t[1], t[2], '->', t[3]));
 const q = JSON.stringify;
 let txt = `/* DATOS: plantillas reales 2026-27 (generado por tools/generar_plantillas.js; no lo edites a mano si vas a regenerarlo).
    Se aplican sobre los clubes de datos_ligas.js, datos_ligas2.js y datos_euroliga.js: sustituyen su plantilla (los de relleno solo completan hasta 12).
-   Fuentes (ver docs/FUENTES_DATOS.md): acb.com, legabasket.it, esake.gr y sportschau.de (BBL, Euroliga y EuroCup), consultadas en octubre de 2026.
+   Fuentes (ver docs/FUENTES_DATOS.md): acb.com, legabasket.it, esake.gr, sportschau.de (BBL, Euroliga y EuroCup) y la Wikipedia en inglés (liga turca), consultadas en octubre de 2026.
    Reales: nombre, posición (en BBL, Euroliga y EuroCup solo base/alero/pívot; el reparto entre PG/SG y SF/PF es aproximado), nacionalidad, edad y altura.
    ESTIMADOS: valoración, potencial, perfil, salario y fin de contrato (salvo en la Lega, donde el contrato es el publicado).
    Fila: [nombre, pos, edad, altura|0, nac, ovr, pot, perfil, salario M€, fin contrato]; perfil 0 = el jugador ya existía y conserva sus datos. */
