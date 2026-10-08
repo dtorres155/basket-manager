@@ -40,6 +40,17 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   out.sel = await p.evaluate(() => { const s = document.querySelector('.cc-sel'); return s ? s.innerText.replace(/\n/g, ' | ') : null; });
   await p.evaluate(() => { const b = [...document.querySelectorAll('.cc-sel button')].find(x => x.textContent.startsWith('Vender')); if (b) b.click(); }); await sleep(500);
   out.trasVender = await p.evaluate(() => GM.state.sede.casa.muebles.length + ' muebles, ' + GM.state.carrera.dinero.toFixed(2) + ' k€');
+  // Reformas: paredes terracota, baldosa hidráulica y luz cálida; un tabique y una lámpara que ilumina
+  await p.evaluate(() => { GM.state.carrera.dinero = 50; [...document.querySelectorAll('.cc-cat')].find(b => b.textContent === 'Reformas').click(); }); await sleep(400);
+  await p.screenshot({ path: path.join(DIR, '7_reformas.png') });
+  out.reformas = await p.evaluate(() => { const clic = t => { const b = [...document.querySelectorAll('.cc-reforma .cc-item')].find(x => x.textContent.includes(t)); if (b) b.click(); return !!b; }; return [clic('Terracota'), clic('Baldosa'), clic('Cálida')].join(',') + ' -> ' + JSON.stringify({ pared: GM.state.sede.casa.pared, suelo: GM.state.sede.casa.suelo, luz: GM.state.sede.casa.luz }); });
+  await p.evaluate(() => [...document.querySelectorAll('.cc-cat')].find(b => b.textContent === 'Obra').click()); await sleep(300);
+  await p.evaluate(() => [...document.querySelectorAll('.cc-item')].find(b => b.textContent.includes('Tabique de 2 m')).click()); await sleep(800);
+  [sx, sy] = await proyecta(-1, 0.5); await p.mouse.move(sx, sy); await sleep(200); await p.mouse.click(sx, sy); await sleep(800);
+  await p.evaluate(() => [...document.querySelectorAll('.cc-cat')].find(b => b.textContent === 'Decoración').click()); await sleep(300);
+  await p.evaluate(() => [...document.querySelectorAll('.cc-item')].find(b => b.textContent.includes('Lámpara de pie')).click()); await sleep(800);
+  [sx, sy] = await proyecta(-3.3, -2.3); await p.mouse.move(sx, sy); await sleep(200); await p.mouse.click(sx, sy); await sleep(800);
+  out.obra = await p.evaluate(() => GM.state.sede.casa.muebles.filter(m => m.m[0] === '_' || /^lamp/.test(m.m)).map(m => m.m).join(', ') + '; luces: ' + GM.sede._estado().mueblesCasa.filter(o => o.luzCasa).length);
   await p.evaluate(() => GM.casa.activar(GM.sede._estado(), GM.sede._motor(), false)); await sleep(800);
   await p.evaluate(() => { const S = GM.sede._estado(); S.zoom = 12; S.yawObj = S.yaw = 0.5; }); await sleep(1500); await p.screenshot({ path: path.join(DIR, '6_casa_final.png') });
   // Descansar (usa el confort) y salir a la calle

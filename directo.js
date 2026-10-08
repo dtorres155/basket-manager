@@ -52,14 +52,13 @@
           const hsh = U.hash(e.id + i); GM.sede.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][hsh % 3], altura: 196 + hsh % 14, piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329', '#e0ac85'][(hsh >>> 3) % 5], pelo: ['#1d1510', '#3b2617', '#a9793e'][(hsh >>> 6) % 3], ropa: [c1, c2] }).then(p => {
             if (!V) return; o.g.children.forEach(ch => { ch.visible = false; }); p.obj.scale.multiplyScalar(1.15); o.g.add(p.obj); o.p = p; GM.sede.animar(p, 'idle'); }).catch(() => {}); }); });
         V.scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
-        { // Público: cuerpos y cabezas instanciados, 3/4 con los colores del local
+        { // Público: personas sentadas instanciadas (GM.kit.publico), 3/4 con los colores del local; al celebrar saltan y alzan los brazos
           const eL = st.equipos[g.local], eV = st.equipos[g.visitante], cols = [eL.colores[0], eL.colores[1] || '#ffffff', eV.colores[0], '#3d4a56', '#d9d9d9', '#7a2f22', '#2f4f6e'];
           const sitios = []; for (let r = 0; r < 4; r++) for (const s of [-1, 1]) for (let x = -L - 1.5; x <= L + 1.5; x += 0.62) { const h0 = U.hash('fan' + r + s + x.toFixed(2)); if (h0 % 10 < 1) continue; sitios.push({ x: x + ((h0 >>> 4) % 10) / 40, y: r * 0.6 + 0.3, z: s * (W + 1.6 + r * 0.9), s, eq: h0 % 100 < 74 ? 'A' : h0 % 100 < 90 ? 'B' : 'N', h0 }); }
-          const n = sitios.length, cuerpos = new THREE.InstancedMesh(new THREE.BoxGeometry(0.42, 0.62, 0.3), new THREE.MeshLambertMaterial(), n), cabezas = new THREE.InstancedMesh(new THREE.SphereGeometry(0.15, 8, 6), new THREE.MeshLambertMaterial(), n);
-          const c = new THREE.Color(), m = new THREE.Matrix4(), piel = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'];
-          sitios.forEach((p, i) => { const col = p.eq === 'A' ? cols[p.h0 % 2] : p.eq === 'B' ? cols[2] : cols[3 + p.h0 % 4]; cuerpos.setColorAt(i, c.set(col)); cabezas.setColorAt(i, c.set(piel[(p.h0 >>> 7) % 5])); });
-          W3.add(cuerpos, cabezas); ES.publico = { sitios, cuerpos, cabezas, m };
-          ES.colocaPublico = (t) => { const C = ES.celebra, act = C && t - C.t0 < 1.4; sitios.forEach((p, i) => { let y = p.y; if (act && p.eq === C.k) y += Math.abs(Math.sin((t - C.t0) * 9 + p.h0)) * 0.35 * (1 - (t - C.t0) / 1.4); m.makeTranslation(p.x, y + 0.31, p.z); cuerpos.setMatrixAt(i, m); m.makeTranslation(p.x, y + 0.78, p.z); cabezas.setMatrixAt(i, m); }); cuerpos.instanceMatrix.needsUpdate = cabezas.instanceMatrix.needsUpdate = true; ES.publicoQuieto = !act; };
+          const piel = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'], pelo = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#8a8a8a', '#c9a25f'];
+          const fans = sitios.map(p => ({ x: p.x, y: p.y, z: p.z, ry: p.s > 0 ? Math.PI : 0, ropa: p.eq === 'A' ? cols[p.h0 % 2] : p.eq === 'B' ? cols[2] : cols[3 + p.h0 % 4], piel: piel[(p.h0 >>> 7) % 5], pelo: pelo[(p.h0 >>> 11) % 6], pantalon: ['#2f3640', '#3c4a5c', '#5a4a3a'][(p.h0 >>> 3) % 3] }));
+          const PB = K.publico(fans, 0.82); W3.add(PB.grupo); ES.publico = { sitios, PB };
+          ES.colocaPublico = (t) => { const C = ES.celebra, act = C && t - C.t0 < 1.4; PB.colocar(i => { const p = sitios[i]; if (!(act && p.eq === C.k)) return null; const f = 1 - (t - C.t0) / 1.4; return { salto: Math.abs(Math.sin((t - C.t0) * 9 + p.h0)) * 0.35 * f, brazos: Math.min(1, f * 1.6) }; }); };
           ES.colocaPublico(0);
         }
         { // Banquillos: banco, cinco suplentes sentados y el entrenador de pie, en la banda de la grada sur

@@ -20,6 +20,7 @@
 17. **Estilo de vida y vida en la calle (oct 2026):** que se note ser disciplinado o rebelde (y que el rebelde tenga cosas divertidas), eventos que lleguen al móvil del personaje, personas interactivas por la calle y gente icónica de cada club.
 18. **Pueblo vivo (oct 2026):** pasear por el pueblo propio, obras que tardan y se ven avanzar con obreros, instalaciones públicas y casas de familia y amigos, y un mapa interactivo para moverse.
 19. **Gente, personaje y Mi pueblo (oct 2026):** personas con las que hablar por la calle (gente icónica del club que te reconoce, charla y pide encargos), forma de la cara y zapatillas en el personaje, y que la vista de «Mi pueblo» muestre los edificios nuevos.
+20. **Pueblo, casas, formas y modelos (oct 2026):** que la muralla del pueblo no se atraviese, calles más anchas y trabajadas, más textura; y los puntos 14 (edificios con modelos y público en la grada), 16 (formas orgánicas en campus y ciudad) y 17 (casas más personalizables e iluminadas).
 
 ## Preferencias del usuario
 Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.

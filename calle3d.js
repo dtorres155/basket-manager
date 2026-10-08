@@ -69,6 +69,13 @@
     const cuerpo = new THREE.BoxGeometry(w, pisos * hP, d); uvM(cuerpo, 3, hP); cuerpo.translate(0, hB + pisos * hP / 2, 0);
     const bg = new THREE.Group(); W.add(bg); ocluye(bg); // grupo del edificio: se funde por dentro y se aclara entero
     const me = new THREE.Mesh(cuerpo, fach); me.position.set(cx, 0, cz); me.castShadow = me.receiveShadow = true; bg.add(me);
+    // Con o.kit, las plantas se montan con piezas glTF (Building Kit de Kenney): la caja queda mientras cargan o si fallan
+    if (o.kit && GM.edificioKit) {
+      const vidrio = new THREE.MeshStandardMaterial({ color: 0x5f7f99, roughness: 0.15, metalness: 0.35, emissive: 0xffd28a, emissiveIntensity: 0 }); S_.ventanas.push(vidrio);
+      GM.edificioKit.cuerpo({ ancho: w, fondo: d, plantas: pisos, altoPlanta: hP, color: E.muros[(r() * E.muros.length) | 0], ventanas: o.kit === 'arcos' ? 'arcos' : 'cuadradas', vidrio }).then(k => {
+        if (!k) return; k.position.set(cx, hB, cz); if (lado === 'n') k.rotation.y = Math.PI; me.visible = false; bg.add(k);
+      }).catch(() => {});
+    }
     // Planta baja con escaparates (o persianas metálicas)
     const bajo = new THREE.BoxGeometry(w, hB, d); uvM(bajo, 3, hB); bajo.translate(0, hB / 2, 0);
     const mb = new THREE.Mesh(bajo, new THREE.MeshStandardMaterial({ map: o.persiana ? T.persiana : T.tienda(o.colorBajo || '#3a3f45', o.colorBajo || 'gen'), roughness: 0.7 })); mb.position.set(cx, 0, cz); mb.receiveShadow = true; bg.add(mb);
@@ -129,8 +136,8 @@
     letrero(W, T.letrero(club.nombre.toUpperCase(), c1, '#ffffff', 'sede'), 9, 2.15, 15, 3.0, -6.53, Math.PI);
     plano(W, 3.4, 3.4, new THREE.MeshStandardMaterial({ map: T.escudo, transparent: true }), 15, 11, -6.55, Math.PI);
     zonas.sede = [15, -5.2];
-    edificio(W, G, T, E, r, [-40, -20, -31, -6.5], 5, 'n', { banderas: Math.round(afi / 25), c1, c2, toldo: { color: '#7a2f22', ancho: 5 }, letrero: { txt: 'FARMACIA', fondo: '#1f8f5f', letra: '#fff', clave: 'f', ancho: 4.2 } });
-    edificio(W, G, T, E, r, [23, -20, 31, -6.5], 6, 'n', { banderas: Math.round(afi / 22), c1, c2, toldo: { color: '#2f4f6e', ancho: 6 }, letrero: { txt: 'PANADERÍA', fondo: '#f4efe3', letra: '#5a3b26', clave: 'p', ancho: 5 } });
+    edificio(W, G, T, E, r, [-40, -20, -31, -6.5], 5, 'n', { kit: 'arcos', banderas: Math.round(afi / 25), c1, c2, toldo: { color: '#7a2f22', ancho: 5 }, letrero: { txt: 'FARMACIA', fondo: '#1f8f5f', letra: '#fff', clave: 'f', ancho: 4.2 } });
+    edificio(W, G, T, E, r, [23, -20, 31, -6.5], 6, 'n', { kit: true, banderas: Math.round(afi / 22), c1, c2, toldo: { color: '#2f4f6e', ancho: 6 }, letrero: { txt: 'PANADERÍA', fondo: '#f4efe3', letra: '#5a3b26', clave: 'p', ancho: 5 } });
     edificio(W, G, T, E, r, [31.5, -20, 40, -6.5], 5, 'n', { persiana: true, banderas: Math.round(afi / 30), c1, c2 });
     // Acera sur: tienda oficial, bar de la peña, ayuntamiento y tu edificio
     edificio(W, G, T, E, r, [8, 6.5, 15, 18], 4, 's', { colorBajo: c1, toldo: { color: c1, ancho: 6 }, letrero: { txt: 'TIENDA OFICIAL ' + club.siglas, fondo: '#14181d', letra: '#fff', clave: 't', ancho: 6.2 }, banderas: 2, c1, c2 });
@@ -138,7 +145,7 @@
     edificio(W, G, T, E, r, [15.5, 6.5, 22.5, 18], 4, 's', { colorBajo: '#5a3b26', toldo: { color: c2 === '#ffffff' ? c1 : c2, ancho: 6 }, letrero: { txt: 'BAR LA PEÑA', fondo: '#5a3b26', letra: '#f2d27a', clave: 'b', ancho: 5.5 }, banderas: Math.round(afi / 20), c1, c2 });
     zonas.pena = [19, 5.2];
     for (const [x, z] of [[17.6, 7.8], [20.4, 7.8]]) { cil(W, 0.35, 0.75, '#2a2a2a', x, 0, z + 0.4); const so = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.4, 10), mat(c1)); so.position.set(x, 2.3, z + 0.4); W.add(so); cil(W, 0.03, 2.2, '#555', x, 0, z + 0.4); G.bloquea(x - 0.5, z, x + 0.5, z + 0.9); }
-    edificio(W, G, T, E, r, [23.5, 6.5, 40, 18], 5, 's', { persiana: r() < 0.5, banderas: Math.round(afi / 18), c1, c2, toldo: { color: '#2e5d3a', ancho: 5, x: 28 }, letrero: { txt: 'FRUTERÍA', fondo: '#2e5d3a', letra: '#fff', clave: 'fr', ancho: 4, x: 28 } });
+    edificio(W, G, T, E, r, [23.5, 6.5, 40, 18], 5, 's', { kit: 'arcos', persiana: r() < 0.5, banderas: Math.round(afi / 18), c1, c2, toldo: { color: '#2e5d3a', ancho: 5, x: 28 }, letrero: { txt: 'FRUTERÍA', fondo: '#2e5d3a', letra: '#fff', clave: 'fr', ancho: 4, x: 28 } });
     // Ayuntamiento: piedra, columnas, reloj y banderas
     ocluye(caja(W, 13, 9, 10.5, new THREE.MeshStandardMaterial({ color: 0xd8cdb8 }), -15.5, 0, 12.5)); ocluye(caja(W, 13.6, 0.5, 11, new THREE.MeshStandardMaterial({ color: 0xc9bda6 }), -15.5, 9, 12.5)); caja(W, 4, 2, 0.4, '#c9bda6', -15.5, 9.5, 7.3);
     for (let i = 0; i < 6; i++) cil(W, 0.32, 6.5, '#efe8d8', -21 + i * 2.2, 0, 6.9, 14);
@@ -147,7 +154,7 @@
     [[-18, c1], [-15.5, '#c8102e'], [-13, '#f1bf00']].forEach(([x, c]) => { cil(W, 0.04, 2.6, '#d7d7d7', x, 7.1, 6.5); plano(W, 1.0, 0.65, new THREE.MeshStandardMaterial({ color: c, side: THREE.DoubleSide }), x + 0.52, 9.3, 6.5, 0); });
     G.bloquea(-22, 7.3, -9, 18); for (let i = 0; i < 6; i++) G.bloquea(-21.4 + i * 2.2, 6.5, -20.6 + i * 2.2, 7.3);
     zonas.ayuntamiento = [-15.5, 5.2];
-    edificio(W, G, T, E, r, [-39, 6.5, -24, 17], 6, 's', { banderas: Math.round(afi / 16), c1, c2, colorBajo: '#5c6a73', letrero: { txt: 'PORTAL 7', fondo: '#2a2f35', letra: '#fff', clave: 'portal', ancho: 3, x: -31.5 } });
+    edificio(W, G, T, E, r, [-39, 6.5, -24, 17], 6, 's', { kit: true, banderas: Math.round(afi / 16), c1, c2, colorBajo: '#5c6a73', letrero: { txt: 'PORTAL 7', fondo: '#2a2f35', letra: '#fff', clave: 'portal', ancho: 3, x: -31.5 } });
     zonas.casa = [-31.5, 5.2];
     // Mural del escudo en una medianera si el club tiene reputación
     if (rep >= 68) plano(W, 6, 6, new THREE.MeshStandardMaterial({ map: T.escudo, transparent: true }), 31.45, 10, -13, -Math.PI / 2);

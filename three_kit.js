@@ -51,6 +51,82 @@
     g.add(kit.cono(0.32 * s, 0.8 * s, 0x2e7d4f, 0, 0.3 * s, 0, 6));
     g.position.set(x, 0, z); return g;
   };
+  // ---------- Formas orgánicas (caminos curvos, manchas irregulares, relieve) ----------
+  // Puntos de control de un camino que se curva suavemente entre a y b (desvío lateral en la mitad, según la semilla)
+  kit.curvaEntre = function (a, b, desvio, semilla) {
+    const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l, s = Math.sin((semilla || 1) * 12.9898) * 43758.5453, f = (s - Math.floor(s)) * 2 - 1, d = (desvio === undefined ? 0.12 : desvio) * l * f;
+    return [a, [a[0] + dx * 0.33 + nx * d * 0.8, a[1] + dz * 0.33 + nz * d * 0.8], [a[0] + dx * 0.66 + nx * d, a[1] + dz * 0.66 + nz * d], b];
+  };
+  // Cinta plana (camino, carretera, río) que sigue una curva suave por los puntos de control; y: altura (número o función x,z)
+  kit.cinta = function (ctrl, ancho, color, y, cerrada, mat) {
+    const curva = new THREE.CatmullRomCurve3(ctrl.map(p => new THREE.Vector3(p[0], 0, p[1])), !!cerrada, 'centripetal'), n = Math.max(8, Math.round(curva.getLength() / 0.6)), pts = curva.getSpacedPoints(n);
+    const pos = [], uv = [], idx = []; let acc = 0; const alt = typeof y === 'function' ? y : () => (y || 0) + 0.02;
+    pts.forEach((p, i) => {
+      const q = pts[Math.min(i + 1, pts.length - 1)], o = pts[Math.max(i - 1, 0)], tx = q.x - o.x, tz = q.z - o.z, l = Math.hypot(tx, tz) || 1, nx = -tz / l * ancho / 2, nz = tx / l * ancho / 2;
+      if (i) acc += p.distanceTo(pts[i - 1]);
+      pos.push(p.x + nx, alt(p.x + nx, p.z + nz), p.z + nz, p.x - nx, alt(p.x - nx, p.z - nz), p.z - nz); uv.push(0, acc / ancho, 1, acc / ancho);
+      if (i) { const k = (i - 1) * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
+    });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mat || kit.mat(color)); m.receiveShadow = true; return m;
+  };
+  // Mancha de contorno irregular (parcela, plaza, estanque, barrio) con el borde redondeado; r: radio medio
+  kit.mancha = function (r, color, x, y, z, semilla, sx, sz, alto, irregular) {
+    const s = new THREE.Shape(), N = 40, k = irregular === undefined ? 0.12 : irregular, h = (semilla || 1) * 1.37;
+    for (let i = 0; i <= N; i++) { const a = i / N * Math.PI * 2, rr = r * (1 + k * (Math.sin(a * 2 + h) * 0.55 + Math.sin(a * 3 + h * 2.1) * 0.3 + Math.sin(a * 5 + h * 0.7) * 0.15)), px = Math.cos(a) * rr * (sx || 1), pz = Math.sin(a) * rr * (sz || 1); if (i) s.lineTo(px, pz); else s.moveTo(px, pz); }
+    const t = alto || 0.05, g = new THREE.ExtrudeGeometry(s, { depth: t, bevelEnabled: true, bevelThickness: Math.min(0.04, t), bevelSize: Math.min(0.25, r * 0.06), bevelSegments: 2, curveSegments: 2 });
+    g.rotateX(-Math.PI / 2); const m = new THREE.Mesh(g, typeof color === 'object' ? color : kit.mat(color)); m.position.set(x || 0, (y || 0), z || 0); m.receiveShadow = true; return m;
+  };
+  // Terreno con relieve: plano de w x d con altura alt(x, z) y color por vértice col(x, z, y) -> [r, g, b] (0-1)
+  kit.relieve = function (w, d, seg, alt, col, cx, cz) {
+    const g = new THREE.PlaneGeometry(w, d, seg, Math.round(seg * d / w)); g.rotateX(-Math.PI / 2); g.translate(cx || 0, 0, cz || 0);
+    const p = g.attributes.position, c = new Float32Array(p.count * 3);
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), y = alt(x, z); p.setY(i, y); const k = col(x, z, y); c[i * 3] = k[0]; c[i * 3 + 1] = k[1]; c[i * 3 + 2] = k[2]; }
+    g.setAttribute('color', new THREE.BufferAttribute(c, 3)); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })); m.receiveShadow = true; return m;
+  };
+  // Ruido suave (valor) para relieves y colores
+  kit.ruido = function (x, z) { const h = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }, xi = Math.floor(x), zi = Math.floor(z), fx = x - xi, fz = z - zi, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz); return (h(xi, zi) * (1 - u) + h(xi + 1, zi) * u) * (1 - v) + (h(xi, zi + 1) * (1 - u) + h(xi + 1, zi + 1) * u) * v; };
+  // Árbol de copa redonda (frondoso) para variar los conos
+  kit.arbolRedondo = function (x, z, s, color) {
+    const g = new THREE.Group(); s = s || 1;
+    g.add(kit.cilindro(0.07 * s, 0.45 * s, 0x6b4a2b, 0, 0, 0, 5));
+    const c = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42 * s, 1), kit.mat(color || 0x4f8f45)); c.position.y = 0.72 * s; c.scale.y = 0.85; g.add(c);
+    g.position.set(x, 0, z); return g;
+  };
+  // ---------- Público de grada (instanciado) ----------
+  // Personas sentadas de verdad (torso, brazos, cabeza con pelo y piernas dobladas) con una malla instanciada por pieza: miles
+  // de espectadores en 5 llamadas de dibujo. sitios: [{ x, y, z, ry, ropa, piel, pelo }] (y: altura del asiento; ry: hacia dónde mira).
+  // colocar(fn): fn(i) -> { salto (m), brazos (0 abajo, 1 arriba) }; llamarlo en cada fotograma solo si algo se mueve.
+  kit.publico = function (sitios, escala) {
+    const T = THREE, s = escala || 1, n = sitios.length, mat = () => new T.MeshLambertMaterial();
+    const caja = (w, h, d, x, y, z) => new T.BoxGeometry(w, h, d).translate(x, y, z);
+    const une = gs => { const g = T.mergeGeometries ? T.mergeGeometries(gs) : (T.BufferGeometryUtils && T.BufferGeometryUtils.mergeGeometries(gs)); return g || gs[0]; };
+    // medidas en metros con el asiento en y = 0 y la persona mirando a +z
+    const geo = {
+      torso: une([caja(0.4, 0.5, 0.24, 0, 0.27, 0), caja(0.14, 0.08, 0.14, 0, 0.55, 0)]),
+      brazos: une([caja(0.1, 0.44, 0.11, -0.25, -0.2, 0), caja(0.1, 0.44, 0.11, 0.25, -0.2, 0)]),      // pivote en los hombros
+      cabeza: new T.IcosahedronGeometry(0.12, 1).translate(0, 0.7, 0),
+      pelo: new T.SphereGeometry(0.128, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55).translate(0, 0.72, -0.012),
+      piernas: une([caja(0.34, 0.14, 0.42, 0, 0.02, 0.2), caja(0.3, 0.45, 0.12, 0, -0.2, 0.4)])
+    };
+    const g = new T.Group(), M = {}, c = new T.Color(), m4 = new T.Matrix4(), q = new T.Quaternion(), qx = new T.Quaternion(), e = new T.Euler(), p = new T.Vector3(), sc = new T.Vector3(s, s, s), hombro = new T.Vector3();
+    Object.keys(geo).forEach(k => { M[k] = new T.InstancedMesh(geo[k], mat(), n); M[k].instanceMatrix.setUsage(T.DynamicDrawUsage); M[k].castShadow = false; M[k].frustumCulled = false; g.add(M[k]); });
+    sitios.forEach((st, i) => { M.torso.setColorAt(i, c.set(st.ropa)); M.brazos.setColorAt(i, c.set(st.ropa)); M.cabeza.setColorAt(i, c.set(st.piel)); M.pelo.setColorAt(i, c.set(st.pelo || '#2a1f18')); M.piernas.setColorAt(i, c.set(st.pantalon || '#2f3640')); });
+    Object.values(M).forEach(m => { if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+    function colocar(fn) {
+      sitios.forEach((st, i) => {
+        const r = fn ? fn(i) : null, dy = r ? r.salto || 0 : 0, br = r ? r.brazos || 0 : 0;
+        q.setFromEuler(e.set(0, st.ry || 0, 0)); p.set(st.x, st.y + dy * s, st.z); m4.compose(p, q, sc);
+        M.torso.setMatrixAt(i, m4); M.cabeza.setMatrixAt(i, m4); M.pelo.setMatrixAt(i, m4); M.piernas.setMatrixAt(i, m4);
+        hombro.set(0, 0.5 * s, 0).applyQuaternion(q).add(p); qx.setFromEuler(e.set(-br * 2.7, 0, 0)); m4.compose(hombro, q.clone().multiply(qx), sc); M.brazos.setMatrixAt(i, m4);
+      });
+      Object.values(M).forEach(m => { m.instanceMatrix.needsUpdate = true; });
+    }
+    colocar(null);
+    g.userData = { publico: true };
+    return { grupo: g, colocar, mallas: M };
+  };
   // Fusiona la geometría estática: reduce cientos de mallas a una por material (menos llamadas de dibujo).
   // Convención: un nodo con userData (anim, lugar, slot, tipo...) es un «ancla»: no se fusiona con nada externo
   // y su contenido se fusiona dentro de él, así siguen funcionando las animaciones y la selección por toque

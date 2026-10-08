@@ -164,6 +164,9 @@ ACCIONES DE LA SEDE (GM.mods.sedeAcciones): lo que se hace en cada sala sin men�
 ### `pueblo3d.js`
 PUEBLO 3D (GM.pueblo3d): escena del pueblo natal. Colina con relieve y campos, olivos y cipreses instanciados, río con puente, camino a la puerta, muralla con torres (desde villa), plaza mayor con fuente, iglesia y ayuntamiento con soportales, torre del homenaje, calles empedradas y casas texturizadas (teja árabe, postigos, balcones con macetas, banderas del club según el cariño). Estilo por región (`estiloDe`): piedra catalana, ocre castellano, blanco andaluz, toscano. Las infraestructuras del jugador tienen modelo propio (mural con su dorsal, pabellón y hospital con su apellido) y llevan `userData.tipo`. Azar local con semilla: no usa `GM.rng`. No escribe en el estado.
 
+### `edificio_kit.js`
+EDIFICIOS CON MODELOS (GM.edificioKit) — fachadas montadas con piezas glTF del Building Kit de Kenney (CC0): paredes de 2 m con ventana o puerta, columnas y cornisa, escaladas al ancho y a la altura de planta; repinta la celda de los muros de la paleta con el color pedido y fusiona todo. Expone: cuerpo(opciones) -> Promise<Group|null>.
+
 ### `gente.js`
 GENTE (GM.mods.gente) — personas con nombre con las que hablar por la calle y en tu pueblo: leyenda del club, utillero, peña y periodista; en el pueblo, primer entrenador y alcalde. Saludo según la relación y el último partido, charla semanal con un efecto pequeño y encargos con plazo (ganar, ganar en casa, meter puntos, ir a la peña, empezar una obra). Vecinos y aficionados: saludar y autógrafos. Expone: personas, ficha, casual, estado, selfTest. Escribe state.gente = { rel, charla, encargo, hechos, firmas } (se crea al usarse).
 

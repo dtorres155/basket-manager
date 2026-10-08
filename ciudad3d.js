@@ -184,21 +184,25 @@
     const S = { c1: col(eq.colores[0] === '#000000' ? '#333333' : eq.colores[0]), c2: col(eq.colores[1] || '#ffffff'), e: CP.estilo(eq) };
     const bar = barrios(st), lug = lugares(st), cs = centros(st), W = V.mundo, hh = U.hash(eq.id + 'ciudad');
     v.limpiar(W); V.lugares = []; V.suelos = [];
-    W.add(K.caja(160, 0.3, 120, 0x7fb069, 0, -0.34, 0));
-    // río con meandros al sur y puentes
-    for (let x = -50; x < 50; x += 2.4) { const z1 = 27 + 3.4 * Math.sin(x * 0.2), z2 = 27 + 3.4 * Math.sin((x + 2.4) * 0.2); CP.camino(W, x, z1, x + 2.4, z2, 3.6, 0x7fb8d8, -0.01); }
+    // Terreno: llano donde está la ciudad y junto al río, lomas suaves alrededor (antes, una caja plana)
+    const sem = (hh % 97) + 1, zRio = x => 27 + 3.4 * Math.sin(x * 0.2);
+    const alt = (x, z) => { const r = Math.hypot(x / 1.25, z), t = Math.min(1, Math.max(0, (r - 30) / 20)), cerca = Math.max(0, 1 - Math.abs(z - zRio(x)) / 7); return -0.05 + t * t * (1 + K.ruido(x * 0.05 + sem, z * 0.05) * 5) * (1 - cerca); };
+    W.add(K.relieve(190, 150, 90, alt, (x, z, y) => { const n = K.ruido(x * 0.07 + 3, z * 0.07), b = n > 0.68 ? [0.66, 0.68, 0.43] : n < 0.3 ? [0.4, 0.58, 0.34] : [0.5, 0.69, 0.41], f = 0.93 + K.ruido(x * 0.6, z * 0.6) * 0.14; return [b[0] * f, b[1] * f, b[2] * f]; }));
+    // río con meandros al sur, con orillas de arena
+    const rio = []; for (let x = -95; x <= 95; x += 6) rio.push([x, zRio(x)]);
+    W.add(K.cinta(rio, 6.2, 0xcfc39a, 0.0)); W.add(K.cinta(rio, 3.8, 0x6fb0d4, 0.015));
     // calles: del centro a cada barrio y entre barrios vecinos (sin ángulos rectos)
     const tint = [0xd8d2c0, 0xcfd6c7, 0xd9cdb8, 0xc8d1d6, 0xdad4c6, 0xd0cfc2], heat = V.calor ? (a => a >= 60 ? 0x6fcf97 : a >= 40 ? 0xf2d16b : 0xe27b6c) : null;
-    cs.forEach((q, i) => { CP.camino(W, 0, 0, q.x, q.z, 1.9, 0x59616b, 0.0); const n = cs[(i + 1) % 6]; CP.camino(W, q.x, q.z, n.x, n.z, 1.4, 0x6b7480, 0.0); });
-    CP.disco(W, 4.6, 0xdcd3bd, 0, 0.0, 0); CP.disco(W, 1.3, 0x7fb8d8, 0, 0.05, 0, 1, 1, 0.3);
-    cs.forEach((q, i) => { const d = CP.disco(W, R_BARRIO, heat ? heat(bar[i].aficion) : tint[i], q.x, -0.01, q.z, 1, 1, 0.07); d.userData = { barrio: i }; V.suelos.push(d); });
+    cs.forEach((q, i) => { W.add(K.cinta(K.curvaEntre([0, 0], [q.x, q.z], 0.1, i + sem), 1.9, 0x59616b, 0.03)); const n = cs[(i + 1) % 6]; W.add(K.cinta(K.curvaEntre([q.x, q.z], [n.x, n.z], 0.16, i + 20 + sem), 1.4, 0x6b7480, 0.025)); });
+    W.add(K.mancha(4.6, 0xdcd3bd, 0, 0.0, 0, sem, 1, 1, 0.04, 0.08)); CP.disco(W, 1.3, 0x7fb8d8, 0, 0.05, 0, 1, 1, 0.3);
+    cs.forEach((q, i) => { const d = K.mancha(R_BARRIO, heat ? heat(bar[i].aficion) : tint[i], q.x, -0.02, q.z, i * 3 + sem, 1, 1, 0.05, 0.16); d.userData = { barrio: i }; W.add(d); V.suelos.push(d); });
     // lugares y sus senderos
     lug.forEach(l => {
       const g = new THREE.Group(); g.position.set(l.x, 0.06, l.z); g.rotation.y = l.rot; modeloLugar(g, l.tipo, S);
       const disp = acciones(st, l.id).some(a => a.disponible), marca = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.8, 4), K.mat(disp ? 0x4cc38a : 0x8a939c)); marca.rotation.x = Math.PI; marca.position.set(0, 3.4, 0); g.add(marca);
       marca.userData.anim = t => { marca.position.y = 3.2 + Math.sin(t * 2 + l.x) * 0.25; marca.rotation.y = t; };
       g.userData = { lugar: l.id }; W.add(g); V.lugares.push(g);
-      const c0 = cs[l.barrio]; if (l.id !== 'ayuntamiento-1') CP.camino(W, c0.x, c0.z, l.x, l.z, 0.9, 0xd7cdb4, 0.0);
+      const c0 = cs[l.barrio]; if (l.id !== 'ayuntamiento-1') W.add(K.cinta(K.curvaEntre([c0.x, c0.z], [l.x, l.z], 0.2, l.x * 7 + l.z), 0.9, 0xd7cdb4, 0.06));
     });
     // casas dispersas, giradas y más altas cerca del centro de cada barrio
     cs.forEach((q, i) => {
@@ -215,12 +219,12 @@
       if (b.aficion < 35) { const p = K.caja(1.8, 0.45, 0.04, 0xd62d2d, q.x, 0.5, q.z + R_BARRIO - 1.2); p.rotation.y = q.a; W.add(p); }
       // parque entre este barrio y el siguiente
       const n2 = cs[(i + 1) % 6], px = (q.x + n2.x) / 2 * 1.35, pz = (q.z + n2.z) / 2 * 1.35;
-      CP.disco(W, 3.0, 0x8cc075, px, -0.01, pz, 1, 1, 0.08); for (let t = 0; t < 7; t++) W.add(K.arbol(px + Math.cos(t * 0.9 + i) * 2.0, pz + Math.sin(t * 0.9 + i) * 2.0, 1.0));
+      W.add(K.mancha(3.0, 0x8cc075, px, -0.01, pz, i + 40 + sem, 1.2, 0.85, 0.06, 0.22)); for (let t = 0; t < 7; t++) W.add(t % 2 ? K.arbol(px + Math.cos(t * 0.9 + i) * 2.0, pz + Math.sin(t * 0.9 + i) * 2.0, 1.0) : K.arbolRedondo(px + Math.cos(t * 0.9 + i) * 2.0, pz + Math.sin(t * 0.9 + i) * 2.0, 1.2));
     });
     // vivienda del jugador
     const viv = st.modo === 'carrera' && st.carrera && st.carrera.vivienda && st.carrera.vivienda.actual;
     if (viv && viv.ciudad === eq.ciudad) { const q = cs[viv.barrio], g = new THREE.Group(); g.position.set(q.x - 1.2, 0.07, q.z + 4.6); g.add(K.caja(1.6, 1.1, 1.4, 0xf2e6d0, 0, 0, 0)); g.add(K.caja(1.8, 0.12, 1.6, S.c1, 0, 1.1, 0)); g.add(K.cilindro(0.03, 1.3, 0xdfe3e8, 0.7, 1.1, 0.6, 4)); g.add(K.caja(0.5, 0.3, 0.02, S.c2, 0.95, 2.1, 0.6)); g.userData = { casa: true }; W.add(g); const m = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 4), K.mat(0xffd54a)); m.rotation.x = Math.PI; m.position.set(0, 3.0, 0); g.add(m); m.userData.anim = t => { m.position.y = 2.9 + Math.sin(t * 2.4) * 0.2; m.rotation.y = t; }; }
-    for (let i = 0; i < 50; i++) { const h = U.hash(eq.id + 'ar' + i) >>> 0, a = (h % 628) / 100, rr = 33 + ((h >>> 8) % 20); W.add(K.arbol(Math.cos(a) * rr * 1.3, Math.sin(a) * rr * 0.9, 1.3)); }
+    for (let i = 0; i < 110; i++) { const h = U.hash(eq.id + 'ar' + i) >>> 0, a = (h % 628) / 100, rr = 33 + ((h >>> 8) % 26), x = Math.cos(a) * rr * 1.3, z = Math.sin(a) * rr * 0.9; if (Math.abs(z - zRio(x)) < 3.5) continue; const ar = h % 3 ? K.arbol(x, z, 1.3) : K.arbolRedondo(x, z, 1.6, [0x4f8f45, 0x6b9a3e][h % 2]); ar.position.y = alt(x, z); W.add(ar); }
     if (V.sel && V.sel.lugar) { const l = lug.find(x => x.id === V.sel.lugar); if (l) { const r = new THREE.Mesh(new THREE.RingGeometry(2.6, 2.85, 24), K.mat(0xffd54a)); r.rotation.x = -Math.PI / 2; r.position.set(l.x, 0.2, l.z); W.add(r); } }
     K.fusionar(W);
     const an = []; W.traverse(o => { if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim); });

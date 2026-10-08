@@ -288,15 +288,15 @@
       if (n >= 3) { g.add(K().cilindro(0.05, 2.6, 0xc9ced6, -1.6, 1.1, -0.7, 6)); B(g, 0.9, 0.5, 0.05, S.c2, -0.4, 1.2, 0.6); }   // antena del canal y pantalla
     }
   });
-  function suelo(g, color) { const m = mesh(g, new THREE.CylinderGeometry(3.25, 3.25, 0.05, 28), K().mat(color || 0xcfd6c7), 0, 0.025, 0); m.scale.set(1, 1, 0.88); }
+  function suelo(g, color, sem) { g.add(K().mancha(3.25, color || 0xcfd6c7, 0, 0, 0, sem || 3, 1, 0.88, 0.02, 0.06)); }
   function modelo(tipo, nivel, S) {
-    const g = new THREE.Group(); suelo(g);
+    const g = new THREE.Group(); suelo(g, null, (U.hash(tipo) % 97) + 1);
     (M[tipo] || M.oficinas)(g, Math.max(1, nivel), S);
     return g;
   }
   function obra(tipo, dest, prog, viejo, S) {
     const g = new THREE.Group(), k = K(), p = Math.max(0.08, Math.min(1, prog));
-    { const pad = mesh(g, new THREE.CylinderGeometry(3.25, 3.25, 0.05, 28), k.mat(0xb8a98a), 0, 0.025, 0); pad.scale.set(1, 1, 0.88); }
+    suelo(g, 0xb8a98a, (U.hash(tipo) % 97) + 1);
     if (viejo > 0) g.add(modelo(tipo, viejo, S)); else { const m = modelo(tipo, dest, S); m.scale.y = Math.max(0.12, p * 0.92); g.add(m); }
     const H = 1.2 + 0.25 * dest;
     [[-2.3, -1.9], [2.3, -1.9], [-2.3, 1.9], [2.3, 1.9]].forEach(q => g.add(k.cilindro(0.04, H, 0xd9a21b, q[0], 0.05, q[1], 5)));
@@ -310,7 +310,7 @@
   }
   function solar(S, nombre, bloqueado) {
     const g = new THREE.Group(), k = K();
-    { const pad = mesh(g, new THREE.CylinderGeometry(3.25, 3.25, 0.04, 28), k.mat(bloqueado ? 0xa9b3a3 : 0xb9cdae), 0, 0.02, 0); pad.scale.set(1, 1, 0.88); }
+    suelo(g, bloqueado ? 0xa9b3a3 : 0xb9cdae, (U.hash(nombre || 'solar') % 97) + 1);
     [[-2.4, -2.0], [2.4, -2.0], [-2.4, 2.0], [2.4, 2.0]].forEach(q => g.add(k.cilindro(0.04, 0.35, 0xffffff, q[0], 0.04, q[1], 4)));
     g.add(k.cilindro(0.04, 1.0, 0xdfe3e8, 0, 0.04, 1.4, 5)); g.add(k.caja(1.2, 0.5, 0.05, bloqueado ? 0x7a828c : S.c1, 0, 0.7, 1.4));
     return g;
@@ -335,18 +335,24 @@
   function entorno(world, L, id, S) {
     const k = K(), A = L.ancho, B = L.fondo, cz = L.cz, z1 = L.z1, c1 = S.c1, c2 = S.c2, h0 = U.hash(id + 'ent');
     const hierba = tex('hierba', 64, 64, (x, w, h) => { x.fillStyle = '#7fb069'; x.fillRect(0, 0, w, h); for (let i = 0; i < 220; i++) { x.fillStyle = i % 2 ? 'rgba(255,255,255,.07)' : 'rgba(0,40,0,.09)'; x.fillRect((i * 29) % w, (i * 53) % h, 2, 2); } }, [14, 14]);
-    tbox(world, 140, 0.3, 120, 0x7fb069, hierba, 0, -0.32, cz);
-    for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283 + 0.4, hh = mesh(world, new THREE.ConeGeometry(9 + (h0 >>> i) % 5, 3 + (h0 >>> (i + 3)) % 3, 9), k.mat(0x76a85f), Math.cos(a) * 52, 1.2, Math.sin(a) * 40 + cz); hh.scale.set(1.5, 0.5, 1); }
-    disco(world, 1, 0x8cc075, 0, -0.02, cz, A + 1, B + 1);
+    void hierba; const sem = (h0 % 97) + 1;
+    // Relieve: llano en el recinto y lomas suaves alrededor; el color varía con el ruido (prados, trigo, monte)
+    const alt = (x, z) => { const e = Math.hypot(x / (A + 7), (z - cz) / (B + 7)); if (e < 1) return -0.04; const t = Math.min(1, (e - 1) * 1.6); return -0.04 + t * t * (1.2 + k.ruido(x * 0.06 + sem, z * 0.06) * 4.5); };
+    const verde = [0.5, 0.69, 0.41], trigo = [0.66, 0.68, 0.43], monte = [0.38, 0.55, 0.32];
+    world.add(k.relieve(170, 150, 85, alt, (x, z, y) => { const n = k.ruido(x * 0.08 + 7, z * 0.08), b = n > 0.68 ? trigo : n < 0.32 ? monte : verde, f = 0.92 + k.ruido(x * 0.5, z * 0.5) * 0.16; return [b[0] * f, b[1] * f, b[2] * f]; }, 0, cz));
+    world.add(k.mancha(1, 0x8cc075, 0, -0.03, cz, sem, A + 1, B + 1, 0.03, 0.03));
     // plaza central con fuente
-    disco(world, 4.3, 0xdcd3bd, 0, 0.0, cz); disco(world, 1.1, 0x7fb8d8, 0, 0.05, cz, 1, 1, 0.25); world.add(k.cilindro(0.1, 0.9, 0xdfe3e8, 0, 0.05, cz, 6));
+    world.add(k.mancha(4.3, 0xdcd3bd, 0, 0, cz, sem + 1, 1, 0.92, 0.03, 0.07)); disco(world, 1.1, 0x7fb8d8, 0, 0.05, cz, 1, 1, 0.25);
+    // parterres de flores alrededor de la plaza
+    for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283 + 0.5, x = Math.cos(a) * 5.6, z = Math.sin(a) * 5.0 + cz; world.add(k.mancha(0.7, 0x5f9a4c, x, 0, z, sem + i, 1.3, 0.8, 0.06, 0.2)); for (let j = 0; j < 5; j++) { const f = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12, 0), k.mat([0xe05a6d, 0xf2c14e, 0xffffff, 0xb36bd1][(i + j) % 4])); f.position.set(x + Math.cos(j * 1.3) * 0.45, 0.12, z + Math.sin(j * 1.3) * 0.3); world.add(f); } } world.add(k.cilindro(0.1, 0.9, 0xdfe3e8, 0, 0.05, cz, 6));
     // camino de ronda y radiales
     const NR = 40, ra = 8.6, rb = 7.4;
-    for (let i = 0; i < NR; i++) { const a = i / NR * 6.283, b2 = (i + 1) / NR * 6.283; camino(world, Math.cos(a) * ra, Math.sin(a) * rb + cz, Math.cos(b2) * ra, Math.sin(b2) * rb + cz, 1.1, 0xd7cdb4); }
-    L.slots.forEach(sl => camino(world, Math.cos(Math.atan2(sl.z - cz, sl.x / 1.0)) * 4.0, Math.sin(Math.atan2(sl.z - cz, sl.x)) * 3.6 + cz, sl.x - Math.sin(sl.rot) * 2.2, sl.z - Math.cos(sl.rot) * 2.2, 1.2, 0xd7cdb4));
+    void NR; const ronda = []; for (let i = 0; i < 24; i++) { const a = i / 24 * 6.283, w = 1 + Math.sin(a * 3 + sem) * 0.04; ronda.push([Math.cos(a) * ra * w, Math.sin(a) * rb * w + cz]); }
+    world.add(k.cinta(ronda, 1.1, 0xd7cdb4, 0.025, true));
+    L.slots.forEach((sl, i) => { const a = Math.atan2(sl.z - cz, sl.x), ini = [Math.cos(a) * 4.0, Math.sin(a) * 3.6 + cz], fin = [sl.x - Math.sin(sl.rot) * 2.2, sl.z - Math.cos(sl.rot) * 2.2]; world.add(k.cinta(k.curvaEntre(ini, fin, 0.18, i + sem), 1.2, 0xd7cdb4, 0.03)); });
     // carretera de entrada con curvas
     const pts = []; for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push([3.2 * Math.sin(t * 3.4), z1 + 12 - t * (z1 + 12 - (cz + 5))]); }
-    for (let i = 0; i < pts.length - 1; i++) { camino(world, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], 2.6, 0x59616b, 0.01); }
+    world.add(k.cinta(pts, 2.6, 0x59616b, 0.035));
     // seto-valla elíptica con puerta al sur
     const NP = 64;
     for (let i = 0; i < NP; i++) { const a = i / NP * 6.283; if (Math.abs(a - 1.5708) < 0.2) continue; const x = Math.cos(a) * (A + 0.4), z = Math.sin(a) * (B + 0.4) + cz; world.add(k.caja(0.32, 0.5, 0.32, c1, x, 0, z)); if (i % 2 === 0) world.add(k.arbol(Math.cos(a) * (A - 0.8), Math.sin(a) * (B - 0.8) + cz, 0.7)); }
@@ -357,7 +363,7 @@
     // estanque en el hueco mayor entre edificios
     let mejor = null, md = -1;
     for (let q = 0; q < 16; q++) { const a = q / 16 * 6.283 + 0.2, x = Math.cos(a) * A * 0.62, z = Math.sin(a) * B * 0.6 + cz, d = Math.min.apply(null, L.slots.map(sl => Math.hypot(sl.x - x, sl.z - z)).concat([Math.hypot(x, z - cz) * 0.5 + 3, 9 - Math.abs(z - gz)])); if (d > md) { md = d; mejor = [x, z]; } }
-    if (mejor && md > 5.2) { disco(world, 2.6, 0x7fb8d8, mejor[0], -0.01, mejor[1], 1.25, 0.9, 0.08); for (let j = 0; j < 6; j++) { const a = j / 6 * 6.283; world.add(k.arbol(mejor[0] + Math.cos(a) * 3.6, mejor[1] + Math.sin(a) * 2.8, 0.8)); } }
+    if (mejor && md > 5.2) { world.add(k.mancha(3.0, 0xd9c99a, mejor[0], -0.02, mejor[1], sem + 9, 1.25, 0.9, 0.03, 0.18)); world.add(k.mancha(2.6, 0x6fb0d4, mejor[0], 0, mejor[1], sem + 9, 1.25, 0.9, 0.03, 0.18)); for (let j = 0; j < 9; j++) { const a = j * 0.7 + sem; world.add(k.cono(0.05, 0.6, 0x6d8f3a, mejor[0] + Math.cos(a) * 2.9, 0, mejor[1] + Math.sin(a) * 2.1, 4)); } for (let j = 0; j < 6; j++) { const a = j / 6 * 6.283; world.add(k.arbol(mejor[0] + Math.cos(a) * 3.6, mejor[1] + Math.sin(a) * 2.8, 0.8)); } }
     // arboledas y árboles sueltos fuera de los edificios
     for (let g = 0; g < 14; g++) { const a = g / 14 * 6.283 + 0.3, x = Math.cos(a) * A * (0.5 + ((h0 >>> g) % 4) * 0.1), z = Math.sin(a) * B * (0.5 + ((h0 >>> (g + 2)) % 4) * 0.1) + cz; if (L.slots.some(sl => Math.hypot(sl.x - x, sl.z - z) < 5.2) || Math.abs(z - gz) < 5 || Math.hypot(x, z - cz) < 9.6) continue; for (let j = 0; j < 4; j++) world.add(k.arbol(x + ((h0 >>> (j + g)) % 5 - 2) * 0.55, z + ((h0 >>> (j + g + 3)) % 5 - 2) * 0.55, 0.9 + (j % 3) * 0.12)); }
     // farolas siguiendo el camino de ronda
@@ -372,10 +378,10 @@
         for (let i = 0; i < 10; i++) world.add(k.caja(0.9, 2.4, 0.05, i % 2 ? c2 : c1, d.x - d.w / 2 + 1 + i * (d.w - 2) / 9, 0, d.z + d.d / 2 + 0.02));
       } else if (d.t === 'casas') {
         for (let i = 0; i < 26; i++) { const q = U.hash(id + 'c' + i), a = i / 26 * 6.283, x = Math.cos(a) * (A + 6 + (q % 5)), z = Math.sin(a) * (B + 6 + (q % 5)) + cz, ht = 1 + (q % 6) * 0.35;
-          if (Math.abs(a - 1.5708) < 0.25) continue; const hb = k.caja(1.6, ht, 1.6, [0xe8d8b8, 0xd9c2a0, 0xc9b79c, 0xe6cfa8][q % 4], x, 0, z); hb.rotation.y = -a; world.add(hb); const tj = k.caja(1.7, 0.1, 1.7, 0xb5543c, x, ht, z); tj.rotation.y = -a; world.add(tj); }
+          if (Math.abs(a - 1.5708) < 0.25) continue; const yC = alt(x, z) - 0.1; const hb = k.caja(1.6, ht, 1.6, [0xe8d8b8, 0xd9c2a0, 0xc9b79c, 0xe6cfa8][q % 4], x, yC, z); hb.rotation.y = -a; world.add(hb); const tj = k.caja(1.7, 0.1, 1.7, 0xb5543c, x, yC + ht, z); tj.rotation.y = -a; world.add(tj); }
       }
     });
-    for (let i = 0; i < 50; i++) { const q = U.hash(id + 'a' + i), a = i / 50 * 6.283 + (q % 7) * 0.02, rr = 1.12 + (q % 9) * 0.07, x = Math.cos(a) * A * rr * 1.1, z = Math.sin(a) * B * rr * 1.1 + cz; if (Math.abs(x) < 6 && z > gz - 6) continue; world.add(k.arbol(x, z, 1.1 + (q % 5) * 0.12)); }
+    for (let i = 0; i < 90; i++) { const q = U.hash(id + 'a' + i) >>> 0, a = i / 90 * 6.283 + (q % 7) * 0.02, rr = 1.12 + (q % 13) * 0.07, x = Math.cos(a) * A * rr * 1.1, z = Math.sin(a) * B * rr * 1.1 + cz; if (Math.abs(x) < 6 && z > gz - 6) continue; const ar = q % 3 ? k.arbol(x, z, 1.1 + (q % 5) * 0.12) : k.arbolRedondo(x, z, 1.3 + (q % 4) * 0.15, [0x4f8f45, 0x6b9a3e, 0x3f7a3a][q % 3]); ar.position.y = alt(x, z); world.add(ar); }
     if (S.mascota) mascota(world, 2.2, gz - 2.4, S.mascota.animal, S.mascota.color);
   }
   function vida(world, L, S) {

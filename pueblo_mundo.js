@@ -121,22 +121,22 @@
   const enPlaza = (x, z) => { let d = false; for (let i = 0, j = PLAZA.length - 1; i < PLAZA.length; j = i++) { const [xi, zi] = PLAZA[i], [xj, zj] = PLAZA[j]; if (((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi)) d = !d; } return d; };
   const ronda = (a0, a1, n, off) => Array.from({ length: n + 1 }, (_, i) => fueraDe(a0 + (a1 - a0) * i / n, off));
   const CALLES = [
-    { n: 'Calle Mayor', w: 5, p: [[PS[0], PS[1] - 1], [3, 26], [-2, 17], [1, 9]] },
-    { n: 'Calle de la Iglesia', w: 4, p: [[1, -9], [4, -18], [1, -27], [PN[0], PN[1] + 1]] },
-    { n: 'Carrer de Llevant', w: 3.6, p: [[12, -2], [21, -7], [30, -2], [30, 11], [19, 21], [3, 26]] },
-    { n: 'Carrer de Ponent', w: 3.6, p: [[-13, 1], [-23, -5], [-30, -14], [-22, -24], [-8, -27], [1, -27]] },
-    { n: 'Callejón del Horno', w: 3.2, p: [[-2, 17], [-14, 22], [-26, 14], [-30, 3], [-23, -5]] },
+    { n: 'Calle Mayor', w: 7, p: [[PS[0], PS[1] - 1], [3, 26], [-2, 17], [1, 9]] },
+    { n: 'Calle de la Iglesia', w: 6, p: [[1, -9], [4, -18], [1, -27], [PN[0], PN[1] + 1]] },
+    { n: 'Carrer de Llevant', w: 5.4, p: [[12, -2], [21, -7], [30, -2], [30, 11], [19, 21], [3, 26]] },
+    { n: 'Carrer de Ponent', w: 5.4, p: [[-13, 1], [-23, -5], [-30, -14], [-22, -24], [-8, -27], [1, -27]] },
+    { n: 'Callejón del Horno', w: 4.6, p: [[-2, 17], [-14, 22], [-26, 14], [-30, 3], [-23, -5]] },
     // Extramuros: carretera desde la puerta sur y las rondas que bordean la muralla
     { n: 'Carretera', w: 6, fuera: true, p: [[PS[0], PS[1] + 1], [PS[0] + 3, PS[1] + 14], [PS[0] - 2, PS[1] + 30]] },
-    { n: 'Ronda de Levante', w: 4.5, fuera: true, p: [[PS[0] + 1, PS[1] + 9]].concat(ronda(Math.PI / 2 - 0.25, -0.35, 6, 10)) },
-    { n: 'Ronda de Poniente', w: 4.5, fuera: true, p: [[PS[0] - 1, PS[1] + 9]].concat(ronda(Math.PI / 2 + 0.25, Math.PI + 0.35, 6, 10)) },
-    { n: 'Camino del norte', w: 3.5, fuera: true, p: [[PN[0], PN[1] - 1], [PN[0] - 4, PN[1] - 12]] }
+    { n: 'Ronda de Levante', w: 5.5, fuera: true, p: [[PS[0] + 1, PS[1] + 9]].concat(ronda(Math.PI / 2 - 0.25, -0.35, 6, 10)) },
+    { n: 'Ronda de Poniente', w: 5.5, fuera: true, p: [[PS[0] - 1, PS[1] + 9]].concat(ronda(Math.PI / 2 + 0.25, Math.PI + 0.35, 6, 10)) },
+    { n: 'Camino del norte', w: 4.5, fuera: true, p: [[PN[0], PN[1] - 1], [PN[0] - 4, PN[1] - 12]] }
   ];
   // Parcelas: [tipo, x, z, ancho, fondo, fuera de la muralla]. Buscan el hueco más cercano con el frente a una calle.
   const pFuera = (a, off) => fueraDe(a, off);
   const LOTES = [
     ['escuela', 13, -17, 9, 8], ['canasta', 15, -28, 10, 7], ['ambulatorio', 27, -15, 9, 8], ['tienda', 10, 17, 8, 7],
-    ['parque', -19, 9, 11, 9], ['bar', -9, 14, 7, 7], ['biblioteca', -18, -13, 8, 7], ['centrodia', -14, -33, 9, 7],
+    ['parque', -19, 9, 11, 9], ['bar', -9, 14, 7, 7], ['biblioteca', -18, -13, 8, 7], ['centrodia', 28, -27, 9, 7],
     ['casapadres', -14, 31, 9, 8], ['casaamigos', 36, -20, 8, 8],
     ['polideportivo'].concat(pFuera(Math.PI / 2 - 0.75, 18), [12, 10, true]), ['pabellon'].concat(pFuera(Math.PI / 2 + 0.75, 18), [12, 12, true]),
     ['hotel'].concat(pFuera(-0.05, 17), [9, 9, true])
@@ -159,7 +159,7 @@
     const celdas = (r, fn) => { const R = Math.hypot(r.w, r.d) / 2 + 1; for (let j = Math.floor(r.z - R - z0); j <= Math.ceil(r.z + R - z0); j++) for (let i = Math.floor(r.x - R - x0); i <= Math.ceil(r.x + R - x0); i++) { if (i < 0 || j < 0 || i >= W || j >= H) { if (fn(-1) === false) return false; continue; } if (enRect(r, x0 + i + 0.5, z0 + j + 0.5) && fn(j * W + i) === false) return false; } return true; };
     const radio = (px, pz) => { const a = Math.atan2(pz / RZ, px / RX), m = muro(a); return [Math.hypot(px, pz), Math.hypot(m[0], m[1])]; };
     return {
-      libre: (r, ok) => celdas(r, k => k >= 0 && (b[k] === 0 || (ok && ok.indexOf(b[k]) >= 0))),
+      libre: (r, ok) => celdas(r, k => k >= 0 && (b[k] === 0 || !!(ok && ok.indexOf(b[k]) >= 0))),
       quien: r => { const v = new Set(); celdas(r, k => { if (k >= 0 && b[k]) v.add(b[k]); }); return v; },
       marca: (r, val) => celdas(r, k => { if (k >= 0) b[k] = val; }),
       punto: (px, pz, val) => { const i = Math.floor(px - x0), j = Math.floor(pz - z0); if (i >= 0 && j >= 0 && i < W && j < H) { if (val !== undefined) b[j * W + i] = val; return b[j * W + i]; } return 4; },
@@ -170,15 +170,29 @@
   }
   // Polilínea como cinta de suelo (calles y caminos); alt: altura del terreno en cada punto
   function cinta(W, pts, w, m, alt) {
-    const pos = [], idx = []; let k = 0; const y = (x, z) => (alt ? alt(x, z) : 0) + 0.012;
+    const pos = [], idx = []; let k = 0, y0 = w < 0.6 ? 0.03 : 0.012; const y = (x, z) => (alt ? alt(x, z) : 0) + y0;
     for (let i = 0; i < pts.length - 1; i++) {
       const [ax, az] = pts[i], [bx, bz] = pts[i + 1], l = Math.hypot(bx - ax, bz - az), nx = -(bz - az) / l * w / 2, nz = (bx - ax) / l * w / 2;
       pos.push(ax + nx, y(ax + nx, az + nz), az + nz, ax - nx, y(ax - nx, az - nz), az - nz, bx + nx, y(bx + nx, bz + nz), bz + nz, bx - nx, y(bx - nx, bz - nz), bz - nz); idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); k += 4;
-      if (!alt) { const disco = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 14).rotateX(-Math.PI / 2), m); disco.position.set(bx, 0.013, bz); W.add(disco); }
+      if (!alt) { const gd = new THREE.CircleGeometry(w / 2, 14).rotateX(-Math.PI / 2), pd = gd.attributes.position, ud = gd.attributes.uv; for (let q = 0; q < pd.count; q++) ud.setXY(q, (pd.getX(q) + bx) / 3, (pd.getZ(q) + bz) / 3); const disco = new THREE.Mesh(gd, m); disco.position.set(bx, 0.013, bz); W.add(disco); }
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
     const uv = []; for (let i = 0; i < pos.length; i += 3) uv.push(pos[i] / 3, pos[i + 2] / 3); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     const me = new THREE.Mesh(g, m); me.receiveShadow = true; W.add(me);
+  }
+  function detalle(W, x, z, ry, q) {
+    const k = q(), g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; W.add(g);
+    if (k < 0.4) [-0.6, 0.6].forEach(dx => { cil(g, 0.28, 0.45, '#b4643d', dx, 0, 0, 8, 0.34); const p = new THREE.Mesh(new THREE.SphereGeometry(0.32, 7, 5), mat(['#c0392b', '#e84393', '#4f8f3a'][(q() * 3) | 0])); p.position.set(dx, 0.62, 0); g.add(p); });
+    else if (k < 0.7) caja(g, 1.6, 0.45, 0.5, '#a39380', 0, 0, 0);
+    else [-0.4, 0.4].forEach(dx => cil(g, 0.3, 0.8, '#6b4a2b', dx, 0, 0, 10));
+  }
+  function bordillos(W, pts, w, m, fuera) {
+    for (const s of [-1, 1]) { let tramo = [];
+      const corta = () => { if (tramo.length > 1) cinta(W, tramo, 0.45, m); tramo = []; };
+      for (let i = 0; i < pts.length - 1; i++) { const [ax, az] = pts[i], [bx, bz] = pts[i + 1], l = Math.hypot(bx - ax, bz - az), nx = -(bz - az) / l, nz = (bx - ax) / l;
+        for (let t = 0; t <= l; t += 1) { const x = ax + (bx - ax) * t / l + nx * s * (w / 2 + 0.1), z = az + (bz - az) * t / l + nz * s * (w / 2 + 0.1); if (fuera(x, z)) corta(); else tramo.push([x, z]); }
+        corta(); }
+    }
   }
   function aLoLargo(paso, fn) {
     CALLES.forEach((c, ci) => { for (let i = 0; i < c.p.length - 1; i++) { const [ax, az] = c.p[i], [bx, bz] = c.p[i + 1], l = Math.hypot(bx - ax, bz - az), tx = (bx - ax) / l, tz = (bz - az) / l; for (let d = paso / 2; d < l; d += paso) fn(ax + tx * d, az + tz * d, tx, tz, c, ci); } });
@@ -217,7 +231,7 @@
       const a = i / N * Math.PI * 2, b = (i + 1) / N * Math.PI * 2, am = (a + b) / 2, pa = muro(a), pb = muro(b); if (puerta(am)) continue;
       const x = (pa[0] + pb[0]) / 2, z = (pa[1] + pb[1]) / 2, l = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) + 0.2, ang = Math.atan2(pb[1] - pa[1], pb[0] - pa[0]);
       caja(W, l, alto, 1.4, piedra, x, 0, z, -ang); [-0.3, 0.3].forEach(k => { const al = caja(W, 0.7, 0.7, 1.4, piedra, x, alto, z, -ang); al.translateX(k * l); });
-      O.marca({ x, z, w: l, d: 2.4, ry: -ang }, 4); G.bloquea(x - 1, z - 1, x + 1, z + 1);
+      O.marca({ x, z, w: l, d: 2.4, ry: -ang }, 4); for (let t = 0; t <= 1.001; t += 0.125) { const bx = pa[0] + (pb[0] - pa[0]) * t, bz = pa[1] + (pb[1] - pa[1]) * t; G.bloquea(bx - 0.9, bz - 0.9, bx + 0.9, bz + 0.9); }
       if (i % 9 === 4) {
         cil(W, 2.3, alto + 2.6, piedra, x, 0, z, 12); if (E.torre !== 'almenada') { const c = new THREE.Mesh(new THREE.ConeGeometry(2.7, 2.6, 12), mat(E.teja)); c.position.set(x, alto + 3.9, z); W.add(c); }
         if (nivel >= 3) { const st = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 3), mat(club.colores[0], { side: THREE.DoubleSide })); const l2 = Math.hypot(x, z); st.position.set(x * (l2 + 2.35) / l2, alto - 0.5, z * (l2 + 2.35) / l2); st.lookAt(x * 2, alto - 0.5, z * 2); W.add(st); }   // estandartes del club
@@ -269,14 +283,23 @@
     S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xb8cfdf, 120, 360); S.camera.far = 650; S.camera.updateProjectionMatrix();
     // Solo se camina por la meseta: lo demás queda bloqueado en la rejilla de caminos
     for (let z = LIM[1]; z < LIM[3]; z += 1) for (let x = LIM[0]; x < LIM[2]; x += 1) if (dMes(x + 0.5, z + 0.5) > 0.97) { G.bloquea(x, z, x + 1, z + 1); O.punto(x + 0.5, z + 0.5, 4); }
-    const emp = M.textura('empedrado-pueblo', 256, (x, n) => { x.fillStyle = '#b9a98c'; x.fillRect(0, 0, n, n); const rr = rnd(7); for (let i = 0; i < 260; i++) { x.fillStyle = 'rgba(' + (80 + rr() * 60 | 0) + ',' + (70 + rr() * 50 | 0) + ',' + (55 + rr() * 40 | 0) + ',.35)'; x.beginPath(); x.ellipse(rr() * n, rr() * n, 6 + rr() * 8, 4 + rr() * 6, rr() * 3, 0, 6.3); x.fill(); } });
+    const emp = M.textura('empedrado-pueblo2', 256, (x, n) => { x.fillStyle = '#6f6352'; x.fillRect(0, 0, n, n); const rr = rnd(7), f = 10, h = n / f; for (let jj = 0; jj < f; jj++) for (let ii = -1; ii <= f; ii++) { const cx = ii * h + (jj % 2) * h / 2 + (rr() - 0.5) * 3, cy = jj * h + h / 2 + (rr() - 0.5) * 3, v = 150 + rr() * 50 | 0; x.fillStyle = 'rgb(' + v + ',' + (v - 8 - rr() * 10 | 0) + ',' + (v - 25 - rr() * 15 | 0) + ')'; x.beginPath(); x.ellipse(cx, cy, h * 0.44, h * 0.38, rr() * 0.6, 0, 6.3); x.fill(); x.fillStyle = 'rgba(255,255,255,.12)'; x.beginPath(); x.ellipse(cx - h * 0.1, cy - h * 0.1, h * 0.18, h * 0.12, 0, 0, 6.3); x.fill(); } });
     if (emp) { emp.wrapS = emp.wrapT = THREE.RepeatWrapping; }
     const mCalle = emp ? new THREE.MeshStandardMaterial({ map: emp, roughness: 1 }) : mat('#b9a98c');
+    const tx = (k, dib) => { const t = M.textura(k, 256, dib); return t ? new THREE.MeshStandardMaterial({ map: t, roughness: 1 }) : null; };
+    const manchas = (x, n, base, cols, k, tam) => { x.fillStyle = base; x.fillRect(0, 0, n, n); const rr = rnd(k); for (let i = 0; i < 900; i++) { x.fillStyle = cols[(rr() * cols.length) | 0]; const px = rr() * n, py = rr() * n, s = tam * (0.4 + rr()); x.fillRect(px, py, s, s * (0.5 + rr())); } };
+    const mTierra = tx('tierra-pueblo', (x, n) => manchas(x, n, '#a99a74', ['rgba(120,140,70,.35)', 'rgba(90,110,55,.3)', 'rgba(150,130,95,.4)', 'rgba(185,170,135,.35)', 'rgba(110,95,70,.3)'], 11, 5)) || mat('#a89a76');
+    const mSolar = tx('solar-pueblo', (x, n) => manchas(x, n, '#8e9a62', ['rgba(70,100,45,.45)', 'rgba(140,150,80,.4)', 'rgba(160,140,100,.35)', 'rgba(230,220,120,.5)'], 13, 3)) || mat('#8e9a62');
+    const mObra = tx('obra-pueblo', (x, n) => manchas(x, n, '#b5a585', ['rgba(150,130,100,.5)', 'rgba(200,190,160,.4)', 'rgba(120,110,95,.4)'], 17, 4)) || mat('#b5a585');
+    const mLosas = tx('losas-pueblo', (x, n) => { x.fillStyle = '#7d705c'; x.fillRect(0, 0, n, n); const rr = rnd(21), f = 8, h = n / f; for (let j = 0; j < f; j++) { const off = (j % 2) * h / 2; for (let i = -1; i < f; i++) { const v = 196 + rr() * 30 | 0; x.fillStyle = 'rgb(' + v + ',' + (v - 10) + ',' + (v - 28) + ')'; x.fillRect(i * h + off + 2, j * h + 2, h - 4, h - 4); x.fillStyle = 'rgba(0,0,0,.06)'; x.fillRect(i * h + off + 2 + rr() * h * 0.5, j * h + 2 + rr() * h * 0.5, h * 0.3, h * 0.2); } } }) || mat('#d8cdb5');
+    const mBordillo = mat(E.clave === 'andaluz' ? '#cfc6b4' : '#8f8170');
+    const uvEsc = (g, e) => { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / e, uv.getY(i) / e); return g; };
     const carr = ed('carretera').nivel;
     entorno(W, M, E, r, carr);
-    { const s = new THREE.Shape(); for (let i = 0; i <= 96; i++) { const [px, pz] = muro(i / 96 * Math.PI * 2); if (i) s.lineTo(px, -pz); else s.moveTo(px, -pz); } const g = new THREE.ShapeGeometry(s).rotateX(-Math.PI / 2); const m = new THREE.Mesh(g, mat('#a89a76')); m.position.y = -0.01; m.receiveShadow = true; W.add(m); }
-    CALLES.forEach(c => { cinta(W, c.p, c.w, c.n === 'Carretera' && carr ? mat('#4b5058') : c.fuera ? mat('#b49d72') : mCalle); for (let i = 0; i < c.p.length - 1; i++) { const [ax, az] = c.p[i], [bx, bz] = c.p[i + 1], l = Math.hypot(bx - ax, bz - az); O.marca({ x: (ax + bx) / 2, z: (az + bz) / 2, w: l + c.w, d: c.w + 1, ry: -Math.atan2(bz - az, bx - ax) }, 1); } });
-    { const s = new THREE.Shape(); PLAZA.forEach(([px, pz], i) => i ? s.lineTo(px, -pz) : s.moveTo(px, -pz)); const g = new THREE.ShapeGeometry(s).rotateX(-Math.PI / 2); const pl = new THREE.Mesh(g, ed('plaza').nivel ? mat('#d8cdb5') : mCalle); pl.position.y = 0.014; pl.receiveShadow = true; W.add(pl);
+    { const s = new THREE.Shape(); for (let i = 0; i <= 96; i++) { const [px, pz] = muro(i / 96 * Math.PI * 2); if (i) s.lineTo(px, -pz); else s.moveTo(px, -pz); } const g = uvEsc(new THREE.ShapeGeometry(s), 7).rotateX(-Math.PI / 2); const m = new THREE.Mesh(g, mTierra); m.position.y = -0.01; m.receiveShadow = true; W.add(m); }
+    CALLES.forEach(c => { cinta(W, c.p, c.w, c.n === 'Carretera' && carr ? mat('#4b5058') : c.fuera ? mat('#b49d72') : mCalle);
+      if (!c.fuera) bordillos(W, c.p, c.w, mBordillo, enPlaza); for (let i = 0; i < c.p.length - 1; i++) { const [ax, az] = c.p[i], [bx, bz] = c.p[i + 1], l = Math.hypot(bx - ax, bz - az); O.marca({ x: (ax + bx) / 2, z: (az + bz) / 2, w: l + c.w, d: c.w + 1, ry: -Math.atan2(bz - az, bx - ax) }, 1); } });
+    { const s = new THREE.Shape(); PLAZA.forEach(([px, pz], i) => i ? s.lineTo(px, -pz) : s.moveTo(px, -pz)); const g = uvEsc(new THREE.ShapeGeometry(s), 4).rotateX(-Math.PI / 2); const pl = new THREE.Mesh(g, ed('plaza').nivel ? mLosas : mCalle); pl.position.y = 0.014; pl.receiveShadow = true; W.add(pl);
       for (let z = -11; z <= 11; z++) for (let x = -14; x <= 13; x++) if (enPlaza(x + 0.5, z + 0.5)) O.punto(x + 0.5, z + 0.5, 1); }
     if (carr >= 2) { const bx = PS[0] + 7, bz = PS[1] + 18; caja(W, 3, 0.15, 1.4, '#2f6f9e', bx, 2.6, bz); [-1.3, 1.3].forEach(dx => cil(W, 0.06, 2.6, '#666', bx + dx, 0, bz - 0.5, 5)); caja(W, 2.6, 0.45, 0.6, '#7a5230', bx, 0, bz + 0.4); caja(W, 2.6, 3, 11, '#e67e22', PS[0] - 5.5, 0, PS[1] + 20); O.marca({ x: bx, z: bz, w: 4, d: 3 }, 2); }
     muralla(W, G, O, E, nivel, club);
@@ -310,13 +333,13 @@
       return { R, fx: fx / l, fz: fz / l, hueco, c, ok: esq && hueco > 0.2 && hueco < (w * d > 90 ? 9 : 3.5) && O.libre(R) }; };
     LOTES.forEach(([tipo, x0, z0, w, d, fuera]) => {
       let P = prueba(x0, z0, w, d, fuera);
-      for (let rr = 1; !P.ok && rr <= 18; rr++) for (let k = 0; k < 8 + rr * 2 && !P.ok; k++) { const a = k / (8 + rr * 2) * Math.PI * 2, q = prueba(x0 + Math.cos(a) * rr, z0 + Math.sin(a) * rr, w, d, fuera); if (q.ok) P = q; }
+      for (let rr = 1; !P.ok && rr <= 30; rr++) for (let k = 0; k < 8 + rr * 2 && !P.ok; k++) { const a = k / (8 + rr * 2) * Math.PI * 2, q = prueba(x0 + Math.cos(a) * rr, z0 + Math.sin(a) * rr, w, d, fuera); if (q.ok) P = q; }
       if (!P.ok) S.conflictos.push(tipo + ' no encuentra sitio');
       const { R } = P, x = R.x, z = R.z, ry = R.ry, fx = P.fx, fz = P.fz;
       if (P.ok && P.hueco > 1.5) { const ax = x + fx * d / 2, az = z + fz * d / 2; cinta(W, [[ax, az], [P.c.px, P.c.pz]], 4.5, mCalle); O.marca({ x: (ax + P.c.px) / 2, z: (az + P.c.pz) / 2, w: 4.5, d: P.hueco + 1, ry }, 1); }
       O.marca(R, 2);
       const b = ed(tipo), g = new THREE.Group(), rr = rnd(U.hash(pj.nombre + tipo)); g.position.set(x, 0, z); g.rotation.y = ry; W.add(g);
-      const bajo = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), mat(b.nivel || b.obra ? '#b5a585' : '#8e9a62')); bajo.position.y = 0.005; g.add(bajo);
+      const bajo = new THREE.Mesh(uvEsc(new THREE.PlaneGeometry(w, d), 1 / Math.max(1, w / 5)).rotateX(-Math.PI / 2), b.nivel || b.obra ? mObra : mSolar); bajo.position.y = 0.005; g.add(bajo);
       if (b.obra) obra(g, M, E, tipo, b.obra.dest, b.obra.progreso, club, rr, S.puebloAnim);
       else if (b.nivel) construido(g, M, E, tipo, b.nivel, club, rr);
       else {
@@ -335,21 +358,27 @@
     zonas.push([{ id: 'pueblo_carretera', nombre: 'Carretera y autobús', accion: '', destino: {}, acciones: s2 => accionesLote(s2, 'carretera') }, PS[0] + 2.5, PS[1] + 6]);
     zonas.push([{ id: 'pueblo_salir', nombre: 'Salir del pueblo', accion: 'Volver al juego', destino: {}, acciones: () => [{ id: 'salir', t: 'Volver', d: 'Sales del pueblo.', disponible: true, fn: () => { setTimeout(() => GM.sede.cerrar(), 50); return { ok: true, texto: 'Hasta pronto' }; } }] }, PS[0] - 1, PS[1] + 26]);
     S.zonas = zonas.map(([sala, x, z]) => M.zona(W, sala, x, z, club));
+    // Casas a lo largo de las calles: dentro de la muralla según el nivel; fuera, el pueblo crece con el nivel y con cada edificio que levantas.
+    // Cada 3,6 m de calle y a cada lado se prueban tres tamaños y dos retranqueos; la primera que cabe se queda.
+    const lleno = 0.55 + nivel * 0.1, llenoFuera = U.clamp(-0.15 + nivel * 0.12 + hechos * 0.025, 0, 0.85); let nCasas = 0, nFuera = 0;
+    aLoLargo(3.6, (x, z, tx, tz, c, ci) => {
+      [-1, 1].forEach(s => {
+        const q = rnd(U.hash(pj.nombre + 'c' + Math.round(x) + ',' + Math.round(z) + s)); if (q() > (c.fuera ? llenoFuera : lleno)) return;
+        const nx = -tz * s, nz = tx * s, ry = Math.atan2(-nx, -nz);
+        for (const [w, d] of [[5.4 + q() * 1.4, 5.6 + q() * 1.6], [4.4, 5], [3.8, 4.4]]) for (const ret of [0.7, 1.5]) {
+          const cx = x + nx * (c.w / 2 + ret + d / 2), cz = z + nz * (c.w / 2 + ret + d / 2), R = { x: cx, z: cz, w, d, ry };
+          const lado = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => { const u = a * w / 2, v = b * d / 2; return [cx + u * Math.cos(ry) + v * Math.sin(ry), cz - u * Math.sin(ry) + v * Math.cos(ry)]; });
+          if (!(lado.every(p => O.dentro(p[0], p[1])) || lado.every(p => O.fuera(p[0], p[1]))) || !O.libre(R)) continue;
+          O.marca(R, 3); const pisos = 1 + ((q() * Math.min(3, 1 + nivel * 0.6)) | 0);
+          casa(W, M, E, cx, cz, ry, w, d, pisos, q, club2, ci <= 1 && q() < 0.45); G.bloquea(cx - Math.min(w, d) / 2, cz - Math.min(w, d) / 2, cx + Math.min(w, d) / 2, cz + Math.min(w, d) / 2); nCasas++; if (c.fuera) nFuera++;
+          if (ret > 1 && !c.fuera) { const fx = x + nx * (c.w / 2 + 0.55), fz = z + nz * (c.w / 2 + 0.55); detalle(W, fx, fz, ry, q); G.bloquea(fx - 0.6, fz - 0.6, fx + 0.6, fz + 0.6); }
+          return;
+        }
+      });
+    });
     // Farolas (nunca dentro de la plaza): con «alumbrado» más y encendidas
     const nAl = ed('alumbrado').nivel; let kF = 0;
     aLoLargo(nAl ? 9 : 16, (x, z, tx, tz, c) => { const s = (kF++ % 2 ? 1 : -1), lx = x - tz * (c.w / 2 + 0.4) * s, lz = z + tx * (c.w / 2 + 0.4) * s; if (O.punto(lx, lz) > 1 || enPlaza(lx, lz)) return; cil(W, 0.08, 3.2, nAl ? '#2c3e50' : '#6b5a48', lx, 0, lz, 6); const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), new THREE.MeshStandardMaterial({ color: '#fff3c4', emissive: nAl ? '#ffd27a' : '#000', emissiveIntensity: 0.7 })); l.position.set(lx, 3.3, lz); W.add(l); O.punto(lx, lz, 5); });
-    // Casas a lo largo de las calles: dentro de la muralla según el nivel; fuera, el pueblo crece con el nivel y con cada edificio que levantas
-    const lleno = 0.5 + nivel * 0.1, llenoFuera = U.clamp(-0.15 + nivel * 0.12 + hechos * 0.025, 0, 0.85); let nCasas = 0, nFuera = 0;
-    aLoLargo(7.2, (x, z, tx, tz, c, ci) => {
-      [-1, 1].forEach(s => {
-        const q = rnd(U.hash(pj.nombre + 'c' + Math.round(x) + ',' + Math.round(z) + s)); if (q() > (c.fuera ? llenoFuera : lleno)) return;
-        const w = 5 + q() * 1.8, d = 5.5 + q() * 1.8, nx = -tz * s, nz = tx * s, cx = x + nx * (c.w / 2 + 0.6 + d / 2), cz = z + nz * (c.w / 2 + 0.6 + d / 2), ry = Math.atan2(-nx, -nz), R = { x: cx, z: cz, w, d, ry };
-        const lado = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => { const u = a * w / 2, v = b * d / 2; return [cx + u * Math.cos(ry) + v * Math.sin(ry), cz - u * Math.sin(ry) + v * Math.cos(ry)]; });
-        if (!(lado.every(p => O.dentro(p[0], p[1])) || lado.every(p => O.fuera(p[0], p[1]))) || !O.libre(R)) return;
-        O.marca(R, 3); const pisos = 1 + ((q() * Math.min(3, 1 + nivel * 0.6)) | 0);
-        casa(W, M, E, cx, cz, ry, w, d, pisos, q, club2, ci <= 1 && q() < 0.45); G.bloquea(cx - Math.min(w, d) / 2, cz - Math.min(w, d) / 2, cx + Math.min(w, d) / 2, cz + Math.min(w, d) / 2); nCasas++; if (c.fuera) nFuera++;
-      });
-    });
     // Huertos y árboles en lo que queda libre (nunca en la plaza ni pegados a una calle)
     for (let k = 0; k < 160; k++) { const x = (r() * 2 - 1) * MES.rx * 0.95, z = MES.cz + (r() * 2 - 1) * MES.rz * 0.95; if (dMes(x, z) > 0.92 || enPlaza(x, z) || !O.libre({ x, z, w: 4, d: 4 }) || calleCercana(x, z).d < 4) continue; arbol(W, x, z, r() < 0.35 ? 'ciprés' : r() < 0.6 ? 'olivo' : 'frutal', r); O.marca({ x, z, w: 3, d: 3 }, 5); G.bloquea(x - 0.5, z - 0.5, x + 0.5, z + 0.5); }
     S.paseo = []; aLoLargo(6, (x, z) => S.paseo.push([x, z])); PLAZA.forEach(([x, z]) => S.paseo.push([x * 0.6, z * 0.6]));

@@ -131,11 +131,13 @@
     if (sup) anillo(sup, 0x6a7482, 0.6 + filas * 0.55 + 0.9, topInf + 0.6);
     if (tiene(p, 'vip')) [-1, 1].forEach(s => W.add(K.caja(2 * L, 0.5, 0.4, 0x8fd3ee, 0, topInf, s * (ZW + 0.6 + filas * 0.55), 0.55)));
     // público
-    const lleno = U.clamp((af * 0.8) / 14000, 0.15, 1), n = Math.round(150 * lleno), cols = [S.c1, S.c2, 0xf2f2f2, 0x2f3a46];
-    for (let i = 0; i < n; i++) {
-      const q = U.hash(id + 'p' + i) >>> 0, r = q % filas, lado = (q >>> 3) % 2 ? 1 : -1, pos = ((q >>> 6) % 100) / 100 * 2 * L - L;
-      W.add(K.caja(0.18, 0.28, 0.18, cols[(q >>> 9) % 4], pos, 0.3 + r * 0.3 - 0.05, lado * (ZW + 0.6 + r * 0.55 + 0.05)));
+    // Personas sentadas instanciadas (GM.kit.publico): cuantas más, más lleno suele estar el pabellón
+    const lleno = U.clamp((af * 0.8) / 14000, 0.15, 1), n = Math.round(420 * lleno), cols = [S.c1, S.c2, 0xf2f2f2, 0x2f3a46], piel = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'], usados = new Set(), fans = [];
+    for (let i = 0; i < n * 2 && fans.length < n; i++) {
+      const q = U.hash(id + 'p' + i) >>> 0, r = q % filas, lado = (q >>> 3) % 2 ? 1 : -1, k = (q >>> 6) % Math.floor(2 * L / 0.32), clave = r + ',' + lado + ',' + k; if (usados.has(clave)) continue; usados.add(clave);
+      fans.push({ x: -L + 0.16 + k * 0.32, y: 0.3 + r * 0.3, z: lado * (ZW + 0.6 + r * 0.55 + 0.05), ry: lado > 0 ? Math.PI : 0, ropa: '#' + new THREE.Color(cols[(q >>> 9) % 4]).getHexString(), piel: piel[(q >>> 12) % 5], pelo: ['#1d1510', '#3b2617', '#6a4425', '#a9793e'][(q >>> 15) % 4] });
     }
+    if (fans.length) W.add(K.publico(fans, 0.36).grupo);
     // jugadores del club calentando en la pista (personas reales de la sede; 1 unidad son unos 1,55 m)
     if (GM.sede && GM.sede.figura && !partido && inte) {
       const pl = eq.plantilla.map(i => st.jugadores[i]).filter(Boolean).sort((a, b) => b.ovr - a.ovr).slice(0, 5);
