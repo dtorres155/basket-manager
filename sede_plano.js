@@ -57,7 +57,7 @@
       ['pottedPlant', -19.4, 2.6, 0], ['pottedPlant', 19.4, 2.6, 0], ['trashcan', 2.3, 4.6, 0]
     ],
     // Máquinas del gimnasio (procedurales): tipo, x, z, rotY
-    gimnasio: [['cinta', 4, -6, 0], ['cinta', 6, -6, 0], ['cinta', 8, -6, 0], ['pesas', 9.8, -9, 90], ['bici', 4, -2, 0], ['bici', 6, -2, 0], ['colchoneta', 9.2, -2.4, 0], ['banco', 4, -11.6, 0], ['banco', 6, -11.6, 0], ['banco', 8, -11.6, 0]],
+    gimnasio: [['cinta', 4, -6, 0], ['cinta', 6, -6, 0], ['cinta', 8, -6, 0], ['pesas', 10.35, -12.3, 0], ['bici', 4, -2, 0], ['bici', 6, -2, 0], ['colchoneta', 9.2, -2.4, 0], ['banco', 4, -11.6, 0], ['banco', 6, -11.6, 0], ['banco', 8, -11.6, 0]],
     // Puntos de actividad para los personajes que se mueven solos
     puntos: {
       pista: [[-14.6, -6, 'tiro', 0], [-15.2, -3.2, 'tiro', 0], [-15.3, -8.9, 'tiro', 0], [-12.2, -6.4, 'tiro', 0], [-3.4, -6, 'tiro', 0], [-3.1, -3.4, 'tiro', 0], [-3.6, -8.8, 'tiro', 0], [-6, -5.6, 'tiro', 0], [-15, -8, 'interact-right', 90], [-12, -4, 'idle', 0], [-9, -10, 'sprint', 0], [-6, -6, 'interact-left', 270], [-3, -9, 'idle', 180], [-14, -1, 'idle', 0], [-9, -6, 'emote-yes', 0]],
