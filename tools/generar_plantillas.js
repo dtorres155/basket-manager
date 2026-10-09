@@ -31,10 +31,10 @@ const MAPA = [
   ['gbl', 'ΜΑΡΟΥΣΙ', 'maroussi', 'GBL'], ['gbl', 'ΜΥΚΟΝΟΣ Betsson BC', 'mykonos', 'GBL'], ['gbl', 'ΠΑΟΚ', 'paok', 'GBL'],
   ['gbl', 'ΠΕΡΙΣΤΕΡΙ Betsson', 'peristeri', 'GBL'], ['gbl', 'ΠΡΟΜΗΘΕΑΣ ΠΑΤΡΑΣ ΒΙΚΟΣ COLA', 'promitheas', 'GBL'],
   ['eurocup', 'Tofas SK', 'tofas', 'BSL'], ['eurocup', 'Türk Telekom Ankara', 'turk-telekom', 'BSL'], ['eurocup', 'Bahçeşehir Koleji', 'bahcesehir', 'BSL'],
-  // Liga turca desde la Wikipedia (tools/plantillas_bsl_wiki.js); Çayırova no tiene plantilla publicada
+  // Liga turca desde la Wikipedia (tools/plantillas_bsl_wiki.js); Çayırova, de Flashscore (añadida a mano a recursos/bsl_2026.json; posiciones, alturas y fechas estimadas)
   ['bsl', 'Galatasaray MCT Technic', 'galatasaray', 'BSL'], ['bsl', 'Karşıyaka Basket', 'karsiyaka', 'BSL'], ['bsl', 'Yukatel Denizli Basket', 'merkezefendi', 'BSL'],
   ['bsl', 'Petkim Spor', 'aliaga', 'BSL'], ['bsl', 'Bursaspor Basketbol', 'bursaspor', 'BSL'], ['bsl', 'Biotekno Körfez Basket', 'korfez', 'BSL'],
-  ['bsl', 'Pizza Bulls Bordo Bandırma', 'bandirma', 'BSL'], ['bsl', 'Safiport Erokspor', 'erokspor', 'BSL'], ['bsl', 'Trabzonspor', 'trabzonspor', 'BSL']
+  ['bsl', 'Pizza Bulls Bordo Bandırma', 'bandirma', 'BSL'], ['bsl', 'Safiport Erokspor', 'erokspor', 'BSL'], ['bsl', 'Trabzonspor', 'trabzonspor', 'BSL'], ['bsl', 'Çayırova Belediyespor', 'cayirova', 'BSL']
 ];
 // Media objetivo de los 8 mejores: base + reputación × 0,25 (Euroliga: 60 + rep × 0,15)
 const AJUSTE = { ACB: 1.5, LEGA: 0, BBL: -0.5, GBL: -1, BSL: 0 };

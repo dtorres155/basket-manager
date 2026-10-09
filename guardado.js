@@ -25,6 +25,7 @@
       const m = metas(a); m[slot] = { club: st.equipos[st.clubId].nombre, fecha: st.fecha, temporada: st.temporada, t: Date.now(), mb: +(txt.length / 1e6).toFixed(2) };
       a.setItem(META, JSON.stringify(m));
     } catch (e) { return { ok: false, motivo: 'No hay espacio en el navegador. Borra una ranura o exporta la partida.' }; }
+    if (slot === 0 && GM.bus) GM.bus.emit('guardado:auto', { slot });   // copias.js: copia en IndexedDB y en la carpeta elegida
     return { ok: true, persistente: persist };
   }
   // Migraciones: MIGRACIONES[n] pasa una partida de la versión n a la n+1. Nunca borres una: las partidas viejas las necesitan.

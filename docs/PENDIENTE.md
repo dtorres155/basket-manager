@@ -19,9 +19,9 @@
 - Modo construcción también en el despacho y otras salas del club; paredes interiores, color de paredes y suelos en casa.
 - Más ciudad: otros barrios conectados, el pabellón por dentro con esta vista (entrar desde la calle), el campus/ciudad deportiva explorable.
 - La ciudad del club cambia con la reputación más allá de banderas/árboles/mural (comercios nuevos, obras, grada de aficionados en la calle).
-- Rendimiento en móvil: la calle va a 13-30 fps con CPU x4 según la carga del ordenador (la medida varía mucho). Probado: congelar las matrices de lo estático gana ~1 fps y bajar a resolución 1x ~4 fps; no compensa sin medir en un Android real. Si allí va mal: LOD de personas y vecinos lejanos instanciados.
+- ~~Rendimiento en móvil~~ (en parte): calidad adaptable en el mundo 3D. Tras 3 s se mide la fluidez cada 2 s y, si no llega a 30 fps, baja un escalón (1: resolución 1x y sin sombras; 2: 0,8x, personas lejanas animadas cada 3 cuadros y las de más de 28 m sin dibujar; 3: 0,65x y a 20 m) y lo recuerda en el dispositivo. Con CPU x3 la calle queda en ~50 fps; con x6 (emulación que también dibuja por software) en 7-12. Prueba: `node tools/rendimiento_auto.js [escena] [x]`. Falta confirmarlo en un Android real.
 - ~~Coches y peatones~~: los coches frenan ante cualquier peatón en su carril, también fuera de los pasos. El músico sigue con una postura por código (no hay animación de guitarra en el paquete de Quaternius).
-- Adaptar todo el mundo explorable al móvil (controles táctiles, tamaños de paneles); hasta ahora se ha afinado en PC.
+- ~~Adaptar el mundo explorable al móvil~~: ayuda según el dispositivo que se oculta sola, botones táctiles para girar y acercar, más margen al tocar a una persona, paneles de sala como hoja inferior (60 % de la pantalla) y barra superior que no se desborda. Capturas: `node tools/sede_capturas.js movil_despues --movil`.
 - Decisión abierta: si Three.js se queda corto, pasar a Godot 4 (APK) reutilizando modelos y diseño.
 
 ## Ideas del usuario (octubre de 2026)
@@ -78,9 +78,9 @@
 - **Celebraciones:** rúa con autobús descubierto por la ciudad al ganar la liga.
 
 ### Técnico
-- **Copia en la nube o exportación automática** de las partidas, para no perder nada si se borra el navegador.
-- **Tutorial guiado** de cada modo la primera vez.
-- **Accesibilidad:** tamaño de letra, contraste y velocidad de las animaciones.
+- ~~Copias automáticas~~ (`copias.js`): cada autoguardado deja una copia aparte en IndexedDB (las 10 últimas, se restauran desde el menú) y, en Chrome o Edge de ordenador, se escribe en una carpeta elegida (que puede ser de Drive u OneDrive). En el móvil, la copia por archivo o compartir. Prueba: `node tools/copias_prueba.js`.
+- ~~Tutorial guiado~~ (`ui_tutorial.js`): la primera vez de cada modo, pasos que señalan cada parte de la pantalla; se puede saltar y volver a ver desde el menú. Capturas: `node tools/tutorial_capturas.js`.
+- ~~Accesibilidad~~: tamaño de letra (normal, grande, muy grande), contraste alto y animaciones reducidas (sigue la preferencia del sistema), en el menú principal y en el de la partida.
 
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
@@ -88,8 +88,8 @@
 - ~~Guardado seguro~~: hecho en la fase 1.4 (versión y migraciones, guardado al salir de la app, almacenamiento persistente, copia de seguridad por archivo o compartir y recordatorio semanal).
 
 ## P1 — Datos
-- ~~Plantillas reales~~ de BBL, GBL, Lega, ACB, Efes, ASVEL y la BSL (`tools/generar_plantillas.js`; la liga turca, desde las plantillas «current roster» de la Wikipedia con `tools/plantillas_bsl_wiki.js`, porque tbf.org.tr y RealGM están tras Cloudflare). Solo Çayırova sigue con relleno (no tiene plantilla publicada).
-- Valoraciones: estimadas por reputación del club, edad y si es extranjero; no hay minutos ni estadísticas. Mejorarlas con estadísticas de 2025-26 si se encuentra una fuente abierta.
+- ~~Plantillas reales~~ de BBL, GBL, Lega, ACB, Efes, ASVEL y la BSL (`tools/generar_plantillas.js`; la liga turca, desde las plantillas «current roster» de la Wikipedia con `tools/plantillas_bsl_wiki.js`, porque tbf.org.tr y RealGM están tras Cloudflare). Çayırova, de Flashscore (posiciones, alturas y fechas estimadas): cerrado.
+- ~~Valoraciones con estadísticas reales~~ (NBA, Euroliga y EuroCup de 2025-26): `node tools/valoraciones_stats.js` genera `datos_valoraciones.js` (504 jugadores reordenados por su producción real dentro de su competición, sin cambiar la media de la liga; cambio máximo ±8). Las ligas nacionales siguen estimadas (no hay una fuente abierta sencilla).
 - ~~Clubes que faltan~~: hecho (BBL 18, BSL 16, GBL 14, Lega 16). Pabellones y presupuestos de los recién llegados, aproximados.
 - ~~Fechas reales~~: Euroliga y ACB oficiales (Copa del Rey del 18 al 21 de febrero); BBL, Lega, GBL y BSL aproximadas. La EuroCup real acaba la fase regular el 13 de enero; aquí se alarga.
 

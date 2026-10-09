@@ -53,6 +53,20 @@
   }
   function setTema(t) { document.documentElement.setAttribute('data-tema', t); try { window.localStorage.setItem('gm1:tema', t); } catch (e) { } }
   try { const t0 = window.localStorage.getItem('gm1:tema'); if (t0) document.documentElement.setAttribute('data-tema', t0); } catch (e) { }
+  // Accesibilidad (por dispositivo, en localStorage): tamaño de letra, contraste alto y animaciones reducidas.
+  // Se aplican como atributos de <html> que lee estilos.css; las animaciones reducidas siguen la preferencia del sistema si no hay elección.
+  const ACCES = { letra: [['normal', 'Normal'], ['grande', 'Grande'], ['muy-grande', 'Muy grande']], contraste: [['normal', 'Normal'], ['alto', 'Alto']], animaciones: [['normal', 'Normales'], ['reducidas', 'Reducidas']] };
+  function acces() { let a = {}; try { a = JSON.parse(window.localStorage.getItem('gm1:accesibilidad') || '{}'); } catch (e) { } if (!a.animaciones) { try { a.animaciones = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reducidas' : 'normal'; } catch (e) { a.animaciones = 'normal'; } } return Object.assign({ letra: 'normal', contraste: 'normal' }, a); }
+  function aplicarAcces(a) { const r = document.documentElement; r.setAttribute('data-letra', a.letra); r.setAttribute('data-contraste', a.contraste); r.setAttribute('data-animaciones', a.animaciones); }
+  function setAcces(k, v) { const a = acces(); a[k] = v; try { window.localStorage.setItem('gm1:accesibilidad', JSON.stringify(a)); } catch (e) { } aplicarAcces(a); }
+  try { aplicarAcces(acces()); } catch (e) { }
+  function accesModal() {
+    const cuerpo = h('div');
+    const pintar = () => { const a = acces(); cuerpo.innerHTML = ''; cuerpo.append(h('h3', null, 'Accesibilidad'),
+      ...[['letra', 'Tamaño de letra'], ['contraste', 'Contraste'], ['animaciones', 'Animaciones']].map(([k, t]) => h('div', { class: 'ajuste' }, h('b', null, t), h('div', { class: 'seg' }, ACCES[k].map(([v, n]) => h('button', { class: 'tab' + (a[k] === v ? ' on' : ''), onclick: () => { setAcces(k, v); pintar(); } }, n))))),
+      h('p', { class: 'muted' }, 'Se guarda en este dispositivo. Las animaciones reducidas quitan transiciones y fundidos de la interfaz.')); };
+    pintar(); modal(cuerpo, [{ t: 'Cerrar', cls: 'btn-sec' }]);
+  }
   const ui = { raiz: null, cuerpo: null, pantalla: 'inicio', tab: { plantilla: 'plantilla', mercado: 'libres', calendario: 'partidos', club: 'cd', ciudad: 'resumen', finanzas: 'resumen' }, comp: null, fil: { liga: '', equipo: '', pos: '', texto: '' }, modales: [] };
   const screens = {};
 
@@ -140,6 +154,7 @@
         h('div', { class: 'm-fila' },
           slots.length > 1 ? h('button', { class: 'm-sec', onclick: () => cargarMenu(slots) }, 'Otras partidas') : null,
           g ? h('button', { class: 'm-sec', onclick: dialogoImportar }, 'Importar') : null,
+          h('button', { class: 'm-sec', onclick: accesModal }, 'Accesibilidad'),
           h('button', { class: 'm-sec', onclick: () => { setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche'); } }, 'Tema claro u oscuro'))),
       h('p', { class: 'm-pie' }, 'Clubes y jugadores reales; las valoraciones son estimaciones. Modelos 3D de Kenney y Quaternius (CC0).')));
   }
@@ -251,6 +266,7 @@
     ui.cabecera = h('header', { class: 'cab' }); ui.cuerpo = h('main', { class: 'cuerpo' });
     ui.nav = h('nav', { class: 'nav' }, navItems().map(n => h('button', { class: 'navb', 'data-id': n[0], onclick: () => navegar(n[0]) }, icon(n[2]), h('span', null, n[1]))));
     r.append(ui.cabecera, ui.cuerpo, ui.nav); navegar(ui.pantalla || 'inicio');
+    if (GM.ui.tutorialAuto) GM.ui.tutorialAuto();   // ui_tutorial.js: la primera vez de cada modo
   }
   function cabecera() {
     const st = S(), e = eq(st.clubId), f = st.finanzas[st.clubId], car = carrera() && st.carrera.fase === 'ncaa' && st.carrera.etapa !== 'cantera';
@@ -291,10 +307,31 @@
         s.club ? h('button', { class: 'btn btn-sec', onclick: () => { const r = g.cargar(s.slot); if (!r.ok) toast(r.motivo); else cerrarModales(); } }, 'Cargar') : null))) : [];
     modal(h('div', null, h('h3', null, 'Partida'), h('div', { class: 'lista' }, filas),
       h('div', { class: 'par' }, h('button', { class: 'btn btn-sec', onclick: dialogoExportar }, 'Copia de seguridad'), h('button', { class: 'btn btn-sec', onclick: dialogoImportar }, 'Importar')),
+      M().copias ? h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: copiasModal }, 'Copias automáticas') : null,
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { try { window.localStorage.setItem('gm1:directo', directoOn() ? 'no' : 'si'); } catch (e) { } toast(directoOn() ? 'Partidos en directo activados' : 'Partidos en directo desactivados'); } }, 'Ver los partidos en directo: activar o desactivar'),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche') }, 'Tema claro u oscuro'),
+      h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: accesModal }, 'Accesibilidad'),
+      GM.ui.tutorial ? h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { cerrarModales(); navegar('inicio'); setTimeout(() => GM.ui.tutorial(), 300); } }, 'Ver el tutorial') : null,
       h('p', { class: 'muted' }, 'El guardado vive en este móvil' + (g && g.protegido() ? ' y el navegador lo protege (no lo borra aunque falte espacio)' : g && g.protegido() === false ? '; el navegador podría borrarlo si falta espacio' : '') + '. Haz copias de seguridad de vez en cuando.')),
       [{ t: 'Salir al menú principal', cls: 'btn-sec', fn: () => { if (g) g.guardar(0); GM.state = null; setTimeout(menu, 0); } }, { t: 'Cerrar', cls: 'btn-sec' }]);
+  }
+  // Copias automáticas (copias.js): las 10 últimas en el navegador y, en el ordenador, una carpeta donde se escribe cada autoguardado
+  function copiasModal() {
+    const C = M().copias, cuerpo = h('div', null, h('h3', null, 'Copias automáticas'), h('p', { class: 'muted' }, 'Cargando…'));
+    const pintar = async () => {
+      const l = await C.listar(), ca = C.hayCarpeta() ? await C.carpetaEstado() : null; cuerpo.innerHTML = '';
+      cuerpo.append(h('h3', null, 'Copias automáticas'),
+        h('p', { class: 'muted' }, 'Cada autoguardado deja una copia aparte en este navegador (las 10 últimas). Si algo falla, restaura desde aquí.'),
+        l.length ? h('div', { class: 'lista' }, l.map(c => h('div', { class: 'item' }, h('div', null, h('b', null, c.club), h('div', { class: 'muted' }, c.temporada + ', ' + U.fechaLarga(c.fecha) + ' (guardada el ' + new Date(c.cuando).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ', ' + c.kb + ' KB)')),
+          h('button', { class: 'btn btn-sec peq', onclick: async () => { const r = await C.restaurar(c.id); if (!r.ok) toast(r.motivo); else { toast('Partida restaurada'); cerrarModales(); } } }, 'Restaurar')))) : h('p', { class: 'muted' }, 'Aún no hay copias: se crean con el autoguardado.'),
+        h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: async () => { const ok = await C.copiar('manual'); toast(ok ? 'Copia hecha' : 'No se ha podido hacer la copia'); pintar(); } }, 'Hacer una copia ahora'),
+        ca ? h('div', { class: 'tarjeta', style: { marginTop: '10px' } }, h('b', null, 'Carpeta del ordenador'),
+          h('p', { class: 'muted' }, ca.activa ? 'Cada autoguardado se escribe en «' + ca.nombre + '». Si es una carpeta de Drive, OneDrive o Dropbox, la copia queda en la nube.' + (ca.permiso ? '' : ' Tras reiniciar, el navegador pide permiso otra vez.') : 'Elige una carpeta (por ejemplo, una que sincronice con Drive o OneDrive) y cada autoguardado se escribirá ahí.'),
+          h('div', { class: 'par' }, h('button', { class: 'btn btn-sec peq', onclick: async () => { const r = await C.carpeta(); toast(r.ok ? 'Copias en «' + r.nombre + '»' : r.motivo); pintar(); } }, ca.activa ? 'Cambiar carpeta' : 'Elegir carpeta'),
+            ca.activa && !ca.permiso ? h('button', { class: 'btn peq', onclick: async () => { toast(await C.reactivar() ? 'Copias en carpeta activas' : 'Sin permiso'); pintar(); } }, 'Dar permiso') : null))
+          : h('p', { class: 'muted' }, 'En el móvil no se puede escribir en una carpeta: usa «Copia de seguridad» (archivo o compartir a Drive) de vez en cuando.'));
+    };
+    pintar(); modal(cuerpo, [{ t: 'Cerrar', cls: 'btn-sec' }]);
   }
   function dialogoExportar() {
     const G = M().guardado, st = S(), txt = G.exportar(), ta = h('textarea', { class: 'area', rows: 4, readonly: true }); ta.value = txt;
@@ -456,6 +493,6 @@
     return ok;
   }
   // Utilidades compartidas con los archivos de pantallas (ui_gestion.js, ui_ciudad.js, ui_presidente.js, ui_carrera.js, ui_entrenador.js)
-  GM.ui._ = { U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
+  GM.ui._ = { accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
   GM.register('ui', { start, navegar, refrescar, toast, modal, registerScreen, selfTest });
 })();

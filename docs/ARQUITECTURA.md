@@ -15,6 +15,7 @@ Resumen: un núcleo (`core.js`) con RNG, bus de eventos, utilidades y `newGame`;
 | `sala:abierta` | `sede3d.abrirSala` | se abre una zona del mundo (encargos de `gente.js`) |
 | `evento:elegido` | `carrera.elegirEvento` | una decisión personal resuelta (estilo.js) |
 | `social:hecho` | `social.hacer` | una acción de la vida social (estilo.js) |
+| `guardado:auto` | `guardado.guardar(0)` | autoguardado hecho (copias.js) |
 
 ## Forma del estado (GM.state)
 
@@ -168,6 +169,15 @@ PUEBLO 3D (GM.pueblo3d): escena del pueblo natal. Colina con relieve y campos, o
 
 ### `edificio_kit.js`
 EDIFICIOS CON MODELOS (GM.edificioKit) — fachadas montadas con piezas glTF del Building Kit de Kenney (CC0): paredes de 2 m con ventana o puerta, columnas y cornisa, escaladas al ancho y a la altura de planta; repinta la celda de los muros de la paleta con el color pedido y fusiona todo. Expone: cuerpo(opciones) -> Promise<Group|null>.
+
+### `copias.js`
+COPIAS AUTOMÁTICAS (GM.mods.copias): con cada autoguardado (evento `guardado:auto` de guardado.js) guarda una copia GM2: en IndexedDB (las 10 últimas) y, si se eligió, en una carpeta del ordenador (File System Access). Expone: copiar, listar, restaurar, carpeta, carpetaEstado, reactivar, hayCarpeta.
+
+### `ui_tutorial.js`
+TUTORIAL GUIADO (GM.ui.tutorial): pasos por modo que señalan partes de la pantalla; la primera vez de cada modo (localStorage gm1:tutorial:<modo>) y desde el menú.
+
+### `datos_valoraciones.js`
+VALORACIONES DESDE LAS ESTADÍSTICAS DE 2025-26 (generado): GM.VALORACIONES y envoltorio de GM.mkJugador.
 
 ### `estilo.js`
 ESTILO DE VIDA (GM.mods.estilo) — modo carrera: valor de -100 (chico malo) a +100 (profesional ejemplar) que mueven el entreno, las fiestas, las decisiones y 12 planes; consecuencias semanales en las dos direcciones (fama, patrocinios, multas, sanciones, lesiones, potencial, confianza). Expone: estado, etiqueta, mover, planes, hacer, PLANES. Escribe state.carrera.estilo y jugadores.yo.estado.sancion.

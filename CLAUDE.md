@@ -31,6 +31,10 @@ node tools/clasif_capturas.js [club] [dias]   # Calendario: clasificaciones (tam
 node tools/pueblo_paseo.js [estilo]       # el pueblo para pasear: vista general, obra con grúa, mapa y avanzar un día
 node tools/organico_capturas.js [club]    # ciudad deportiva y mapa de la ciudad (relieve, caminos curvos, formas irregulares)
 node tools/edificios_capturas.js [club]   # edificios de la calle con piezas glTF y público en la grada (pabellón y partido en directo)
+node tools/valoraciones_stats.js [--descargar]   # valoraciones desde estadísticas reales 2025-26 (NBA, Euroliga, EuroCup) -> datos_valoraciones.js
+node tools/tutorial_capturas.js           # tutorial guiado de cada modo y accesibilidad
+node tools/copias_prueba.js               # copias automáticas: autoguardado -> IndexedDB -> restaurar
+node tools/rendimiento_auto.js [escena] [x]   # calidad adaptable del mundo 3D con la CPU limitada
 node tools/movil_capturas.js [dias] [estilo]   # estilo (de chico malo a profesional ejemplar), planes y el móvil con sus chats y decisiones
 node tools/gente_capturas.js [club]       # gente con nombre en la calle y el pueblo (leyenda, utillero, peña, periodista, entrenador, alcalde) y su ficha
 ```
@@ -58,9 +62,10 @@ Three.js 0.186 (paquete propio con GLTFLoader, BufferGeometryUtils, RoundedBoxGe
 Las pruebas (`t_*.js`) usan jsdom con un `WebGLRenderer` simulado: verifican que la lógica, las pantallas y las escenas se construyen sin errores, **pero nadie ha visto nunca el resultado en pantalla**. Es la principal carencia del proyecto: toda la parte visual se ha afinado a ciegas. Lo primero que debes hacer es abrir el juego en un navegador real (idealmente móvil, 390×844) y hacer capturas.
 
 ## Datos (qué es real y qué no)
+- **Valoraciones con estadísticas reales:** `datos_valoraciones.js` (generado por `tools/valoraciones_stats.js`, se carga justo después de `datos_util`) envuelve `GM.mkJugador` y corrige el nivel de 504 jugadores de la NBA, la Euroliga y la EuroCup según su producción de 2025-26.
 - NBA: base 2025-26 + movimientos de verano 2026 de NBA.com y draft 2026 (`datos_movimientos.js`). Ratings estimados.
 - Euroliga: 18 clubes con plantilla de 2026-27 de BasketNews; Efes y ASVEL, de sportschau.de. Ratings estimados.
-- ACB (18), Lega (16), GBL (14), BBL (18) y BSL (16): los clubes de 2026-27. Plantillas reales de todos salvo Çayırova (BSL, relleno) en `datos_ligas3.js`, generado por `node tools/generar_plantillas.js` a partir de `recursos/*_2026.json` (descargados con `tools/plantillas_*.js`; `recursos/` no se sube). Nombre, posición, nacionalidad, edad y altura son reales; valoración, potencial, salario y contrato, estimados. Fuentes en `docs/FUENTES_DATOS.md`.
+- ACB (18), Lega (16), GBL (14), BBL (18) y BSL (16): los clubes de 2026-27. Plantillas reales de todos (Çayırova, de Flashscore con posiciones y alturas estimadas) en `datos_ligas3.js`, generado por `node tools/generar_plantillas.js` a partir de `recursos/*_2026.json` (descargados con `tools/plantillas_*.js`; `recursos/` no se sube). Nombre, posición, nacionalidad, edad y altura son reales; valoración, potencial, salario y contrato, estimados. Fuentes en `docs/FUENTES_DATOS.md`.
 - Fechas de 2026-27: Euroliga y ACB oficiales; el resto aproximadas (`FECHAS` en `competiciones.js`).
 - Los jugadores con `ficticio:true` son relleno.
 - **Potencial:** el del jugador del usuario se mueve ±15 según sus decisiones (`carrera.js`); el de todos los menores de 25, según minutos, club y un talento tardío oculto (`potAnual` en cantera.js). Draft con aviso el 15 de abril (19 a 22 años, desde la universidad o Europa).

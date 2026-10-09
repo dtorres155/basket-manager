@@ -325,7 +325,7 @@
   function motor() { return { mueble: mueble3, personaje, anim, irA, rejilla, textura, etiqueta, zona, bocadillo: (t, o) => bocadillo(t, o) }; }
   // Cambiar entre la sede y la calle con un fundido
   async function cambiarEscena(dest) {
-    if (!S || S.cambiando) return; S.cambiando = true; const de = S.escena;
+    if (!S || S.cambiando) return; S.cambiando = true; const de = S.escena; S.rend = null;
     if (S.construccion && GM.casa) await GM.casa.activar(S, motor(), false);
     const velo = GM.h('div', { class: 'sede-velo' }); S.raiz.append(velo); await new Promise(r => setTimeout(r, 280));
     try {
@@ -426,8 +426,14 @@
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
     S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
     S.ficha = h('div', { class: 'sede-hud sede-ficha', style: { display: 'none' } });
-    const ayuda = h('div', { class: 'sede-hud sede-ayuda' }, 'Toca el suelo para caminar o usa WASD (Mayúsculas para correr). Rueda para acercar, Q para girar. Pisa el círculo de una sala para ver qué puedes hacer y toca a un jugador para hablar con él.');
-    S.raiz.append(top, S.panel, S.ficha, ayuda);
+    // Ayuda según el dispositivo; en pantallas táctiles, además, botones para girar y acercar la cámara. Se oculta sola a los 8 s (o al tocarla).
+    const tactil = (() => { try { return window.matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+    const ayuda = h('div', { class: 'sede-hud sede-ayuda', onclick: () => ayuda.remove() }, tactil ? 'Toca el suelo para caminar, arrastra para girar la cámara y pellizca para acercar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.' : 'Toca el suelo para caminar o usa WASD (Mayúsculas para correr). Rueda para acercar, Q y E para girar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.');
+    setTimeout(() => { if (ayuda.isConnected) ayuda.classList.add('fuera'); setTimeout(() => ayuda.remove(), 600); }, 8000);
+    const ctrl = tactil ? h('div', { class: 'sede-hud sede-ctrl' },
+      h('button', { 'aria-label': 'Girar a la izquierda', onclick: () => { S.yawObj += Math.PI / 4; } }, '⟲'), h('button', { 'aria-label': 'Girar a la derecha', onclick: () => { S.yawObj -= Math.PI / 4; } }, '⟳'),
+      h('button', { 'aria-label': 'Acercar', onclick: () => { S.zoom = Math.max(8, S.zoom * 0.8); } }, '+'), h('button', { 'aria-label': 'Alejar', onclick: () => { S.zoom = Math.min(42, S.zoom * 1.25); } }, '−')) : null;
+    S.raiz.append(top, S.panel, S.ficha, ayuda); if (ctrl) S.raiz.append(ctrl);
     if (S.escena === 'casa' && GM.casa) { S.btnConstruir = h('button', { class: 'btn casa-btn', onclick: () => GM.casa.activar(S, motor()) }, S.construccion ? 'Salir del modo construcción' : 'Modo construcción'); S.raiz.append(h('div', { class: 'sede-hud casa-btn-cont' }, S.btnConstruir)); }
   }
   // ---------- Mapa interactivo ----------
@@ -883,6 +889,7 @@
     hud(st);
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
+    if (nivelRend()) aplicarRend(nivelRend(), false);   // lo que se aprendió en escenas anteriores de este dispositivo
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, S.escena === 'pueblo' ? 'Llegando al pueblo…' : 'Abriendo la sede del club…'); raiz.append(cargando);
     construir(st).then(async () => {
       const yo = await personaje(aspecto(st)); { const sp = S.escena === 'pueblo' && S.spawnPueblo ? S.spawnPueblo : { x: GM.sedePlano.entrada.x, z: 12.5, ry: Math.PI }; yo.obj.position.set(sp.x, 0, sp.z); yo.obj.rotation.y = sp.ry; S.foco.set(sp.x, 0, sp.z); } S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
@@ -894,6 +901,7 @@
     (function bucle() {
       if (!S || !S.vivo) return; S.raf = requestAnimationFrame(bucle); if (S.pausa) return;
       S.reloj.update(); const dt = Math.min(0.05, S.reloj.getDelta()), t = S.reloj.getElapsed();
+      rendimiento();
       if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); if (!S.construccion) S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
@@ -904,7 +912,8 @@
       { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {
         if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
-        if (!n.sentado && n.obj.visible) { n.dtAcum = (n.dtAcum || 0) + dt; const lejos = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z) > 12; if (!lejos || (S.cuadro & 1) === (n.obj.id & 1)) { n.mixer.update(n.dtAcum); n.dtAcum = 0; } } if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
+        const dP = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z); if (S.nivelRend >= 2) n.obj.visible = dP < (S.nivelRend >= 3 ? 20 : 28);   // ahorro de CPU: los muy lejanos no se dibujan
+        if (!n.sentado && n.obj.visible) { n.dtAcum = (n.dtAcum || 0) + dt; const cada = dP <= (S.nivelRend >= 2 ? 8 : 12) ? 1 : S.nivelRend >= 2 ? 3 : 2; if (cada === 1 || S.cuadro % cada === n.obj.id % cada) { n.mixer.update(n.dtAcum); n.dtAcum = 0; } } if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
         if (n.cabizbajo && !n.sentado) cabeza(n, 0.8);
       });
       saludos(dt);
@@ -928,6 +937,25 @@
     if (ok(nx, nz)) { o.x = nx; o.z = nz; } else if (ok(nx, o.z)) o.x = nx; else if (ok(o.x, nz)) o.z = nz;
     girar(S.yo, Math.atan2(dx, dz), dt);
   }
+  // Calidad adaptable: tras 3 s de escena se mide la fluidez real cada 2 s. Si no llega a 30 fps se baja un escalón
+  // (1: resolución 1x y sin sombras en tiempo real; 2: resolución 0,8x; 3: 0,65x) y se recuerda en el dispositivo (gm1:rendimiento),
+  // así la siguiente escena ya empieza ahí. Pensado para móviles Android modestos, donde no se ha podido medir.
+  const NIVELES_REND = [null, 1, 0.8, 0.65];
+  function nivelRend() { try { return Math.min(3, +window.localStorage.getItem('gm1:rendimiento') || 0); } catch (e) { return 0; } }
+  function aplicarRend(n, avisar) {
+    const r = S.renderer; if (!r || !n) return; S.nivelRend = n;
+    r.setPixelRatio(NIVELES_REND[n]);
+    if (r.shadowMap.enabled) { r.shadowMap.enabled = false; if (S.luces && S.luces.sol) S.luces.sol.castShadow = false; S.scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); }); }
+    try { window.localStorage.setItem('gm1:rendimiento', String(n)); } catch (e) { }
+    if (avisar && GM.ui && GM.ui.toast) GM.ui.toast('Calidad ajustada para que vaya más fluido');
+  }
+  function rendimiento() {
+    const ahora = performance.now(), R = S.rend || (S.rend = { ini: ahora, ult: ahora, n: 0, acum: 0 });
+    const d = ahora - R.ult; R.ult = ahora; if (ahora - R.ini < 3000 || d > 500) return;   // arranque o pestaña en segundo plano
+    R.n++; R.acum += d; if (R.acum < 2000) return;
+    const fps = R.n * 1000 / R.acum; S.fps = Math.round(fps); R.n = 0; R.acum = 0;
+    if (fps < 30 && (S.nivelRend || 0) < 3) aplicarRend((S.nivelRend || 0) + 1, true);
+  }
   function controles(cv) {
     const ray = new THREE.Raycaster(), suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ptrs = new Map(); let pinza = 0;
     const toque = (cx, cy) => {
@@ -936,7 +964,7 @@
       const npcs = S.gente.map(n => n.obj), hit = ray.intersectObjects(npcs, true)[0];
       if (hit) { let o = hit.object; while (o && !(o.userData && o.userData.npc !== undefined)) o = o.parent; if (o) { const n = S.gente[o.userData.npc]; fichaJugador(n); const yo = S.yo.obj.position; if (!n.fijo && n.camino) { n.camino = null; anim(n, 'idle'); n.espera = 6; } n.obj.lookAt(yo.x, 0, yo.z); return; } }
       const p = new THREE.Vector3(); if (!ray.ray.intersectPlane(suelo, p)) return;
-      { let mejor = null, dm = 0.9; S.gente.forEach(n => { const d = Math.hypot(n.obj.position.x - p.x, n.obj.position.z - p.z); if (d < dm) { dm = d; mejor = n; } }); if (mejor) { fichaJugador(mejor); if (!mejor.fijo && mejor.camino) { mejor.camino = null; anim(mejor, 'idle'); mejor.espera = 6; } mejor.obj.lookAt(S.yo.obj.position.x, 0, S.yo.obj.position.z); return; } }
+      { let mejor = null, dm = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 1.4 : 0.9; S.gente.forEach(n => { const d = Math.hypot(n.obj.position.x - p.x, n.obj.position.z - p.z); if (d < dm) { dm = d; mejor = n; } }); if (mejor) { fichaJugador(mejor); if (!mejor.fijo && mejor.camino) { mejor.camino = null; anim(mejor, 'idle'); mejor.espera = 6; } mejor.obj.lookAt(S.yo.obj.position.x, 0, S.yo.obj.position.z); return; } }
       const z = S.zonas && S.zonas.find(z => Math.hypot(z.obj.position.x - p.x, z.obj.position.z - p.z) < 0.9);
       irA(S.yo, p.x, p.z, z ? () => entrar(z.sala) : null);
       const m = S.marcaDestino || (S.marcaDestino = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.25, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 }))); m.position.set(p.x, 0.03, p.z); S.scene.add(m);
