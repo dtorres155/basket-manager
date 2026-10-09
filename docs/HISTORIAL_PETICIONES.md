@@ -26,6 +26,7 @@
 23. **Un solo mundo (oct 2026):** que lo que se ve en los menús (Mi pueblo, el mapa de la ciudad, la ciudad deportiva en los modos de gestión) sea lo mismo que se pasea, en su versión detallada, y que los menús estén conectados con la parte paseable.
 24. **Técnico y datos (oct 2026):** adaptar el mundo al móvil, rendimiento en Android, copias automáticas, tutorial, accesibilidad, valoraciones con estadísticas reales (lo que se pueda) y la plantilla de Çayırova (si no aparece, generada y se cierra el punto).
 25. **Los puntos más exigentes (oct 2026):** un solo mundo (menús = escenas paseables), casas con personalidad repartidas por la ciudad sin vender las anteriores, ciudad ampliada con barrios conectados e interiores.
+26. **Siete pendientes de golpe (oct 2026):** ciudad deportiva para pasear y unificada con su menú, interiores del pueblo (bar, casa de los padres y de los amigos), la ciudad que cambia con la reputación (comercios, obras, aficionados en la calle), transporte (metro, bicis y autobús al pueblo), una sede con más vida y acciones, momentos decisivos jugables en los últimos segundos y la rúa de campeones.
 
 ## Preferencias del usuario
 Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.

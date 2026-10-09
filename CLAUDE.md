@@ -41,6 +41,12 @@ node tools/casas_capturas.js              # cada vivienda con su plano (habitaci
 node tools/interiores_capturas.js [modo]  # pabellón, tienda, peña y ayuntamiento por dentro
 node tools/unmundo_capturas.js            # «Mi pueblo» y el mapa de Ciudad con las escenas que se pasean
 node tools/gente_capturas.js [club]       # gente con nombre en la calle y el pueblo (leyenda, utillero, peña, periodista, entrenador, alcalde) y su ficha
+node tools/deportiva_paseo.js             # ciudad deportiva para pasear (escena deportiva) y su panel por edificio
+node tools/ciudad_reputacion.js           # la ciudad según reputación y afición (comercios, obras, banderines) y la multitud el día de partido
+node tools/transporte.js                  # metro entre barrios, bici compartida y autobús ciudad-pueblo
+node tools/sede_vida.js                   # acciones nuevas de cada sala de la sede y capturas de los detalles
+node tools/momento_clave.js [gestor|carrera]   # momento decisivo del directo (tirar, pasar o penetrar)
+node tools/rua.js [club]                  # rúa de campeones en la calle
 ```
 **Publicación:** repositorio público `dtorres155/basket-manager`; `.github/workflows/pages.yml` pasa las pruebas y publica `dist/` en **https://dtorres155.github.io/basket-manager/** en cada push a `main`. No subas datos personales del usuario (nombre, pueblo, correo); `PROMPT_CLAUDE_CODE.txt` está en `.gitignore`. Instrucciones para el usuario: `INSTALAR_EN_MOVIL.md`.
 
@@ -51,7 +57,7 @@ Three.js 0.186 (paquete propio con GLTFLoader, BufferGeometryUtils, RoundedBoxGe
 - **Sin módulos ES ni bundler.** Cada archivo es una IIFE que cuelga de `window.GM`. El orden de carga está en `build.js` (`const mods=[...]`) y en `load.js` (para pruebas en Node con `vm`).
 - **Contrato de módulo:** `GM.register('nombre', api)` → `GM.mods.nombre`. Si define `nuevaPartida(state)`, `core.js` (`newGame`) lo llama; hay que añadirlo a la lista de ese método.
 - **Estado único serializable** en `GM.state` (JSON). **Versionado:** `GM.VERSION_ESTADO` (core.js); si cambias la forma del estado, súbela y añade una migración en `MIGRACIONES` de `guardado.js` (nunca borres una). Nada de funciones ni referencias circulares. Se guarda en `localStorage` (`gm1:slot0..2`) **comprimido con LZ-string** (prefijo `LZ1:`, unas 10 veces menos) y se exporta como texto `GM2:` (comprimido) o `GM1:` (antiguo, se sigue importando). El guardado rechaza más de 2,6 M caracteres ya comprimido.
-- **Eventos (`GM.bus`):** `dia:avanzado`, `partido:jugado`, `temporada:fin`, `temporada:nueva`, `partida:cargada`, `fichaje:hecho`, `instalacion:mejorada`, `dinero:cambio`, `copa:fin`, `sala:abierta` (al abrir una zona del mundo; sirve a los encargos de gente.js), `evento:elegido` y `social:hecho` (estilo.js). El orden de los manejadores depende del orden de carga.
+- **Eventos (`GM.bus`):** `dia:avanzado` (rua.js detecta con él los títulos nuevos), `partido:jugado`, `temporada:fin`, `temporada:nueva`, `partida:cargada`, `fichaje:hecho`, `instalacion:mejorada`, `dinero:cambio`, `copa:fin`, `sala:abierta` (al abrir una zona del mundo; sirve a los encargos de gente.js), `evento:elegido` y `social:hecho` (estilo.js). El orden de los manejadores depende del orden de carga.
 - **Azar:** usa `GM.rng` (determinista, con semilla). `GM.util.hash(texto)` devuelve un entero sin signo; **si desplazas bits usa `>>>`, nunca `>>`** (con `>>` salen índices negativos y fallos silenciosos; ya nos pasó varias veces).
 - **Cada módulo cuyo estado cambia el club del usuario debe respetar `state.clubId`** y el modo (`gestor`, `presidente`, `entrenador`, `carrera`). En `entrenador` y `carrera` la IA lleva el club del usuario (ver `mercado.js`).
 - **Estilo y móvil (modo carrera):** `estilo.js` (`state.carrera.estilo.v` de -100 a 100; las sanciones van en `jugadores.yo.estado.sancion` y `partidos.js` deja fuera al sancionado) y `movil.js` (`state.carrera.movil.chats`; para avisar de algo al jugador usa `GM.mods.movil.enviar(st, quien, texto, decision)`).

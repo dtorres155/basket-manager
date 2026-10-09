@@ -35,6 +35,8 @@ Claves de `state.entrenador`: `fase`, `reputacion`, `confianza`, `objetivo`, `ay
 
 Claves de `state.carrera`: `fase`, `origen`, `curso`, `declarado`, `agente`, `entreno`, `dinero`, `fama`, `moral`, `historial`, `hitos`, `ofertas`, `pend`, `res`, `mejor`, `ultimoEvento`, `ncaa`, `fichado`, `vivienda`, `clubes`, `tier`, `_tier`, `social`, `pueblo`.
 
+Desde la versión 4 del estado: `rua` ({ comp, nombre, desde, hasta } o null) y `ruaHist` (cuántos títulos del historial ya se han revisado), de `rua.js`.
+
 Claves de un equipo: plantilla, id, nombre, siglas, ciudad, pais, colores, reputacion, presupuesto, pabellon, ciudadDeportiva.
 
 Claves de un jugador: id, nombre, equipoId, edad, pos, altura, nac, pasaporte, ovr, pot, att, contrato, estado.
@@ -173,8 +175,14 @@ EDIFICIOS CON MODELOS (GM.edificioKit) — fachadas montadas con piezas glTF del
 ### `ciudad_barrios.js`
 CIUDAD AMPLIADA (GM.ciudadBarrios): barrios oeste, este y norte alrededor del centro de la calle, parcelas para tus viviendas con fachada según su variante, colegio, hospital, estación y puerta de la ciudad deportiva con las actividades de ciudad3d; los barrios lejanos no se dibujan. Expone: construir(ctx), actualizar(S), LOTES.
 
+### `rua.js`
+RÚA DE CAMPEONES (GM.mods.rua): al ganar un título, dos días de rúa en la calle (autobús descapotable con la plantilla y el trofeo, multitud y confeti; la escena está en calle3d.js). Expone: activa, revisar, nuevaPartida, selfTest. Escribe state.rua y state.ruaHist.
+
+### `deportiva_mundo.js`
+CIUDAD DEPORTIVA PARA PASEAR (GM.deportivaMundo): escena `deportiva`, el mismo campus del menú (ciudadDeportiva.campusEn) a escala ×4,2, con un panel por edificio. Expone: construir, poblar, siguiente, ESCALA.
+
 ### `interiores.js`
-INTERIORES (GM.interiores): pabellón, tienda, peña y ayuntamiento por dentro (escena interior:<tipo>), con su panel, las actividades de ciudad3d y gente. Expone: construir, poblar, siguiente, actualizar.
+INTERIORES (GM.interiores): pabellón, tienda, peña y ayuntamiento por dentro, y en el pueblo el bar y las casas de tus padres y tus amigos (escena interior:<tipo>), con su panel, las actividades de ciudad3d y gente. Expone: construir, poblar, siguiente, actualizar.
 
 ### `copias.js`
 COPIAS AUTOMÁTICAS (GM.mods.copias): con cada autoguardado (evento `guardado:auto` de guardado.js) guarda una copia GM2: en IndexedDB (las 10 últimas) y, si se eligió, en una carpeta del ordenador (File System Access). Expone: copiar, listar, restaurar, carpeta, carpetaEstado, reactivar, hayCarpeta.
