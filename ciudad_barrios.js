@@ -54,7 +54,7 @@
     [['oeste', -46, 5.8], ['este', 46, 5.8], ['norte', 5, -36]].forEach(([k, x, z]) => { cil(W, 0.05, 2.9, '#2a2f35', x, 0, z); letrero(W, T.letrero('Barrio de ' + nomDist[k], '#1d4f91', '#fff', 'bar-' + k), 3.8, 0.7, x, 2.7, z + 0.05, 0); });
     // ---- Árboles en las aceras de la avenida y de la ronda, y farolas ----
     const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#476f34')]; copas.forEach(m => GM.kit.viento(m, 'copa'));
-    const arbol = (x, z, g, k) => { cil(g, 0.14, 2.2, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), copas[((k % 3) + 3) % 3]); c.position.set(x, 3.0, z); c.scale.y = 0.9; c.castShadow = true; g.add(c); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); };
+    const arbol = (x, z, g, k) => { if (S.reales) { S.arbolesPos.push([x, z, k]); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); return; } cil(g, 0.14, 2.2, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), copas[((k % 3) + 3) % 3]); c.position.set(x, 3.0, z); c.scale.y = 0.9; c.castShadow = true; g.add(c); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); };
     for (let x = -146; x <= 146; x += 13) { if (Math.abs(x) < 46 || [-120, -66, 66, 120].some(p => Math.abs(x - p) < 4)) continue; const g = enG(x < 0 ? 'oeste' : 'este'); arbol(x, -4.4, g, (x / 13) | 0); arbol(x + 6, 4.4, g, 1 + (x / 13) | 0); }
     for (let x = -146; x <= 146; x += 16) { if (Math.abs(x) < 5) continue; arbol(x, -34.6, grupos.norte, (x / 16) | 0); }
     const farola = (x, z, g) => { cil(g, 0.07, 4.6, '#2a2f35', x, 0, z, 8); const l = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.14, 0.3), S.farolas || mat('#fff6d6')); l.position.set(x, 4.5, z); g.add(l); G.bloquea(x - 0.15, z - 0.15, x + 0.15, z + 0.15); };
@@ -76,7 +76,10 @@
         out.salas[id] = { id, nombre: v.nombre + (v.actual ? ' (vives aquí)' : ' (tuya)'), accion: v.barrioNombre ? 'Tu casa en ' + v.barrioNombre : 'Tu casa', destino: {}, irA: 'casa:' + v.id, boton: 'Entrar en casa' };
         out.zonas[id] = puerta; out.puertas['casa:' + v.id] = { x: puerta[0], z: puerta[1] + sgn * 0.6, ry: lado === 'n' ? Math.PI : 0 };
         if (v.actual) out.puertas.casa = out.puertas['casa:' + v.id];
-      } else generico(ctx, g, cl, rect, lado, i, H);
+      } else { generico(ctx, g, cl, rect, lado, i, H);
+        const LOC = GM.interiores && ['bloque', 'atico'].indexOf(cl) >= 0 && (ctx.nEleg = (ctx.nEleg || 0) + 1) % 2 === 1 ? [['restaurante', 'RESTAURANTE EL TAPÓN', '#5a1020', 'Entrar en el restaurante'], ['gimnasio_barrio', 'GIMNASIO', '#1d2024', 'Entrar en el gimnasio'], ['barberia', 'BARBERÍA PACO', '#1d4f91', 'Entrar en la barbería']][(ctx.nLoc = (ctx.nLoc || 0) + 1) - 1] || null : null;
+        if (LOC) { const [tipo, txt, fondo, boton] = LOC; H.letrero(g, T.letrero(txt, fondo, '#ffffff', 'loc-' + tipo), 5, 1.0, cx, 3.6, fz + sgn * 0.06, lado === 'n' ? Math.PI : 0);
+          const id = 'local_' + tipo; out.salas[id] = { id, nombre: txt.charAt(0) + txt.slice(1).toLowerCase(), accion: '', destino: {}, irA: 'interior:' + tipo, boton }; out.zonas[id] = puerta; out.puertas['interior:' + tipo] = { x: puerta[0], z: puerta[1] + sgn * 0.6, ry: lado === 'n' ? Math.PI : 0 }; out.paseo.push(puerta); } }
       out.paseo.push(puerta);
     });
     // ---- Edificios públicos con las actividades del mapa de Ciudad ----

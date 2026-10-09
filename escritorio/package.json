@@ -1,0 +1,56 @@
+{
+  "name": "basket-manager-escritorio",
+  "productName": "Basket Manager 26-27",
+  "version": "0.9.0",
+  "description": "Basket Manager 26/27 para ordenador",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "preparar": "node preparar.js",
+    "probar": "node preparar.js && electron . --depurar",
+    "instalador": "node preparar.js && electron-builder --win nsis",
+    "carpeta": "node preparar.js && electron-builder --win dir",
+    "publicar": "node preparar.js && electron-builder --win nsis --publish always"
+  },
+  "build": {
+    "appId": "es.basketmanager.juego",
+    "productName": "Basket Manager 26-27",
+    "directories": {
+      "output": "salida"
+    },
+    "files": [
+      "main.js",
+      "app/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "asar": false,
+    "win": {
+      "icon": "app/icons/icon-512.png",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Basket Manager 26-27"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "dtorres155",
+        "repo": "basket-manager",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  }
+}

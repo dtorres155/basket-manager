@@ -164,10 +164,10 @@
     if (rep >= 68) plano(W, 6, 6, new THREE.MeshStandardMaterial({ map: T.escudo, transparent: true }), 31.45, 10, -13, -Math.PI / 2);
     // Mobiliario: árboles (más con más reputación), farolas, bancos, papeleras, parada de autobús, quiosco y semáforos
     const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#476f34')]; copas.forEach(m => GM.kit.viento(m, 'copa'));
-    const nArb = rep >= 75 ? 7 : rep >= 60 ? 5 : 3;
+    const nArb = rep >= 75 ? 7 : rep >= 60 ? 5 : 3; S.reales = !!GM.kit.instanciar && (!GM.campus || GM.campus.config.calidad === 'alta') && !(typeof window !== 'undefined' && window.__sinReales); S.arbolesPos = []; S.vestida = null;
     for (const z of [-4.2, 4.2]) for (let k = 0; k < nArb; k++) for (const s of [-1, 1]) {
       const x = s * (12 + k * (26 / nArb)); if ((z < 0 && x > 25 && x < 31) || (z > 0 && x > 16 && x < 22)) continue;
-      caja(W, 1.2, 0.02, 1.2, '#5a4632', x, 0.001, z, 0, false); cil(W, 0.14, 2.2, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), copas[k % 3]); c.position.set(x, 3.0, z); c.scale.y = 0.9; c.castShadow = true; W.add(c); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3);
+      caja(W, 1.2, 0.02, 1.2, '#5a4632', x, 0.001, z, 0, false); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); if (S.reales) { S.arbolesPos.push([x, z, k]); continue; } cil(W, 0.14, 2.2, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), copas[k % 3]); c.position.set(x, 3.0, z); c.scale.y = 0.9; c.castShadow = true; W.add(c);
     }
     S.farolas = new THREE.MeshStandardMaterial({ color: 0xfff6d6, emissive: 0xffd99a, emissiveIntensity: 0.4 });
     const tLuz = M.textura('charco-farola', 128, (x, n) => { const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g.addColorStop(0, 'rgba(255,214,150,0.75)'); g.addColorStop(1, 'rgba(255,214,150,0)'); x.fillStyle = g; x.fillRect(0, 0, n, n); });
@@ -268,7 +268,7 @@
     caja(W, 0.9, 1.6, 0.9, '#ffd23f', 29, 0, 30); const tob = caja(W, 0.6, 0.06, 2.6, '#2f9e6f', 29, 0.75, 31.6); tob.rotation.x = 0.55; G.bloquea(28.5, 29.5, 29.5, 32.6);
     // Árboles del parque y de la plaza
     const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#3f6e33')]; copas.forEach(m => GM.kit.viento(m, 'copa'));
-    [[18, 40], [18, 46], [18, 54], [31, 38], [33, 44], [20, 35], [30, 55], [22, 56], [-12, 30], [-12, 52], [6, 30], [8, 47]].forEach(([x, z], i) => { cil(W, 0.16, 2.4, tronco, x, 0, z, 6); const cp = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5 + (i % 3) * 0.25, 1), copas[i % 3]); cp.position.set(x, 3.3, z); cp.castShadow = true; W.add(cp); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); });
+    [[18, 40], [18, 46], [18, 54], [31, 38], [33, 44], [20, 35], [30, 55], [22, 56], [-12, 30], [-12, 52], [6, 30], [8, 47]].forEach(([x, z], i) => { if (S.reales) { S.arbolesPos.push([x, z, i]); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); return; } cil(W, 0.16, 2.4, tronco, x, 0, z, 6); const cp = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5 + (i % 3) * 0.25, 1), copas[i % 3]); cp.position.set(x, 3.3, z); cp.castShadow = true; W.add(cp); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); });
     // Comercios con terraza al sur de la plaza (fachada mirando al norte)
     const tiendas = [['HELADERÍA LA OLA', '#7fd1c7', '#14181d', [-2, 0]], ['PIZZERÍA NAPOLI', '#c8102e', '#ffffff', [6, 0]], ['CAFÉ CENTRAL', '#5a3b26', '#f2d27a', [-10, 0]], ['LIBRERÍA PAPEL', '#1d4f91', '#ffffff', [-18, 0]], ['PELUQUERÍA', '#6b3a7a', '#ffffff', [-26, 0]], ['BASKET STORE', c1, '#ffffff', [-34, 0]]];
     tiendas.forEach(([nom, fondo, letra, [x0]], i) => { edificio(W, G, T, E, r, [x0 - 4, 57, x0 + 4, 64], 3 + (i % 3), 'n', { colorBajo: fondo, letrero: { txt: nom, fondo, letra, clave: 'tb' + i, ancho: 6.5 }, toldo: { color: fondo, ancho: 7 }, banderas: Math.round(afi / 30), c1, c2 }); });
@@ -313,7 +313,29 @@
   // ---------- Vecinos y aficionados ----------
   const MODELOS = ['h-casual_2', 'm-casual', 'h-beach', 'm-formal', 'h-casual_hoodie', 'm-punk', 'h-farmer', 'm-suit', 'h-suit', 'm-adventurer', 'h-worker', 'm-worker', 'h-punk', 'h-adventurer'];
   const PIEL = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'], PELO = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#d8b46a', '#8a8a8a'];
+  // ---------- Calle de ordenador: árboles reales y mobiliario urbano de Poly Haven (instanciados) ----------
+  const PROPS = {
+    fire_hydrant: [[-12, 3.5], [30, 3.6], [-30, -3.5], [14, -3.6], [-62, 3.6], [64, -3.6], [-104, -3.6], [110, 3.6]],
+    utility_box_01: [[-41, 4.7, 0], [41, -4.7, Math.PI], [-88, 4.7, 0]], utility_box_02: [[4.6, 22, Math.PI / 2], [-4.6, -22, -Math.PI / 2], [92, -4.7, Math.PI]],
+    water_manhole_cover: [[-20, 1.5], [10, -1.5], [35, 1.2], [0.8, -15], [-1, 12], [-50, -1.4], [70, 1.4], [-95, 1.2], [118, -1.3]],
+    planter_box_01: [[-8, 6.6, 0], [8, -6.6, 0], [22, 6.6, 0], [-26, -6.8, 0]], planter_box_02: [[-3, 36.5, 0], [7, 36.5, 0], [-12, 52, 0]],
+    modular_street_seating: [[12.5, 42, Math.PI / 2], [-15, 47, -Math.PI / 2]], wooden_picnic_table: [[31, 50, 0.4], [23, 54, -0.3], [33, 42, 1.2]]
+  };
+  async function vestirCalle(S, M, st) {
+    if (!S.reales || S.vestida === S.mundo || !GM.sede.modeloReal) return; S.vestida = S.mundo;
+    const R = id => GM.sede.modeloReal(id).catch(() => null), rr = rnd(U.hash(st.fecha + 'vestir')), W = S.mundo, G = S.G;
+    const arboles = (await Promise.all(['tree_small_02', 'jacaranda_tree', 'island_tree_01'].map(id => GM.sede.modeloReal(id, 'modelos/reales/arboles/' + id + '.glb').catch(() => null)))).filter(Boolean);
+    if (arboles.length) { const grupos = arboles.map(() => []); S.arbolesPos.forEach(([x, z, k]) => { grupos[(((k | 0) % arboles.length) + arboles.length) % arboles.length].push({ x, z, ry: rr() * 6.28, alto: 5.5 + rr() * 2.5 }); }); arboles.forEach((m, t) => W.add(GM.kit.instanciar(m, grupos[t], { viento: true }))); }
+    else { const tr = mat('#6b5136'), cp = GM.kit.viento(mat('#4f7f3a'), 'copa'); S.arbolesPos.forEach(([x, z]) => { cil(W, 0.14, 2.2, tr, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), cp); c.position.set(x, 3, z); W.add(c); }); }
+    const bloquea = (x, z, r) => G && G.bloquea(x - r, z - r, x + r, z + r);
+    for (const id of Object.keys(PROPS)) { const m = await R(id); if (!m) continue; const plano = id === 'water_manhole_cover';
+      W.add(GM.kit.instanciar(m, PROPS[id].map(([x, z, ry]) => ({ x, z, ry: ry === undefined ? rr() * 6.28 : ry, y: plano ? -0.115 : 0 })), { sombra: !plano }));
+      if (!plano) PROPS[id].forEach(([x, z]) => bloquea(x, z, id === 'modular_street_seating' || id === 'wooden_picnic_table' ? 1.1 : 0.45)); }
+    // aires acondicionados en las paredes donde hay carteles y grafitis (un piso más arriba)
+    { const m = await R('exterior_aircon_unit'), L = (GM.kit.calcomanias || []).filter((c, i) => i % 3 === 0 && Math.abs(c[0]) < 150).slice(0, 18); if (m && L.length) W.add(GM.kit.instanciar(m, L.map(c => ({ x: c[0] + Math.sin(c[3]) * 0.35, z: c[2] + Math.cos(c[3]) * 0.35, y: c[1] + 3.6, ry: c[3] })))); }
+  }
   async function poblar(S, M, st) {
+    await vestirCalle(S, M, st);
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
     const n = partido ? 40 : 32, r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222';
     const lista = await Promise.all(Array.from({ length: n }, (_, k) => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [r() < 0.6 ? c1 : c2, c1] : null }).then(p => Object.assign(p, { hincha })); }));

@@ -8,6 +8,9 @@ El usuario escribe en español y catalán. Prefiere respuestas concisas y direct
 ## Prioridad: ordenador primero (desde oct 2026)
 El objetivo es que el juego se vea y juegue lo mejor posible **en ordenador** (calidad «alta»): modelos y texturas realistas aunque pesen más (muebles de Poly Haven en `vendor/modelos/reales`, texturas de ambientCG). Android sigue siendo jugable pero es secundario: en calidad «normal» usa los recursos ligeros (muebles de Kenney, sin posprocesado) y se le pueden quitar funciones si hace falta. Estilo elegido por el usuario: lo más realista posible (Poly Haven), con las personas estilizadas de Quaternius mientras no haya personas realistas animadas.
 
+## Versión de escritorio (Electron)
+`escritorio/` es la versión para ordenador (la principal): `cd escritorio && npm install` (una vez), `npm run probar` (abre el juego en una ventana con herramientas de desarrollo, F12), `npm run instalador` (genera `escritorio/salida/*.exe`). `preparar.js` compila el juego, copia `dist/` a `escritorio/app/` y le añade los **recursos pesados** de `recursos/pesados/` (fuera de git, con las mismas rutas que en `dist/`; por ejemplo los árboles realistas en `recursos/pesados/modelos/reales/arboles/*.glb`). La web y el móvil no los tienen y el juego usa la alternativa ligera. `main.js` sirve el juego con el protocolo `app://` (F11, pantalla completa). Prueba automática: `node tools/escritorio_prueba.js`. Los modelos enormes de Poly Haven se simplifican con `recursos/herramientas/node_modules/.bin/gltf-transform weld` + `simplify --ratio 0.012`.
+
 ## Comandos
 ```
 npm install        # jsdom, three@0.186, esbuild, playwright y fuentes (solo para pruebas y build)
@@ -60,6 +63,7 @@ node tools/comparacion_estilos.js         # el mismo salón con muebles de Kenne
 node tools/clima.js                       # el mismo sitio soleado, nublado y con lluvia (suelo mojado), y los coches nuevos
 node tools/detalles_calle.js              # carteles, grafitis, gatos y coches de la calle de cerca
 node tools/modo_foto.js                   # modo foto: filtros, viñeta, guardar y salir
+node tools/locales_urbano.js              # mobiliario urbano y los locales nuevos (restaurante, gimnasio, barbería) con sus acciones
 node tools/palomas.js                     # bandadas de palomas que salen volando al acercarte
 node tools/vida_capturas.js               # vestuario, familia, redes, logros, la casa con vitrina y mascota, tu casa del pueblo y la retirada
 ```

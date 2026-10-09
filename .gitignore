@@ -3,3 +3,6 @@ dist/
 *.log
 PROMPT_CLAUDE_CODE.txt
 recursos/
+escritorio/node_modules/
+escritorio/app/
+escritorio/salida/

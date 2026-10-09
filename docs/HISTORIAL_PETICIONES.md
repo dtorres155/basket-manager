@@ -29,6 +29,7 @@
 26. **Siete pendientes de golpe (oct 2026):** ciudad deportiva para pasear y unificada con su menú, interiores del pueblo (bar, casa de los padres y de los amigos), la ciudad que cambia con la reputación (comercios, obras, aficionados en la calle), transporte (metro, bicis y autobús al pueblo), una sede con más vida y acciones, momentos decisivos jugables en los últimos segundos y la rúa de campeones.
 27. **Vida del jugador (oct 2026):** relación con los compañeros, lesiones jugables, redes sociales, familia que evoluciona, vida tras la retirada, logros y retos con vitrina, casa en el pueblo y mascota.
 28. **Movimiento, luz, texturas, vida y campus (oct 2026):** arreglar el movimiento del personaje, joystick y viaje rápido, mejor iluminación y texturas reales (lo más completas posible aunque pesen más), rutinas por hora, día de partido completo y una ciudad deportiva que parezca real.
+29. **Ordenador primero (oct 2026):** el juego se hace para ordenador con la máxima calidad (Android secundario); muebles, mobiliario y árboles realistas de Poly Haven, clima, coches, modo foto, locales nuevos y una versión de escritorio con Electron para no depender de los límites de GitHub.
 
 ## Preferencias del usuario
 Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.

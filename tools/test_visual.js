@@ -2,7 +2,7 @@
 // Uso: npm run test:visual   (necesita `npm run build` antes; tarda unos minutos)
 const { spawn, spawnSync } = require('child_process'), path = require('path'), http = require('http');
 const raiz = path.join(__dirname, '..'), PORT = 8099, URL = 'http://localhost:' + PORT + '/';
-const PRUEBAS = ['sin_red.js', 'sede_capturas.js', 'sede_vida.js', 'calle_capturas.js', 'barrio_capturas.js', 'casa_capturas.js'];
+const PRUEBAS = ['sin_red.js', 'escenas_todas.js', 'sede_capturas.js', 'sede_vida.js', 'calle_capturas.js', 'barrio_capturas.js', 'casa_capturas.js'];
 const srv = spawn(process.execPath, ['serve.js'], { cwd: raiz, env: Object.assign({}, process.env, { PORT }), stdio: 'ignore' });
 const listo = () => new Promise(res => { const t = () => http.get(URL, r => { r.resume(); res(); }).on('error', () => setTimeout(t, 200)); t(); });
 listo().then(() => {

@@ -34,7 +34,7 @@
 - Sonido ambiente: tráfico, pájaros, cánticos el día de partido, bote del balón en la sede (sonidos libres o hechos por código, sin conexión).
 - La gente reacciona: bocadillos según el último resultado o el tiempo, te piden una foto, te pitan si perdisteis el derbi y, si eres «chico malo», te siguen fotógrafos.
 - Vehículos con comportamiento: autobuses que paran y suben pasajeros, taxis, motos, bicis, reparto y alguna ambulancia con sirena.
-- Más sitios en los que entrar: restaurante, gimnasio, barbería (cambia el peinado), cine o bolera.
+- ~~Más sitios en los que entrar~~: restaurante (menú, cena con la pareja, comida con un compañero), gimnasio de barrio (entrenar, spinning) y barbería (cambiar de peinado o de barba, se ve en el personaje), con entrada desde los barrios. Faltan cine y bolera.
 - ~~Viento~~ (`GM.kit.viento`, en el sombreado de vértices): los árboles se mecen, las banderas ondean y los toldos se mueven.
 
 **Calidad visual**
@@ -53,7 +53,7 @@
 - Más animaciones: sentarse de verdad, gesticular al hablar, aplaudir, celebrar, botar y tirar a canasta.
 - Partido en directo con animaciones de baloncesto (bote, tiro en suspensión, mate, defensa), con licencia libre.
 - ~~Coches realistas~~ (`GM.kit.coche`, calidad alta): carrocería con perfil de verdad y bordes redondeados, pintura con barniz que refleja el cielo, lunas, llantas, faros y pilotos; turismo, compacto, todoterreno, furgoneta, taxi y ambulancia con las luces azules parpadeando. En el móvil siguen los coches sencillos. Faltan motos.
-- Mobiliario urbano y vegetación con modelos libres (City Kit de Kenney, naturaleza de Quaternius).
+- ~~Mobiliario urbano realista~~ (calidad alta, instanciado con `GM.kit.instanciar`): bocas de riego, armarios, alcantarillas, jardineras, bancos urbanos, mesas de pícnic y aires acondicionados; árboles realistas solo en la versión de escritorio. Los arbustos de Poly Haven parecían hierbajos y se quitaron. Antes: mobiliario urbano y vegetación con modelos libres (City Kit de Kenney, naturaleza de Quaternius).
 - Pabellones reconocibles de los clubes grandes (Palau Blaugrana, OAKA, WiZink Center, Madison Square Garden…).
 
 **Jugabilidad**
@@ -138,6 +138,7 @@
 - ~~Celebraciones~~ (`rua.js`): al ganar cualquier título (liga, copa o Europa), dos días de rúa: la avenida se cierra al tráfico y un autobús descapotable con los seis mejores jugadores, la pancarta «¡Campeones!» y el trofeo la recorre entre 800 aficionados que saltan al pasar, con confeti. Prueba: `node tools/rua.js`. Falta: fuegos artificiales de noche.
 
 ### Técnico
+- ~~Versión de escritorio~~ (Electron, `escritorio/`): el juego como programa de Windows con instalador y recursos pesados sin límite de tamaño; la web y el móvil quedan como versión ligera.
 - ~~Copias automáticas~~ (`copias.js`): cada autoguardado deja una copia aparte en IndexedDB (las 10 últimas, se restauran desde el menú) y, en Chrome o Edge de ordenador, se escribe en una carpeta elegida (que puede ser de Drive u OneDrive). En el móvil, la copia por archivo o compartir. Prueba: `node tools/copias_prueba.js`.
 - ~~Tutorial guiado~~ (`ui_tutorial.js`): la primera vez de cada modo, pasos que señalan cada parte de la pantalla; se puede saltar y volver a ver desde el menú. Capturas: `node tools/tutorial_capturas.js`.
 - ~~Accesibilidad~~: tamaño de letra (normal, grande, muy grande), contraste alto y animaciones reducidas (sigue la preferencia del sistema), en el menú principal y en el de la partida.

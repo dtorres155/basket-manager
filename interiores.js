@@ -12,9 +12,9 @@
   const MATS = {}; const mat = (c, o) => { const k = c + JSON.stringify(o || {}); return MATS[k] || (MATS[k] = new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.8 }, o || {}))); };
   function caja(W, w, h, d, m, x, y, z, ry) { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m); me.position.set(x, y + h / 2, z); if (ry) me.rotation.y = ry; me.castShadow = me.receiveShadow = true; W.add(me); return me; }
   function cil(W, r, h, m, x, y, z, seg) { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 12), typeof m === 'string' ? mat(m) : m); me.position.set(x, y + h / 2, z); me.castShadow = true; W.add(me); return me; }
-  const TIPOS = { pabellon: { w: 40, d: 30 }, tienda: { w: 16, d: 11 }, pena: { w: 16, d: 11 }, ayuntamiento: { w: 20, d: 14 }, bar_pueblo: { w: 14, d: 10, pueblo: 'bar' }, casa_padres: { w: 13, d: 10, pueblo: 'casapadres' }, casa_amigos: { w: 12, d: 10, pueblo: 'casaamigos' }, casa_pueblo: { w: 14, d: 10, pueblo: 'micasa' } };
+  const TIPOS = { pabellon: { w: 40, d: 30 }, tienda: { w: 16, d: 11 }, pena: { w: 16, d: 11 }, ayuntamiento: { w: 20, d: 14 }, bar_pueblo: { w: 14, d: 10, pueblo: 'bar' }, casa_padres: { w: 13, d: 10, pueblo: 'casapadres' }, casa_amigos: { w: 12, d: 10, pueblo: 'casaamigos' }, casa_pueblo: { w: 14, d: 10, pueblo: 'micasa' }, restaurante: { w: 16, d: 11 }, gimnasio_barrio: { w: 18, d: 12 }, barberia: { w: 10, d: 8 } };
   const pueblo = st => (st.carrera && st.carrera.pueblo) || { nombre: 'tu pueblo' };
-  const NOMBRE = { pabellon: c => c.pabellon.nombre, tienda: c => 'Tienda oficial del ' + c.siglas, pena: () => 'Bar La Peña', ayuntamiento: c => 'Ayuntamiento de ' + c.ciudad, bar_pueblo: (c, st) => 'Bar de la peña de ' + pueblo(st).nombre, casa_padres: () => 'Casa de tus padres', casa_pueblo: (c, st) => 'Tu casa en ' + pueblo(st).nombre, casa_amigos: () => 'Casa de tus amigos' };
+  const NOMBRE = { pabellon: c => c.pabellon.nombre, tienda: c => 'Tienda oficial del ' + c.siglas, pena: () => 'Bar La Peña', ayuntamiento: c => 'Ayuntamiento de ' + c.ciudad, bar_pueblo: (c, st) => 'Bar de la peña de ' + pueblo(st).nombre, casa_padres: () => 'Casa de tus padres', casa_pueblo: (c, st) => 'Tu casa en ' + pueblo(st).nombre, restaurante: c => 'Restaurante El Tapón', gimnasio_barrio: () => 'Gimnasio del barrio', barberia: () => 'Barbería Paco', casa_amigos: () => 'Casa de tus amigos' };
   const LUGAR = { pabellon: 'pabellon', pena: 'pena', ayuntamiento: 'ayuntamiento', tienda: 'comercio' };
   function construir(S, M, st, tipo) {
     tipo = TIPOS[tipo] ? tipo : 'pena'; const W = S.mundo, club = st.equipos[st.clubId], c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
@@ -23,12 +23,12 @@
     S.scene.background = new THREE.Color(0x1d232a); S.scene.fog = null;
     const G = M.rejilla({ limites: [x0 - 2, z0 - 2, x1 + 2, z1 + 5], CELDA: 0.5 }); S.G = G;
     // Suelo y muros en corte con la puerta al sur
-    const suelo = { pabellon: '#3a3f46', tienda: '#d9d4cb', pena: '#7a5638', ayuntamiento: '#d8cdb8', bar_pueblo: '#8a6a4a', casa_padres: '#b98e63', casa_amigos: '#9a8f7a', casa_pueblo: '#a5794f' }[tipo];
+    const suelo = { pabellon: '#3a3f46', tienda: '#d9d4cb', pena: '#7a5638', ayuntamiento: '#d8cdb8', bar_pueblo: '#8a6a4a', casa_padres: '#b98e63', casa_amigos: '#9a8f7a', casa_pueblo: '#a5794f', restaurante: '#8a5f3c', gimnasio_barrio: '#2f3439', barberia: '#e8e2d4' }[tipo];
     const mSuelo = new THREE.MeshStandardMaterial({ color: suelo, roughness: tipo === 'ayuntamiento' ? 0.35 : 0.8 }), TR = GM.texturas;
     if (TR) { if (['pena', 'bar_pueblo', 'casa_padres', 'casa_amigos', 'casa_pueblo'].indexOf(tipo) >= 0) TR.aplicar(mSuelo, 'WoodFloor051', { escala: 2.2, tinte: new THREE.Color(suelo).lerp(new THREE.Color(0xffffff), 0.45).getHex() }); else if (tipo === 'ayuntamiento') TR.aplicar(mSuelo, 'Tiles074', { escala: 1.6, rugosidad: 0.3 }); else TR.aplicar(mSuelo, 'Concrete034', { color: false, escala: 3, relieve: 0.6 }); }
     const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), mSuelo); fl.receiveShadow = true; W.add(fl);
+    const alto = tipo === 'pabellon' ? 3.2 : 1.8, muroC = { pabellon: '#5d6873', tienda: '#f2efe8', pena: '#c9a27a', ayuntamiento: '#efe6d2', bar_pueblo: '#e8dcc4', casa_padres: '#efe3cf', casa_amigos: '#c9d3dc', casa_pueblo: '#e6d8bf', restaurante: '#efe3cf', gimnasio_barrio: '#c9d0d6', barberia: '#f4f1ea' }[tipo];
     if (TR) TR.aplicar(mat(muroC), 'Plaster003', { color: false, escala: 1.6, relieve: 0.8 });
-    const alto = tipo === 'pabellon' ? 3.2 : 1.8, muroC = { pabellon: '#5d6873', tienda: '#f2efe8', pena: '#c9a27a', ayuntamiento: '#efe6d2', bar_pueblo: '#e8dcc4', casa_padres: '#efe3cf', casa_amigos: '#c9d3dc', casa_pueblo: '#e6d8bf' }[tipo];
     const muro = (xa, za, xb, zb) => { const L = Math.hypot(xb - xa, zb - za), m = caja(W, xa === xb ? 0.25 : L, alto, xa === xb ? L : 0.25, muroC, (xa + xb) / 2, 0, (za + zb) / 2); void m; G.bloquea(Math.min(xa, xb) - 0.2, Math.min(za, zb) - 0.2, Math.max(xa, xb) + 0.2, Math.max(za, zb) + 0.2); };
     muro(x0, z0, x1, z0); muro(x0, z0, x0, z1); muro(x1, z0, x1, z1); muro(x0, z1, -1.2, z1); muro(1.2, z1, x1, z1);
     const enPueblo = !!TIPOS[tipo].pueblo, salida = enPueblo ? { id: 'salir_interior', nombre: 'Salir al pueblo', accion: 'Volver al pueblo', destino: {}, irA: 'pueblo', boton: 'Salir al pueblo' } : { id: 'salir_interior', nombre: 'Salir a la calle', accion: 'Volver a la calle', destino: {}, irA: 'calle', boton: 'Salir a la calle' };
@@ -37,6 +37,8 @@
     const C3 = GM.mods.ciudad3d, lid = C3 && C3.lugares ? (C3.lugares(st).find(l => l.tipo === LUGAR[tipo]) || {}).id : null;
     const salaLugar = { id: 'lugar_' + tipo, nombre: tipo === 'tienda' ? 'Comercios del barrio' : 'Actividades', accion: '', destino: {}, acciones: s2 => { const L = lid ? C3.acciones(s2, lid) : []; return L.length ? L.map(a => ({ id: a.id, t: a.t, d: a.coste ? (a.jugador ? a.coste + ' mil €' : U.eur(a.coste)) : 'Gratis', disponible: a.disponible, motivo: a.motivo || 'No disponible', fn: () => { const r = C3.hacer(s2, lid, a.id); return r.ok ? { ok: true, texto: a.t } : r; } })) : [{ id: 'nada', t: 'Nada que hacer ahora', d: '', disponible: false, motivo: 'Sin actividades', fn: () => ({ ok: false }) }]; } };
     const sala = enPueblo ? { id: 'pueblo_' + TIPOS[tipo].pueblo, nombre: S.interiorNombre, accion: '', destino: { todos: 'ciudad' }, acciones: s2 => GM.puebloMundo.accionesLote(s2, TIPOS[tipo].pueblo).concat(tipo === 'casa_pueblo' && GM.mods.vida ? GM.mods.vida.accionesCasaPueblo(s2) : []) } : { id: tipo, nombre: S.interiorNombre, accion: '', destino: tipo === 'pabellon' ? { todos: 'club' } : tipo === 'ayuntamiento' ? { todos: 'ciudad' } : {} };
+    const LOCAL = { restaurante: localRestaurante, gimnasio_barrio: localGimnasio, barberia: localBarberia }[tipo];
+    if (LOCAL) { sala.acciones = s2 => LOCAL(s2); sala.destino = {}; }
     const luz = (x, z, i) => { const l = new THREE.PointLight(tipo === 'pena' ? 0xffd29a : 0xfff4e6, i, Math.max(w, d), 1.5); l.position.set(x, 4, z); W.add(l); };
     S.puntosInt = [];
     if (tipo === 'pabellon') {
@@ -112,6 +114,30 @@
         G.bloquea(-2.2, 1.0, 1.2, 2.2); G.bloquea(2.0, -1.9, 4.8, -0.5); G.bloquea(-1.8, z0, 0.8, z0 + 1.2); luz(0, 0, 4.5);
         zonas.push([sala, 3.2, 2.6]); S.puntosInt = [[3.4, 0.6], [-3.6, -2.5], [2.8, 2.6]];
       }
+    } else if (tipo === 'restaurante') {   // comedor con mesas vestidas, barra, cocina vista y vinoteca
+      caja(W, 6, 1.1, 0.9, '#5a3b26', x1 - 4, 0, z0 + 2.2); caja(W, 6.2, 0.08, 1.1, '#2a2018', x1 - 4, 1.1, z0 + 2.2); G.bloquea(x1 - 7.2, z0 + 1.6, x1 - 0.8, z0 + 2.8);
+      caja(W, 3.2, 2.2, 0.5, '#3a2a1a', x0 + 2.2, 0, z0 + 0.4); for (let i = 0; i < 24; i++) cil(W, 0.04, 0.3, ['#5a1020', '#2e5d3a', '#c9a227'][i % 3], x0 + 0.9 + (i % 8) * 0.35, 0.3 + Math.floor(i / 8) * 0.6, z0 + 0.55, 6);
+      S.mesasInt = [[-4.8, -0.6], [-1.6, -0.6], [1.6, -0.6], [-4.8, 2.6], [-1.6, 2.6], [1.6, 2.6]];
+      S.mueblesPend = [].concat(...S.mesasInt.map(([x, z]) => [['tableRound', x, z, 0], ['chair', x - 0.85, z, 90], ['chair', x + 0.85, z, -90]])).concat([['pottedPlant', x1 - 0.7, z1 - 1.4, 0], ['pottedPlant', x0 + 0.7, z1 - 1.4, 0], ['stoolBar', x1 - 5.5, z0 + 3.3, 0], ['stoolBar', x1 - 4, z0 + 3.3, 0], ['stoolBar', x1 - 2.5, z0 + 3.3, 0]]);
+      S.mesasInt.forEach(([x, z]) => { caja(W, 1.2, 0.02, 1.2, '#f4f1ea', x, 0.76, z); G.bloquea(x - 1.3, z - 0.7, x + 1.3, z + 0.7); }); luz(-2, 0, 5); luz(4, -2, 3);
+      zonas.push([sala, x1 - 4, z0 + 3.6]); S.puntosInt = [[x1 - 4, 0], [0, 4.2], [-3, 4.2]];
+    } else if (tipo === 'gimnasio_barrio') {   // máquinas, pesas, espejo, sacos y colchonetas
+      const metal = mat('#40464e', { metalness: 0.6, roughness: 0.4 }), negro = mat('#1d2024'), rojo = mat('#c0392b');
+      caja(W, w - 2, 1.6, 0.04, mat('#c8dbe6', { metalness: 0.9, roughness: 0.08 }), 0, 0.3, z0 + 0.16);
+      for (let i = 0; i < 4; i++) { const x = x0 + 2.5 + i * 2.2; caja(W, 0.8, 0.18, 1.9, negro, x, 0, z0 + 2.2); caja(W, 0.06, 1.1, 0.06, metal, x - 0.38, 0, z0 + 1.4); caja(W, 0.06, 1.1, 0.06, metal, x + 0.38, 0, z0 + 1.4); caja(W, 0.8, 0.3, 0.12, rojo, x, 1.05, z0 + 1.4); G.bloquea(x - 0.5, z0 + 1.2, x + 0.5, z0 + 3.2); }
+      for (let i = 0; i < 3; i++) { const x = x1 - 2 - i * 2.3; caja(W, 0.4, 0.12, 1.3, rojo, x, 0.4, z0 + 2.4); caja(W, 0.06, 1.15, 0.06, metal, x - 0.42, 0, z0 + 1.8); caja(W, 0.06, 1.15, 0.06, metal, x + 0.42, 0, z0 + 1.8); G.bloquea(x - 0.6, z0 + 1.6, x + 0.6, z0 + 3.2); }
+      for (let i = 0; i < 2; i++) { const x = x0 + 1.4 + i * 1.6; cil(W, 0.02, 2.6, '#2a2f35', x, 0, z1 - 2.5); const saco = cil(W, 0.25, 1.1, '#3a2a1a', x, 1.2, z1 - 2.5, 12); void saco; G.bloquea(x - 0.35, z1 - 2.85, x + 0.35, z1 - 2.15); }
+      for (let i = 0; i < 3; i++) caja(W, 1.8, 0.04, 0.8, mat('#2f6f9e'), 2 + i * 2, 0, z1 - 2.6, 0, false);
+      luz(-3, 0, 5); luz(4, 0, 5);
+      zonas.push([sala, 0, 0.4]); S.puntosInt = [[x0 + 2.5, z0 + 2.2], [x0 + 4.7, z0 + 2.2], [x1 - 2, z0 + 2.6], [2, z1 - 2.6], [4, z1 - 2.6], [x0 + 1.4, z1 - 1.8]];
+    } else if (tipo === 'barberia') {   // sillones de barbero frente al espejo, lavacabezas y sala de espera
+      const espejo = mat('#c8dbe6', { metalness: 0.9, roughness: 0.06 });
+      for (let i = 0; i < 3; i++) { const x = x0 + 2 + i * 2.6; caja(W, 1.6, 1.1, 0.04, espejo, x, 1.0, z0 + 0.16); caja(W, 1.7, 0.08, 0.4, '#f4f1ea', x, 0.95, z0 + 0.4); G.bloquea(x - 0.9, z0 + 0.1, x + 0.9, z0 + 0.6);
+        const g = new THREE.Group(); g.position.set(x, 0, z0 + 1.5); W.add(g); const B = (bw, bh, bd, m, px, py, pz) => { const me = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), mat(m)); me.position.set(px, py, pz); me.castShadow = true; g.add(me); };
+        B(0.12, 0.45, 0.12, '#c8ccd0', 0, 0.22, 0); B(0.6, 0.12, 0.6, '#1d1d1d', 0, 0.5, 0); B(0.6, 0.6, 0.1, '#1d1d1d', 0, 0.85, -0.28); B(0.08, 0.25, 0.5, '#1d1d1d', -0.32, 0.65, 0); B(0.08, 0.25, 0.5, '#1d1d1d', 0.32, 0.65, 0); G.bloquea(x - 0.4, z0 + 1.1, x + 0.4, z0 + 1.9); }
+      cil(W, 0.12, 2.0, '#ffffff', x1 - 0.5, 0, z1 - 0.6, 10); for (let i = 0; i < 6; i++) { const b = cil(W, 0.125, 0.12, i % 2 ? '#c0392b' : '#1d4f91', x1 - 0.5, 0.4 + i * 0.25, z1 - 0.6, 10); void b; }
+      S.mueblesPend = [['loungeSofa', x0 + 1.6, z1 - 1.2, 180], ['tableCoffee', x0 + 1.6, z1 - 2.6, 0], ['pottedPlant', x1 - 0.7, z0 + 2.6, 0]];
+      luz(0, -1, 4); zonas.push([sala, 1.2, z1 - 2.2]); S.puntosInt = [[x0 + 2, z0 + 2.4], [x0 + 4.6, z0 + 2.4]];
     } else {
       for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { cil(W, 0.35, alto + 2.4, '#f4f1ea', s * 4.5, 0, z0 + 2.5 + k * 3, 16); G.bloquea(s * 4.5 - 0.4, z0 + 2.1 + k * 3, s * 4.5 + 0.4, z0 + 2.9 + k * 3); }
       const alf = new THREE.Mesh(new THREE.PlaneGeometry(3, d - 1).rotateX(-Math.PI / 2), mat('#8e2424', { roughness: 1 })); alf.position.set(0, 0.01, 0.5); W.add(alf);
@@ -152,6 +178,15 @@
       const b = await nueva({ modelo: 'h-farmer' }, 'Dueño del bar', true); b.obj.position.set(-2, 0, -TIPOS.bar_pueblo.d / 2 + 1.4); b.obj.rotation.y = 0;
       for (let i = 0; i < 2; i++) for (const s of [-1, 1]) { const [x, z] = S.mesasInt[i]; const p = await nueva({ pelo: '#bdbdbd' }, 'Vecino jugando a las cartas', true); p.obj.position.set(x + s, 0, z); p.obj.rotation.y = -s * Math.PI / 2; p.asiento = 0.45; M.anim(p, 'sit'); }
       for (let i = 0; i < 2; i++) { const [x, z] = S.taburetes[i]; const p = await nueva({ ropa: [c1, c2] }, 'Aficionado del pueblo', true); p.obj.position.set(x, 0, z); p.obj.rotation.y = Math.PI; p.asiento = 0.62; M.anim(p, 'sit'); }
+    } else if (tipo === 'restaurante') {
+      const cam = await nueva({ modelo: 'h-suit' }, 'Camarero', false); cam.obj.position.set(TIPOS.restaurante.w / 2 - 4, 0, -TIPOS.restaurante.d / 2 + 1.2);
+      for (let i = 0; i < S.mesasInt.length; i++) { if (r() < 0.35) continue; const [x, z] = S.mesasInt[i]; for (const s of [-1, 1]) { if (r() < 0.3) continue; const p = await nueva({}, 'Cliente del restaurante', true); p.obj.position.set(x + s * 0.85, 0, z); p.obj.rotation.y = s < 0 ? Math.PI / 2 : -Math.PI / 2; p.asiento = 0.45; M.anim(p, 'sit'); } }
+    } else if (tipo === 'gimnasio_barrio') {
+      for (let i = 0; i < 6; i++) { const q = S.puntosInt[i], p = await nueva({ modelo: ['h-beach', 'm-casual', 'h-casual_hoodie'][i % 3] }, 'Socio del gimnasio', true); p.obj.position.set(q[0], 0, q[1]); M.anim(p, i < 2 ? 'walk' : i < 4 ? 'interact-right' : 'idle'); }
+      const mon = await nueva({ modelo: 'h-beach' }, 'Monitor', true); mon.obj.position.set(0, 0, 1.6); M.anim(mon, 'emote-yes');
+    } else if (tipo === 'barberia') {
+      const bar = await nueva({ modelo: 'h-casual_2', pelo: '#3b2617' }, 'Paco, el barbero', true); bar.obj.position.set(-TIPOS.barberia.w / 2 + 2.5, 0, -TIPOS.barberia.d / 2 + 2.1); bar.obj.rotation.y = Math.PI; M.anim(bar, 'interact-right');
+      const cli = await nueva({}, 'Cliente', true); cli.obj.position.set(-TIPOS.barberia.w / 2 + 2, 0, -TIPOS.barberia.d / 2 + 1.5); cli.obj.rotation.y = Math.PI; cli.asiento = 0.5; M.anim(cli, 'sit');
     } else if (tipo === 'casa_pueblo') {
       if (GM.mods.vida) GM.mods.vida.ponerMascota(S, st, 0.6, 0.4);
     } else if (tipo === 'casa_padres' || tipo === 'casa_amigos') {
@@ -162,6 +197,27 @@
       const f = await nueva({ modelo: 'm-suit' }, 'Atención ciudadana', true); f.obj.position.set(0, 0, -TIPOS.ayuntamiento.d / 2 + 1.4); f.obj.rotation.y = 0;
       for (let i = 0; i < 3; i++) { const p = await nueva({}, 'Vecino haciendo trámites'); const q = S.puntosInt[i]; p.obj.position.set(q[0], 0, q[1]); }
     }
+  }
+  // Acciones de los locales nuevos (sirven en todos los modos; en la carrera mueven ánimo, forma y relaciones)
+  const car = st => st.modo === 'carrera' && st.carrera && st.carrera.fase !== 'retirado';
+  const cobra = (st, euros) => { const H = GM.mods.hogar; if (!H) return true; if (H.dinero(st) < euros / 1000) return false; if (car(st)) st.carrera.dinero -= euros / 1000; else st.hogar.ahorros -= euros / 1000; return true; };
+  const hoyHecho = (st, k) => { st.sede = st.sede || { charlas: {} }; const u = st.sede.locales = st.sede.locales || {}; if (u[k] === st.fecha) return true; u[k] = st.fecha; return false; };
+  function localRestaurante(st) {
+    const so = car(st) && st.carrera.social, par = so && so.contactos.find(k => k.tipo === 'pareja'), comp = so && so.contactos.find(k => k.tipo === 'companero');
+    const A = [{ id: 'menu', t: 'Comer el menú del día', d: '14 €. Primero, segundo y postre.', disponible: true, fn: () => { if (!cobra(st, 14)) return { ok: false, motivo: 'No te llega.' }; if (car(st)) st.carrera.moral = Math.min(100, st.carrera.moral + 2); return { ok: true, texto: 'Lentejas, merluza y flan. Ánimo +2.' }; } }];
+    if (par) A.push({ id: 'cena', t: 'Cenar con ' + par.nombre, d: '60 €. Relación +6.', disponible: true, fn: () => { if (hoyHecho(st, 'cena')) return { ok: false, motivo: 'Ya habéis cenado hoy.' }; if (!cobra(st, 60)) return { ok: false, motivo: 'No te llega.' }; par.rel = Math.min(100, par.rel + 6); st.carrera.moral = Math.min(100, st.carrera.moral + 3); return { ok: true, texto: 'Cena larga y risas. Relación +6.' }; } });
+    if (comp) A.push({ id: 'comp', t: 'Invitar a comer a ' + comp.nombre, d: '30 €. Relación +6.', disponible: true, fn: () => { if (hoyHecho(st, 'comp')) return { ok: false, motivo: 'Ya habéis comido hoy.' }; if (!cobra(st, 30)) return { ok: false, motivo: 'No te llega.' }; comp.rel = Math.min(100, comp.rel + 6); return { ok: true, texto: 'Comida de compañeros. Relación +6.' }; } });
+    return A;
+  }
+  function localGimnasio(st) {
+    const y = st.jugadores.yo;
+    return [{ id: 'pesas', t: 'Entrenar por tu cuenta', d: car(st) ? 'Forma +2, fatiga +6.' : 'Una hora de pesas.', disponible: true, fn: () => { if (hoyHecho(st, 'gym')) return { ok: false, motivo: 'Ya has entrenado hoy.' }; if (car(st) && y) { y.estado.forma = Math.min(100, y.estado.forma + 2); y.estado.fatiga = Math.min(100, y.estado.fatiga + 6); } return { ok: true, texto: 'Sales del gimnasio reventado, pero contento.' }; } },
+      { id: 'spinning', t: 'Clase de spinning', d: '8 €. ' + (car(st) ? 'Forma +1, ánimo +1.' : 'Música alta y mucho sudor.'), disponible: true, fn: () => { if (hoyHecho(st, 'spin')) return { ok: false, motivo: 'Ya has ido a clase hoy.' }; if (!cobra(st, 8)) return { ok: false, motivo: 'No te llega.' }; if (car(st) && y) { y.estado.forma = Math.min(100, y.estado.forma + 1); st.carrera.moral = Math.min(100, st.carrera.moral + 1); } return { ok: true, texto: 'Cuarenta y cinco minutos de pedaleo.' }; } }];
+  }
+  function localBarberia(st) {
+    const P = GM.mods.personaje, OP = P && P.OPCIONES ? P.OPCIONES.pelo : ['Rapado', 'Corto', 'Rizado', 'Largo', 'Moño', 'Calvo'], pj = st.personaje || {};
+    return OP.map((nom, i) => ({ id: 'pelo' + i, t: (pj.pelo === i ? '✓ ' : '') + 'Corte: ' + nom.toLowerCase(), d: '15 €. Se ve en tu personaje al salir.', disponible: pj.pelo !== i, motivo: 'Es tu peinado actual.', fn: () => { if (!cobra(st, 15)) return { ok: false, motivo: 'No te llega.' }; st.personaje.pelo = i; if (car(st)) st.carrera.moral = Math.min(100, st.carrera.moral + 1); return { ok: true, texto: 'Nuevo peinado: ' + nom.toLowerCase() + '. Paco te deja niquelado.' }; } }))
+      .concat([{ id: 'barba', t: pj.barba ? 'Afeitarte la barba' : 'Arreglar la barba', d: '8 €.', disponible: true, fn: () => { if (!cobra(st, 8)) return { ok: false, motivo: 'No te llega.' }; st.personaje.barba = pj.barba ? 0 : 1; return { ok: true, texto: pj.barba ? 'Afeitado apurado.' : 'Barba perfilada.' }; } }]);
   }
   function siguiente(S, M, n) {
     if (n.fijo) { n.espera = 30; return; }

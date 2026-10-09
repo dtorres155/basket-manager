@@ -211,6 +211,21 @@
     const fase = Math.random() * 10; c.onBeforeRender = () => { const t = kit.vientoU.value + fase; cola.rotation.y = Math.sin(t * 1.8) * 0.6; cab.rotation.y = Math.sin(t * 0.37) > 0.8 ? 0.7 : Math.sin(t * 0.29) < -0.85 ? -0.6 : 0; };
     g.userData = { gato: true }; return g;
   };
+
+  // ---------- Instanciar un modelo glTF muchas veces (una llamada de dibujo por pieza del modelo, para todas las copias) ----------
+  // items: [{ x, z, y?, ry?, s? | alto? }]. alto escala la copia hasta esa altura en metros. o.viento: las hojas se mecen.
+  kit.instanciar = function (modelo, items, o) {
+    o = o || {}; const T = THREE, g = new T.Group(); g.userData = { instanciado: true }; if (!modelo || !items || !items.length) return g; modelo.updateMatrixWorld(true);
+    const bb = new T.Box3().setFromObject(modelo), alto = Math.max(0.01, bb.max.y - bb.min.y), base = bb.min.y;
+    const m4 = new T.Matrix4(), q = new T.Quaternion(), s = new T.Vector3(), p = new T.Vector3(), e = new T.Euler();
+    modelo.traverse(n => { if (!n.isMesh) return; const im = new T.InstancedMesh(n.geometry, n.material, items.length), local = n.matrixWorld.clone();
+      items.forEach((it, i) => { const k = it.alto ? it.alto / alto : (it.s || 1); s.set(k, k, k); q.setFromEuler(e.set(0, it.ry || 0, 0)); p.set(it.x, (it.y !== undefined ? it.y : (o.y || 0)) - base * k, it.z); m4.compose(p, q, s).multiply(local); im.setMatrixAt(i, m4); });
+      im.castShadow = o.sombra !== false; im.receiveShadow = true; im.computeBoundingSphere && im.computeBoundingSphere();
+      const mats = Array.isArray(n.material) ? n.material : [n.material];
+      if (o.viento) mats.forEach(m => { if (m && (/leaf|leaves|foliage|crown|hoja/i.test(m.name || '') || m.alphaTest > 0 || m.transparent)) kit.viento(m, 'copa', 0.1); });
+      g.add(im); });
+    return g;
+  };
   kit.arbolRedondo = function (x, z, s, color) {
     const g = new THREE.Group(); s = s || 1;
     g.add(kit.cilindro(0.07 * s, 0.45 * s, 0x6b4a2b, 0, 0, 0, 5));
