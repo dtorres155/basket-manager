@@ -30,21 +30,21 @@
 - ~~Rutinas por hora~~: el día empieza a las 8 y tocar el reloj adelanta una hora; cada vecino elige destino según la franja (trabajo y colegio, compras, comer y terrazas, paseo y parque, bares o casa), entra en el trabajo, el colegio o su portal y desaparece un rato, y la cantidad de gente sigue la hora; hay niños que van al colegio y luego al parque.
 - Eventos en la calle: mercadillo semanal, fiesta mayor con casetas y música, maratón, aficionados que se concentran antes de un derbi, obras que cortan una calle.
 - ~~Día de partido completo~~ (calle, partido en casa): desde las 16, previa con grupos cantando delante de la peña y la terraza y cola en las taquillas; a las 19, el autobús del equipo llega al pabellón y la plantilla entra; durante el partido los aficionados entran en el pabellón y la calle se vacía; al acabar, cientos salen y se reparten por la avenida. Prueba: `node tools/dia_partido.js`.
-- Animales: ~~palomas~~ (bandadas que picotean, salen volando al acercarte o si alguien pasa corriendo y se posan en otra zona; calle y ciudad deportiva, `GM.kit.palomas`, `node tools/palomas.js`); faltan gatos en los tejados y pájaros en los árboles.
+- Animales: ~~palomas~~ (bandadas que picotean, salen volando al acercarte o si alguien pasa corriendo y se posan en otra zona; `GM.kit.palomas`, `node tools/palomas.js`) y ~~gatos en los tejados~~ (`GM.kit.gato`, mueven la cola y la cabeza). Faltan pájaros en los árboles.
 - Sonido ambiente: tráfico, pájaros, cánticos el día de partido, bote del balón en la sede (sonidos libres o hechos por código, sin conexión).
 - La gente reacciona: bocadillos según el último resultado o el tiempo, te piden una foto, te pitan si perdisteis el derbi y, si eres «chico malo», te siguen fotógrafos.
 - Vehículos con comportamiento: autobuses que paran y suben pasajeros, taxis, motos, bicis, reparto y alguna ambulancia con sirena.
 - Más sitios en los que entrar: restaurante, gimnasio, barbería (cambia el peinado), cine o bolera.
-- ~~Viento~~ (`GM.kit.viento`, en el sombreado de vértices): los árboles se mecen y las banderas ondean (calle, barrios, ciudad deportiva y menú). Faltan los toldos.
+- ~~Viento~~ (`GM.kit.viento`, en el sombreado de vértices): los árboles se mecen, las banderas ondean y los toldos se mueven.
 
 **Calidad visual**
 - ~~Iluminación~~: reflejos de entorno (cielo de verdad fuera y una sala neutra dentro), sombras con más resolución y bordes suaves y, en calidad alta, oclusión ambiental (GTAO), brillo en farolas y ventanas de noche y antialiasing; tono de luz por país (mediterráneo, centroeuropeo o de EE. UU.). Si el equipo va justo, lo primero que se apaga es el posprocesado. Capturas: `node tools/luz_capturas.js [carpeta] [escenas]`.
 - Antialiasing y postprocesado opcionales en calidad alta.
 - ~~Texturas reales~~ (`texturas.js`): 12 materiales CC0 de ambientCG (asfalto, adoquines, ladrillo, revoco, hormigón, hierba, tarima, baldosa, tejas, tierra, mármol y fachada de cristal) con color, relieve y rugosidad (4,9 MB en total), proyectados en coordenadas del mundo; en la calle y los barrios, el pueblo, la sede, los interiores y la ciudad deportiva.
-- Detalles pegados al suelo y a las paredes: grietas, manchas, pasos de cebra gastados, grafitis y carteles.
+- ~~Detalles en suelos y paredes~~ (`GM.kit.calcomania`): carteles pegados (conciertos, fiesta mayor, se alquila, derbi…) y grafitis en las plantas bajas, y manchas, grietas y parches en el asfalto.
 - Niveles de detalle e imágenes planas para los edificios lejanos, que permiten ciudades mucho más grandes.
 - Agua de verdad en fuentes, ríos y piscinas, con reflejos.
-- Lluvia con charcos que reflejan y nubes que se mueven.
+- ~~Lluvia con charcos que reflejan y nubes que se mueven~~ (ver clima).
 - Interiores con iluminación más trabajada para que no parezcan cajas.
 
 **Modelos**
@@ -52,7 +52,7 @@
 - Personas más variadas: ropa y peinados intercambiables, accesorios y caras con más rasgos.
 - Más animaciones: sentarse de verdad, gesticular al hablar, aplaudir, celebrar, botar y tirar a canasta.
 - Partido en directo con animaciones de baloncesto (bote, tiro en suspensión, mate, defensa), con licencia libre.
-- Coches y motos con modelos libres (Car Kit de Kenney) en lugar de cajas.
+- ~~Coches realistas~~ (`GM.kit.coche`, calidad alta): carrocería con perfil de verdad y bordes redondeados, pintura con barniz que refleja el cielo, lunas, llantas, faros y pilotos; turismo, compacto, todoterreno, furgoneta, taxi y ambulancia con las luces azules parpadeando. En el móvil siguen los coches sencillos. Faltan motos.
 - Mobiliario urbano y vegetación con modelos libres (City Kit de Kenney, naturaleza de Quaternius).
 - Pabellones reconocibles de los clubes grandes (Palau Blaugrana, OAKA, WiZink Center, Madison Square Garden…).
 
@@ -60,13 +60,13 @@
 - Encargos diarios y semanales marcados en el mapa, con recompensa.
 - Minijuegos: concurso de triples en el parque, uno contra uno callejero y entrenamientos jugables (tirar con una barra de precisión).
 - ~~Moverse mejor~~: joystick táctil (a fondo, corres), doble toque o doble clic para correr y, en el mapa, «Ir ya» para viajar al momento a los sitios ya visitados.
-- Modo foto (cámara libre y filtros) para compartir capturas.
+- ~~Modo foto~~: botón «Foto» en el mundo 3D: sin interfaz, cámara libre, seis filtros, viñeta y «Guardar foto» (PNG).
 - Coleccionables: camisetas de rivales, cromos y balones firmados, con su sitio en casa.
 - Coche propio para conducir por la ciudad.
 - Cómo te trata cada barrio según tu reputación en él.
 
 **Acabado profesional**
-- Pantalla de carga con barra de progreso real y consejos; precarga de modelos y shaders para evitar tirones.
+- ~~Pantalla de carga~~ con barra de progreso real (lo que se descarga) y consejos. Falta precompilar los sombreadores para evitar tirones.
 - Transiciones entre escenas, música en los menús y sonidos en la interfaz; vibración suave en el móvil.
 - Ajustes completos de gráficos, sonido y controles.
 - Idiomas: catalán e inglés.
@@ -134,7 +134,7 @@
 - **Prensa con memoria:** titulares que recuerdan lo que dijiste y si se ha cumplido.
 
 ### Mundo
-- **Día y noche, y clima:** lluvia en la calle, noches de partido con luces, fuegos artificiales al ganar un título.
+- ~~Día y noche, y clima~~: cada día tiene su tiempo según la fecha, el mes y el país (soleado, nublado o lluvia, con temperatura, en la barra): cielo y luz más grises, nubes que se mueven, lluvia alrededor de la cámara, suelos mojados con charcos que reflejan (también el día después de llover) y menos gente en la calle. Falta: fuegos artificiales al ganar un título.
 - ~~Celebraciones~~ (`rua.js`): al ganar cualquier título (liga, copa o Europa), dos días de rúa: la avenida se cierra al tráfico y un autobús descapotable con los seis mejores jugadores, la pancarta «¡Campeones!» y el trofeo la recorre entre 800 aficionados que saltan al pasar, con confeti. Prueba: `node tools/rua.js`. Falta: fuegos artificiales de noche.
 
 ### Técnico

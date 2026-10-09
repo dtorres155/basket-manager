@@ -132,6 +132,85 @@
         } });
     } };
   };
+
+  // ---------- Coches detallados: carrocería con perfil real (extruida y redondeada), pintura con barniz, lunas, llantas y luces ----------
+  // tipo: 'turismo', 'compacto', 'todoterreno', 'furgoneta' o 'taxi'. Mira a +z, mide unos 4 m y las ruedas apoyan en y = 0.
+  const PERFILES = {
+    turismo: { L: 4.3, cuerpo: [[-2.15, 0.32], [-2.18, 0.78], [-1.55, 0.98], [1.2, 0.98], [2.12, 0.82], [2.15, 0.32]], cabina: [[-1.3, 0.97], [-0.65, 1.42], [0.5, 1.42], [1.2, 0.97]], ancho: 1.78, rueda: 0.34, ejes: [-1.35, 1.35] },
+    compacto: { L: 3.9, cuerpo: [[-1.95, 0.32], [-1.98, 0.95], [1.05, 0.95], [1.92, 0.8], [1.95, 0.32]], cabina: [[-1.9, 0.94], [-1.75, 1.45], [0.45, 1.45], [1.05, 0.94]], ancho: 1.72, rueda: 0.32, ejes: [-1.2, 1.25] },
+    todoterreno: { L: 4.6, cuerpo: [[-2.3, 0.45], [-2.32, 1.12], [1.35, 1.12], [2.25, 0.98], [2.3, 0.45]], cabina: [[-2.2, 1.1], [-2.1, 1.75], [0.75, 1.75], [1.35, 1.1]], ancho: 1.92, rueda: 0.4, ejes: [-1.45, 1.45] },
+    furgoneta: { L: 4.9, cuerpo: [[-2.45, 0.38], [-2.45, 2.15], [1.15, 2.15], [1.85, 1.2], [2.42, 0.95], [2.45, 0.38]], cabina: [[1.12, 2.05], [1.82, 1.22], [1.15, 1.22]], ancho: 1.95, rueda: 0.36, ejes: [-1.6, 1.6] }
+  };
+  PERFILES.taxi = PERFILES.turismo; PERFILES.ambulancia = PERFILES.furgoneta;
+  const cacheCoche = {};
+  kit.coche = function (color, tipo) {
+    const T = THREE, P = PERFILES[tipo] || PERFILES.turismo, g = new T.Group(), k = (tipo || 'turismo') + color;
+    const C = cacheCoche[k] || (cacheCoche[k] = (() => {
+      const forma = pts => { const s = new T.Shape(); pts.forEach(([z, y], i) => (i ? s.lineTo(z, y) : s.moveTo(z, y))); s.closePath(); return s; };
+      const ext = (pts, ancho, bisel) => { const geo = new T.ExtrudeGeometry(forma(pts), { depth: ancho - bisel * 2, bevelEnabled: true, bevelThickness: bisel, bevelSize: bisel, bevelSegments: 3, curveSegments: 4 }); geo.translate(0, 0, -(ancho - bisel * 2) / 2); geo.rotateY(-Math.PI / 2); return geo; };
+      const pintura = new T.MeshPhysicalMaterial({ color, metalness: 0.55, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08 });
+      const vidrio = new T.MeshPhysicalMaterial({ color: 0x1a232b, metalness: 0.2, roughness: 0.05, clearcoat: 1, transparent: true, opacity: 0.88 });
+      const goma = new T.MeshStandardMaterial({ color: 0x141414, roughness: 0.9 }), llanta = new T.MeshStandardMaterial({ color: 0xc8ccd0, metalness: 0.9, roughness: 0.25 }), negro = new T.MeshStandardMaterial({ color: 0x1c1f22, roughness: 0.6 });
+      const faro = new T.MeshStandardMaterial({ color: 0xf6f3e6, emissive: 0xfff3cf, emissiveIntensity: 0.45, roughness: 0.1 }), piloto = new T.MeshStandardMaterial({ color: 0x9b1010, emissive: 0xc01010, emissiveIntensity: 0.7, roughness: 0.2 });
+      return { cuerpo: ext(P.cuerpo, P.ancho, 0.07), cabina: ext(P.cabina, P.ancho - 0.12, 0.05), pintura, vidrio, goma, llanta, negro, faro, piloto };
+    })());
+    const M = (geo, m, x, y, z) => { const me = new T.Mesh(geo, m); me.position.set(x || 0, y || 0, z || 0); me.castShadow = true; me.receiveShadow = true; g.add(me); return me; };
+    M(C.cuerpo, C.pintura); M(C.cabina, C.vidrio);
+    // techo pintado sobre la cabina (menos en la furgoneta, que ya lo lleva en el cuerpo)
+    if (tipo !== 'furgoneta') { const cb = P.cabina, y = cb[1][1], z0 = cb[1][0] + 0.05, z1 = cb[2][0] - 0.05; M(new T.BoxGeometry(P.ancho - 0.2, 0.06, z1 - z0), C.pintura, 0, y + 0.02, (z0 + z1) / 2); }
+    // ruedas con neumático y llanta, y pasos de rueda oscuros
+    for (const ez of P.ejes) for (const s of [-1, 1]) { const r = P.rueda, n = M(new T.CylinderGeometry(r, r, 0.26, 20), C.goma, s * (P.ancho / 2 - 0.12), r, ez); n.rotation.z = Math.PI / 2; const ll = M(new T.CylinderGeometry(r * 0.62, r * 0.62, 0.02, 16), C.llanta, s * (P.ancho / 2 + 0.01), r, ez); ll.rotation.z = Math.PI / 2; }
+    // parachoques, faros y pilotos
+    const zF = P.cuerpo[P.cuerpo.length - 1][0], zR = P.cuerpo[0][0], yL = tipo === 'todoterreno' ? 0.85 : tipo === 'furgoneta' ? 0.8 : 0.68;
+    M(new T.BoxGeometry(P.ancho - 0.04, 0.16, 0.12), C.negro, 0, 0.4, zF + 0.02); M(new T.BoxGeometry(P.ancho - 0.04, 0.16, 0.12), C.negro, 0, 0.4, zR - 0.02);
+    for (const s of [-1, 1]) { M(new T.BoxGeometry(0.42, 0.13, 0.05), C.faro, s * (P.ancho / 2 - 0.32), yL, zF + 0.02); M(new T.BoxGeometry(0.38, 0.12, 0.05), C.piloto, s * (P.ancho / 2 - 0.3), yL + 0.08, zR - 0.02); }
+    M(new T.BoxGeometry(0.5, 0.16, 0.03), new T.MeshStandardMaterial({ color: 0xf0f0f0 }), 0, 0.42, zR - 0.09);   // matrícula
+    if (tipo === 'taxi') { const cart = M(new T.BoxGeometry(0.6, 0.18, 0.25), new T.MeshStandardMaterial({ color: 0xffffff, emissive: 0x9cff9c, emissiveIntensity: 0.6 }), 0, P.cabina[1][1] + 0.14, -0.05); void cart; }
+    if (tipo === 'ambulancia') { M(new T.BoxGeometry(P.ancho + 0.02, 0.22, 3.4), new T.MeshStandardMaterial({ color: 0xd62d2d }), 0, 1.15, -0.7);
+      for (const s of [-1, 1]) { const mz = new T.MeshStandardMaterial({ color: 0x1f5fff, emissive: 0x2a6bff, emissiveIntensity: 2 }), luz = M(new T.BoxGeometry(0.45, 0.14, 0.22), mz, s * 0.45, 2.22, 0.9); luz.onBeforeRender = () => { const tt = kit.vientoU.value; mz.emissiveIntensity = Math.sin(tt * 14 + (s > 0 ? Math.PI : 0)) > 0 ? 3.5 : 0.15; }; } }
+    g.userData = { coche: true, tipo: tipo || 'turismo', largo: P.L }; return g;
+  };
+
+  // ---------- Calcomanías: carteles pegados y grafitis en las paredes, manchas y parches en el suelo (texturas hechas por código) ----------
+  const CALC = {};
+  function lienzoCalc(clave, w, h, dib) { if (CALC[clave] !== undefined) return CALC[clave]; if (typeof document === 'undefined') return (CALC[clave] = null); const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext && c.getContext('2d'); if (!x) return (CALC[clave] = null); dib(x, w, h);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return (CALC[clave] = new THREE.MeshStandardMaterial({ map: t, transparent: true, depthWrite: false, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); }
+  const CARTELES = [['CONCIERTO', 'SÁBADO 21:00', '#c0392b', '#fff4d6'], ['FIESTA MAYOR', 'DEL 12 AL 15', '#1d4f91', '#f2d27a'], ['CLASES DE GUITARRA', 'LLAMA YA', '#f4efe3', '#2a2a2a'], ['SE ALQUILA', 'PISO 2 HAB.', '#ffffff', '#c0392b'], ['MERCADILLO', 'TODOS LOS JUEVES', '#2e5d3a', '#ffffff'], ['GRAN DERBI', 'DOMINGO', '#111111', '#ffb81c'], ['CIRCO', 'ÚLTIMOS DÍAS', '#e8590c', '#ffffff'], ['SE BUSCA GATO', 'RECOMPENSA', '#fff9c4', '#333333']];
+  const SPRAY = ['#e8590c', '#2f80ed', '#27ae60', '#c0392b', '#8e44ad', '#f1c40f', '#ffffff', '#111111'];
+  kit.calcomania = function (W, tipo, x, y, z, ry, r) {
+    r = r || Math.random; let m, w = 0.62, h = 0.85;
+    if (tipo === 'cartel') { const k = (r() * CARTELES.length) | 0, C = CARTELES[k];
+      m = lienzoCalc('cartel' + k, 192, 256, (q, cw, ch) => { q.fillStyle = C[2]; q.beginPath(); q.moveTo(4, 6); q.lineTo(cw - 3, 2); q.lineTo(cw - 6, ch - 4); q.lineTo(cw * 0.6, ch - 12); q.lineTo(2, ch - 2); q.closePath(); q.fill(); q.fillStyle = C[3]; q.textAlign = 'center'; q.font = 'bold 30px sans-serif';
+        const pal = C[0].split(' '); pal.forEach((p, i) => q.fillText(p, cw / 2, 70 + i * 34)); q.font = '18px sans-serif'; q.fillText(C[1], cw / 2, ch - 50); q.fillStyle = 'rgba(0,0,0,0.12)'; for (let i = 0; i < 40; i++) q.fillRect((i * 37) % cw, (i * 53) % ch, 2, 2); }); }
+    else if (tipo === 'grafiti') { const k = (r() * 6) | 0; w = 1.7; h = 0.85;
+      m = lienzoCalc('grafiti' + k, 512, 256, (q, cw, ch) => { const TAGS = ['KRS', 'ZEN', 'MOK', 'RAY', 'BDN', 'OKE'], c1 = SPRAY[k % SPRAY.length], c2 = SPRAY[(k + 3) % SPRAY.length], tag = TAGS[k % TAGS.length];
+        q.save(); q.translate(cw / 2, ch / 2 + 10); q.rotate(-0.08 + (k % 3) * 0.05); q.transform(1, 0, -0.25, 1, 0, 0); q.textAlign = 'center'; q.textBaseline = 'middle'; q.font = 'bold 150px Impact, "Arial Black", sans-serif'; q.lineJoin = 'round';
+        q.lineWidth = 26; q.strokeStyle = '#111'; q.strokeText(tag, 0, 0); q.lineWidth = 12; q.strokeStyle = '#fff'; q.strokeText(tag, 0, 0);
+        const g = q.createLinearGradient(0, -70, 0, 70); g.addColorStop(0, c2); g.addColorStop(1, c1); q.fillStyle = g; q.fillText(tag, 0, 0);
+        q.fillStyle = 'rgba(255,255,255,0.55)'; q.fillRect(-150, -45, 300, 6); q.restore();
+        let s = 3 + k * 7; const rr = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+        q.fillStyle = c1; for (let i = 0; i < 7; i++) { const x = 90 + rr() * 330, y = 150 + rr() * 20, l = 15 + rr() * 45; q.fillRect(x, y, 4, l); q.beginPath(); q.arc(x + 2, y + l, 3.5, 0, 7); q.fill(); } }); }
+    else { const k = (r() * 4) | 0; w = 1.4 + r() * 1.6; h = w * (0.6 + r() * 0.5);   // mancha o parche del suelo
+      m = lienzoCalc('mancha' + k, 128, 128, (q, cw, ch) => { let s = 5 + k * 13; const rr = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+        if (k === 3) { q.fillStyle = 'rgba(40,42,46,0.55)'; q.beginPath(); q.moveTo(10, 20); q.lineTo(118, 12); q.lineTo(112, 110); q.lineTo(16, 116); q.closePath(); q.fill(); return; }   // parche de asfalto nuevo
+        for (let i = 0; i < 14; i++) { const cx = 64 + (rr() - 0.5) * 60, cy = 64 + (rr() - 0.5) * 60, rad = 10 + rr() * 26, g = q.createRadialGradient(cx, cy, 0, cx, cy, rad); g.addColorStop(0, k === 1 ? 'rgba(20,20,20,0.35)' : 'rgba(30,25,20,0.22)'); g.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = g; q.fillRect(0, 0, cw, ch); }
+        if (k === 2) { q.strokeStyle = 'rgba(15,15,15,0.5)'; q.lineWidth = 1.5; q.beginPath(); q.moveTo(10, 64); for (let i = 0; i < 10; i++) q.lineTo(10 + i * 12, 64 + (rr() - 0.5) * 30); q.stroke(); } }); }
+    if (!m) return null; const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+    if (tipo === 'suelo') { p.rotation.x = -Math.PI / 2; p.rotation.z = r() * 6.28; p.position.set(x, y, z); } else { p.position.set(x, y, z); p.rotation.y = ry || 0; p.rotation.z = (r() - 0.5) * (tipo === 'cartel' ? 0.12 : 0.05); }
+    p.receiveShadow = true; W.add(p); if (tipo !== 'suelo') { (kit.calcomanias = kit.calcomanias || []).push([x, y, z, ry || 0, tipo]); if (kit.calcomanias.length > 400) kit.calcomanias.shift(); } return p;
+  };
+
+  // ---------- Gato sentado (para tejados y muros): mueve la cola y gira la cabeza de vez en cuando ----------
+  kit.gato = function (color) {
+    const T = THREE, g = new T.Group(), m = new T.MeshStandardMaterial({ color: color || 0x3b3b3b, roughness: 0.95 }), ojo = new T.MeshStandardMaterial({ color: 0xc9e36b, emissive: 0x6a7a20, emissiveIntensity: 0.4 });
+    const B = (geo, x, y, z, mt) => { const me = new T.Mesh(geo, mt || m); me.position.set(x, y, z); me.castShadow = true; g.add(me); return me; };
+    B(new T.SphereGeometry(0.12, 10, 8).scale(1, 1.25, 1.1), 0, 0.15, 0); B(new T.SphereGeometry(0.1, 10, 8).scale(1.05, 0.7, 1.2), 0, 0.06, 0.06);
+    const cab = new T.Group(); cab.position.set(0, 0.33, 0.04); g.add(cab); const c = new T.Mesh(new T.SphereGeometry(0.075, 10, 8), m); c.castShadow = true; cab.add(c);
+    for (const s of [-1, 1]) { const o = new T.Mesh(new T.ConeGeometry(0.03, 0.07, 4), m); o.position.set(s * 0.045, 0.07, 0); cab.add(o); const e = new T.Mesh(new T.SphereGeometry(0.012, 6, 4), ojo); e.position.set(s * 0.028, 0.012, 0.066); cab.add(e); }
+    const cola = new T.Group(); cola.position.set(0, 0.05, -0.1); g.add(cola); const cm = new T.Mesh(new T.CylinderGeometry(0.018, 0.012, 0.3, 6), m); cm.rotation.x = Math.PI / 2.4; cm.position.set(0, -0.02, -0.14); cola.add(cm);
+    const fase = Math.random() * 10; c.onBeforeRender = () => { const t = kit.vientoU.value + fase; cola.rotation.y = Math.sin(t * 1.8) * 0.6; cab.rotation.y = Math.sin(t * 0.37) > 0.8 ? 0.7 : Math.sin(t * 0.29) < -0.85 ? -0.6 : 0; };
+    g.userData = { gato: true }; return g;
+  };
   kit.arbolRedondo = function (x, z, s, color) {
     const g = new THREE.Group(); s = s || 1;
     g.add(kit.cilindro(0.07 * s, 0.45 * s, 0x6b4a2b, 0, 0, 0, 5));

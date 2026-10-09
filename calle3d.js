@@ -88,11 +88,13 @@
     caja(W, w + 0.3, 0.25, d + 0.3, '#cfc8bb', cx, hB - 0.25, cz);
     for (let i = 0; i < 2 + (r() * 3 | 0); i++) caja(bg, 1 + r(), 0.8 + r() * 0.6, 1 + r(), mInst, x0 + 1.2 + r() * (w - 2.4), hB + pisos * hP, z0 + 1.2 + r() * (d - 2.4));
     const fz = lado === 'n' ? z0 - 0.02 : z1 + 0.02, ry = lado === 'n' ? Math.PI : 0, sgn = lado === 'n' ? -1 : 1;
-    if (o.toldo) { const t = caja(W, o.toldo.ancho || w * 0.8, 0.12, 1.4, o.toldo.color, o.toldo.x !== undefined ? o.toldo.x : cx, 2.75, fz + sgn * 0.7); t.rotation.x = sgn * 0.2; }
+    if (o.toldo) { const t = caja(W, o.toldo.ancho || w * 0.8, 0.12, 1.4, GM.kit.viento(new THREE.MeshStandardMaterial({ color: o.toldo.color, roughness: 0.9 }), 'tela', 0.035), o.toldo.x !== undefined ? o.toldo.x : cx, 2.75, fz + sgn * 0.7); t.rotation.x = sgn * 0.2; }
     if (o.letrero) letrero(W, T.letrero(o.letrero.txt, o.letrero.fondo, o.letrero.letra, o.letrero.clave || ''), o.letrero.ancho || Math.min(w * 0.85, 9), (o.letrero.ancho || Math.min(w * 0.85, 9)) / 4.2, o.letrero.x !== undefined ? o.letrero.x : cx, o.letrero.y || 3.05, fz + sgn * 0.03, ry);
     // Banderas del club en los balcones (según la afición)
     if (o.banderas) for (let i = 0; i < o.banderas; i++) { const bx = x0 + 1.5 + ((r() * (w / 3)) | 0) * 3, by = hB + ((r() * pisos) | 0) * hP + 1.0; plano(W, 1.1, 0.8, GM.kit.viento(mat(r() < 0.5 ? o.c1 : o.c2, { side: THREE.DoubleSide }), 'tela'), bx, by, fz + sgn * 0.12, ry); }
     G.bloquea(x0, z0, x1, z1);
+    if (!o.cristal && GM.kit.calcomania) { const nD = (r() * 3.2) | 0; for (let i = 0; i < nD; i++) { const tipo = r() < 0.5 ? 'cartel' : 'grafiti'; GM.kit.calcomania(W, tipo, x0 + 1 + r() * Math.max(0.2, w - 2), tipo === 'cartel' ? 1.25 + r() * 0.5 : 0.75 + r() * 0.5, fz + sgn * 0.02, ry, r); } }
+    if (GM.kit.gato && r() < 0.22) { const gt = GM.kit.gato(['#3b3b3b', '#c98d4f', '#f2efe8', '#7a6a5a', '#1d1d1d'][(r() * 5) | 0]); gt.position.set(x0 + 0.8 + r() * Math.max(0.2, w - 1.6), hB + pisos * hP, fz - sgn * 0.35); gt.rotation.y = ry + (r() - 0.5) * 0.8; gt.scale.setScalar(1.6); W.add(gt); }
     return { fz, sgn, ry, alto: hB + pisos * hP };
   }
   function pabellon(W, G, T, club, st, c1) {
@@ -121,6 +123,7 @@
     const G = M.rejilla({ limites: LIM, CELDA: 0.5 }); S.G = G; OCL = []; S.oclusores = OCL;
     // Suelo: asfalto, aceras de panot y pasos de peatones elevados
     suelo(W, 90, 50, real(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { escala: 5, tinte: 0xb4b4b4 }), 0, -0.12, 0);
+    if (GM.kit.calcomania) { const rS = rnd(77); for (let i = 0; i < 46; i++) { const enX = rS() < 0.65, x = enX ? -88 + rS() * 176 : (rS() - 0.5) * 5, z = enX ? (rS() - 0.5) * 5 : -40 + rS() * 64; GM.kit.calcomania(W, 'suelo', x, -0.115, z, 0, rS); } }
     const mAcera = real(new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9, color: 0xaea99f }), 'Concrete034', { color: false, escala: 2.4, relieve: 0.6 });
     const acera = (x0, z0, x1, z1) => { const w = x1 - x0, d = z1 - z0, g = new THREE.BoxGeometry(w, 0.12, d); uvM(g, 1.5, 1.5); const me = new THREE.Mesh(g, mAcera); me.position.set((x0 + x1) / 2, -0.06, (z0 + z1) / 2); me.receiveShadow = true; W.add(me); };
     acera(-42, -24, -3, -3); acera(3, -24, 42, -3); acera(-42, 3, -3, 24); acera(3, 3, 42, 24);
@@ -410,7 +413,9 @@
     for (const [x, z] of [[-1.1, 3.6], [1.1, 3.6], [-1.1, -3.4], [1.1, -3.4]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 14), mat('#151515')); w.rotation.z = Math.PI / 2; w.position.set(x, 0.5, z); g.add(w); }
     g.position.y = -0.12; g.userData = { coche: true }; GM.kit.fusionar(g); return g;
   }
+  let nCoche = 0;
   function coche(color) {
+    if (GM.kit.coche && (!GM.campus || GM.campus.config.calidad === 'alta')) { const k = nCoche++, tipo = k === 9 ? 'ambulancia' : ['turismo', 'compacto', 'turismo', 'todoterreno', 'compacto', 'furgoneta', 'taxi'][k % 7], o = GM.kit.coche(tipo === 'taxi' || tipo === 'ambulancia' ? '#f4f4f4' : tipo === 'furgoneta' ? '#e8e8e8' : color, tipo); o.position.y = -0.12; o.userData.coche = true; return o; }
     const g = new THREE.Group(), cuerpo = mat(color, { roughness: 0.35, metalness: 0.4 }), cristal = mat('#22303a', { roughness: 0.1, metalness: 0.6 }), rueda = mat('#151515');
     const B = (w, h, d, m, x, y, z) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.castShadow = true; g.add(me); };
     B(1.8, 0.55, 4.1, cuerpo, 0, 0.5, 0); B(1.6, 0.5, 2.1, cristal, 0, 0.98, -0.2); B(1.62, 0.06, 2.0, cuerpo, 0, 1.25, -0.2);
@@ -436,7 +441,7 @@
     const h = S.hora || 9, D = destinos(S);
     if (n.k === undefined) n.k = n.r();
     // ¿Le toca estar en la calle a esta hora?
-    const activo = n.nino ? (h >= 7.5 && h < 21) : n.k < DENS(h);
+    const activo = n.nino ? (h >= 7.5 && h < 21) : n.k < DENS(h) * (S.clima && S.clima.tipo === 'lluvia' ? 0.55 : 1);
     if (n.enCasa) { if (activo && !(n.hasta && h < n.hasta)) { n.enCasa = false; n.oculto = false; n.hasta = 0; } else { n.espera = 6; return; } }
     if (n.dentro) { if (h >= n.hasta) { n.dentro = false; n.oculto = false; } else { n.espera = 4; return; } }
     if (!activo && !n.hincha) { const q = D.casa[(n.r() * D.casa.length) | 0]; if (M.irA(n, q[0], q[1], () => { n.oculto = true; n.enCasa = true; n.espera = 8; })) return; }

@@ -57,6 +57,9 @@ node tools/dia_partido.js                 # rutinas por hora y día de partido e
 node tools/campus_paseo.js [club]         # la ciudad deportiva paseable (vista general, entrada, centro, a pie)
 node tools/muebles_reales.js              # cada mueble de Kenney junto a su versión realista (Poly Haven), para orientación y tamaño
 node tools/comparacion_estilos.js         # el mismo salón con muebles de Kenney y de Poly Haven
+node tools/clima.js                       # el mismo sitio soleado, nublado y con lluvia (suelo mojado), y los coches nuevos
+node tools/detalles_calle.js              # carteles, grafitis, gatos y coches de la calle de cerca
+node tools/modo_foto.js                   # modo foto: filtros, viñeta, guardar y salir
 node tools/palomas.js                     # bandadas de palomas que salen volando al acercarte
 node tools/vida_capturas.js               # vestuario, familia, redes, logros, la casa con vitrina y mascota, tu casa del pueblo y la retirada
 ```

@@ -510,6 +510,7 @@
       h('button', { class: 'btn btn-sec peq', onclick: cerrar }, 'Salir'),
       h('div', { class: 'ct' }, h('b', null, S.escena === 'casa' ? (S.casaNombre || 'Tu casa') : S.escena === 'interior' ? (S.interiorNombre || 'Interior') : S.escena === 'deportiva' ? (S.calleNombre || 'Ciudad deportiva') : S.escena === 'calle' || S.escena === 'pueblo' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'pueblo' ? h('span', null, 'Tu pueblo, ' + U.fechaLarga(st.fecha)) : S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('button', { class: 'sede-hora', title: 'Pasar una hora', onclick: () => { if (S.hora >= 23) return GM.ui.toast('Es tarde: avanza al día siguiente'); S.hora = Math.min(23, Math.floor(S.hora) + 1); S.tLuz = 0; GM.ui.toast('Pasa una hora: ' + Math.floor(S.hora) + ':00'); } }, '8:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn btn-sec peq', onclick: () => mapa() }, 'Mapa'),
+      h('button', { class: 'btn btn-sec peq', onclick: () => modoFoto() }, 'Foto'),
       st.modo === 'carrera' && GM.mods.movil && GM.ui.movil ? (() => { const n = GM.mods.movil.noLeidos(st); return h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil' + (n ? ' (' + n + ')' : '')); })() : null,
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
     S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
@@ -533,6 +534,21 @@
   }
   // ---------- Mapa interactivo ----------
   // Se dibuja a partir de la rejilla de caminos de la escena (S.G): sirve igual en la sede, la calle y el pueblo.
+  const FILTROS = [['Natural', ''], ['Cálido', 'sepia(0.25) saturate(1.25) contrast(1.05)'], ['Frío', 'hue-rotate(-12deg) saturate(0.9) brightness(1.03)'], ['Intenso', 'contrast(1.18) saturate(1.35)'], ['Blanco y negro', 'grayscale(1) contrast(1.15)'], ['Película', 'sepia(0.4) contrast(1.1) brightness(0.95) saturate(0.85)']];
+  function modoFoto() {
+    if (!S || S.raiz.querySelector('.sede-foto')) return; const h = GM.h, cv = S.renderer.domElement; let f = 0; S.raiz.classList.add('en-foto');
+    const ocultos = []; S.scene.traverse(o => { if (o.visible && (o.isSprite || (o.userData && (o.userData.etiqueta || o.userData.zona)) || o === S.marcaDestino)) { o.visible = false; ocultos.push(o); } }); S.enFoto = true; (S.zonas || []).forEach(z => { if (z.obj.visible) { z.obj.visible = false; ocultos.push(z.obj); } }); if (S.yo) S.yo.obj.children.forEach(c => { if (c.geometry && c.geometry.type === 'RingGeometry' && c.visible) { c.visible = false; ocultos.push(c); } });
+    const vin = h('div', { class: 'sede-foto-vineta', style: { display: 'none' } });
+    const poner = () => { cv.style.filter = FILTROS[f][1]; nombre.textContent = FILTROS[f][0]; };
+    const nombre = h('b', null, 'Natural');
+    const guardar = () => { if (S.composer) S.composer.render(); else S.renderer.render(S.scene, S.camera); const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const x = c.getContext('2d'); if (!x) return; x.filter = FILTROS[f][1] || 'none'; x.drawImage(cv, 0, 0);
+      if (vin.style.display !== 'none') { const g = x.createRadialGradient(c.width / 2, c.height / 2, c.height * 0.35, c.width / 2, c.height / 2, c.height * 0.85); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)'); x.filter = 'none'; x.fillStyle = g; x.fillRect(0, 0, c.width, c.height); }
+      const a = document.createElement('a'); a.download = 'basket-manager-' + S.st.fecha + '.png'; a.href = c.toDataURL('image/png'); document.body.append(a); a.click(); a.remove(); GM.ui.toast('Foto guardada'); };
+    const salir = () => { cv.style.filter = ''; S.raiz.classList.remove('en-foto'); barra.remove(); vin.remove(); ocultos.forEach(o => { o.visible = true; }); S.enFoto = false; };
+    const barra = h('div', { class: 'sede-foto' }, h('button', { class: 'btn btn-sec peq', onclick: () => { f = (f + FILTROS.length - 1) % FILTROS.length; poner(); } }, '‹'), nombre, h('button', { class: 'btn btn-sec peq', onclick: () => { f = (f + 1) % FILTROS.length; poner(); } }, '›'),
+      h('button', { class: 'btn btn-sec peq', onclick: () => { vin.style.display = vin.style.display === 'none' ? '' : 'none'; } }, 'Viñeta'), h('button', { class: 'btn peq', onclick: guardar }, 'Guardar foto'), h('button', { class: 'btn btn-sec peq', onclick: salir }, 'Salir'));
+    S.raiz.append(vin, barra); GM.ui.toast('Modo foto: arrastra para girar, rueda o pellizco para acercar');
+  }
   function mapa() {
     if (!S || !S.G) return; const prev = S.raiz.querySelector('.sede-mapa'); if (prev) { prev.remove(); return; }
     const h = GM.h, G = S.G, esc = Math.max(2, Math.floor(Math.min(560 / G.W, 560 / G.H) * 2) / 2), cv = h('canvas', { width: G.W * esc, height: G.H * esc });
@@ -789,6 +805,31 @@
   }
 
   // ---------- Ambiente del día ----------
+  // ---------- Clima: el tiempo de cada día (según la fecha, el mes y el país), nubes, lluvia y suelo mojado ----------
+  const TEMP = { ES: [11, 27], IT: [8, 26], GR: [12, 29], TR: [7, 27], DE: [2, 20], LT: [-3, 19], RS: [1, 24], FR: [5, 21], US: [2, 25] };
+  function climaDe(st) {
+    const p = (st.equipos[st.clubId] || {}).pais, mes = +st.fecha.slice(5, 7), inv = [11, 12, 1, 2, 3].indexOf(mes) >= 0, ver = [6, 7, 8].indexOf(mes) >= 0;
+    const pl = p === 'US' ? 0.14 : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? (inv ? 0.3 : 0.18) : (inv ? 0.18 : ver ? 0.04 : 0.11);
+    const az = f => (U.hash(f + 'clima' + st.clubId) >>> 0) / 4294967296, h = az(st.fecha), ayer = az(U.addDays(st.fecha, -1)) < pl;
+    const tipo = h < pl ? 'lluvia' : h < pl + 0.26 ? 'nubes' : 'sol', b = TEMP[p] || [8, 24], f = (1 - Math.cos((mes - 1) / 12 * Math.PI * 2)) / 2;
+    const temp = Math.round(b[0] + (b[1] - b[0]) * f - (tipo === 'lluvia' ? 3 : tipo === 'nubes' ? 1 : 0) + (az(st.fecha + 't') * 4 - 2));
+    return { tipo, temp, ayer, texto: (tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado') + ', ' + temp + ' °C' };
+  }
+  const exterior = () => ['calle', 'pueblo', 'deportiva'].indexOf(S.escena) >= 0;
+  let texNube = null;
+  function montarClima() {
+    S.lluviaObj = null; S.nubesObj = null; S.fogBase = null; if (!exterior() || !S.mundo) return; const C = S.clima;
+    if (!texNube && typeof document !== 'undefined') { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext && c.getContext('2d'); if (x) { for (let i = 0; i < 7; i++) { const cx = 30 + i * 11, cy = 64 + Math.sin(i * 1.7) * 12, r = 22 + (i % 3) * 8, g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); } texNube = new THREE.CanvasTexture(c); } }
+    const nN = C.tipo === 'lluvia' ? 22 : C.tipo === 'nubes' ? 16 : 5, gN = new THREE.Group(); gN.userData = { nubes: true };
+    if (texNube) for (let i = 0; i < nN; i++) { const m = new THREE.SpriteMaterial({ map: texNube, color: C.tipo === 'sol' ? 0xffffff : C.tipo === 'nubes' ? 0xd5dbe2 : 0x9ea7b0, transparent: true, opacity: 0.85, depthWrite: false, fog: false }), s = new THREE.Sprite(m); const a = i * 2.39, d = 60 + (i * 37) % 140; s.position.set(Math.cos(a) * d, 55 + (i % 5) * 8, Math.sin(a) * d); s.scale.set(70 + (i % 4) * 20, 30 + (i % 3) * 8, 1); gN.add(s); }
+    S.mundo.add(gN); S.nubesObj = gN;
+    if (C.tipo === 'lluvia') { const N = 3500, pos = new Float32Array(N * 6); for (let i = 0; i < N; i++) { const x = (Math.random() - 0.5) * 70, y = Math.random() * 28, z = (Math.random() - 0.5) * 70; pos.set([x, y, z, x + 0.05, y - 0.55, z], i * 6); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xaebfcf, transparent: true, opacity: 0.45, depthWrite: false })); l.frustumCulled = false; l.userData = { lluvia: true }; S.mundo.add(l); S.lluviaObj = l; }
+  }
+  function moverClima(dt) {
+    if (S.nubesObj) { S.nubesObj.position.x += dt * 1.6; S.nubesObj.position.z = S.foco.z * 0.6; if (S.nubesObj.position.x - S.foco.x > 120) S.nubesObj.position.x -= 240; }
+    if (S.lluviaObj) { const a = S.lluviaObj.geometry.attributes.position, v = a.array, b = dt * 17; for (let i = 0; i < v.length; i += 6) { v[i + 1] -= b; v[i + 4] -= b; v[i] += b * 0.06; v[i + 3] += b * 0.06; if (v[i + 4] < 0) { v[i + 1] += 28; v[i + 4] += 28; } } a.needsUpdate = true; S.lluviaObj.position.set(S.foco.x, 0, S.foco.z); }
+  }
   function estadoDia(st) {
     const C = GM.mods.competiciones, g = C && C.proximoPartido(st, st.clubId), club = st.equipos[st.clubId];
     if (g && g.fecha === st.fecha) { const riv = st.equipos[g.local === st.clubId ? g.visitante : g.local]; return { tipo: 'partido', rival: riv, casa: g.local === st.clubId, texto: 'Día de partido contra ' + riv.nombre }; }
@@ -819,6 +860,10 @@
     if (S.farolas) { S.farolas.emissiveIntensity = 0.4 + noche * 3.5; }
     if (S.charcosNoche) S.charcosNoche.opacity = noche * 0.9;
     if (S.ventanas) S.ventanas.forEach(m => { m.emissiveIntensity = (m.emissiveMap ? 1.3 : 0.25) * Math.max(0, Math.min(1, (h - 19) / 1.5)); });
+    { const C = S.clima || { tipo: 'sol' }, ext = exterior(), gris = ext ? (C.tipo === 'lluvia' ? 0.75 : C.tipo === 'nubes' ? 0.42 : 0) : 0;
+      if (gris) { const gn = gris * (1 - noche * 0.6), gc = new THREE.Color(0x8f99a4).lerp(new THREE.Color(0x283040), noche); S.luces.sol.intensity *= 1 - gn * 0.72; S.luces.cielo.color.lerp(new THREE.Color(0xa3acb6), gn * 0.6); if (S.scene.background && S.scene.background.isColor) S.scene.background.lerp(gc, gn * 0.85); if (S.scene.fog) { S.scene.fog.color.lerp(gc, gn * 0.85); if (!S.fogBase) S.fogBase = S.scene.fog.far; S.scene.fog.far = S.fogBase * (1 - gn * 0.35); } if (S.scene.environment) S.scene.environmentIntensity *= 1 - gn * 0.3; }
+      if (GM.texturas && GM.texturas.mojadoU) GM.texturas.mojadoU.value = ext ? (C.tipo === 'lluvia' ? 1 : C.ayer ? 0.35 : 0) : 0;
+      if (S.chipDia && S.dia && S.clima) S.chipDia.textContent = S.dia.texto + (ext ? '. ' + S.clima.texto : ''); }
     if (S.chipHora) { const hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15; S.chipHora.textContent = hh + ':' + String(mm).padStart(2, '0'); }
   }
 
@@ -928,7 +973,7 @@
   async function poblar(st) {
     const P = GM.sedePlano, eq = st.equipos[st.clubId], r = rnd(U.hash(st.clubId + st.fecha));
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
-    S.dia = estadoDia(st); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
+    S.dia = estadoDia(st); S.clima = climaDe(st); montarClima(); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
     if (S.escena === 'casa') { if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'interior') { if (GM.interiores) await GM.interiores.poblar(S, motor(), st, S.escenaArg); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'deportiva') { if (GM.deportivaMundo) await GM.deportivaMundo.poblar(S, motor(), st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
@@ -1002,7 +1047,10 @@
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); if (S.composer) { S.composer.setPixelRatio(Math.min(renderer.getPixelRatio(), 1.5)); S.composer.setSize(w, hh); } };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
     if (nivelRend()) aplicarRend(nivelRend(), false);   // lo que se aprendió en escenas anteriores de este dispositivo
-    const cargando = h('div', { class: 'sede-hud sede-cargando' }, S.escena === 'pueblo' ? 'Llegando al pueblo…' : 'Abriendo la sede del club…'); raiz.append(cargando);
+    const CONSEJOS = ['Toca el reloj para pasar una hora y ver cómo cambia la ciudad.', 'Doble toque (o doble clic) para correr.', 'En el mapa, «Ir ya» te lleva al momento a los sitios que ya conoces.', 'Las palomas salen volando si pasas corriendo.', 'El día de partido en casa, a las 19:00 llega el autobús del equipo.', 'El botón Foto quita la interfaz para hacer capturas.', 'Cuando llueve hay menos gente por la calle y el suelo refleja.'];
+    const barraC = h('div', { class: 'carga-barra' }, h('span')), consejo = h('p', { class: 'carga-consejo' }, CONSEJOS[(Date.now() / 1000 | 0) % CONSEJOS.length]);
+    const cargando = h('div', { class: 'sede-hud sede-cargando' }, h('div', { class: 'carga-caja' }, h('b', null, S.escena === 'pueblo' ? 'Llegando al pueblo…' : S.escena === 'calle' ? 'Saliendo a la calle…' : S.escena === 'deportiva' ? 'Llegando a la ciudad deportiva…' : S.escena === 'casa' ? 'Entrando en casa…' : 'Abriendo la sede del club…'), barraC, consejo)); raiz.append(cargando);
+    { const LM = THREE.DefaultLoadingManager, previo = LM.onProgress; LM.onProgress = (u, n, total) => { const sp = barraC.firstChild; if (sp && total) sp.style.width = Math.round(n / total * 100) + '%'; if (previo) previo(u, n, total); }; }
     (GM.texturas ? GM.texturas.precargar() : Promise.resolve()).then(() => construir(st)).then(async () => {
       const yo = await personaje(aspecto(st)); { const sp = S.escena === 'pueblo' && S.spawnPueblo ? S.spawnPueblo : S.escena === 'calle' && S.spawnCalle ? S.spawnCalle : S.escena === 'casa' && S.spawnCasa ? S.spawnCasa : S.escena === 'interior' && S.spawnInterior ? S.spawnInterior : S.escena === 'deportiva' && S.spawnDeportiva ? S.spawnDeportiva : { x: GM.sedePlano.entrada.x, z: 12.5, ry: Math.PI }; yo.obj.position.set(sp.x, 0, sp.z); yo.obj.rotation.y = sp.ry; S.foco.set(sp.x, 0, sp.z); } S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
       const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / yo.obj.scale.x);
@@ -1022,6 +1070,7 @@
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
       if (S.escena === 'interior' && GM.interiores && GM.interiores.actualizar) GM.interiores.actualizar(S, motor(), dt);
       if (S.mascota && GM.mods.vida) GM.mods.vida.moverMascota(S, dt);
+      if (S.lluviaObj || S.nubesObj) moverClima(dt);
       if (S.escena === 'deportiva' && GM.deportivaMundo && GM.deportivaMundo.actualizar) GM.deportivaMundo.actualizar(S, motor(), dt);
       if (S.escena === 'pueblo' && GM.puebloMundo) GM.puebloMundo.actualizar(S, motor(), dt);
       { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
@@ -1103,5 +1152,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { _clima: tipo => { if (!S) return null; S.clima = Object.assign(climaDe(S.st), { tipo, ayer: false, texto: tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado' }); montarClima(); aplicarAmbiente(); return S.clima; }, pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();
