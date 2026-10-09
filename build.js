@@ -89,7 +89,7 @@ fs.mkdirSync(path.join(DIST, 'icons'));
 ICONOS.forEach(f => fs.copyFileSync(path.join(VENDOR, 'icons', f), path.join(DIST, 'icons', f)));
 // Modelos 3D (glb y texturas, CC0): vendor/modelos -> dist/modelos (las licencias .txt no se publican)
 const MODELOS = [];
-(function copia(rel) { const src = path.join(VENDOR, 'modelos', rel); fs.readdirSync(src, { withFileTypes: true }).forEach(e => { const r = rel ? rel + '/' + e.name : e.name; if (e.isDirectory()) { fs.mkdirSync(path.join(DIST, 'modelos', r), { recursive: true }); copia(r); } else if (!/.txt$/.test(e.name)) { fs.copyFileSync(path.join(src, e.name), path.join(DIST, 'modelos', r)); MODELOS.push('modelos/' + r); } }); })('');
+(function copia(rel) { const src = path.join(VENDOR, 'modelos', rel); fs.readdirSync(src, { withFileTypes: true }).forEach(e => { const r = rel ? rel + '/' + e.name : e.name; if (e.isDirectory()) { fs.mkdirSync(path.join(DIST, 'modelos', r), { recursive: true }); copia(r); } else if (!/.txt$/.test(e.name)) { fs.copyFileSync(path.join(src, e.name), path.join(DIST, 'modelos', r)); if (!/^reales\//.test(r)) MODELOS.push('modelos/' + r); } }); })('');
 // Texturas reales (CC0, ambientCG): vendor/texturas -> dist/texturas
 const TEXTURAS = []; fs.mkdirSync(path.join(DIST, 'texturas'), { recursive: true });
 fs.readdirSync(path.join(VENDOR, 'texturas')).filter(f => /\.jpg$/.test(f)).forEach(f => { fs.copyFileSync(path.join(VENDOR, 'texturas', f), path.join(DIST, 'texturas', f)); TEXTURAS.push('texturas/' + f); });
@@ -110,6 +110,7 @@ self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skip
 self.addEventListener('fetch', e => {
   const r = e.request; if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;
   if (r.mode === 'navigate') { e.respondWith(caches.match('index.html').then(x => x || fetch(r))); return; }
+  if (r.url.indexOf('/modelos/reales/') >= 0) { e.respondWith(caches.open('reales-v1').then(c => c.match(r).then(x => x || fetch(r).then(res => { if (res.ok) c.put(r, res.clone()); return res; })))); return; }
   e.respondWith(caches.match(r, { ignoreSearch: true }).then(x => x || fetch(r)));
 });
 `;

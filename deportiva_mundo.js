@@ -80,7 +80,7 @@
     // Arboleda junto a la valla y fuera del recinto
     for (let i = 0; i < 70; i++) { const a = i / 70 * Math.PI * 2 + 0.03, f = 0.86 + ((i * 13) % 7) * 0.012, x = Math.cos(a) * A * f, z = Math.sin(a) * B * f + czm; if (Math.abs(x) < 12 && z > czm) continue; if (L.slots.some(sl => Math.hypot(sl.x * k - x, sl.z * k - z) < 20)) continue; troncos.push([x, z, 1.1 + (i % 4) * 0.12]); }
     for (let i = 0; i < 46; i++) { const a = i / 46 * Math.PI * 2, x = Math.cos(a) * (A + 12 + (i % 3) * 6), z = Math.sin(a) * (B + 12 + (i % 3) * 6) + czm; if (Math.abs(x) < 14 && z > czm) continue; troncos.push([x, z, 1.3]); }
-    if (troncos.length) { const gT = new THREE.CylinderGeometry(0.22, 0.3, 3.2, 7), gC = new THREE.IcosahedronGeometry(2.4, 1), iT = new THREE.InstancedMesh(gT, mat('#6b5136'), troncos.length), iC = new THREE.InstancedMesh(gC, mat('#4f8a3c', { roughness: 0.95, flatShading: true }), troncos.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3(), cc = new THREE.Color();
+    if (troncos.length) { const gT = new THREE.CylinderGeometry(0.22, 0.3, 3.2, 7), gC = new THREE.IcosahedronGeometry(2.4, 1), iT = new THREE.InstancedMesh(gT, mat('#6b5136'), troncos.length), iC = new THREE.InstancedMesh(gC, GM.kit.viento(mat('#4f8a3c', { roughness: 0.95, flatShading: true }), 'copa', 0.18), troncos.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3(), cc = new THREE.Color();
       troncos.forEach(([x, z, e], i) => { s.set(e, e, e); m4.compose(v.set(x, 1.6 * e, z), q, s); iT.setMatrixAt(i, m4); s.set(e, e * 0.9, e); m4.compose(v.set(x, 4.2 * e, z), q.setFromEuler(new THREE.Euler(0, i, 0)), s); iC.setMatrixAt(i, m4); iC.setColorAt(i, cc.setHSL(0.27 + ((i * 37) % 10) * 0.006, 0.42, 0.3 + ((i * 17) % 10) * 0.012)); });
       iT.castShadow = iC.castShadow = true; iT.receiveShadow = iC.receiveShadow = true; W.add(iT, iC); out.arboles = troncos.map(t => [t[0], t[1]]); }
     // Valla perimetral metálica con malla, abierta en la puerta
@@ -134,6 +134,7 @@
     const ER = Wc.userData.campusReal; S.campusReal = ER;
     if (ER) { ER.arboles.forEach(([x, z]) => G.bloquea(x - 0.4, z - 0.4, x + 0.4, z + 0.4)); S.paseoCD = S.paseoCD.concat(ER.paseo); if (ER.farolas) S.farolas = ER.farolas; }
     S.zonas = zonas.map(([sala, x, z]) => M.zona(W, sala, x, z, club));
+    S.palomas = GM.kit.palomas ? GM.kit.palomas(W, [[5, cz * k + 4], [-6, cz * k - 4], [0, cz * k + 30]], 8) : null;
     S.spawnDeportiva = { x: 0, z: gz - 2, ry: Math.PI };
     S.calleNombre = L.nombre; S.mallasCD = mallas;
     return W;
@@ -171,6 +172,7 @@
     for (let i = 0; i < 3; i++) { const p = await M.personaje({ modelo: i % 2 ? 'm-formal' : 'h-worker', altura: 172, piel: PIEL[i + 1], pelo: PELO[i] }); const q = S.paseoCD[i]; p.obj.position.set(q[0], 0, q[1]); Object.assign(p, { rol: i % 2 ? 'Personal del club' : 'Mantenimiento', fijo: true, r, espera: 99 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, i % 2 ? 'idle' : 'interact-right'); S.mundo.add(p.obj); S.gente.push(p); }
   }
   function actualizar(S, M, dt) {
+    if (S.palomas && S.yo) S.palomas.actualizar(dt, [[S.yo.obj.position.x, S.yo.obj.position.z]].concat(S.gente.filter(n => n.rapido && n.camino && n.camino.length).map(n => [n.obj.position.x, n.obj.position.z])));
     const ER = S.campusReal; if (!ER || !S.yo) return;
     if (ER.barrera) { const c = ER.caseta, d = Math.hypot(S.yo.obj.position.x - (c.x - 6), S.yo.obj.position.z - c.z), obj = d < 9 ? -1.35 : 0, b = ER.barrera; b.rotation.z += (obj - b.rotation.z) * Math.min(1, dt * 3); }
     if (S.publicoCD) { S.tPubCD = (S.tPubCD || 0) - dt; if (S.tPubCD <= 0) { S.tPubCD = 0.15; const t = performance.now() / 1000; S.publicoCD.colocar(i => (Math.sin(t * 3 + i * 1.9) > 0.75 ? { salto: 0.12, brazos: 1 } : null)); } }

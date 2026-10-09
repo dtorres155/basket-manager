@@ -53,7 +53,7 @@
     // Placas de los barrios
     [['oeste', -46, 5.8], ['este', 46, 5.8], ['norte', 5, -36]].forEach(([k, x, z]) => { cil(W, 0.05, 2.9, '#2a2f35', x, 0, z); letrero(W, T.letrero('Barrio de ' + nomDist[k], '#1d4f91', '#fff', 'bar-' + k), 3.8, 0.7, x, 2.7, z + 0.05, 0); });
     // ---- Árboles en las aceras de la avenida y de la ronda, y farolas ----
-    const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#476f34')];
+    const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#476f34')]; copas.forEach(m => GM.kit.viento(m, 'copa'));
     const arbol = (x, z, g, k) => { cil(g, 0.14, 2.2, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), copas[((k % 3) + 3) % 3]); c.position.set(x, 3.0, z); c.scale.y = 0.9; c.castShadow = true; g.add(c); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); };
     for (let x = -146; x <= 146; x += 13) { if (Math.abs(x) < 46 || [-120, -66, 66, 120].some(p => Math.abs(x - p) < 4)) continue; const g = enG(x < 0 ? 'oeste' : 'este'); arbol(x, -4.4, g, (x / 13) | 0); arbol(x + 6, 4.4, g, 1 + (x / 13) | 0); }
     for (let x = -146; x <= 146; x += 16) { if (Math.abs(x) < 5) continue; arbol(x, -34.6, grupos.norte, (x / 16) | 0); }

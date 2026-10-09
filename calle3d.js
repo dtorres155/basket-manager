@@ -91,7 +91,7 @@
     if (o.toldo) { const t = caja(W, o.toldo.ancho || w * 0.8, 0.12, 1.4, o.toldo.color, o.toldo.x !== undefined ? o.toldo.x : cx, 2.75, fz + sgn * 0.7); t.rotation.x = sgn * 0.2; }
     if (o.letrero) letrero(W, T.letrero(o.letrero.txt, o.letrero.fondo, o.letrero.letra, o.letrero.clave || ''), o.letrero.ancho || Math.min(w * 0.85, 9), (o.letrero.ancho || Math.min(w * 0.85, 9)) / 4.2, o.letrero.x !== undefined ? o.letrero.x : cx, o.letrero.y || 3.05, fz + sgn * 0.03, ry);
     // Banderas del club en los balcones (según la afición)
-    if (o.banderas) for (let i = 0; i < o.banderas; i++) { const bx = x0 + 1.5 + ((r() * (w / 3)) | 0) * 3, by = hB + ((r() * pisos) | 0) * hP + 1.0; plano(W, 1.1, 0.8, mat(r() < 0.5 ? o.c1 : o.c2, { side: THREE.DoubleSide }), bx, by, fz + sgn * 0.12, ry); }
+    if (o.banderas) for (let i = 0; i < o.banderas; i++) { const bx = x0 + 1.5 + ((r() * (w / 3)) | 0) * 3, by = hB + ((r() * pisos) | 0) * hP + 1.0; plano(W, 1.1, 0.8, GM.kit.viento(mat(r() < 0.5 ? o.c1 : o.c2, { side: THREE.DoubleSide }), 'tela'), bx, by, fz + sgn * 0.12, ry); }
     G.bloquea(x0, z0, x1, z1);
     return { fz, sgn, ry, alto: hB + pisos * hP };
   }
@@ -160,7 +160,7 @@
     // Mural del escudo en una medianera si el club tiene reputación
     if (rep >= 68) plano(W, 6, 6, new THREE.MeshStandardMaterial({ map: T.escudo, transparent: true }), 31.45, 10, -13, -Math.PI / 2);
     // Mobiliario: árboles (más con más reputación), farolas, bancos, papeleras, parada de autobús, quiosco y semáforos
-    const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#476f34')];
+    const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#476f34')]; copas.forEach(m => GM.kit.viento(m, 'copa'));
     const nArb = rep >= 75 ? 7 : rep >= 60 ? 5 : 3;
     for (const z of [-4.2, 4.2]) for (let k = 0; k < nArb; k++) for (const s of [-1, 1]) {
       const x = s * (12 + k * (26 / nArb)); if ((z < 0 && x > 25 && x < 31) || (z > 0 && x > 16 && x < 22)) continue;
@@ -264,7 +264,7 @@
     for (const x of [18, 20]) { cil(W, 0.05, 2.3, '#c8102e', x - 0.8, 0, 30); cil(W, 0.05, 2.3, '#c8102e', x + 0.8, 0, 30); caja(W, 1.7, 0.08, 0.08, '#c8102e', x, 2.3, 30); caja(W, 0.5, 0.05, 0.25, '#333', x, 0.55, 30); G.bloquea(x - 0.9, 29.7, x + 0.9, 30.3); }
     caja(W, 0.9, 1.6, 0.9, '#ffd23f', 29, 0, 30); const tob = caja(W, 0.6, 0.06, 2.6, '#2f9e6f', 29, 0.75, 31.6); tob.rotation.x = 0.55; G.bloquea(28.5, 29.5, 29.5, 32.6);
     // Árboles del parque y de la plaza
-    const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#3f6e33')];
+    const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#3f6e33')]; copas.forEach(m => GM.kit.viento(m, 'copa'));
     [[18, 40], [18, 46], [18, 54], [31, 38], [33, 44], [20, 35], [30, 55], [22, 56], [-12, 30], [-12, 52], [6, 30], [8, 47]].forEach(([x, z], i) => { cil(W, 0.16, 2.4, tronco, x, 0, z, 6); const cp = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5 + (i % 3) * 0.25, 1), copas[i % 3]); cp.position.set(x, 3.3, z); cp.castShadow = true; W.add(cp); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); });
     // Comercios con terraza al sur de la plaza (fachada mirando al norte)
     const tiendas = [['HELADERÍA LA OLA', '#7fd1c7', '#14181d', [-2, 0]], ['PIZZERÍA NAPOLI', '#c8102e', '#ffffff', [6, 0]], ['CAFÉ CENTRAL', '#5a3b26', '#f2d27a', [-10, 0]], ['LIBRERÍA PAPEL', '#1d4f91', '#ffffff', [-18, 0]], ['PELUQUERÍA', '#6b3a7a', '#ffffff', [-26, 0]], ['BASKET STORE', c1, '#ffffff', [-34, 0]]];
@@ -285,15 +285,12 @@
     // Bancos y farolas de la plaza
     const mBanco = mat('#7a5638');
     [[-9, 37, 0], [1, 37, 0], [-9, 45.5, Math.PI], [1, 45.5, Math.PI], [16.3, 42, Math.PI / 2], [16.3, 48, Math.PI / 2]].forEach(([x, z, ry]) => { const b = caja(W, 1.6, 0.45, 0.45, mBanco, x, 0, z, ry); G.bloquea(x - 0.8, z - 0.8, x + 0.8, z + 0.8); });
-    // Palomas alrededor de la fuente (salen volando si te acercas)
-    { const n = 22, im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.16, 0.12, 0.26), mat('#8a8f99'), n), base = [];
-      for (let i = 0; i < n; i++) { const a = r() * Math.PI * 2, rr = 3.6 + r() * 3; base.push({ x: fx + Math.cos(a) * rr, z: fz + Math.sin(a) * rr, y: 0.07, ry: r() * 6, vuelo: 0, vx: 0, vz: 0 }); }
-      W.add(im); im.userData = { palomas: true }; S.palomas = { im, base, m: new THREE.Matrix4(), q: new THREE.Quaternion(), e: new THREE.Euler(), s: new THREE.Vector3(1, 1, 1), p: new THREE.Vector3() }; }
+    S.fuentePos = [fx, fz];
     zonas.parque = [26, 46.2]; zonas.musico = [-0.6, 44.6]; S.musicoPos = [0.6, 44.6];
     return zonas;
   }
   function moverPalomas(S, dt) {
-    const P = S.palomas; if (!P) return; const yo = S.yo && S.yo.obj.position;
+    const P = S.palomas; if (!P || !P.base) return; const yo = S.yo && S.yo.obj.position;
     P.base.forEach((b, i) => {
       if (b.vuelo <= 0 && yo && Math.hypot(yo.x - b.x, yo.z - b.z) < 2.6) { b.vuelo = 3.5; const a = Math.atan2(b.z - yo.z, b.x - yo.x) + (Math.random() - 0.5); b.vx = Math.cos(a) * 3; b.vz = Math.sin(a) * 3; b.ox = b.x; b.oz = b.z; }
       if (b.vuelo > 0) { b.vuelo -= dt; const sube = b.vuelo > 1.5; b.x += b.vx * dt * (sube ? 1 : -1.1); b.z += b.vz * dt * (sube ? 1 : -1.1); b.y = sube ? Math.min(5, b.y + dt * 3) : Math.max(0.07, b.y - dt * 2.8); b.ry = Math.atan2(b.vx, b.vz) + (sube ? 0 : Math.PI); if (b.vuelo <= 0) { b.x = b.ox; b.z = b.oz; b.y = 0.07; } }
@@ -326,6 +323,7 @@
     S.destinos = null;
     { const ninos = await Promise.all(Array.from({ length: 6 }, (_, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'm-casual'][k % 3], altura: 118 + r() * 26, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: k % 2 ? [c1, c2] : null })));
       ninos.forEach((p, k) => { const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0], 0, q[1]); Object.assign(p, { peaton: true, nino: true, rol: 'Chaval que va al colegio', r: rnd(U.hash(st.fecha + 'n' + k)), espera: r() * 3 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); }); }
+    S.palomas = GM.kit.palomas ? GM.kit.palomas(S.mundo, [S.fuentePos ? [S.fuentePos[0] + 4.5, S.fuentePos[1]] : [2, 40], S.fuentePos ? [S.fuentePos[0] - 4.5, S.fuentePos[1] + 2] : [-6, 47], [24, 44], [-14, 9], [-27, -6.5], [10, 50]], 9) : null;
     // Día de partido en casa: aficionados de pie en la acera del pabellón y a lo largo de la avenida
     S.multitud = null; S.fasePartido = null; S.partidoCasa = !!partido;
     if (partido && GM.kit.publico) {
@@ -505,6 +503,7 @@
     if (GM.ciudadBarrios) GM.ciudadBarrios.actualizar(S, dt);
     if (S.partidoCasa) { S.tFase = (S.tFase || 0) - dt; if (S.tFase <= 0) { S.tFase = 1; fasePartido(S, M, S.st); busEquipo(S, M, S.st); } }
     moverPartido(S, M, dt);
+    if (S.palomas && S.yo) { const am = [[S.yo.obj.position.x, S.yo.obj.position.z]]; S.gente.forEach(n => { if (n.rapido && n.camino && n.camino.length && !n.oculto) am.push([n.obj.position.x, n.obj.position.z]); }); S.palomas.actualizar(dt, am); }
     if (S.rua) { const R = S.rua, t = performance.now() / 1000; R.x += dt * 2.2; if (R.x > 76) R.x = -76; R.bus.position.x = R.x; R.conf.position.x = R.x; R.gente.forEach(p => p.mixer.update(dt));
       const a = R.conf.geometry.attributes.position; for (let i = 0; i < a.count; i++) { let y = a.getY(i) - dt * (0.7 + (i % 5) * 0.18); if (y < 0.05) y += 10; a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(t * 1.7 + i) * dt * 0.5); } a.needsUpdate = true;
       R.tCol -= dt; if (R.tCol <= 0) { R.tCol = 0.12; R.publico.colocar(i => { const f = R.fans[i], cerca = Math.abs(f.x - R.x) < 14, v = Math.sin(t * (cerca ? 7 : 3) + i * 2.3); return cerca ? { salto: Math.max(0, v) * 0.35, brazos: 1 } : v > 0.5 ? { salto: (v - 0.5) * 0.3, brazos: 1 } : null; }); } }

@@ -58,9 +58,30 @@
 
   // ---------- Carga de modelos ----------
   const AJUSTE = {}, MATS = {}; // desplazamiento para centrar cada mueble (su origen está en una esquina)
+  // Muebles realistas (Poly Haven, CC0, vendor/modelos/reales): en calidad alta sustituyen al de Kenney del mismo nombre.
+  // [modelo, giro en grados para que mire a +z como los de Kenney]. Ocupan la huella del de Kenney (no cambia la rejilla):
+  // se usan a su tamaño real y, si son más grandes, se reducen hasta caber. Si no se pueden cargar, se queda el de Kenney.
+  const REALES = { loungeSofa: ['sofa_02', 0], loungeSofaLong: ['sofa_03', 0], loungeDesignSofa: ['Sofa_01', 0], loungeSofaCorner: ['sofa_03', 0], loungeChair: ['modern_arm_chair_01', 0], loungeChairRelax: ['mid_century_lounge_chair', 180], loungeDesignChair: ['ArmChair_01', 0],
+    chair: ['dining_chair_02', 0], chairCushion: ['WoodenChair_01', 0], chairModernCushion: ['plastic_monobloc_chair_01', 0], stoolBar: ['bar_chair_round_01', 0], table: ['dining_table', 0], tableRound: ['round_wooden_table_01', 0], tableCoffee: ['modern_coffee_table_01', 0], tableCoffeeGlass: ['modern_coffee_table_02', 0], tableCross: ['wooden_table_02', 0],
+    sideTable: ['side_table_01', 0], sideTableDrawers: ['vintage_wooden_drawer_01', 0], desk: ['metal_office_desk', 0], bookcaseOpen: ['wooden_display_shelves_01', 0], bookcaseClosedWide: ['painted_wooden_cabinet', 0], cabinetTelevision: ['modern_wooden_cabinet', 0],
+    televisionModern: ['television_02', 0], televisionVintage: ['Television_01', 0], lampRoundTable: ['desk_lamp_arm_01', 0], lampSquareTable: ['desk_lamp_arm_01', 0], pottedPlant: ['potted_plant_02', 0], plantSmall1: ['potted_plant_01', 0], plantSmall2: ['potted_plant_04', 0], plantSmall3: ['potted_plant_01', 0], books: ['book_encyclopedia_set_01', 0],
+    trashcan: ['metal_trash_can', 0], cardboardBoxClosed: ['cardboard_box_01', 0], radio: ['boombox', 0], speakerSmall: ['boombox', 0], laptop: ['classic_laptop', 0], kitchenStove: ['electric_stove', 0], kitchenMicrowave: ['vintage_microwave', 0] };
+  const conReales = () => (!GM.campus || GM.campus.config.calidad === 'alta') && !(typeof window !== 'undefined' && window.__sinReales);
+  async function muebleReal(nombre, a) {
+    const R = REALES[nombre]; if (!R || !conReales()) return null;
+    try {
+      const g = await cargar('modelos/reales/' + R[0] + '/' + R[0] + '_1k.gltf'), o = g.scene.clone(true), giro = new THREE.Group(); giro.add(o); giro.rotation.y = R[1] * Math.PI / 180;
+      o.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+      const w = new THREE.Group(); w.add(giro); w.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(giro), c = b.getCenter(new THREE.Vector3()), t = b.getSize(new THREE.Vector3());
+      giro.position.set(-c.x, -b.min.y, -c.z);
+      const E = GM.sedePlano.ESCALA_MUEBLES, kw = a[3].x * E, kd = a[3].z * E, s = Math.min(1, kw * 1.1 / Math.max(0.01, t.x), kd * 1.1 / Math.max(0.01, t.z)); w.scale.setScalar(s);
+      w.tam = a[3]; w.userData.real = R[0]; return w;
+    } catch (e) { REALES[nombre] = null; return null; }
+  }
   async function mueble(nombre) {
     const g = await cargar('modelos/muebles/' + nombre + '.glb');
     if (!AJUSTE[nombre]) { const b = new THREE.Box3().setFromObject(g.scene), c = b.getCenter(new THREE.Vector3()); AJUSTE[nombre] = [c.x, b.min.y, c.z, b.getSize(new THREE.Vector3())]; }
+    { const r = await muebleReal(nombre, AJUSTE[nombre]); if (r) return r; }
     const a = AJUSTE[nombre], o = g.scene.clone(true), w = new THREE.Group();
     o.traverse(n => { if (n.isMesh && !Array.isArray(n.material)) { const m = n.material, k = m.name + m.color.getHexString() + (m.map ? m.map.uuid : ''); n.material = MATS[k] || (MATS[k] = m); } }); o.position.set(-a[0], -a[1], -a[2]); w.add(o);
     w.scale.setScalar(GM.sedePlano.ESCALA_MUEBLES); w.tam = a[3]; return w;

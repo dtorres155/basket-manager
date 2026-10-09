@@ -30,12 +30,12 @@
 - ~~Rutinas por hora~~: el día empieza a las 8 y tocar el reloj adelanta una hora; cada vecino elige destino según la franja (trabajo y colegio, compras, comer y terrazas, paseo y parque, bares o casa), entra en el trabajo, el colegio o su portal y desaparece un rato, y la cantidad de gente sigue la hora; hay niños que van al colegio y luego al parque.
 - Eventos en la calle: mercadillo semanal, fiesta mayor con casetas y música, maratón, aficionados que se concentran antes de un derbi, obras que cortan una calle.
 - ~~Día de partido completo~~ (calle, partido en casa): desde las 16, previa con grupos cantando delante de la peña y la terraza y cola en las taquillas; a las 19, el autobús del equipo llega al pabellón y la plantilla entra; durante el partido los aficionados entran en el pabellón y la calle se vacía; al acabar, cientos salen y se reparten por la avenida. Prueba: `node tools/dia_partido.js`.
-- Animales: palomas que se espantan al pasar, perros paseando, gatos en los tejados y pájaros en los árboles.
+- Animales: ~~palomas~~ (bandadas que picotean, salen volando al acercarte o si alguien pasa corriendo y se posan en otra zona; calle y ciudad deportiva, `GM.kit.palomas`, `node tools/palomas.js`); faltan gatos en los tejados y pájaros en los árboles.
 - Sonido ambiente: tráfico, pájaros, cánticos el día de partido, bote del balón en la sede (sonidos libres o hechos por código, sin conexión).
 - La gente reacciona: bocadillos según el último resultado o el tiempo, te piden una foto, te pitan si perdisteis el derbi y, si eres «chico malo», te siguen fotógrafos.
 - Vehículos con comportamiento: autobuses que paran y suben pasajeros, taxis, motos, bicis, reparto y alguna ambulancia con sirena.
 - Más sitios en los que entrar: restaurante, gimnasio, barbería (cambia el peinado), cine o bolera.
-- Viento: árboles, toldos y banderas que se mueven.
+- ~~Viento~~ (`GM.kit.viento`, en el sombreado de vértices): los árboles se mecen y las banderas ondean (calle, barrios, ciudad deportiva y menú). Faltan los toldos.
 
 **Calidad visual**
 - ~~Iluminación~~: reflejos de entorno (cielo de verdad fuera y una sala neutra dentro), sombras con más resolución y bordes suaves y, en calidad alta, oclusión ambiental (GTAO), brillo en farolas y ventanas de noche y antialiasing; tono de luz por país (mediterráneo, centroeuropeo o de EE. UU.). Si el equipo va justo, lo primero que se apaga es el posprocesado. Capturas: `node tools/luz_capturas.js [carpeta] [escenas]`.
@@ -48,6 +48,7 @@
 - Interiores con iluminación más trabajada para que no parezcan cajas.
 
 **Modelos**
+- ~~Muebles realistas~~ (ordenador, calidad alta): 34 modelos de Poly Haven sustituyen a sus equivalentes de Kenney en la casa, la sede y los interiores (sofás, butacas, sillas, mesas, estanterías, televisores, lámparas de mesa, plantas, libros, papeleras, cocina…), a tamaño real dentro de la huella del de Kenney; en el móvil siguen los de Kenney. Se descargan al usarse y quedan guardados (caché aparte del service worker). Pruebas: `node tools/muebles_reales.js` y `node tools/comparacion_estilos.js`. Faltan equivalentes para camas, armarios altos, bancos de vestuario, cocina y baño.
 - Personas más variadas: ropa y peinados intercambiables, accesorios y caras con más rasgos.
 - Más animaciones: sentarse de verdad, gesticular al hablar, aplaudir, celebrar, botar y tirar a canasta.
 - Partido en directo con animaciones de baloncesto (bote, tiro en suspensión, mate, defensa), con licencia libre.

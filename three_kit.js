@@ -88,6 +88,50 @@
   // Ruido suave (valor) para relieves y colores
   kit.ruido = function (x, z) { const h = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }, xi = Math.floor(x), zi = Math.floor(z), fx = x - xi, fz = z - zi, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz); return (h(xi, zi) * (1 - u) + h(xi + 1, zi) * u) * (1 - v) + (h(xi, zi + 1) * (1 - u) + h(xi + 1, zi + 1) * u) * v; };
   // Árbol de copa redonda (frondoso) para variar los conos
+
+  // ---------- Viento: los árboles se mecen y las telas ondean (en el sombreado de vértices, así funciona con geometría fusionada o instanciada) ----------
+  kit.vientoU = { value: 0 };
+  if (typeof window !== 'undefined' && window.requestAnimationFrame) (function tic() { kit.vientoU.value = performance.now() / 1000; window.requestAnimationFrame(tic); })();
+  kit.viento = function (m, tipo, fuerza) {
+    if (!m || m.userData.viento || m.onBeforeCompile && m.onBeforeCompile.toString().indexOf('uEscT') >= 0) return m;
+    m.userData.viento = tipo; const f = fuerza || (tipo === 'tela' ? 0.07 : 0.12);
+    m.onBeforeCompile = sh => {
+      sh.uniforms.uVientoT = kit.vientoU; sh.uniforms.uVientoF = { value: f };
+      sh.vertexShader = 'uniform float uVientoT;\nuniform float uVientoF;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' +
+        '{ vec4 wpV = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\n wpV = instanceMatrix * wpV;\n#endif\n wpV = modelMatrix * wpV;\n' +
+        (tipo === 'tela' ? ' float olaV = sin(uVientoT * 4.2 + wpV.x * 2.3 + wpV.z * 2.3 + wpV.y * 3.1) * uVientoF; transformed += objectNormal * olaV; }'
+          : ' float hV = clamp((wpV.y - 1.2) / 3.5, 0.0, 1.0); float sV = sin(uVientoT * 1.3 + wpV.x * 0.21 + wpV.z * 0.17) + 0.4 * sin(uVientoT * 2.9 + wpV.x * 0.9); transformed.x += sV * uVientoF * hV; transformed.z += cos(uVientoT * 1.1 + wpV.z * 0.23) * uVientoF * 0.6 * hV; }'));
+    };
+    m.customProgramCacheKey = () => 'viento-' + tipo; m.needsUpdate = true; return m;
+  };
+  // ---------- Palomas: bandadas que picotean por el suelo y salen volando cuando alguien se acerca ----------
+  // puntos: [[x, z], ...] sitios donde se posan. Devuelve { actualizar(dt, amenazas: [[x, z]]) }.
+  kit.palomas = function (W, puntos, n) {
+    const T = THREE; if (!puntos || !puntos.length) return null; n = n || 10;
+    const mCuerpo = new T.MeshStandardMaterial({ color: 0x8a8f96, roughness: 0.9 }), mCabeza = new T.MeshStandardMaterial({ color: 0x4f5866, roughness: 0.6, metalness: 0.2 }), mAla = new T.MeshStandardMaterial({ color: 0x9aa0a8, roughness: 0.9, side: T.DoubleSide });
+    const gC = new T.SphereGeometry(0.09, 8, 6).scale(0.85, 0.8, 1.5), gH = new T.SphereGeometry(0.048, 8, 6), gA = new T.PlaneGeometry(0.2, 0.09).translate(0.1, 0, 0).rotateX(-Math.PI / 2), gCola = new T.PlaneGeometry(0.08, 0.1).rotateX(-Math.PI / 2);
+    let s = 911; const rr = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    const aves = [];
+    puntos.forEach((p, k) => { for (let i = 0; i < n; i++) {
+      const g = new T.Group(), c = new T.Mesh(gC, mCuerpo), h = new T.Mesh(gH, mCabeza), a1 = new T.Mesh(gA, mAla), a2 = new T.Mesh(gA, mAla), co = new T.Mesh(gCola, mCuerpo);
+      c.position.y = 0.11; h.position.set(0, 0.2, 0.12); a1.position.set(0.05, 0.13, 0); a2.position.set(-0.05, 0.13, 0); a2.scale.x = -1; co.position.set(0, 0.11, -0.16); g.add(c, h, a1, a2, co);
+      g.userData = { paloma: true }; const x = p[0] + (rr() - 0.5) * 3, z = p[1] + (rr() - 0.5) * 3; g.position.set(x, 0, z); g.rotation.y = rr() * 6.28; W.add(g);
+      aves.push({ g, h, a1, a2, sitio: k, estado: 'suelo', t: rr() * 3, vx: 0, vy: 0, vz: 0, dest: null, paso: rr() * 2 }); } });
+    return { aves, actualizar(dt, amenazas) {
+      const ahora = kit.vientoU.value;
+      aves.forEach(a => { const o = a.g.position; a.t += dt;
+        if (a.estado === 'suelo') {
+          if ((amenazas || []).some(m => Math.hypot(m[0] - o.x, m[1] - o.z) < 3.2)) { a.estado = 'huye'; a.t = 0; const ang = rr() * 6.28; a.vx = Math.cos(ang) * 3; a.vz = Math.sin(ang) * 3; a.vy = 3 + rr() * 1.5; let d = (a.sitio + 1 + ((rr() * (puntos.length - 1)) | 0)) % puntos.length; a.dest = [puntos[d][0] + (rr() - 0.5) * 3, puntos[d][1] + (rr() - 0.5) * 3]; a.sitio = d; return; }
+          a.paso -= dt; if (a.paso <= 0) { a.paso = 0.6 + rr() * 2.4; a.rumbo = rr() < 0.5 ? null : a.g.rotation.y + (rr() - 0.5) * 2; }
+          if (a.rumbo !== null && a.rumbo !== undefined) { a.g.rotation.y += (a.rumbo - a.g.rotation.y) * Math.min(1, dt * 4); o.x += Math.sin(a.g.rotation.y) * dt * 0.25; o.z += Math.cos(a.g.rotation.y) * dt * 0.25; }
+          const pica = Math.sin(a.t * 7) > 0.6; a.h.position.set(0, pica ? 0.13 : 0.2, pica ? 0.16 : 0.12); a.a1.rotation.z = a.a2.rotation.z = 0; o.y = 0;
+        } else {
+          const aleteo = Math.sin(ahora * 32 + a.t * 3) * 1.1; a.a1.rotation.z = aleteo; a.a2.rotation.z = -aleteo;
+          if (a.estado === 'huye') { o.x += a.vx * dt; o.z += a.vz * dt; o.y += a.vy * dt; a.vy *= 0.985; if (a.t > 1.6) { a.estado = 'vuela'; a.t = 0; } }
+          else { const dx = a.dest[0] - o.x, dz = a.dest[1] - o.z, d = Math.hypot(dx, dz), alto = Math.min(9, d * 0.35 + 0.2); o.x += dx / Math.max(d, 0.01) * Math.min(d, 6 * dt); o.z += dz / Math.max(d, 0.01) * Math.min(d, 6 * dt); o.y += (alto - o.y) * Math.min(1, dt * 2.2); a.g.rotation.y = Math.atan2(dx, dz); if (d < 0.15 && o.y < 0.25) { a.estado = 'suelo'; o.y = 0; a.t = 0; } }
+        } });
+    } };
+  };
   kit.arbolRedondo = function (x, z, s, color) {
     const g = new THREE.Group(); s = s || 1;
     g.add(kit.cilindro(0.07 * s, 0.45 * s, 0x6b4a2b, 0, 0, 0, 5));

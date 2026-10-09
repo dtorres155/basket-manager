@@ -5,6 +5,9 @@ Juego de gestión de baloncesto para móvil (NBA, Euroliga, EuroCup, Champions L
 ## Sobre el usuario
 El usuario escribe en español y catalán. Prefiere respuestas concisas y directas, recomendaciones concretas y que le corrijas con claridad. El juego, los textos y los comentarios están en **español**. Dicta por voz: interpreta sus mensajes con tolerancia.
 
+## Prioridad: ordenador primero (desde oct 2026)
+El objetivo es que el juego se vea y juegue lo mejor posible **en ordenador** (calidad «alta»): modelos y texturas realistas aunque pesen más (muebles de Poly Haven en `vendor/modelos/reales`, texturas de ambientCG). Android sigue siendo jugable pero es secundario: en calidad «normal» usa los recursos ligeros (muebles de Kenney, sin posprocesado) y se le pueden quitar funciones si hace falta. Estilo elegido por el usuario: lo más realista posible (Poly Haven), con las personas estilizadas de Quaternius mientras no haya personas realistas animadas.
+
 ## Comandos
 ```
 npm install        # jsdom, three@0.186, esbuild, playwright y fuentes (solo para pruebas y build)
@@ -52,6 +55,9 @@ node tools/movimiento.js [escena] [n]     # caminos al azar: sin camino, cruces 
 node tools/luz_capturas.js [carpeta] [escenas] [--normal]   # iluminación de cada escena de día y de noche (alta: posprocesado)
 node tools/dia_partido.js                 # rutinas por hora y día de partido en casa (previa, cola, autobús del equipo, salida)
 node tools/campus_paseo.js [club]         # la ciudad deportiva paseable (vista general, entrada, centro, a pie)
+node tools/muebles_reales.js              # cada mueble de Kenney junto a su versión realista (Poly Haven), para orientación y tamaño
+node tools/comparacion_estilos.js         # el mismo salón con muebles de Kenney y de Poly Haven
+node tools/palomas.js                     # bandadas de palomas que salen volando al acercarte
 node tools/vida_capturas.js               # vestuario, familia, redes, logros, la casa con vitrina y mascota, tu casa del pueblo y la retirada
 ```
 **Publicación:** repositorio público `dtorres155/basket-manager`; `.github/workflows/pages.yml` pasa las pruebas y publica `dist/` en **https://dtorres155.github.io/basket-manager/** en cada push a `main`. No subas datos personales del usuario (nombre, pueblo, correo); `PROMPT_CLAUDE_CODE.txt` está en `.gitignore`. Instrucciones para el usuario: `INSTALAR_EN_MOVIL.md`.
