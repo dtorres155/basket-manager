@@ -35,6 +35,7 @@
     if (dec.tipo === 'evento') { const e = GM.mods.carrera.eventos(st).find(x => x.id === dec.id); return e ? e.opciones.map(o => ({ t: o.t, d: o.d, i: o.i })) : null; }
     if (dec.tipo === 'plan') return [{ t: '¡Me apunto!', d: 'Plan de fiesta (más rebelde).' }, { t: 'Hoy no, que mañana entreno', d: 'Un poco más profesional.' }];
     if (dec.tipo === 'patrocinio') return [{ t: 'Firmar', d: '+' + dec.dinero + ' mil €.' }, { t: 'No me interesa', d: 'Sin cambios.' }];
+    if (dec.tipo === 'vida') return dec.ops;
     if (dec.tipo === 'entrevista') return [{ t: 'Atenderles', d: 'Un poco de fama, imagen de profesional.' }, { t: 'No contestar', d: 'Morbo y algo más de rebeldía.' }];
     return null;
   }
@@ -51,6 +52,7 @@
     if (d.tipo === 'evento') { r = GM.mods.carrera.elegirEvento(st, d.id, m.ops[i].i !== undefined ? m.ops[i].i : i); if (r.ok) out.push.apply(out, r.efectos || []); }
     else if (d.tipo === 'plan') { if (i === 0) { r = GM.mods.estilo.hacer(st, d.plan); if (r.ok) out.push.apply(out, r.efectos); } else GM.mods.estilo.mover(st, 2, 'Rechazas una fiesta'); }
     else if (d.tipo === 'patrocinio') { if (i === 0) { const k = C(st); k.dinero += d.dinero; k.fama = k.fama + d.fama; GM.mods.estilo.mover(st, d.dv, 'Patrocinio'); out.push('+' + d.dinero + ' mil €'); k.hitos.unshift({ fecha: st.fecha, texto: 'Firmas un patrocinio de ' + d.dinero + ' mil €.' }); } }
+    else if (d.tipo === 'vida') { r = GM.mods.vida.decidir(st, d, i); if (r.ok) out.push.apply(out, r.efectos || []); }
     else if (d.tipo === 'entrevista') { if (i === 0) { C(st).fama = C(st).fama + 0.5; GM.mods.estilo.mover(st, 2, 'Atiendes a la prensa'); out.push('reputación +'); } else { C(st).fama = C(st).fama + 0.3; GM.mods.estilo.mover(st, -3, 'No contestas a la prensa'); } }
     if (!r.ok) return r;
     m.estado = 'respondido'; m.eleccion = i; c.msgs.push({ n: ++DATOS(st).n, de: 'yo', t: m.ops[i].t, fecha: st.fecha, leido: true });
@@ -61,7 +63,7 @@
     DATOS(st).chats.forEach(c => c.msgs.forEach(m => {
       if (m.estado !== 'pendiente') return;
       if (m.dec.tipo === 'evento' && !C(st).pend.some(p => p.id === m.dec.id)) { m.estado = 'respondido'; return; }   // contestado en otra pantalla
-      if (m.dec.tipo !== 'evento' && U.diffDays(m.fecha, st.fecha) >= 5) { m.estado = 'ignorado'; if (m.dec.tipo === 'plan') GM.mods.estilo.mover(st, 1, 'Te quedas en casa en vez de salir'); }
+      if (m.dec.tipo !== 'evento' && U.diffDays(m.fecha, st.fecha) >= 5) { m.estado = 'ignorado'; if (m.dec.tipo === 'vida' && GM.mods.vida) GM.mods.vida.decidir(st, m.dec, m.dec.def === undefined ? -1 : m.dec.def); if (m.dec.tipo === 'plan') GM.mods.estilo.mover(st, 1, 'Te quedas en casa en vez de salir'); }
     }));
   }
   // Las decisiones de carrera.js pendientes llegan como mensajes (una vez cada una)

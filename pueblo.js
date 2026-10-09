@@ -26,6 +26,7 @@
     carretera: { n: 'Carretera y autobús', cat: 'publico', req: 3, coste: 90, max: 2, niv: ['Carretera arreglada hasta la ciudad', 'Línea de autobús diaria'], ef: { cariño: 0.3, dinero: 1 }, uso: ['Inaugurar la parada del autobús', { fama: 0.1, cariño: 1 }] },
     // Casas de los tuyos
     casapadres: { n: 'Casa de tus padres', cat: 'casa', req: 1, coste: 30, max: 3, niv: ['Reformas en casa de tus padres', 'Casa nueva para tus padres', 'Casa con jardín y huerto'], ef: { moral: 0.4 }, uso: ['Comer en casa de tus padres', { moral: 4 }] },
+    micasa: { n: 'Tu casa en el pueblo', cat: 'casa', req: 1, coste: 55, max: 2, niv: ['Casa de piedra reformada', 'Casa con piscina y canasta en el patio'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Pasar unos días en tu casa del pueblo', { moral: 3 }] },
     casaamigos: { n: 'Casa de tus amigos de siempre', cat: 'casa', req: 2, coste: 40, max: 2, niv: ['Ayudas a un amigo a arreglar su piso', 'Casa para tu grupo de amigos'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Cenar con los amigos de siempre', { moral: 3, amigos: 6 }] }
   };
   // Obras: lo que inviertes no se estrena al momento. Dura de 2 semanas a 5 meses según el coste; se ve por fases en el pueblo.

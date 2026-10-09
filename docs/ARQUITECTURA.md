@@ -175,6 +175,9 @@ EDIFICIOS CON MODELOS (GM.edificioKit) — fachadas montadas con piezas glTF del
 ### `ciudad_barrios.js`
 CIUDAD AMPLIADA (GM.ciudadBarrios): barrios oeste, este y norte alrededor del centro de la calle, parcelas para tus viviendas con fachada según su variante, colegio, hospital, estación y puerta de la ciudad deportiva con las actividades de ciudad3d; los barrios lejanos no se dibujan. Expone: construir(ctx), actualizar(S), LOTES.
 
+### `vida.js`
+VIDA DEL JUGADOR (GM.mods.vida): vestuario (química, capitán y rival), lesiones con decisión en el móvil y fisio en la sede, redes sociales, familia que evoluciona, salidas tras la retirada (cambia `st.modo`), logros y retos, y la mascota (todos los modos; `state.sede.mascota`, modelo en la casa 3D). Escribe `state.carrera.vida` (se crea al usarse). Las decisiones llegan al móvil como mensajes `{ tipo: 'vida', que, ops, def }` que resuelve `vida.decidir`.
+
 ### `rua.js`
 RÚA DE CAMPEONES (GM.mods.rua): al ganar un título, dos días de rúa en la calle (autobús descapotable con la plantilla y el trofeo, multitud y confeti; la escena está en calle3d.js). Expone: activa, revisar, nuevaPartida, selfTest. Escribe state.rua y state.ruaHist.
 

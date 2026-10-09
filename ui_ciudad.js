@@ -20,7 +20,7 @@
     if (car && st.carrera.fase === 'ncaa' && st.carrera.etapa === 'cantera' && (t === 'vivienda' || t === 'vida')) { el.append(aviso('Vives en la residencia de la cantera de ' + eq(st.clubId).nombre + '. A los 18 años, con tu primer contrato, podrás elegir barrio, vivienda y estilo de vida.', 'med')); return; }
     if (car && st.carrera.fase === 'ncaa' && st.carrera.etapa !== 'cantera' && t !== 'mapa' && t !== 'casa' && t !== 'pueblo') { el.append(aviso('Vives en la residencia universitaria. Cuando fiches por un club podrás elegir barrio y vivienda.', 'med')); return; }
     if (t === 'mapa') { const cont = h('div', { class: 'club3d' }); el.append(cont); M().ciudad3d.mount(cont, st); }
-    else if (t === 'casa') { const cont = h('div', { class: 'club3d' }); el.append(cont); M().hogar3d.mount(cont, st); }
+    else if (t === 'casa') { mascotaCard(el, st); const cont = h('div', { class: 'club3d' }); el.append(cont); M().hogar3d.mount(cont, st); }
     else if (t === 'pueblo') { const cont = h('div', { class: 'club3d' }); el.append(cont); M().pueblo.mount(cont, st); }
     else if (t === 'resumen') ciudadResumen(el, st);
     else if (t === 'aficion') aficionTab(el, st);
@@ -28,6 +28,31 @@
     else if (t === 'vivienda') viviendaTab(el, st);
     else if (t === 'social') socialTab(el, st);
     else vidaTab(el, st);
+  }
+  // Mascota (todos los modos): adoptar un perro o un gato que te recibe en casa
+  function mascotaCard(el, st) {
+    const V = M().vida; if (!V) return; const m = V.mascota(st);
+    el.append(h('div', { class: 'tarjeta mascota' }, m ? [h('div', { class: 'fila' }, h('div', { class: 'ct' }, h('b', null, m.nombre), h('span', { class: 'muted' }, (m.tipo === 'perro' ? 'Tu perro' : 'Tu gato') + ' desde el ' + U.fecha(m.desde) + '. Te recibe al entrar en casa.')),
+      h('button', { class: 'btn peq', disabled: m.juego === st.fecha, onclick: () => { const r = V.jugarMascota(st); toast(r.ok ? r.texto : r.motivo); refrescar(); } }, m.juego === st.fecha ? 'Ya habéis jugado hoy' : 'Jugar con ' + m.nombre))]
+      : [h('b', null, '¿Una mascota?'), h('p', { class: 'muted' }, 'En la protectora hay perros y gatos esperando casa (150 €). Te recibirá cada vez que entres y te subirá el ánimo si juegas con él.'),
+        h('div', { class: 'par' }, h('button', { class: 'btn btn-sec', onclick: () => { const r = V.adoptar(st, 'perro'); toast(r.ok ? r.texto : r.motivo); refrescar(); } }, 'Adoptar un perro'), h('button', { class: 'btn btn-sec', onclick: () => { const r = V.adoptar(st, 'gato'); toast(r.ok ? r.texto : r.motivo); refrescar(); } }, 'Adoptar un gato'))]));
+  }
+  // Redes: publicar
+  function publicarModal(st) {
+    const V = M().vida, R = V.redes(st);
+    modal(h('div', null, h('h3', null, 'Publicar'), h('p', { class: 'muted' }, R.seg.toLocaleString('es-ES') + ' seguidores te leen. Una publicación al día.'),
+      h('div', { class: 'lista' }, R.tipos.map(x => h('button', { class: 'btn btn-sec', style: { flexDirection: 'column', alignItems: 'flex-start' }, disabled: !x.disponible, onclick: () => { const r = V.publicar(st, x.id); cerrarModales(); toast(r.ok ? r.texto + (r.efectos.length ? ', ' + r.efectos.join(', ') : '') : r.motivo); refrescar(); } }, h('span', null, x.t), h('span', { class: 'muted', style: { fontWeight: 400 } }, x.d))))), [{ t: 'Cerrar', cls: 'btn-sec' }]);
+  }
+  function familiaYRedes(el, st) {
+    const V = M().vida; if (!V) return; const F = V.familia(st), fila = (k, v) => h('div', { class: 'fila' }, h('span', { class: 'muted' }, k), h('b', null, v)), H = F.hermano;
+    const etapa = H.etapa === 'cantera' ? 'en la cantera, nivel ' + H.nivel : H.etapa === 'profesional' ? 'juega en ' + H.club + ', nivel ' + H.nivel : H.etapa === 'estudios' ? 'estudia en la universidad' : 'retirado del baloncesto';
+    el.append(seccion('Tu familia', h('div', { class: 'tarjeta' }, fila('Tu madre', F.madre.nombre + ', ' + F.madre.edad + ' años'), fila('Tu padre', F.padre.nombre + ', ' + F.padre.edad + ' años'), fila('Tu hermano', H.nombre + ', ' + H.edad + ' años, ' + etapa),
+      F.hijos.length ? fila(F.hijos.length === 1 ? 'Tu hijo' : 'Tus hijos', F.hijos.map(x => x.nombre + ' (' + x.edad + ')').join(', ')) : null,
+      F.avisos.length ? h('div', { class: 'lista', style: { marginTop: '8px' } }, F.avisos.map(a => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(a.fecha)), h('span', { class: 'ct' }, a.texto)))) : h('p', { class: 'muted' }, 'Tu familia también cumple años: tus padres se hacen mayores, tu hermano sigue su camino en el baloncesto y, si formas una familia, tus hijos irán a verte jugar.'))));
+    const R = V.redes(st);
+    el.append(seccion('Tus redes', h('div', { class: 'tarjeta' }, h('div', { class: 'fila' }, h('b', null, R.seg.toLocaleString('es-ES') + ' seguidores'), h('button', { class: 'btn peq', disabled: !R.puede, onclick: () => publicarModal(st) }, R.puede ? 'Publicar' : 'Ya has publicado hoy')),
+      R.posts.length ? R.posts.slice(0, 3).map(pp => h('div', { class: 'post' }, h('div', { class: 'fila' }, h('b', null, V.TIPOS_POST[pp.tipo].t), h('span', { class: 'muted f' }, U.fecha(pp.fecha))), h('p', null, pp.texto), h('span', { class: 'muted' }, pp.likes.toLocaleString('es-ES') + ' me gusta'),
+        h('div', { class: 'post-coms' }, pp.coms.map(cm => h('div', null, h('b', null, cm.u), ' ' + cm.t))))) : h('p', { class: 'muted' }, 'Aún no has publicado nada. Tus seguidores crecen con tu fama y con lo que publicas; lo atrevido da más seguidores y más problemas.'))));
   }
   function socialTab(el, st) {
     const S_ = M().social, s = S_.estado(st); if (!s) { el.append(aviso('La vida social está disponible en la carrera de jugador.', 'med')); return; }
@@ -37,6 +62,7 @@
     const orden = ['pareja', 'familia', 'amigo', 'mentor', 'companero', 'rival'];
     S_.contactos(st).sort((a, b) => orden.indexOf(a.tipo) - orden.indexOf(b.tipo)).forEach(k => el.append(h('div', { class: 'tarjeta' }, h('div', { class: 'fila' }, h('div', { class: 'ct' }, h('b', null, k.nombre), h('span', { class: 'muted' }, S_.ETQ[k.tipo])), h('b', null, Math.round(k.rel))), barra(k.rel, 100, k.rel >= 60 ? 'verde' : k.rel >= 30 ? 'ambar' : 'rojo'),
       h('div', { class: 'seg' }, S_.acciones(st, k.id).map(a => h('button', { class: 'tab', disabled: !a.disponible, onclick: () => { const r = S_.hacer(st, k.id, a.id); if (!r.ok) toast(r.motivo); else { toast(r.efectos.length ? r.efectos.join(', ') : 'Hecho'); refrescar(); if (GM.ui && GM.ui.cabecera) GM.ui.cabecera(); } } }, a.t + (a.coste ? ' (' + a.coste + ' k€)' : '') + (a.e ? ', energía ' + a.e : '')))))));
+    familiaYRedes(el, st);
   }
   function aficionTab(el, st) {
     const Fn = M().fans, f = st.fans; if (!f) { el.append(aviso('La afición solo está disponible como presidente o director técnico.', 'med')); return; }

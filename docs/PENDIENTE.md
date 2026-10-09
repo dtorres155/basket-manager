@@ -54,16 +54,16 @@
 
 ### Casas con personalidad
 - ~~Varias casas con su carácter y su sitio en la ciudad~~: comprar otra no vende la anterior (también en los modos de gestión) y puedes mudarte entre ellas («Vivir aquí» o hogar.vivirEn). Cada vivienda tiene su plano real (variante de hogar.js): habitaciones con tabiques y puertas, planta de arriba con escalera, y terraza, jardín o piscina; sus propios muebles y reformas (`st.sede.casas[id]`). En la calle, cada una ocupa una parcela de su barrio con su fachada (loft de ladrillo, buhardilla, bloque clásico o moderno, ático con terraza, casa mediterránea, de piedra o moderna, mansión clásica, moderna o villa con piscina) y se entra por su puerta (escena `casa:<id>`). Capturas: `node tools/casas_capturas.js` y `node tools/ciudad_paseo.js`.
-- **Tu casa en el pueblo:** comprar una casa en tu pueblo e ir los veranos.
-- **Mascota en casa:** un perro o un gato que te recibe y sube el ánimo.
+- ~~Tu casa en el pueblo~~: se compra como una obra más del pueblo («Tu casa en el pueblo», dos niveles; el segundo con piscina y canasta), se ve en su parcela y se entra (chimenea, vigas, sofá, cama, fotos). De junio a agosto, «Pasar el verano aquí» una vez por temporada: fatiga a cero, ánimo +10, cariño del pueblo y de tu gente.
+- ~~Mascota en casa~~ (`vida.js`, todos los modos): adoptas un perro o un gato (150 €) desde Ciudad, Mi casa, o en el panel de tu casa 3D; tiene nombre, te recibe al entrar (corre hacia ti, mueve la cola y luego te sigue) y jugar con él sube el ánimo; si lo descuidas, tu familia te lo recuerda.
 
 ### Carrera y vida del jugador
-- **Relación con los compañeros:** química en el vestuario, rivalidad por el puesto, un capitán que te protege o te hunde.
-- **Lesiones con recuperación jugable:** elegir el tratamiento (conservador o volver antes arriesgando) y visitas al fisio en la sede.
-- **Redes sociales propias:** seguidores, publicaciones que eliges y comentarios de aficionados (encaja con el móvil y el estilo).
-- **Familia que evoluciona:** padres que envejecen, hermanos que también juegan, hijos que van a verte.
-- **Vida después de la retirada:** pasar a entrenador, director deportivo o comentarista con la misma partida.
-- **Logros y retos** («50 puntos en un partido», «MVP con 21 años», «ganar en tu pueblo») con una vitrina en tu casa.
+- ~~Relación con los compañeros~~ (`vida.js`, sobre social.js): química del vestuario (media de relaciones) que cada semana mueve tu ánimo y la forma del equipo; el capitán (el veterano) te protege tras un mal partido si os lleváis bien o te señala si no; el rival por el puesto te pica por el móvil (responder en la pista o hablarlo). Se ve en Jugador; en la sede, «Bromas con los compañeros».
+- ~~Lesiones con recuperación jugable~~: al lesionarte, los servicios médicos te escriben: conservadora (+25 % de días), el plan normal o volver antes (55 % de los días, con un 30 % de recaída en el mes siguiente que cuesta potencial). En la sede, «Sesión de recuperación con el fisio» (un día menos cada dos días).
+- ~~Redes sociales propias~~: seguidores según tu fama y lo que publicas (entreno, partido, afición, familia, fiesta, polémica o publicidad desde 20.000), una publicación al día, me gusta y comentarios; lo atrevido da más seguidores, mueve el estilo y puede traer multas o un aviso del club. En Ciudad, vida social.
+- ~~Familia que evoluciona~~: padres que cumplen años (jubilación, achaques con decisión de ir a verlos), un hermano que sigue su carrera (cantera, primer contrato con un club de tu liga, estudios o retirada) e hijos que crecen y van a verte a los partidos en casa. En Ciudad, vida social.
+- ~~Vida después de la retirada~~: en Carrera, tres salidas: entrenador o director deportivo de uno de los clubes que te llaman (la partida pasa al modo entrenador o gestor y conservas tus ahorros) o comentarista (sueldo según tu fama y un partido que comentar cada semana).
+- ~~Logros y retos~~: 24 logros con fecha y progreso (debut, 20/30/40/50 puntos, doble y triple-doble, 100 partidos, 1.000 y 5.000 puntos, títulos, máximo anotador y «estrella con 21 años», draft, NBA, Euroliga, fama, seguidores, millonario, hijo predilecto del pueblo, estilo y paternidad) y tres retos por temporada con premio. En Carrera; los conseguidos llenan la vitrina del salón de tu casa. Pruebas: `node tools/vida_prueba.js` y `node tools/vida_capturas.js`.
 
 ### Partidos
 - ~~Momentos clave jugables~~: en el último cuarto o la prórroga, si tu equipo tiene la última posesión de los 30 segundos finales con empate o perdiendo de 1 a 3, el directo se para y eliges tirar, pasar (al mejor tirador en pista) o penetrar (falta, adicional o pérdida). En la carrera solo si estás en pista, y el balón es tuyo; en los modos de gestión, para la estrella. Cambia el marcador y puede dar o quitar la prórroga (`D.jugadaClave` en partidos.js). Sale en un 15-20 % de los partidos. Prueba: `node tools/momento_clave.js [gestor|carrera]`.

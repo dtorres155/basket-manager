@@ -12,9 +12,9 @@
   const MATS = {}; const mat = (c, o) => { const k = c + JSON.stringify(o || {}); return MATS[k] || (MATS[k] = new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.8 }, o || {}))); };
   function caja(W, w, h, d, m, x, y, z, ry) { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m); me.position.set(x, y + h / 2, z); if (ry) me.rotation.y = ry; me.castShadow = me.receiveShadow = true; W.add(me); return me; }
   function cil(W, r, h, m, x, y, z, seg) { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 12), typeof m === 'string' ? mat(m) : m); me.position.set(x, y + h / 2, z); me.castShadow = true; W.add(me); return me; }
-  const TIPOS = { pabellon: { w: 40, d: 30 }, tienda: { w: 16, d: 11 }, pena: { w: 16, d: 11 }, ayuntamiento: { w: 20, d: 14 }, bar_pueblo: { w: 14, d: 10, pueblo: 'bar' }, casa_padres: { w: 13, d: 10, pueblo: 'casapadres' }, casa_amigos: { w: 12, d: 10, pueblo: 'casaamigos' } };
+  const TIPOS = { pabellon: { w: 40, d: 30 }, tienda: { w: 16, d: 11 }, pena: { w: 16, d: 11 }, ayuntamiento: { w: 20, d: 14 }, bar_pueblo: { w: 14, d: 10, pueblo: 'bar' }, casa_padres: { w: 13, d: 10, pueblo: 'casapadres' }, casa_amigos: { w: 12, d: 10, pueblo: 'casaamigos' }, casa_pueblo: { w: 14, d: 10, pueblo: 'micasa' } };
   const pueblo = st => (st.carrera && st.carrera.pueblo) || { nombre: 'tu pueblo' };
-  const NOMBRE = { pabellon: c => c.pabellon.nombre, tienda: c => 'Tienda oficial del ' + c.siglas, pena: () => 'Bar La Peña', ayuntamiento: c => 'Ayuntamiento de ' + c.ciudad, bar_pueblo: (c, st) => 'Bar de la peña de ' + pueblo(st).nombre, casa_padres: () => 'Casa de tus padres', casa_amigos: () => 'Casa de tus amigos' };
+  const NOMBRE = { pabellon: c => c.pabellon.nombre, tienda: c => 'Tienda oficial del ' + c.siglas, pena: () => 'Bar La Peña', ayuntamiento: c => 'Ayuntamiento de ' + c.ciudad, bar_pueblo: (c, st) => 'Bar de la peña de ' + pueblo(st).nombre, casa_padres: () => 'Casa de tus padres', casa_pueblo: (c, st) => 'Tu casa en ' + pueblo(st).nombre, casa_amigos: () => 'Casa de tus amigos' };
   const LUGAR = { pabellon: 'pabellon', pena: 'pena', ayuntamiento: 'ayuntamiento', tienda: 'comercio' };
   function construir(S, M, st, tipo) {
     tipo = TIPOS[tipo] ? tipo : 'pena'; const W = S.mundo, club = st.equipos[st.clubId], c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
@@ -23,9 +23,9 @@
     S.scene.background = new THREE.Color(0x1d232a); S.scene.fog = null;
     const G = M.rejilla({ limites: [x0 - 2, z0 - 2, x1 + 2, z1 + 5], CELDA: 0.5 }); S.G = G;
     // Suelo y muros en corte con la puerta al sur
-    const suelo = { pabellon: '#3a3f46', tienda: '#d9d4cb', pena: '#7a5638', ayuntamiento: '#d8cdb8', bar_pueblo: '#8a6a4a', casa_padres: '#b98e63', casa_amigos: '#9a8f7a' }[tipo];
+    const suelo = { pabellon: '#3a3f46', tienda: '#d9d4cb', pena: '#7a5638', ayuntamiento: '#d8cdb8', bar_pueblo: '#8a6a4a', casa_padres: '#b98e63', casa_amigos: '#9a8f7a', casa_pueblo: '#a5794f' }[tipo];
     const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), mat(suelo, { roughness: tipo === 'ayuntamiento' ? 0.35 : 0.8 })); fl.receiveShadow = true; W.add(fl);
-    const alto = tipo === 'pabellon' ? 3.2 : 1.8, muroC = { pabellon: '#5d6873', tienda: '#f2efe8', pena: '#c9a27a', ayuntamiento: '#efe6d2', bar_pueblo: '#e8dcc4', casa_padres: '#efe3cf', casa_amigos: '#c9d3dc' }[tipo];
+    const alto = tipo === 'pabellon' ? 3.2 : 1.8, muroC = { pabellon: '#5d6873', tienda: '#f2efe8', pena: '#c9a27a', ayuntamiento: '#efe6d2', bar_pueblo: '#e8dcc4', casa_padres: '#efe3cf', casa_amigos: '#c9d3dc', casa_pueblo: '#e6d8bf' }[tipo];
     const muro = (xa, za, xb, zb) => { const L = Math.hypot(xb - xa, zb - za), m = caja(W, xa === xb ? 0.25 : L, alto, xa === xb ? L : 0.25, muroC, (xa + xb) / 2, 0, (za + zb) / 2); void m; G.bloquea(Math.min(xa, xb) - 0.2, Math.min(za, zb) - 0.2, Math.max(xa, xb) + 0.2, Math.max(za, zb) + 0.2); };
     muro(x0, z0, x1, z0); muro(x0, z0, x0, z1); muro(x1, z0, x1, z1); muro(x0, z1, -1.2, z1); muro(1.2, z1, x1, z1);
     const enPueblo = !!TIPOS[tipo].pueblo, salida = enPueblo ? { id: 'salir_interior', nombre: 'Salir al pueblo', accion: 'Volver al pueblo', destino: {}, irA: 'pueblo', boton: 'Salir al pueblo' } : { id: 'salir_interior', nombre: 'Salir a la calle', accion: 'Volver a la calle', destino: {}, irA: 'calle', boton: 'Salir a la calle' };
@@ -33,7 +33,7 @@
     // Actividades del mapa de Ciudad (las mismas que en el menú)
     const C3 = GM.mods.ciudad3d, lid = C3 && C3.lugares ? (C3.lugares(st).find(l => l.tipo === LUGAR[tipo]) || {}).id : null;
     const salaLugar = { id: 'lugar_' + tipo, nombre: tipo === 'tienda' ? 'Comercios del barrio' : 'Actividades', accion: '', destino: {}, acciones: s2 => { const L = lid ? C3.acciones(s2, lid) : []; return L.length ? L.map(a => ({ id: a.id, t: a.t, d: a.coste ? (a.jugador ? a.coste + ' mil €' : U.eur(a.coste)) : 'Gratis', disponible: a.disponible, motivo: a.motivo || 'No disponible', fn: () => { const r = C3.hacer(s2, lid, a.id); return r.ok ? { ok: true, texto: a.t } : r; } })) : [{ id: 'nada', t: 'Nada que hacer ahora', d: '', disponible: false, motivo: 'Sin actividades', fn: () => ({ ok: false }) }]; } };
-    const sala = enPueblo ? { id: 'pueblo_' + TIPOS[tipo].pueblo, nombre: S.interiorNombre, accion: '', destino: { todos: 'ciudad' }, acciones: s2 => GM.puebloMundo.accionesLote(s2, TIPOS[tipo].pueblo) } : { id: tipo, nombre: S.interiorNombre, accion: '', destino: tipo === 'pabellon' ? { todos: 'club' } : tipo === 'ayuntamiento' ? { todos: 'ciudad' } : {} };
+    const sala = enPueblo ? { id: 'pueblo_' + TIPOS[tipo].pueblo, nombre: S.interiorNombre, accion: '', destino: { todos: 'ciudad' }, acciones: s2 => GM.puebloMundo.accionesLote(s2, TIPOS[tipo].pueblo).concat(tipo === 'casa_pueblo' && GM.mods.vida ? GM.mods.vida.accionesCasaPueblo(s2) : []) } : { id: tipo, nombre: S.interiorNombre, accion: '', destino: tipo === 'pabellon' ? { todos: 'club' } : tipo === 'ayuntamiento' ? { todos: 'ciudad' } : {} };
     const luz = (x, z, i) => { const l = new THREE.PointLight(tipo === 'pena' ? 0xffd29a : 0xfff4e6, i, Math.max(w, d), 1.5); l.position.set(x, 4, z); W.add(l); };
     S.puntosInt = [];
     if (tipo === 'pabellon') {
@@ -93,6 +93,14 @@
         caja(W, 2.2, 0.06, 1.3, mat('#d7e7f2'), -3, 0.75, 1.2); S.mueblesPend = [['table', -3, 1.2, 0], ['chair', -4.1, 1.2, 90], ['chair', -1.9, 1.2, -90], ['loungeSofa', 3, -1.8, 0], ['tableCoffee', 3, -0.3, 0], ['televisionVintage', 3, 1.8, 180], ['kitchenFridge', x0 + 0.8, z0 + 0.8, 90], ['kitchenStove', x0 + 0.8, z0 + 2.1, 90], ['pottedPlant', x1 - 0.8, z1 - 1.6, 0], ['bookcaseOpen', x1 - 0.6, z0 + 1.2, -90]];
         G.bloquea(-4.4, 0.5, -1.6, 1.9); G.bloquea(1.8, -2.4, 4.2, -1.2); G.bloquea(x0, z0, x0 + 1.4, z0 + 2.8); luz(0, 0, 5);
         zonas.push([sala, -0.4, -1.6]); S.puntosInt = [[-3, -1.6], [0, 1], [2, 0.6], [-1, -2.6]];
+      } else if (tipo === 'casa_pueblo') {   // tu casa del pueblo: chimenea de piedra, vigas, sofá, mesa grande, cama y tus trofeos de juvenil
+        caja(W, 2.2, 1.6, 0.6, '#8b8378', 2.6, 0, z0 + 0.3); caja(W, 1.2, 0.8, 0.1, '#2a1d14', 2.6, 0.15, z0 + 0.62); caja(W, 1.0, 0.25, 0.2, '#ff8c3a', 2.6, 0.15, z0 + 0.55);
+        for (let i = 0; i < 4; i++) caja(W, w, 0.16, 0.18, '#5a3b26', 0, alto + 0.05, z0 + 1.5 + i * 2.2);
+        const fot = M.textura('fotos-micasa', 128, (x, n) => { x.fillStyle = '#e6d8bf'; x.fillRect(0, 0, n, n); for (let i = 0; i < 4; i++) { x.fillStyle = [c1, '#7a8791', '#4f7f3a', '#b4643d'][i]; x.fillRect(10 + (i % 2) * 60, 12 + Math.floor(i / 2) * 58, 48, 46); } });
+        const pared = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.6), fot ? new THREE.MeshBasicMaterial({ map: fot }) : mat('#e6d8bf')); pared.position.set(-3.6, 1.4, z0 + 0.15); W.add(pared);
+        S.mueblesPend = [['loungeSofa', 2.6, -1.6, 0], ['tableCoffee', 2.6, -0.2, 0], ['table', -3.6, 0.8, 0], ['chair', -4.6, 0.8, 90], ['chair', -2.6, 0.8, -90], ['bedDouble', x0 + 1.4, z1 - 2.2, 90], ['bookcaseOpen', x1 - 0.6, 1.6, -90], ['pottedPlant', x1 - 0.8, z1 - 1.4, 0], ['rugRectangle', 2.6, -0.6, 0]];
+        G.bloquea(1.4, z0, 3.8, z0 + 0.8); G.bloquea(1.4, -2.3, 3.8, -1.0); G.bloquea(-4.9, 0.2, -2.3, 1.4); G.bloquea(x0, z1 - 3.4, x0 + 2.8, z1 - 1.0); luz(0, 0, 5); luz(2.6, z0 + 1, 2);
+        zonas.push([sala, -0.6, -1.4]); S.puntosInt = [[0, 1], [-2, -2]];
       } else {   // casa de tus amigos: sofá frente a una tele grande con la consola, cajas de pizza, pósteres y un futbolín
         const pos = M.textura('poster-amigos-' + club.siglas, 128, (x, n) => { x.fillStyle = c1; x.fillRect(0, 0, n, n); x.fillStyle = '#fff'; x.font = 'bold 40px sans-serif'; x.textAlign = 'center'; x.fillText(club.siglas, n / 2, n * 0.6); });
         for (let i = 0; i < 3; i++) { const pp = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.5), pos ? new THREE.MeshBasicMaterial({ map: pos }) : mat(c1)); pp.position.set(-4 + i * 1.6, 1.6, z0 + 0.15); W.add(pp); }
@@ -141,6 +149,8 @@
       const b = await nueva({ modelo: 'h-farmer' }, 'Dueño del bar', true); b.obj.position.set(-2, 0, -TIPOS.bar_pueblo.d / 2 + 1.4); b.obj.rotation.y = 0;
       for (let i = 0; i < 2; i++) for (const s of [-1, 1]) { const [x, z] = S.mesasInt[i]; const p = await nueva({ pelo: '#bdbdbd' }, 'Vecino jugando a las cartas', true); p.obj.position.set(x + s, 0, z); p.obj.rotation.y = -s * Math.PI / 2; p.asiento = 0.45; M.anim(p, 'sit'); }
       for (let i = 0; i < 2; i++) { const [x, z] = S.taburetes[i]; const p = await nueva({ ropa: [c1, c2] }, 'Aficionado del pueblo', true); p.obj.position.set(x, 0, z); p.obj.rotation.y = Math.PI; p.asiento = 0.62; M.anim(p, 'sit'); }
+    } else if (tipo === 'casa_pueblo') {
+      if (GM.mods.vida) GM.mods.vida.ponerMascota(S, st, 0.6, 0.4);
     } else if (tipo === 'casa_padres' || tipo === 'casa_amigos') {
       const so = st.carrera && st.carrera.social, cs = so && so.contactos ? so.contactos.filter(c => tipo === 'casa_padres' ? c.tipo === 'familia' : c.tipo === 'amigo') : [];
       const nom = (i, def) => (cs[i] && cs[i].nombre) || def, sitios = tipo === 'casa_padres' ? [[-4.1, 1.2, Math.PI / 2], [-1.9, 1.2, -Math.PI / 2]] : [[-1.4, 1.6, Math.PI], [0.4, 1.6, Math.PI], [-3.4, 0.6, Math.PI / 2]];

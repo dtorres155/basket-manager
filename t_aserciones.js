@@ -2,7 +2,7 @@
 const assert = require('assert');
 global.LZString = require('lz-string');
 const L = require('./load');
-L(['core', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'ciudad3d', 'social', 'sponsor', 'pueblo', 'gente', 'estilo', 'movil', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d', 'rua']);
+L(['core', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'ciudad3d', 'social', 'sponsor', 'pueblo', 'gente', 'estilo', 'movil', 'vida', 'entrenador', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d', 'rua']);
 let n = 0; const ok = (nombre, fn) => { fn(); n++; console.log('  ok', nombre); };
 const U = GM.util, C = GM.mods.competiciones;
 
@@ -172,5 +172,19 @@ ok('rúa de campeones al ganar un título y momento decisivo', () => {
   for (let q = 0; q < 4; q++) D.jugarCuarto(); const ev = D.eventos.filter(e => e.eq === lado).pop(), antes = D[lado].score;
   const r = D.jugadaClave(lado, 'tirar', ev, null, 0); assert.strictEqual(D[lado].score, antes + r.delta, 'el marcador cambia lo que da la jugada');
   assert.ok(!(D.terminado && D.A.score === D.B.score), 'nunca termina empatado');
+});
+ok('vida del jugador: lesión, redes, logros, familia, mascota y retirada', () => {
+  GM.rng.seed(31); const s = GM.newGame('joventut-badalona', 31, { modo: 'carrera', personaje: { nombre: 'Marc', apellido: 'Soler' }, carrera: { origen: 'europa', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
+  const V = GM.mods.vida, y = s.jugadores.yo; assert.ok(V.selfTest()); y.ovr = 80; Object.keys(y.att).forEach(k => { y.att[k] = Math.max(y.att[k], 80); });
+  for (let i = 0; i < 30; i++) C.jugarDia(s);
+  assert.ok(V.logros(s).find(x => x.id === 'debut').fecha, 'debut con fecha');
+  assert.ok(V.publicar(s, 'entreno').ok); assert.ok(!V.publicar(s, 'fiesta').ok, 'una publicación al día');
+  y.estado.lesion = { tipo: 'Esguince', dias: 20 }; C.jugarDia(s); assert.ok(y.estado.lesion.aviso, 'los médicos avisan');
+  const d0 = y.estado.lesion.dias; V.decidir(s, { que: 'lesion' }, 2); assert.ok(y.estado.lesion.dias < d0 && V.datos(s).recaida, 'volver antes acorta la baja con riesgo');
+  const f0 = V.familia(s).madre.edad; C.nuevaTemporada(s); assert.strictEqual(V.familia(s).madre.edad, f0 + 1, 'la familia cumple años');
+  assert.ok(V.adoptar(s, 'gato').ok && V.mascota(s).tipo === 'gato' && V.jugarMascota(s).ok, 'mascota');
+  GM.mods.carrera.retirarse(s); const of = V.ofertasRetiro(s); assert.strictEqual(of.length, 3);
+  const r = V.elegirRetiro(s, 'director', of[1].clubes[0].id); assert.ok(r.ok && s.modo === 'gestor' && s.clubId === of[1].clubes[0].id, 'pasa a director deportivo');
+  for (let i = 0; i < 3; i++) C.jugarDia(s);
 });
 console.log('aserciones', n, 'de', n);

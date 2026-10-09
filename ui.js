@@ -277,7 +277,7 @@
       ui.cabecera.append(h('button', { class: 'btn-ic avatar-btn', 'aria-label': 'Tu jugador', onclick: () => navegar('jugador') }, avatarEl(st.personaje, 40, { camiseta: true, numero: dorsal(st) })),
         h('div', { class: 'cab-t' }, h('b', null, clip(rt.nombre, 22)), h('span', null, clip(rt.club, 18) + ', ' + rt.liga + ', ' + U.fecha(st.fecha))),
         h('div', { class: 'cab-c' }, h('b', null, Math.round(c.dinero).toLocaleString('es-ES') + ' k€'), h('span', null, 'ahorros')),
-        M().movil && c.fase !== 'retirado' ? (() => { const n = M().movil.noLeidos(st); return h('button', { class: 'btn-ic movil-btn', 'aria-label': 'Móvil, ' + n + ' sin leer', onclick: () => GM.ui.movil && GM.ui.movil() }, icon('movil'), n ? h('span', { class: 'movil-badge' }, n > 9 ? '9+' : n) : null); })() : null,
+        M().movil && c.fase !== 'retirado' ? (() => { const n = M().movil.noLeidos(st); return h('button', { class: 'btn-ic movil-btn', 'aria-label': 'Móvil, ' + n + ' sin leer', onclick: () => GM.ui.movil && GM.ui.movil() }, icon('movil'), n ? h('span', { class: 'movil-badge' }, n > 9 ? '9+' : n) : null); })() : '',
         h('button', { class: 'btn-ic', 'aria-label': 'Menú', onclick: menuJuego }, icon('menu')));
       return;
     }

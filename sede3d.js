@@ -335,6 +335,7 @@
   async function cambiarEscena(dest) {
     if (!S || S.cambiando) return; S.cambiando = true; const de = S.escena; S.rend = null;
     if (S.yo && S.yo.bici && GM.ciudadBarrios) GM.ciudadBarrios.bici(false);
+    S.mascota = null;
     if (S.construccion && GM.casa) await GM.casa.activar(S, motor(), false);
     const velo = GM.h('div', { class: 'sede-velo' }); S.raiz.append(velo); await new Promise(r => setTimeout(r, 280));
     try {
@@ -951,6 +952,7 @@
       if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
       if (S.escena === 'interior' && GM.interiores && GM.interiores.actualizar) GM.interiores.actualizar(S, motor(), dt);
+      if (S.mascota && GM.mods.vida) GM.mods.vida.moverMascota(S, dt);
       if (S.escena === 'pueblo' && GM.puebloMundo) GM.puebloMundo.actualizar(S, motor(), dt);
       { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {

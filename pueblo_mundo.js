@@ -59,7 +59,7 @@
     }
     const DEF = {   // [ancho, fondo, plantas base, color de acento]
       bar: [6, 6, 1, c1], tienda: [6, 6, 1, c1], escuela: [7, 6, 1, '#2f6f9e'], ambulatorio: [7, 6, 1, '#c0392b'], polideportivo: [7, 7, 1, c1], hotel: [7, 6, 2, '#7a2f22'],
-      pabellon: [7, 7, 2, c1], biblioteca: [6, 6, 1, '#3c6e47'], centrodia: [7, 6, 1, '#8a6d3b'], casapadres: [6, 5, 1, null], casaamigos: [6, 5, 1, null]
+      pabellon: [7, 7, 2, c1], biblioteca: [6, 6, 1, '#3c6e47'], centrodia: [7, 6, 1, '#8a6d3b'], casapadres: [6, 5, 1, null], casaamigos: [6, 5, 1, null], micasa: [7, 6, 2, null]
     }[tipo] || [6, 6, 1, null];
     if (tipo === 'polideportivo' || tipo === 'pabellon') {   // nave con cubierta curva
       const h = 4 + nv * 1.2; caja(G, DEF[0], h, DEF[1], muro, 0, 0, 0);
@@ -69,9 +69,10 @@
       return;
     }
     const pisos = DEF[2] + (nv - 1);
-    bloque(G, M, E, DEF[0], DEF[1], pisos, muro, tipo === 'casapadres' || tipo === 'casaamigos' ? null : nombre, DEF[3], r);
+    bloque(G, M, E, DEF[0], DEF[1], pisos, muro, tipo === 'casapadres' || tipo === 'casaamigos' || tipo === 'micasa' ? null : nombre, DEF[3], r);
+    if (tipo === 'micasa' && nv >= 2) { caja(G, 3.2, 0.04, 2, '#3ea6d6', -1.6, 0.02, -3.6); caja(G, 0.08, 2.6, 0.08, '#d0d4d8', 2.4, 0, -4.2); caja(G, 0.9, 0.6, 0.05, '#ffffff', 2.4, 2.6, -4.15); }
     if (tipo === 'ambulatorio') { caja(G, 0.9, 0.25, 0.06, '#d62d2d', 2.4, pisos * 3.1 - 1, DEF[1] / 2 + 0.06); caja(G, 0.25, 0.9, 0.06, '#d62d2d', 2.4, pisos * 3.1 - 1.33, DEF[1] / 2 + 0.06); }
-    if (tipo === 'casapadres' || tipo === 'casaamigos') {   // valla y jardín
+    if (tipo === 'casapadres' || tipo === 'casaamigos' || tipo === 'micasa') {   // valla y jardín
       [[-3.2, 0, 0.08, 6.6], [3.2, 0, 0.08, 6.6]].forEach(q => caja(G, q[2], 0.9, q[3], '#ffffff', q[0], 0, 0.6));
       if (nv >= 2) for (let i = 0; i < 3; i++) { const copa = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), mat('#4f8f3a')); copa.position.set(-2.4 + i * 2.4, 0.5, 3.3); G.add(copa); }
       if (tipo === 'casapadres' && nv >= 3) caja(G, 2.4, 0.3, 1.4, '#6b4a2b', 2, 0, -3.3);
@@ -137,7 +138,7 @@
   const LOTES = [
     ['escuela', 13, -17, 9, 8], ['canasta', 15, -28, 10, 7], ['ambulatorio', 27, -15, 9, 8], ['tienda', 10, 17, 8, 7],
     ['parque', -19, 9, 11, 9], ['bar', -9, 14, 7, 7], ['biblioteca', -18, -13, 8, 7], ['centrodia', 28, -27, 9, 7],
-    ['casapadres', -14, 31, 9, 8], ['casaamigos', 36, -20, 8, 8],
+    ['casapadres', -14, 31, 9, 8], ['casaamigos', 36, -20, 8, 8], ['micasa', -30, -24, 10, 9],
     ['polideportivo'].concat(pFuera(Math.PI / 2 - 0.75, 18), [12, 10, true]), ['pabellon'].concat(pFuera(Math.PI / 2 + 0.75, 18), [12, 12, true]),
     ['hotel'].concat(pFuera(-0.05, 17), [9, 9, true])
   ];
@@ -350,7 +351,7 @@
       if (b.nivel || b.obra) G.bloquea(x - Math.min(w, d) / 2 + 0.3, z - Math.min(w, d) / 2 + 0.3, x + Math.min(w, d) / 2 - 0.3, z + Math.min(w, d) / 2 - 0.3);
       const zx = x + fx * (d / 2 + 0.9), zz = z + fz * (d / 2 + 0.9);
       // El bar y las casas de los tuyos, una vez construidos, tienen interior (interiores.js) y se vuelve a su puerta
-      const INT = { bar: 'bar_pueblo', casapadres: 'casa_padres', casaamigos: 'casa_amigos' }[tipo], dentro = INT && b.nivel > 0 && GM.interiores;
+      const INT = { bar: 'bar_pueblo', casapadres: 'casa_padres', casaamigos: 'casa_amigos', micasa: 'casa_pueblo' }[tipo], dentro = INT && b.nivel > 0 && GM.interiores;
       zonas.push([Object.assign({ id: 'pueblo_' + tipo, nombre: b.nombre, accion: '', destino: {}, acciones: s2 => accionesLote(s2, tipo) }, dentro ? { irA: 'interior:' + INT, boton: tipo === 'bar' ? 'Entrar en el bar' : 'Entrar en casa' } : {}), zx, zz]);
       if (dentro) (S.puertas = S.puertas || {})['interior:' + INT] = { x: zx + fx * 1.4, z: zz + fz * 1.4, ry: Math.atan2(fx, fz) };   // un poco fuera del círculo
       S.lotes[tipo] = { x, z, zx, zz, fx, fz, w, d };

@@ -150,6 +150,13 @@
       M.zona(W, { id: 'casa', nombre: viv.actual === false ? 'Tu otra casa' : 'Tu casa', accion: 'Confort ' + confort(st, viv.id) + '. Descansa o redecora.', destino: { todos: 'ciudad' } }, Math.min(salon.x1 - 0.8, (salon.x0 + salon.x1) / 2 + 1.2), salon.z1 - 1.2, club)];
     if (viv.actual === false && GM.mods.hogar.vivirEn) S.zonas.push(M.zona(W, { id: 'mudarse', nombre: 'Vivir aquí', accion: '', destino: {}, acciones: s2 => [{ id: 'mudarse', t: 'Mudarte a esta casa', d: 'Pasas a vivir aquí; la otra sigue siendo tuya.', disponible: true, fn: () => GM.mods.hogar.vivirEn(s2, viv.id).ok ? { ok: true, texto: 'Ahora vives aquí' } : { ok: false, motivo: 'No se ha podido' } }] }, salon.x0 + 1.0, (salon.z0 + salon.z1) / 2, club));
     S.spawnCasa = { x: PL.puertaX, z: pz - (PL.ext.length ? 1.6 : 1.0), ry: Math.PI };   // ya dentro, lejos del círculo de salida
+    // Vida del jugador (vida.js): vitrina de logros contra la pared del fondo del salón y tu mascota esperándote
+    if (GM.mods.vida) {
+      const vx = (salon.x0 + salon.x1) / 2 - 1.2, vz = salon.z0 + 0.32;
+      if (st.modo === 'carrera' && GM.mods.vida.vitrina(S, st, W, vx, vz, 0)) { S.casaMuros.push([vx - 0.85, vz - 0.3, vx + 0.85, vz + 0.3]); rehacerRejilla(S, st);
+        S.zonas.push(M.zona(W, { id: 'vitrina', nombre: 'Vitrina de logros', accion: '', destino: {}, acciones: s2 => { const L = GM.mods.vida.logros(s2), hechos = L.filter(x => x.fecha); return (hechos.length ? hechos : [{ t: 'Aún vacía', d: 'Consigue logros para llenarla.' }]).map((x, i) => ({ id: 'l' + i, t: x.t, d: x.fecha ? U.fecha(x.fecha) : x.d, disponible: false, motivo: x.fecha ? 'Conseguido el ' + U.fecha(x.fecha) : x.d, fn: () => ({ ok: false }) })); } }, vx, vz + 1.2, club)); }
+      GM.mods.vida.ponerMascota(S, st, (salon.x0 + salon.x1) / 2 + 0.6, (salon.z0 + salon.z1) / 2);
+    }
     return W;
   }
   // Modelo de cada pieza: los de Kenney o, si empieza por «_», un tabique hecho por código

@@ -149,6 +149,8 @@ p{margin:6px 0}.muted{color:var(--mut);font-size:13px}.neg{color:var(--mal)}.pos
 .dir-ticker{display:flex;flex-direction:column;gap:3px;padding:8px 12px;min-height:96px;background:#10161d;font-size:13.5px}.dir-linea{opacity:.9}.dir-linea.bien{color:#5fe0a4;font-weight:600}
 .dir-clave{background:#1b2530;border:2px solid var(--club);border-radius:14px;padding:12px 14px;animation:veloEntra .3s ease-out}.dir-clave>b{font-family:Graduate,serif;font-size:1.15rem}.dir-clave p{margin:6px 0 10px}.dir-clave .opc{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dir-clave .opc .btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px}.dir-clave .opc .btn span{font-size:.78rem;font-weight:400;opacity:.85}
 @media (max-width:420px){.dir-clave .opc{grid-template-columns:1fr}}
+.logros{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.logro{background:var(--tarjeta,#fff);border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px;opacity:.6}.logro.on{opacity:1;border-color:var(--club);box-shadow:inset 3px 0 0 var(--club)}.logro b{font-size:.92rem}.logro span{font-size:.78rem}
+.reto{margin-bottom:8px}.post{border-top:1px solid rgba(0,0,0,.08);padding-top:8px;margin-top:8px}.post p{margin:4px 0}.post-coms{font-size:.85rem;margin-top:4px;display:grid;gap:2px}.post-coms b{color:var(--club)}.tarjeta.mascota{margin-bottom:10px}
 .dir-ctrl{padding:10px 12px}.dir-panel{padding:0 12px 24px}.dir-panel .jug,.dir-panel .tab{color:#eef2f4}.dir-panel .tab.on{color:var(--club-ink)}
 
 /* ---------- Fase 1.3: móvil ---------- */
