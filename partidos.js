@@ -237,6 +237,29 @@
       if (o.meter) { const e = T.rot.find(x => x.p.id === o.meter); if (e) e.target = e.played + 8; }
       if (o.sacar) { const e = T.rot.find(x => x.p.id === o.sacar); if (e) e.target = e.played - 8; }
     };
+    // Momento decisivo (directo): la posesión ev de tu equipo se juega como tú eliges (tirar, pasar o penetrar) con el jugador ejecutor.
+    // dif = tu marcador menos el del rival antes de la jugada. Corrige marcador, puntos del jugador y fin del partido (puede dar o quitar la prórroga).
+    D.jugadaClave = function (lado, opcion, ev, ejecutor, dif) {
+      const T = lado === 'A' ? A : B, de = id => T.rot.find(e => e.p.id === id), enP = (D.enPista[lado].length ? D.enPista[lado] : ev.pista[lado === 'A' ? 0 : 1]);
+      const pista = T.rot.filter(e => enP.indexOf(e.p.id) >= 0), yo = de(ejecutor) || pista.slice().sort((a, b) => b.p.ovr - a.p.ovr)[0] || T.rot[0];
+      const necesita3 = dif === -3, pct = (e, tres) => { const at = e.p.att, f = e.f || 1; return tres ? 0.31 + (at.tiro3 * f - 65) / 300 : 0.41 + (at.tiro2 * f - 65) / 280; };
+      const quita = ev.pts || 0, viejo = de(ev.jug); if (viejo) viejo.s.pts = Math.max(0, viejo.s.pts - quita);
+      let r = 'fallo', v = necesita3 ? 3 : 2, pts = 0, jug = yo.p.id, ast = null, ok = 0, p = 0, extra = '';
+      if (opcion === 'pasar') {
+        if (R() < 0.07) { r = 'tov'; v = 0; }
+        else { const otros = pista.filter(e => e !== yo).sort((a, b) => pct(b, necesita3) - pct(a, necesita3)), comp = otros[0] || yo; jug = comp.p.id; p = U.clamp(pct(comp, necesita3) + 0.06, 0.18, 0.72); if (R() < p) { r = 'ok'; pts = v; ast = yo.p.id; yo.s.ast++; } }
+      } else if (opcion === 'penetrar') {
+        v = 2; const at = yo.p.att, f = yo.f || 1;
+        if (R() < 0.08) { r = 'tov'; v = 0; }
+        else if (R() < 0.24) { r = 'falta'; const pft = U.clamp(0.45 + at.tl * f / 190, 0.5, 0.93); for (let k = 0; k < 2; k++) if (R() < pft) ok++; pts = ok; }
+        else { p = U.clamp(0.45 + ((at.tiro2 + at.fisico) / 2 * f - 65) / 260, 0.25, 0.7); if (R() < p) { r = 'ok'; pts = 2; if (R() < 0.08) { pts = 3; extra = 'adicional'; } } }
+      } else { p = U.clamp(pct(yo, necesita3), 0.18, 0.62); if (R() < p) { r = 'ok'; pts = v; } }
+      const quien = de(jug); if (quien && pts) quien.s.pts += pts;
+      const delta = pts - quita; T.score += delta;
+      const ult = D.cuartos[D.cuartos.length - 1]; if (ult) ult[lado === 'A' ? 0 : 1] += delta; if (lado === 'A') D.prevA += delta; else D.prevB += delta;
+      if (D.q >= 4) { if (A.score === B.score && D.ot < 4) D.terminado = false; else { if (A.score === B.score) A.score++; D.terminado = true; } }
+      return { r, v, pts, jug, ast, ok, extra, delta, prob: p, marcador: [A.score, B.score], terminado: D.terminado };
+    };
     D.tiempoMuerto = function (lado) {
       if (D.tm[lado] <= 0) return false; D.tm[lado]--;
       (lado === 'A' ? A : B).rot.forEach(e => { e.f = Math.min(1, e.f * 1.03); });

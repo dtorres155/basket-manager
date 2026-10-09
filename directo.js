@@ -97,7 +97,7 @@
       if (!jug) return;
       ['A', 'B'].forEach((k, ki) => { const off = k === ataca; jug[k].forEach((o, i) => { const f = formacion(off, i); const dir = ataca === 'A' ? 1 : -1; o.tx = f[0] * dir + (off ? 0 : 0); o.tz = f[1] * (ataca === 'A' ? 1 : -1) * (off ? 1 : 1); }); });
     }
-    function juega(ev) {
+    function juega(ev, mudo) {
       ES.marcador = [ev.a, ev.b];
       const k = ev.eq, otro = k === 'A' ? 'B' : 'A', dir = k === 'A' ? 1 : -1;
       ids.A = ev.pista[0]; ids.B = ev.pista[1];
@@ -108,7 +108,7 @@
       else if (ev.r === 'fallo') frase = txt(pick(ev.v === 3 ? FRASES.fallo3 : FRASES.fallo2)) + (ev.tap ? ' ' + FRASES.tap[0].replace('{j}', nombre(ev.tap)) : '') + (ev.reb ? ' ' + FRASES.reb[0].replace('{j}', nombre(ev.reb)) + '.' : ev.oreb ? ' Rebote ofensivo de ' + nombre(ev.oreb) + '.' : '');
       else if (ev.r === 'tov') frase = txt(pick(FRASES.tov)) + (ev.rob ? ' ' + FRASES.rob[0].replace('{j}', nombre(ev.rob)) + '.' : '.');
       else if (ev.r === 'falta') { frase = txt(pick(FRASES.falta)) + ': ' + ev.ok + '/' + ev.v + ' desde la línea.'; }
-      narra(frase, cls);
+      if (!mudo) narra(frase, cls);
       pintaMarcador();
       if (!V || ES.vel >= 16) return;
       const sh = posJug(k, ev.jug), hoop = [dir * HX, 3.0, 0], pase = () => { const o = jug[k][Math.floor(Math.random() * 5)]; return [o.tx, 1.4, o.tz]; };
@@ -132,19 +132,49 @@
       if (ES.fase !== 'jugando' || ES.pausa) return;
       const ahora = performance.now() / 1000, dt = Math.min(0.1, ahora - (ES.ult || ahora)); ES.ult = ahora;
       ES.t = Math.min(ES.dur, ES.t + dt * ES.vel * 4);
-      while (ES.idx < ES.cola.length && ES.cola[ES.idx].t <= ES.t) juega(ES.cola[ES.idx++]);
+      while (ES.idx < ES.cola.length && ES.cola[ES.idx].t <= ES.t) { if (ES.clave && !ES.clave.hecha && ES.idx === ES.clave.idx) { ES.fase = 'clave'; ES.vel = Math.min(ES.vel, 2); narra('¡Momento decisivo!', 'bien'); controles(); return; } juega(ES.cola[ES.idx++]); }
       pintaMarcador();
       if (ES.t >= ES.dur && ES.idx >= ES.cola.length) finCuarto();
     }
     function empiezaCuarto() {
       const r = D.jugarCuarto(); if (!r) return;
-      ES.cuarto = r.cuarto; ES.dur = r.duracion; ES.t = 0; ES.cola = r.eventos; ES.idx = 0; ES.fase = 'jugando'; ES.ult = performance.now() / 1000; ES.pausa = false; ES.cierre = r;
+      ES.cuarto = r.cuarto; ES.dur = r.duracion; ES.t = 0; ES.cola = r.eventos; ES.idx = 0; ES.fase = 'jugando'; ES.ult = performance.now() / 1000; ES.pausa = false; ES.cierre = r; ES.clave = buscaClave(r);
       if (ES.cola.length) { ids.A = ES.cola[0].pista[0]; ids.B = ES.cola[0].pista[1]; }
       narra('Empieza el ' + (r.cuarto <= 4 ? r.cuarto + 'º cuarto' : 'la prórroga') + '.'); controles(); paneles(); pintaMarcador();
     }
     function finCuarto() {
       const r = ES.cierre; ES.marcador = r.marcador.slice(); ES.fase = D.terminado ? 'fin' : 'descanso'; ES.t = ES.dur;
       narra((D.terminado ? 'Final del partido: ' : 'Fin del cuarto: ') + r.marcador.join('-') + '.', 'bien'); pintaMarcador(); controles(); paneles();
+    }
+    // Momento decisivo: en el último cuarto o la prórroga, última posesión de tu equipo en los 30 segundos finales con empate o perdiendo de 1 a 3.
+    // En la carrera solo si estás en pista (y el balón es tuyo); en los demás modos el balón es para la estrella que está en pista.
+    function buscaClave(r) {
+      if (!lado || r.cuarto < 4 || (!control && st.modo !== 'carrera')) return null;
+      let mejor = null;
+      r.eventos.forEach((ev, i) => {
+        if (ev.eq !== lado || ev.t < r.duracion - 30) return;
+        const mio = (lado === 'A' ? ev.a : ev.b) - (ev.pts || 0), suyo = lado === 'A' ? ev.b : ev.a, dif = mio - suyo, enP = ev.pista[lado === 'A' ? 0 : 1];
+        if (dif > 0 || dif < -3) return; if (st.modo === 'carrera' && enP.indexOf('yo') < 0) return;
+        mejor = { idx: i, dif };
+      });
+      return mejor;
+    }
+    function pintaClave() {
+      const ev = ES.cola[ES.idx], c = ES.clave, quedan = Math.max(1, Math.round(ES.dur - ev.t)), T = lado === 'A' ? D.A : D.B, enP = ev.pista[lado === 'A' ? 0 : 1];
+      const pista = T.rot.filter(e => enP.indexOf(e.p.id) >= 0), ejec = st.modo === 'carrera' && enP.indexOf('yo') >= 0 ? 'yo' : (pista.slice().sort((a, b) => b.p.ovr - a.p.ovr)[0] || T.rot[0]).p.id;
+      const tirador = pista.filter(e => e.p.id !== ejec).sort((a, b) => b.p.att.tiro3 - a.p.att.tiro3)[0], yoMismo = ejec === 'yo';
+      const sit = c.dif === 0 ? 'vais empatados' : 'perdéis de ' + (-c.dif), quien = yoMismo ? 'El balón es tuyo.' : 'El balón es para ' + nombre(ejec) + '.';
+      const opc = [['tirar', 'Tirar', c.dif === -3 ? 'Triple para empatar' : 'Tiro en suspensión'], ['pasar', 'Pasar', tirador ? 'Buscar a ' + nombre(tirador.p.id) + ' solo' : 'Buscar al compañero libre'], ['penetrar', 'Penetrar', c.dif === -3 ? 'Canasta rápida y buscar la falta' : 'Atacar el aro y buscar la falta']];
+      ctrl.append(h('div', { class: 'dir-clave' }, h('b', null, 'Momento decisivo'), h('p', null, 'Quedan ' + quedan + ' segundos y ' + sit + '. ' + quien + ' ¿Qué haces?'),
+        h('div', { class: 'opc' }, opc.map(([id, t, d]) => h('button', { class: 'btn', onclick: () => resolverClave(id, ejec) }, h('b', null, t), h('span', null, d))))));
+    }
+    function resolverClave(op, ejec) {
+      const ev = ES.cola[ES.idx], c = ES.clave, res = D.jugadaClave(lado, op, ev, ejec, c.dif);
+      Object.assign(ev, { r: res.r, v: res.v, jug: res.jug, ast: res.ast, ok: res.ok, pts: res.pts, reb: null, oreb: null, tap: null, rob: null });
+      for (let j = ES.idx; j < ES.cola.length; j++) { if (lado === 'A') ES.cola[j].a += res.delta; else ES.cola[j].b += res.delta; }
+      ES.cierre.marcador = res.marcador; ES.cierre.terminado = res.terminado; c.hecha = true;
+      const nj = nombre(res.jug), fin = res.r === 'ok' ? (res.extra ? '¡' + nj + ' anota con falta y adicional!' : '¡' + nj + ' la mete!' + (res.v === 3 ? ' Triple.' : '')) : res.r === 'falta' ? 'Falta sobre ' + nj + ': ' + res.ok + '/2 desde la línea.' : res.r === 'tov' ? 'Balón perdido en la jugada decisiva.' : nj + ' falla.';
+      ES.fase = 'jugando'; ES.ult = performance.now() / 1000; juega(ES.cola[ES.idx++], true); narra(fin, res.pts ? 'bien' : ''); controles();
     }
     function saltar() { while (ES.idx < ES.cola.length) ES.cola[ES.idx++]; ES.anim = null; finCuarto(); }
     function terminar() {
@@ -155,6 +185,7 @@
     }
     function controles() {
       ctrl.innerHTML = '';
+      if (ES.fase === 'clave') { pintaClave(); return; }
       if (ES.fase === 'inicio') { ctrl.append(h('button', { class: 'btn grande', onclick: empiezaCuarto }, 'Empezar el partido'), h('button', { class: 'btn btn-sec', onclick: () => { cancelAnimationFrame(reloj); if (V) V.dispose(); fondo.remove(); if (opt.onFin) opt.onFin(P.crearDirecto(st, g, false).finalizar()); } }, 'Simular sin verlo')); return; }
       if (ES.fase === 'jugando') {
         ctrl.append(h('div', { class: 'seg compacto' }, [[1, '×1'], [2, '×2'], [4, '×4'], [16, 'Rápido']].map(o => h('button', { class: 'tab' + (ES.vel === o[0] ? ' on' : ''), onclick: () => { ES.vel = o[0]; controles(); } }, o[1])),
@@ -173,7 +204,7 @@
         h('b', null, 'Cambios (afectan al siguiente tramo)'), h('div', { class: 'lista' }, T.rot.map(e => { const dentro = ids[lado].indexOf(e.p.id) >= 0; return h('button', { class: 'jug' + (dentro ? ' sel' : ''), onclick: () => { D.ajustar(lado, dentro ? { sacar: e.p.id } : { meter: e.p.id }); narra((dentro ? 'Sale ' : 'Entra ') + e.p.nombre.split(' ').slice(-1)[0] + ' en el próximo tramo.'); paneles(); } }, h('span', { class: 'pos' }, e.p.pos), h('span', { class: 'ct' }, h('b', null, e.p.nombre), h('span', { class: 'muted' }, Math.round(e.s.min) + ' min, fatiga ' + Math.round(e.p.estado.fatiga))), dentro ? h('span', { class: 'chip ok' }, 'En pista') : null, h('span', { class: 'ovr' }, e.p.ovr)); })));
     }
     pintaMarcador(); controles(); paneles(); tick1();
-    return { cerrar: () => { cancelAnimationFrame(reloj); if (V) V.dispose(); fondo.remove(); }, D };
+    return { cerrar: () => { cancelAnimationFrame(reloj); if (V) V.dispose(); fondo.remove(); }, D, ES };
   }
   function selfTest() { return typeof abrir === 'function' && formacion(true, 0)[0] < formacion(false, 0)[0] + 5; }
   GM.register('directo', { abrir, selfTest });
