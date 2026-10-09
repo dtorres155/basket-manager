@@ -24,7 +24,7 @@ window.GM = window.GM || (function () {
   };
   const GM = {
     // Versión del formato de la partida guardada. Si cambias la forma del estado, súbela y añade una migración en guardado.js
-    VERSION_ESTADO: 3,
+    VERSION_ESTADO: 4,
     data: { equipos: {}, jugadores: {}, ligas: {} },
     mods: {},
     ui: { screens: {} },
@@ -72,7 +72,7 @@ window.GM = window.GM || (function () {
         mercado: {}, finanzas: {}, instalaciones: {}, ciudad: {}, cantera: {}, noticias: []
       };
       this.state = st;
-      ['partidos', 'mercado', 'finanzas', 'ciudad', 'cantera', 'ciudadDeportiva', 'estadio', 'competiciones', 'legado', 'directiva', 'carrera', 'fans', 'copas', 'rivalidades', 'entrenador', 'social', 'continental', 'pueblo']
+      ['partidos', 'mercado', 'finanzas', 'ciudad', 'cantera', 'ciudadDeportiva', 'estadio', 'competiciones', 'legado', 'directiva', 'carrera', 'fans', 'copas', 'rivalidades', 'entrenador', 'social', 'continental', 'pueblo', 'rua']
         .forEach(n => { const m = this.mods[n]; if (m && m.nuevaPartida) m.nuevaPartida(st); });
       this.noticia(st, 'Empieza la temporada 2026-27. ¡Mucha suerte!');
       return st;

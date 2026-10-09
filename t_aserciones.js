@@ -2,7 +2,7 @@
 const assert = require('assert');
 global.LZString = require('lz-string');
 const L = require('./load');
-L(['core', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'ciudad3d', 'social', 'sponsor', 'pueblo', 'gente', 'estilo', 'movil', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d']);
+L(['core', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'ciudad3d', 'social', 'sponsor', 'pueblo', 'gente', 'estilo', 'movil', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d', 'rua']);
 let n = 0; const ok = (nombre, fn) => { fn(); n++; console.log('  ok', nombre); };
 const U = GM.util, C = GM.mods.competiciones;
 
@@ -161,5 +161,16 @@ ok('viviendas: comprar otra no vende la anterior y puedes mudarte entre ellas', 
   GM.rng.seed(15); const sg = GM.newGame('joventut-badalona', 15, { modo: 'gestor', personaje: { nombre: 'Marc', apellido: 'Soler' } }); GM.mods.hogar.dinero(sg); sg.hogar.ahorros = 5000;
   assert.ok(H.mudarse(sg, 1, 'piso', 'compra').ok); assert.ok(H.mudarse(sg, 3, 'reformado', 'compra').ok); assert.strictEqual(H.viviendas(sg).length, 2, 'en gestión también se acumulan');
   H.nivel = nv;
+});
+ok('rúa de campeones al ganar un título y momento decisivo', () => {
+  GM.rng.seed(21); const s = GM.newGame('joventut-badalona', 21, { modo: 'gestor', personaje: { nombre: 'Marc', apellido: 'Soler' } });
+  assert.strictEqual(s.ruaHist, 0); assert.ok(GM.mods.rua.selfTest());
+  s.historial.push({ comp: 'ACB', campeon: 'otro' }); GM.mods.rua.revisar(s); assert.ok(!GM.mods.rua.activa(s), 'un título ajeno no da rúa');
+  s.historial.push({ comp: 'ACB', campeon: s.clubId }); GM.mods.rua.revisar(s); assert.ok(GM.mods.rua.activa(s), 'título propio: rúa');
+  s.fecha = U.addDays(s.fecha, 2); assert.ok(!GM.mods.rua.activa(s), 'dura dos días');
+  const g = s.calendario.find(x => x.local === s.clubId || x.visitante === s.clubId), D = GM.mods.partidos.crearDirecto(s, g, true), lado = g.local === s.clubId ? 'A' : 'B';
+  for (let q = 0; q < 4; q++) D.jugarCuarto(); const ev = D.eventos.filter(e => e.eq === lado).pop(), antes = D[lado].score;
+  const r = D.jugadaClave(lado, 'tirar', ev, null, 0); assert.strictEqual(D[lado].score, antes + r.delta, 'el marcador cambia lo que da la jugada');
+  assert.ok(!(D.terminado && D.A.score === D.B.score), 'nunca termina empatado');
 });
 console.log('aserciones', n, 'de', n);

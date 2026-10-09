@@ -328,6 +328,24 @@
       for (let i = 0; i < 80; i++) { const x = -40 + r2() * 80, z = 5.4 + r2() * 1.2; if (Math.abs(x) < 10) continue; fans.push({ x, y: 0.88, z, ry: (r2() - 0.5) * 1.2, ropa: r2() < 0.6 ? c1 : c2, piel: piel[(r2() * 5) | 0], pelo: PELO[(r2() * 6) | 0], pantalon: '#2f3640' }); }
       const P = GM.kit.publico(fans, 1, true); S.mundo.add(P.grupo); S.multitud = P;
     }
+    // Rúa de campeones (rua.js): la avenida cortada al tráfico, multitud a los dos lados, autobús descapotable con la plantilla y el trofeo, y confeti
+    S.rua = null;
+    if (GM.mods.rua && GM.mods.rua.activa(st) && GM.kit.publico) {
+      const r3 = rnd(U.hash(st.fecha + 'rua')), fans = [];
+      for (let i = 0; i < 920; i++) { const x = -72 + r3() * 144, sur = i % 3 === 0, z = sur ? 5.4 + r3() * 1.6 : -5.5 - r3() * 3.4; if (Math.abs(x) < 7.5) continue; fans.push({ x, y: 0.88, z, ry: (sur ? Math.PI : 0) + (r3() - 0.5) * 0.7, ropa: r3() < 0.75 ? c1 : c2, piel: PIEL[(r3() * 5) | 0], pelo: PELO[(r3() * 6) | 0], pantalon: '#2f3640' }); }
+      const P = GM.kit.publico(fans, 1, true); S.mundo.add(P.grupo);
+      const bus = autobusRua(club, st.rua.nombre); bus.position.set(-40, 0, 0); S.mundo.add(bus);
+      const jug = club.plantilla.map(i => st.jugadores[i]).filter(Boolean).sort((a, b) => b.ovr - a.ovr).slice(0, 6);
+      const gente = await Promise.all(jug.map((j, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][k % 3], altura: j.altura || 198, piel: PIEL[(U.hash(j.id) >>> 2) % 5], pelo: PELO[(U.hash(j.id) >>> 5) % 6], ropa: [c1, c2] })));
+      gente.forEach((p, k) => { p.obj.position.set(-3.6 + k * 1.35, 2.62, k % 2 ? 0.55 : -0.55); p.obj.rotation.y = k % 2 ? 0 : Math.PI; M.anim(p, k % 3 === 0 ? 'interact-right' : 'emote-yes'); bus.add(p.obj); });
+      // confeti: puntos de colores que caen alrededor del autobús
+      const n = 700, pos = new Float32Array(n * 3), col = new Float32Array(n * 3), cc = new THREE.Color(), cols = [c1, c2, '#ffd23f', '#ffffff'];
+      for (let i = 0; i < n; i++) { pos[i * 3] = (r3() - 0.5) * 30; pos[i * 3 + 1] = r3() * 10; pos[i * 3 + 2] = (r3() - 0.5) * 14; cc.set(cols[i % 4]); col[i * 3] = cc.r; col[i * 3 + 1] = cc.g; col[i * 3 + 2] = cc.b; }
+      const gConf = new THREE.BufferGeometry(); gConf.setAttribute('position', new THREE.BufferAttribute(pos, 3)); gConf.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const conf = new THREE.Points(gConf, new THREE.PointsMaterial({ size: 0.2, vertexColors: true })); conf.userData = { rua: true }; conf.frustumCulled = false; S.mundo.add(conf);
+      S.rua = { x: -40, bus, gente, conf, publico: P, fans, tCol: 0 };
+      if (GM.ui && GM.ui.toast) GM.ui.toast('¡Rúa de campeones! El autobús con el trofeo recorre la avenida');
+    }
     // Músico callejero con su guitarra
     S.musico = null; S.perros = []; S.chavales = null;
     { const mu = await M.personaje({ modelo: 'h-punk', altura: 176, piel: PIEL[1], pelo: PELO[0] }); mu.fijo = true; mu.rol = 'Músico callejero'; mu.obj.position.set(S.musicoPos[0], 0, S.musicoPos[1]); mu.obj.rotation.y = -Math.PI / 2;
@@ -349,10 +367,27 @@
     S.coches = []; const colores = ['#c8102e', '#f4f4f4', '#1d2024', '#2f6f9e', '#8a8f94', '#e8b923', '#3a5a3a', '#7a2f22'];
     const carriles = [['x', 1, 1.5], ['x', -1, -1.5], ['z', 1, -1.5], ['z', -1, 1.5]];
     const RANGO = { x: [-150, 150], z: [-100, 24] };
-    carriles.forEach(([eje, dir, c], ci) => { const [mn, mx] = RANGO[eje], largo = mx - mn, n = eje === 'x' ? 7 : 4; for (let i = 0; i < n; i++) { const obj = coche(colores[(ci * 3 + i) % colores.length]); S.mundo.add(obj); S.coches.push({ obj, eje, dir, c, pos: mn + (i + 0.3) * (largo / n) + r() * 4, vel: 6, largo, min: mn, max: mx, len: 4.1 }); } });
+    if (!S.rua) carriles.forEach(([eje, dir, c], ci) => { const [mn, mx] = RANGO[eje], largo = mx - mn, n = eje === 'x' ? 7 : 4; for (let i = 0; i < n; i++) { const obj = coche(colores[(ci * 3 + i) % colores.length]); S.mundo.add(obj); S.coches.push({ obj, eje, dir, c, pos: mn + (i + 0.3) * (largo / n) + r() * 4, vel: 6, largo, min: mn, max: mx, len: 4.1 }); } });
     // Autobús urbano con el anuncio del club: carril sur de la avenida, para en la parada
-    { const obj = autobus(club); S.mundo.add(obj); S.coches.push({ obj, eje: 'x', dir: 1, c: 1.5, pos: -20, vel: 5, largo: 300, min: -150, max: 150, len: 10.5, bus: true, parada: -36, tParada: 0 }); }
+    if (!S.rua) { const obj = autobus(club); S.mundo.add(obj); S.coches.push({ obj, eje: 'x', dir: 1, c: 1.5, pos: -20, vel: 5, largo: 300, min: -150, max: 150, len: 10.5, bus: true, parada: -36, tParada: 0 }); }
     S.tSem = 0;
+  }
+  // Autobús descapotable de la rúa (a lo largo del eje x): dos pisos, el de arriba abierto con barandilla, pancarta con el título y el trofeo delante
+  function autobusRua(club, titulo) {
+    const g = new THREE.Group(), c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
+    const B = (w, h, d, m, x, y, z) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m); me.position.set(x, y, z); me.castShadow = true; g.add(me); return me; };
+    B(10.6, 2.3, 2.5, c1, 0, 1.45, 0); B(10.4, 0.8, 2.52, mat('#22303a', { roughness: 0.1, metalness: 0.5 }), 0, 1.9, 0); B(10.62, 0.3, 2.54, c2, 0, 0.6, 0); B(10.6, 0.1, 2.5, '#d9d4c8', 0, 2.62, 0);
+    for (const z of [-1.2, 1.2]) { B(10.4, 0.06, 0.06, c2, 0, 3.55, z); for (let i = 0; i < 9; i++) B(0.05, 0.9, 0.05, c2, -5 + i * 1.25, 3.1, z); }
+    B(0.06, 0.9, 2.4, c2, 5.2, 3.1, 0); B(0.06, 0.9, 2.4, c2, -5.2, 3.1, 0);
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 128; const x = c.getContext('2d');
+    if (x) { x.fillStyle = c2 === c1 ? '#ffffff' : c2; x.fillRect(0, 0, 1024, 128); x.fillStyle = c1; x.font = 'bold 66px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('¡CAMPEONES! ' + (titulo || '').toUpperCase(), 512, 66); }
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    for (const z of [-1.29, 1.29]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 1.05), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); p.position.set(0, 3.15, z); g.add(p); }
+    for (const [px, pz] of [[-3.6, -1.1], [-3.6, 1.1], [3.4, -1.1], [3.4, 1.1]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 14), mat('#151515')); w.rotation.x = Math.PI / 2; w.position.set(px, 0.5, pz); g.add(w); }
+    const oro = mat('#d4a72c', { metalness: 0.9, roughness: 0.25 }), copa = new THREE.Group(); copa.position.set(4.6, 2.67, 0); g.add(copa);
+    const pie = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.3, 14), oro); pie.position.y = 0.15; copa.add(pie); const cu = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.14, 0.75, 16), oro); cu.position.y = 0.8; copa.add(cu);
+    for (const s of [-1, 1]) { const a = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 12), oro); a.position.set(0, 0.85, s * 0.42); a.rotation.y = Math.PI / 2; copa.add(a); }
+    g.userData = { rua: true }; return g;
   }
   function autobus(club) {
     const g = new THREE.Group(), c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0];
@@ -383,6 +418,9 @@
   // ---------- Tráfico, semáforos y saludos ----------
   function actualizar(S, M, dt) {
     if (GM.ciudadBarrios) GM.ciudadBarrios.actualizar(S, dt);
+    if (S.rua) { const R = S.rua, t = performance.now() / 1000; R.x += dt * 2.2; if (R.x > 76) R.x = -76; R.bus.position.x = R.x; R.conf.position.x = R.x; R.gente.forEach(p => p.mixer.update(dt));
+      const a = R.conf.geometry.attributes.position; for (let i = 0; i < a.count; i++) { let y = a.getY(i) - dt * (0.7 + (i % 5) * 0.18); if (y < 0.05) y += 10; a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(t * 1.7 + i) * dt * 0.5); } a.needsUpdate = true;
+      R.tCol -= dt; if (R.tCol <= 0) { R.tCol = 0.12; R.publico.colocar(i => { const f = R.fans[i], cerca = Math.abs(f.x - R.x) < 14, v = Math.sin(t * (cerca ? 7 : 3) + i * 2.3); return cerca ? { salto: Math.max(0, v) * 0.35, brazos: 1 } : v > 0.5 ? { salto: (v - 0.5) * 0.3, brazos: 1 } : null; }); } }
     if (S.multitud) { S.tMult = (S.tMult || 0) - dt; if (S.tMult <= 0) { S.tMult = 0.12; const t = performance.now() / 1000; S.multitud.colocar(i => { const v = Math.sin(t * 4 + i * 2.3); return v > 0.6 ? { salto: (v - 0.6) * 0.6, brazos: 1 } : null; }); } }
     if (!S.coches) return;
     moverPalomas(S, dt);
