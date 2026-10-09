@@ -72,6 +72,7 @@
     // Potencial dinámico: las noches largas pasan factura; los consejos del mentor ayudan
     if (accion === 'fiesta') potencial(st, -0.01, 'Noches largas');
     if (accion === 'consejo') potencial(st, 0.005, 'Consejos del mentor');
+    GM.bus.emit('social:hecho', { id, accion });   // estilo.js
     return { ok: true, efectos: out };
   }
   GM.bus.on('dia:avanzado', function () {

@@ -13,6 +13,8 @@ Resumen: un núcleo (`core.js`) con RNG, bus de eventos, utilidades y `newGame`;
 | `partida:cargada` | `guardado` | reinstalar accesores y refrescar la interfaz |
 | `fichaje:hecho`, `instalacion:mejorada`, `dinero:cambio`, `copa:fin` | varios | notificaciones entre módulos |
 | `sala:abierta` | `sede3d.abrirSala` | se abre una zona del mundo (encargos de `gente.js`) |
+| `evento:elegido` | `carrera.elegirEvento` | una decisión personal resuelta (estilo.js) |
+| `social:hecho` | `social.hacer` | una acción de la vida social (estilo.js) |
 
 ## Forma del estado (GM.state)
 
@@ -166,6 +168,12 @@ PUEBLO 3D (GM.pueblo3d): escena del pueblo natal. Colina con relieve y campos, o
 
 ### `edificio_kit.js`
 EDIFICIOS CON MODELOS (GM.edificioKit) — fachadas montadas con piezas glTF del Building Kit de Kenney (CC0): paredes de 2 m con ventana o puerta, columnas y cornisa, escaladas al ancho y a la altura de planta; repinta la celda de los muros de la paleta con el color pedido y fusiona todo. Expone: cuerpo(opciones) -> Promise<Group|null>.
+
+### `estilo.js`
+ESTILO DE VIDA (GM.mods.estilo) — modo carrera: valor de -100 (chico malo) a +100 (profesional ejemplar) que mueven el entreno, las fiestas, las decisiones y 12 planes; consecuencias semanales en las dos direcciones (fama, patrocinios, multas, sanciones, lesiones, potencial, confianza). Expone: estado, etiqueta, mover, planes, hacer, PLANES. Escribe state.carrera.estilo y jugadores.yo.estado.sancion.
+
+### `movil.js`
+TU MÓVIL (GM.mods.movil) — modo carrera: chats con representante, entrenador, club, prensa, peña, familia, amigos y pareja; mensajes con decisiones (eventos personales, fiestas, patrocinios, entrevistas) que caducan a los 5 días. Expone: enviar, chats, chat, leer, contestar, noLeidos. Escribe state.carrera.movil.
 
 ### `gente.js`
 GENTE (GM.mods.gente) — personas con nombre con las que hablar por la calle y en tu pueblo: leyenda del club, utillero, peña y periodista; en el pueblo, primer entrenador y alcalde. Saludo según la relación y el último partido, charla semanal con un efecto pequeño y encargos con plazo (ganar, ganar en casa, meter puntos, ir a la peña, empezar una obra). Vecinos y aficionados: saludar y autógrafos. Expone: personas, ficha, casual, estado, selfTest. Escribe state.gente = { rel, charla, encargo, hechos, firmas } (se crea al usarse).

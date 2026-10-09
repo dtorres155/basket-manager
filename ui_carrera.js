@@ -6,6 +6,7 @@
     const K = M().carrera, c = st.carrera, p = st.jugadores.yo, s = K.stats(st), ro = K.rol(st);
     if (c.fase === 'retirado') { trayectoriaPantalla(el, st); return true; }
     el.append(h('button', { class: 'perfil-linea', onclick: () => navegar('jugador') }, avatarEl(st.personaje, 48, { camiseta: true, numero: dorsal(st) }), h('div', { class: 'ct' }, h('b', null, p.nombre), h('span', { class: 'muted' }, c.fase === 'ncaa' ? (c.etapa === 'cantera' ? 'Cantera de ' + eq(c.cantera.clubId).nombre + ', ' + catEdad(p.edad) : 'Universidad de EE. UU., curso ' + c.curso) : K.retrato(st).club + ', ' + (ro || 'sin equipo'))), h('span', { class: 'ovr grande ' + clsOvr(p.ovr) }, p.ovr)));
+    estiloCard(el, st);
     eventosCards(el, st);
     if (c.fase === 'libre') el.append(aviso('No tienes equipo. Ve a Agente y acepta una oferta antes de empezar la temporada.', 'med'));
     if (c.ofertas.length && (c.fase !== 'ncaa' || c.etapa === 'cantera')) el.append(seccion('Ofertas', h('div', { class: 'tarjeta' }, h('p', null, 'Tu representante tiene ' + c.ofertas.length + ' ofertas.'), h('button', { class: 'btn', onclick: () => navegar('agente') }, 'Ver ofertas'))));
@@ -33,6 +34,56 @@
     el.append(seccion('Esta temporada', h('div', { class: 'tarjeta' }, h('div', { class: 'chips' }, chip(s.pj + ' partidos'), chip(s.pts.toFixed(1) + ' pts'), chip(s.reb.toFixed(1) + ' reb'), chip(s.ast.toFixed(1) + ' ast'), chip(Math.round(s.min) + ' min'), ro ? chip(ro) : null))));
     return false;
   }
+  // Disciplinado o rebelde: barra de «chico malo» a «profesional ejemplar», lo último que lo ha movido y los planes
+  function estiloCard(el, st) {
+    const Es = M().estilo, e = Es && Es.estado(st); if (!e) return;
+    const pct = (e.v + 100) / 2, Mv = M().movil, nl = Mv ? Mv.noLeidos(st) : 0;
+    el.append(seccion('Tu estilo', h('div', { class: 'tarjeta estilo' },
+      h('div', { class: 'fila' }, h('b', null, e.etiqueta), h('span', { class: 'muted' }, (e.v > 0 ? '+' : '') + e.v)),
+      h('div', { class: 'estilo-barra' }, h('span', { class: 'estilo-marca', style: { left: pct + '%' } })),
+      h('div', { class: 'fila muted f' }, h('span', null, 'Chico malo'), h('span', null, 'Profesional ejemplar')),
+      e.sancion ? h('p', { class: 'aviso med' }, 'Sancionado: no juegas ' + (e.sancion === 1 ? 'el próximo partido' : 'los próximos ' + e.sancion + ' partidos') + '.') : null,
+      h('p', { class: 'muted' }, e.v <= -25 ? 'Más fama y patrocinios atrevidos, pero arriesgas multas, sanciones, lesiones y potencial.' : e.v >= 25 ? 'Tu potencial sube y el entrenador confía en ti; la fama crece más despacio.' : 'Ni santo ni gamberro: tus decisiones marcarán el camino.'),
+      e.hist.length ? h('div', { class: 'lista' }, e.hist.slice(0, 3).map(x => h('div', { class: 'item' }, h('span', null, x.motivo), h('b', { class: x.d >= 0 ? '' : 'neg' }, (x.d > 0 ? '+' : '') + x.d)))) : null,
+      h('div', { class: 'par' }, h('button', { class: 'btn', onclick: () => planesModal(st) }, 'Hacer planes'), h('button', { class: 'btn btn-sec', onclick: () => abrirMovil() }, 'Móvil' + (nl ? ' (' + nl + ')' : ''))))));
+  }
+  function planesModal(st) {
+    const cuerpo = h('div');
+    const pintar = () => {
+      const Es = M().estilo, e = Es.estado(st), ps = Es.planes(st); cuerpo.innerHTML = '';
+      const col = (tit, lado) => h('div', { class: 'planes-col' }, h('b', null, tit), ps.filter(p => p.lado === lado).map(p => h('button', { class: 'btn btn-sec plan', disabled: !p.disponible, onclick: () => { const r = Es.hacer(st, p.id); if (!r.ok) toast(r.motivo); else { toast(r.texto + (r.efectos.length ? ': ' + r.efectos.join(', ') : '')); pintar(); refrescar(); } } }, h('span', null, p.t), h('span', { class: 'muted' }, p.disponible ? p.d : p.motivo))));
+      cuerpo.append(h('h3', null, 'Planes'), h('p', { class: 'muted' }, 'Ahora te ven como: ' + e.etiqueta.toLowerCase() + '.'), h('div', { class: 'planes' }, col('De rebelde', 'r'), col('De profesional', 'p')));
+    };
+    pintar(); modal(cuerpo, [{ t: 'Cerrar', cls: 'btn-sec' }], { alta: true });
+  }
+  // ---------- El móvil ----------
+  function abrirMovil(chatId) {
+    const st = S(), Mv = M().movil; if (!Mv) return;
+    const cuerpo = h('div', { class: 'movil' });
+    const ini = n => n.split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase();
+    const lista = () => {
+      cuerpo.innerHTML = ''; const cs = Mv.chats(st);
+      cuerpo.append(h('div', { class: 'movil-cab' }, h('b', null, 'Mensajes'), h('span', { class: 'muted' }, U.fecha(st.fecha))));
+      if (!cs.length) cuerpo.append(h('p', { class: 'muted' }, 'Aún no tienes mensajes.'));
+      cs.forEach(c => cuerpo.append(h('button', { class: 'movil-chat', onclick: () => ver(c.id) }, h('span', { class: 'movil-av' }, ini(c.nombre)),
+        h('div', { class: 'ct' }, h('b', null, c.nombre), h('span', { class: 'muted' }, clip(c.ultimo, 46))),
+        c.pendientes ? h('span', { class: 'movil-pend' }, 'Decidir') : c.noLeidos ? h('span', { class: 'movil-num' }, c.noLeidos) : null)));
+    };
+    const ver = id => {
+      const c = Mv.chats(st).find(x => x.id === id); Mv.leer(st, id); cuerpo.innerHTML = '';
+      cuerpo.append(h('div', { class: 'movil-cab' }, h('button', { class: 'btn btn-sec peq', onclick: lista }, 'Volver'), h('div', { class: 'ct' }, h('b', null, c.nombre), h('span', { class: 'muted' }, c.rol))));
+      const hilo = h('div', { class: 'movil-hilo' });
+      Mv.chat(st, id).forEach(m => {
+        hilo.append(h('div', { class: 'burbuja ' + (m.de === 'yo' ? 'yo' : 'el') }, h('span', null, m.t), h('i', null, U.fecha(m.fecha))));
+        if (m.ops && m.estado === 'pendiente') hilo.append(h('div', { class: 'movil-ops' }, m.ops.map((o, i) => h('button', { class: 'btn btn-sec peq', title: o.d, onclick: () => { const r = Mv.contestar(st, id, m.n, i); if (!r.ok) toast(r.motivo); else { if (r.efectos && r.efectos.length) toast(r.efectos.join(', ')); ver(id); refrescar(); } } }, h('span', null, o.t), o.d ? h('span', { class: 'muted' }, o.d) : null))));
+        else if (m.estado === 'ignorado') hilo.append(h('div', { class: 'movil-nota' }, 'Sin contestar'));
+      });
+      cuerpo.append(hilo); setTimeout(() => { hilo.scrollTop = hilo.scrollHeight; }, 0);
+    };
+    if (chatId) ver(chatId); else lista();
+    modal(cuerpo, [{ t: 'Cerrar', cls: 'btn-sec', fn: () => { refrescar(); } }], { alta: true });
+  }
+  GM.ui.movil = abrirMovil;
   function eventosCards(el, st) {
     const K = entr() ? M().entrenador : M().carrera, ev = K.eventos(st);
     if (!ev.length) return;

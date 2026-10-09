@@ -2,7 +2,7 @@
 const assert = require('assert');
 global.LZString = require('lz-string');
 const L = require('./load');
-L(['core', 'datos_util', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'social', 'sponsor', 'pueblo', 'gente', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d']);
+L(['core', 'datos_util', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'social', 'sponsor', 'pueblo', 'gente', 'estilo', 'movil', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d']);
 let n = 0; const ok = (nombre, fn) => { fn(); n++; console.log('  ok', nombre); };
 const U = GM.util, C = GM.mods.competiciones;
 
@@ -124,5 +124,28 @@ ok('gente: charla semanal y encargo que se cumple con un partido', () => {
   const g0 = sg.calendario.find(g => g.local === sg.clubId); GM.bus.emit('partido:jugado', { partido: Object.assign({}, g0, { resultado: { local: 80, visitante: 70, stats: { yo: { min: 30, pts: e.n + 1 } } } }) });
   assert.strictEqual(Gn.estado(sg).encargo, null, 'encargo resuelto'); assert.ok(Gn.estado(sg).rel.leyenda > r0 + 10, 'la relación sube'); assert.strictEqual(Gn.estado(sg).hechos, 1);
   assert.strictEqual(Gn.casual(sg, { hincha: true }).length, 2);
+});
+// ---- Estilo (disciplinado o rebelde) y móvil ----
+ok('estilo y móvil: planes, consecuencias, sanción y decisiones por mensaje', () => {
+  GM.rng.seed(12); const sr = GM.newGame('joventut-badalona', 12, { modo: 'carrera', personaje: { nombre: 'Marc', apellido: 'Soler' }, carrera: { origen: 'europa', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
+  const Es = GM.mods.estilo, Mv = GM.mods.movil; sr.carrera.dinero = 500;
+  assert.strictEqual(Es.estado(sr).etiqueta, 'Equilibrado');
+  const r = Es.hacer(sr, 'fiesta'); assert.ok(r.ok, r.motivo); assert.ok(Es.estado(sr).v < 0, 'la fiesta te hace más rebelde');
+  assert.ok(!Es.hacer(sr, 'fiesta').ok, 'hay que esperar para repetir');
+  const t0 = sr.personaje.tatuaje || 0; Es.hacer(sr, 'tatuaje'); assert.strictEqual(sr.personaje.tatuaje, t0 + 1, 'el tatuaje se ve en el personaje');
+  // Un rebelde de verdad durante dos meses: más fama, mensajes y algún castigo
+  Es.mover(sr, -90, 'prueba'); const fama0 = sr.carrera.fama;
+  for (let i = 0; i < 60; i++) GM.mods.competiciones.jugarDia(sr);
+  assert.ok(Es.estado(sr).v <= -55, 'sigue siendo un chico malo');
+  assert.ok(sr.carrera.fama > fama0, 'gana fama');
+  const cs = Mv.chats(sr); assert.ok(cs.length >= 2, 'hay chats'); assert.ok(Mv.noLeidos(sr) > 0);
+  // La sanción deja al jugador fuera
+  sr.jugadores.yo.estado.sancion = 1; const g = sr.calendario.find(x => !x.resultado && (x.local === sr.clubId || x.visitante === sr.clubId));
+  while (!g.resultado && !sr.temporadaTerminada) GM.mods.competiciones.jugarDia(sr);
+  assert.ok(!(g.resultado.stats && g.resultado.stats.yo && g.resultado.stats.yo.min > 0), 'sancionado no juega'); assert.strictEqual(sr.jugadores.yo.estado.sancion, 0, 'la sanción se cumple');
+  // Una decisión personal llega al móvil y se contesta desde allí
+  sr.carrera.pend.push({ id: 'mentor', fecha: sr.fecha }); const ch = Mv.chats(sr).find(c => Mv.chat(sr, c.id).some(m => m.dec && m.dec.id === 'mentor' && m.estado === 'pendiente'));
+  assert.ok(ch, 'el evento llega como mensaje'); const m = Mv.chat(sr, ch.id).find(x => x.dec && x.dec.id === 'mentor');
+  const v0 = Es.estado(sr).v; assert.ok(Mv.contestar(sr, ch.id, m.n, 0).ok); assert.ok(!sr.carrera.pend.some(p => p.id === 'mentor'), 'resuelto'); assert.ok(Es.estado(sr).v > v0, 'aceptar al mentor suma profesionalidad');
 });
 console.log('aserciones', n, 'de', n);

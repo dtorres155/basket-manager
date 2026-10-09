@@ -663,6 +663,7 @@
     }
     if (ef.draft !== undefined) { c.declarado = ef.draft; c.hitos.unshift({ fecha: st.fecha, texto: ef.draft ? 'Te presentas al draft de la NBA.' : 'Decides esperar un año para el draft.' }); out.push(ef.draft ? 'te presentas al draft' : 'esperas un año'); }
     c.pend.splice(idx, 1); c.res.push({ id, i, fecha: st.fecha }); if (c.res.length > 40) c.res.shift();
+    GM.bus.emit('evento:elegido', { id, i });   // estilo.js: las decisiones también dicen si eres profesional o rebelde
     return { ok: true, efectos: out };
   }
   function selfTest() {

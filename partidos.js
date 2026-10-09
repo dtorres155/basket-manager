@@ -12,7 +12,7 @@
       : { q: 10, pace: comp === 'ACB' ? 73.8 : 72, p3: 0.345, m3: 0.343, m2: 0.506, ast: 0.56, ha: 0.011 };   // la ACB juega algo más rápido (unos 83 puntos)
   }
   const effF = p => (0.75 + 0.25 * p.estado.forma / 100) * (1 - 0.16 * p.estado.fatiga / 100);
-  const lesionado = p => p.estado.lesion && p.estado.lesion.dias > 0;
+  const lesionado = p => (p.estado.lesion && p.estado.lesion.dias > 0) || p.estado.sancion > 0;   // la sanción (estilo.js) también deja fuera
   const esG = pos => pos === 'PG' || pos === 'SG';
   const esB = pos => pos === 'PF' || pos === 'C';
 

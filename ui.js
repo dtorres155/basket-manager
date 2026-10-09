@@ -15,6 +15,7 @@
     city: '<path d="M3 21V11l6-3v13M9 21V4l6 3v14M15 21V9l6 3v9"/>',
     eur: '<path d="M17 5a6 6 0 0 0-10 3v8a6 6 0 0 0 10 3M4 10h9M4 14h9"/>',
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    movil: '<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>',
     trofeo: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
     dir: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>'
   };
@@ -260,6 +261,7 @@
       ui.cabecera.append(h('button', { class: 'btn-ic avatar-btn', 'aria-label': 'Tu jugador', onclick: () => navegar('jugador') }, avatarEl(st.personaje, 40, { camiseta: true, numero: dorsal(st) })),
         h('div', { class: 'cab-t' }, h('b', null, clip(rt.nombre, 22)), h('span', null, clip(rt.club, 18) + ', ' + rt.liga + ', ' + U.fecha(st.fecha))),
         h('div', { class: 'cab-c' }, h('b', null, Math.round(c.dinero).toLocaleString('es-ES') + ' k€'), h('span', null, 'ahorros')),
+        M().movil && c.fase !== 'retirado' ? (() => { const n = M().movil.noLeidos(st); return h('button', { class: 'btn-ic movil-btn', 'aria-label': 'Móvil, ' + n + ' sin leer', onclick: () => GM.ui.movil && GM.ui.movil() }, icon('movil'), n ? h('span', { class: 'movil-badge' }, n > 9 ? '9+' : n) : null); })() : null,
         h('button', { class: 'btn-ic', 'aria-label': 'Menú', onclick: menuJuego }, icon('menu')));
       return;
     }
