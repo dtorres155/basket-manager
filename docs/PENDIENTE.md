@@ -25,6 +25,53 @@
 - **Campus (ciudad deportiva):** escenario soso, monótono y poco trabajado; tiene que parecerse a una ciudad deportiva real: pistas exteriores y campos, pabellón de entrenamiento con grada, residencia de canteranos, edificio de oficinas, aparcamiento, accesos y control, vallas, arbolado, y ambiente (canteranos entrenando, cuerpo técnico, prensa en los entrenamientos abiertos, aficionados en la valla).
 - **Mejoras visuales en general:** es una línea de trabajo continua; cualquier idea de detalle, iluminación o variedad suma.
 
+### Ideas para un mundo más vivo y un acabado profesional (oct 2026)
+**Mundo vivo**
+- Rutinas por hora: por la mañana la gente va a trabajar y al colegio, a mediodía las terrazas se llenan, por la tarde se pasea y por la noche hay bares abiertos y farolas.
+- Eventos en la calle: mercadillo semanal, fiesta mayor con casetas y música, maratón, aficionados que se concentran antes de un derbi, obras que cortan una calle.
+- Día de partido completo: previa en los bares, cola en las taquillas, el autobús del equipo llegando al pabellón y la salida de la gente al acabar.
+- Animales: palomas que se espantan al pasar, perros paseando, gatos en los tejados y pájaros en los árboles.
+- Sonido ambiente: tráfico, pájaros, cánticos el día de partido, bote del balón en la sede (sonidos libres o hechos por código, sin conexión).
+- La gente reacciona: bocadillos según el último resultado o el tiempo, te piden una foto, te pitan si perdisteis el derbi y, si eres «chico malo», te siguen fotógrafos.
+- Vehículos con comportamiento: autobuses que paran y suben pasajeros, taxis, motos, bicis, reparto y alguna ambulancia con sirena.
+- Más sitios en los que entrar: restaurante, gimnasio, barbería (cambia el peinado), cine o bolera.
+- Viento: árboles, toldos y banderas que se mueven.
+
+**Calidad visual**
+- Iluminación: cielo con reflejos de entorno, sombras suaves, oclusión ambiental y un brillo suave en farolas y pantallas en calidad alta; niebla de distancia y un tono de color propio por ciudad.
+- Antialiasing y postprocesado opcionales en calidad alta.
+- Materiales con texturas reales libres (ambientCG, Poly Haven) comprimidas para no inflar la descarga.
+- Detalles pegados al suelo y a las paredes: grietas, manchas, pasos de cebra gastados, grafitis y carteles.
+- Niveles de detalle e imágenes planas para los edificios lejanos, que permiten ciudades mucho más grandes.
+- Agua de verdad en fuentes, ríos y piscinas, con reflejos.
+- Lluvia con charcos que reflejan y nubes que se mueven.
+- Interiores con iluminación más trabajada para que no parezcan cajas.
+
+**Modelos**
+- Personas más variadas: ropa y peinados intercambiables, accesorios y caras con más rasgos.
+- Más animaciones: sentarse de verdad, gesticular al hablar, aplaudir, celebrar, botar y tirar a canasta.
+- Partido en directo con animaciones de baloncesto (bote, tiro en suspensión, mate, defensa), con licencia libre.
+- Coches y motos con modelos libres (Car Kit de Kenney) en lugar de cajas.
+- Mobiliario urbano y vegetación con modelos libres (City Kit de Kenney, naturaleza de Quaternius).
+- Pabellones reconocibles de los clubes grandes (Palau Blaugrana, OAKA, WiZink Center, Madison Square Garden…).
+
+**Jugabilidad**
+- Encargos diarios y semanales marcados en el mapa, con recompensa.
+- Minijuegos: concurso de triples en el parque, uno contra uno callejero y entrenamientos jugables (tirar con una barra de precisión).
+- Moverse mejor: joystick virtual, correr con doble toque y viaje rápido desde el mapa a sitios ya visitados.
+- Modo foto (cámara libre y filtros) para compartir capturas.
+- Coleccionables: camisetas de rivales, cromos y balones firmados, con su sitio en casa.
+- Coche propio para conducir por la ciudad.
+- Cómo te trata cada barrio según tu reputación en él.
+
+**Acabado profesional**
+- Pantalla de carga con barra de progreso real y consejos; precarga de modelos y shaders para evitar tirones.
+- Transiciones entre escenas, música en los menús y sonidos en la interfaz; vibración suave en el móvil.
+- Ajustes completos de gráficos, sonido y controles.
+- Idiomas: catalán e inglés.
+- Pulido: ningún texto cortado, interfaz con animaciones coherentes y un juego de iconos propio.
+- Registro de errores que se pueda exportar para enviarlo, y versión, créditos y novedades visibles.
+
 - Modo construcción también en el despacho y otras salas del club; paredes interiores, color de paredes y suelos en casa.
 - ~~Más ciudad~~ (`ciudad_barrios.js`): la avenida va de -150 a 150 m con pasos de peatones, la calle central sube hasta la puerta de la ciudad deportiva y una ronda cruza el norte; barrios oeste (bloques, colegio y parque), este (chalets, mansiones y estación) y norte (torres con áticos, hospital y oficinas), con coches por toda la avenida. Los barrios lejanos no se dibujan; caminos con montículo binario (de punta a punta, ~13 ms). Falta: ciudad deportiva para pasear.
 - ~~La ciudad cambia con la reputación~~: los locales de la calle abren o se quedan en «SE ALQUILA» con la persiana bajada según la reputación (con 72 o más, cafés y tiendas del club); con 60 o más se construye un hotel en el norte y con 75 unas oficinas (valla, cartel, estructura a medias y grúa que gira); banderines del club cruzando la avenida en los barrios con afición de 55 o más y mural con el escudo con 70; el día de partido en casa, 240 aficionados de pie ante el pabellón y por la avenida, saltando. Capturas: `node tools/ciudad_reputacion.js`.
