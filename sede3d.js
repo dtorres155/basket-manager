@@ -10,7 +10,7 @@
   const cache = {};
   const cargar = ruta => cache[ruta] || (cache[ruta] = new THREE.GLTFLoader().loadAsync(ruta));
   // Personas de Quaternius (CC0): cada una sin animaciones y un archivo de animaciones compartido (mismo esqueleto)
-  const PERSONAS = { jugador: ['h-casual_hoodie', 'h-casual_2', 'h-beach'], Recepcionista: 'm-formal', Fisioterapeuta: 'm-casual', Camarero: 'h-casual_2', 'Preparador físico': 'h-beach', 'Jefe de prensa': 'm-suit', director: 'h-suit', entrenador: 'h-casual_hoodie' };
+  const PERSONAS = { jugador: ['h-casual_hoodie', 'h-casual_2', 'h-beach'], Recepcionista: 'm-formal', Fisioterapeuta: 'm-casual', Camarero: 'h-casual_2', 'Preparador físico': 'h-beach', 'Jefe de prensa': 'm-suit', Utillero: 'h-worker', 'Analista de vídeo': 'h-casual_2', 'Médico del club': 'm-formal', director: 'h-suit', entrenador: 'h-casual_hoodie' };
   const ANIM = { idle: 'Idle_Neutral', walk: 'Walk', sprint: 'Run', 'interact-right': 'Interact', 'interact-left': 'Interact', crouch: 'Interact', 'emote-yes': 'Wave', 'emote-no': 'Idle', sit: 'Idle_Neutral' };
   const PIEL = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329', '#4b2e1e'], PELO = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#d8b46a', '#8a8a8a'];
 
@@ -411,6 +411,33 @@
     // Recepción: gran escudo del club y camisetas enmarcadas
     if (tEscudo) { const e = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.75), new THREE.MeshStandardMaterial({ map: tEscudo, transparent: true })); e.position.set(2.13, 1.0, 11.6); e.rotation.y = Math.PI / 2; W.add(e); }
     cuadro(0.8, 0.95, tCamiseta, 2.13, 0.62, 9.6, Math.PI / 2, '#3a2a1a');
+    // Datos vivos en las paredes: pantalla de recepción con el próximo partido, pizarra del despacho con el quinteto y la clasificación
+    const C = GM.mods.competiciones, prox = C && C.proximoPartido ? C.proximoPartido(st, st.clubId) : null, riv = prox ? st.equipos[prox.local === st.clubId ? prox.visitante : prox.local] : null;
+    const tProx = lienzo('prox-' + club.siglas + (riv ? riv.siglas : '') + (prox ? prox.fecha : ''), 480, 270, (x, w, h) => { x.fillStyle = '#0d1117'; x.fillRect(0, 0, w, h); x.fillStyle = oscuro; x.fillRect(0, 0, w, 52); x.fillStyle = '#fff'; x.font = 'bold 28px sans-serif'; x.textAlign = 'center'; x.fillText('Próximo partido', w / 2, 36); x.font = 'bold 46px sans-serif'; x.fillText(club.siglas, w / 4, 140); x.fillText(riv ? riv.siglas : '...', w * 3 / 4, 140); x.fillStyle = '#ffb81c'; x.font = 'bold 34px sans-serif'; x.fillText('vs', w / 2, 140); x.fillStyle = '#c9d1d9'; x.font = '24px sans-serif'; x.fillText(riv ? riv.nombre : 'Sin partidos', w / 2, 200); x.fillText(prox ? U.fecha(prox.fecha) : '', w / 2, 238); });
+    { const tv = caja(1.7, 1.0, 0.06, '#111', 9.92, 1.3, 7.2, Math.PI / 2); void tv; const p = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.9), new THREE.MeshBasicMaterial({ map: tProx })); p.position.set(9.88, 1.8, 7.2); p.rotation.y = -Math.PI / 2; W.add(p); }
+    const quinteto = (() => { try { return GM.mods.partidos.tacticaValida(st, st.clubId).quinteto.map(i => st.jugadores[i]).filter(Boolean); } catch (e) { return []; } })();
+    const tabla = (() => { try { const ks = Object.keys(st.clasificaciones || {}).filter(k => st.clasificaciones[k].some(r => r.equipoId === st.clubId)), comp = ks.find(k => !/euro|champ/i.test(st.ligas[k] ? st.ligas[k].formato : k)) || ks[0]; return comp ? C.clasificacion(st, comp).slice(0, 6) : []; } catch (e) { return []; } })();
+    const tPizarra = lienzo('pizarra-' + club.siglas + quinteto.map(p => p.id).join() + tabla.map(r => r.equipoId + r.g).join(), 520, 300, (x, w, h) => { x.fillStyle = '#f7f8f6'; x.fillRect(0, 0, w, h); x.strokeStyle = '#9aa3a8'; x.lineWidth = 6; x.strokeRect(3, 3, w - 6, h - 6); x.fillStyle = '#1d4f91'; x.font = 'bold 24px sans-serif'; x.fillText('Quinteto', 22, 38); x.fillStyle = '#c0392b'; x.fillText('Clasificación', 280, 38); x.font = '20px sans-serif';
+      quinteto.slice(0, 5).forEach((p, i) => { x.fillStyle = '#1d2024'; x.fillText((p.pos || '') + '  ' + p.nombre.split(' ').pop(), 22, 76 + i * 40); });
+      tabla.forEach((r, i) => { const e = st.equipos[r.equipoId]; x.fillStyle = r.equipoId === st.clubId ? '#c0392b' : '#1d2024'; x.fillText((i + 1) + '. ' + (e ? e.siglas : '') + '  ' + (r.g || 0) + '-' + (r.p || 0), 280, 76 + i * 34); });
+      x.strokeStyle = '#1d4f91'; x.lineWidth = 3; x.beginPath(); x.moveTo(20, 280); x.quadraticCurveTo(130, 230, 240, 280); x.stroke(); });
+    cuadro(2.2, 1.27, tPizarra, 10.13, 0.6, 11.2, Math.PI / 2, '#9aa3a8');
+    // Pista: pizarra con ruedas junto al banquillo, nevera de bebidas y dispensador de agua
+    { const g = new THREE.Group(); const B = (w, h, d, m, px, py, pz) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m); me.position.set(px, py, pz); me.castShadow = true; g.add(me); };
+      B(1.5, 1.0, 0.04, '#f7f8f6', 0, 1.2, 0); B(0.05, 1.7, 0.05, '#888', -0.72, 0.85, 0); B(0.05, 1.7, 0.05, '#888', 0.72, 0.85, 0); B(1.6, 0.05, 0.4, '#888', 0, 0.05, 0);
+      const tX = lienzo('jugada', 300, 200, (x, w, h) => { x.fillStyle = '#f7f8f6'; x.fillRect(0, 0, w, h); x.strokeStyle = '#222'; x.lineWidth = 3; x.beginPath(); x.arc(w / 2, 0, 70, 0, Math.PI); x.stroke(); x.font = 'bold 26px sans-serif'; x.fillStyle = '#1d4f91'; [[60, 150], [150, 170], [240, 150], [90, 70], [210, 70]].forEach(([a, b], i) => x.fillText(String(i + 1), a, b)); x.strokeStyle = '#c0392b'; x.setLineDash([8, 6]); x.beginPath(); x.moveTo(70, 140); x.quadraticCurveTo(120, 90, 200, 80); x.stroke(); });
+      const cara = new THREE.Mesh(new THREE.PlaneGeometry(1.44, 0.94), new THREE.MeshStandardMaterial({ map: tX })); cara.position.set(0, 1.2, 0.03); g.add(cara); g.position.set(0.3, 0, -0.4); g.rotation.y = -Math.PI / 2; W.add(g); G.bloquea(0, -1.2, 0.6, 0.4); }
+    caja(0.6, 1.5, 0.5, '#e8eef2', 1.4, 0, -13.3); G.bloquea(1.1, -13.6, 1.7, -13); caja(0.5, 0.9, 0.02, mat('#9fd0ea', { transparent: true, opacity: 0.6 }), 1.4, 0.4, -13.04); for (let i = 0; i < 6; i++) cil(0.035, 0.2, mat(i % 2 ? oscuro : '#ffb81c'), 1.25 + (i % 3) * 0.15, 0.55 + Math.floor(i / 3) * 0.4, -13.1);
+    cil(0.16, 0.9, '#e8eef2', -19.4, 0, -13.4); cil(0.15, 0.4, mat('#7fc6e8', { transparent: true, opacity: 0.7 }), -19.4, 0.9, -13.4);
+    // Vestuario: cesto de ropa, balones y la camiseta de cada uno en su taquilla
+    cil(0.35, 0.6, '#c9b48a', 12.3, 0, 1.2); G.bloquea(12, 0.9, 12.6, 1.5); for (let i = 0; i < 3; i++) esfera(0.12, naranja, 12.2 + i * 0.1, 0.65, 1.15 + (i % 2) * 0.1);
+    for (let i = 0; i < 10; i++) caja(0.4, 0.5, 0.02, i % 2 ? oscuro : c2, 11.8 + i * 0.82, 0.9, -5.08);
+    // Enfermería: cartel anatómico y camilla de masajes
+    const tAnat = lienzo('anatomia', 200, 320, (x, w, h) => { x.fillStyle = '#f4f1e8'; x.fillRect(0, 0, w, h); x.strokeStyle = '#c0392b'; x.lineWidth = 6; x.beginPath(); x.arc(w / 2, 50, 26, 0, 7); x.moveTo(w / 2, 76); x.lineTo(w / 2, 190); x.moveTo(50, 110); x.lineTo(150, 110); x.moveTo(w / 2, 190); x.lineTo(65, 300); x.moveTo(w / 2, 190); x.lineTo(135, 300); x.stroke(); });
+    cuadro(0.7, 1.1, tAnat, 19.88, 0.7, -12.4, -Math.PI / 2, '#ddd'); caja(0.7, 0.08, 1.9, '#2e86c1', 12.6, 0.7, -12.2); caja(0.6, 0.7, 0.06, '#888', 12.6, 0, -11.4); caja(0.6, 0.7, 0.06, '#888', 12.6, 0, -13); G.bloquea(12.2, -13.2, 13, -11.2);
+    // Pasillo: reloj, fuente de agua y máquina de vending
+    { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.05, 24), mat('#f4f1e8')); r.rotation.x = Math.PI / 2; r.position.set(-9, 2.5, 4.86); W.add(r); const ag = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.2, 0.02), mat('#111')); ag.position.set(-9, 2.56, 4.83); ag.rotation.z = -0.9; W.add(ag); }
+    caja(0.9, 1.9, 0.7, oscuro, 0.4, 0, 4.5); caja(0.6, 1.1, 0.02, mat('#c8dbe6', { transparent: true, opacity: 0.55 }), 0.4, 0.6, 4.14); G.bloquea(-0.1, 4.1, 0.9, 4.9);
     // Exterior: acera, marquesina de la entrada, mástiles con banderas y árboles
     const acera = new THREE.Mesh(new THREE.PlaneGeometry(46, 34).rotateX(-Math.PI / 2), mat('#a7a39b', { roughness: 0.95 })); acera.position.set(0, -0.005, 0); acera.receiveShadow = true; W.add(acera);
     caja(3.0, 0.08, 1.1, oscuro, 6, 2.6, 14.9); cil(0.05, 2.4, '#555', 4.6, 0, 16.2); cil(0.05, 2.4, '#555', 7.4, 0, 16.2);

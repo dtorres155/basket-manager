@@ -71,7 +71,7 @@
       pasillo: [[-16, 3.5, 'idle', 90], [-2, 3.5, 'idle', 270], [9, 3.5, 'emote-no', 0], [17, 3.5, 'idle', 180]]
     },
     // Personal fijo: rol, sala, x, z, animación, rotY
-    personal: [['Recepcionista', 'recepcion', 6, 12.2, 'sit', 180], ['Fisioterapeuta', 'fisio', 13, -8.4, 'sit', 0], ['Camarero', 'cafeteria', -6.2, 13.9, 'idle', 180], ['Preparador físico', 'gimnasio', 7, -9, 'emote-yes', 270], ['Jefe de prensa', 'prensa', -18.5, 12.6, 'idle', 90]]
+    personal: [['Recepcionista', 'recepcion', 6, 12.2, 'sit', 180], ['Fisioterapeuta', 'fisio', 13, -8.4, 'sit', 0], ['Camarero', 'cafeteria', -6.2, 13.9, 'idle', 180], ['Preparador físico', 'gimnasio', 7, -9, 'emote-yes', 270], ['Jefe de prensa', 'prensa', -18.5, 12.6, 'idle', 90], ['Utillero', 'vestuario', 18.4, -4.7, 'interact-right', 180], ['Analista de vídeo', 'despacho', 11.1, 10.2, 'interact-left', 270], ['Médico del club', 'fisio', 13.6, -11.6, 'idle', 270]]
   };
   if (typeof GM !== 'undefined') GM.sedePlano = P;
   if (typeof module !== 'undefined' && module.exports) module.exports = P;
