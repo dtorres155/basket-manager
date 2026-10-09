@@ -338,7 +338,7 @@
       const { R } = P, x = R.x, z = R.z, ry = R.ry, fx = P.fx, fz = P.fz;
       if (P.ok && P.hueco > 1.5) { const ax = x + fx * d / 2, az = z + fz * d / 2; cinta(W, [[ax, az], [P.c.px, P.c.pz]], 4.5, mCalle); O.marca({ x: (ax + P.c.px) / 2, z: (az + P.c.pz) / 2, w: 4.5, d: P.hueco + 1, ry }, 1); }
       O.marca(R, 2);
-      const b = ed(tipo), g = new THREE.Group(), rr = rnd(U.hash(pj.nombre + tipo)); g.position.set(x, 0, z); g.rotation.y = ry; W.add(g);
+      const b = ed(tipo), g = new THREE.Group(), rr = rnd(U.hash(pj.nombre + tipo)); g.position.set(x, 0, z); g.rotation.y = ry; g.userData = { tipo }; W.add(g);   // tipo: se puede tocar en la vista de «Mi pueblo»
       const bajo = new THREE.Mesh(uvEsc(new THREE.PlaneGeometry(w, d), 1 / Math.max(1, w / 5)).rotateX(-Math.PI / 2), b.nivel || b.obra ? mObra : mSolar); bajo.position.y = 0.005; g.add(bajo);
       if (b.obra) obra(g, M, E, tipo, b.obra.dest, b.obra.progreso, club, rr, S.puebloAnim);
       else if (b.nivel) construido(g, M, E, tipo, b.nivel, club, rr);

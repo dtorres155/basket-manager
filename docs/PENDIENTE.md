@@ -17,7 +17,7 @@
 
 ## Mundo explorable (sede, calle, barrio, casa)
 - Modo construcción también en el despacho y otras salas del club; paredes interiores, color de paredes y suelos en casa.
-- Más ciudad: otros barrios conectados, el pabellón por dentro con esta vista (entrar desde la calle), el campus/ciudad deportiva explorable.
+- ~~Más ciudad~~ (`ciudad_barrios.js`): la avenida va de -150 a 150 m con pasos de peatones, la calle central sube hasta la puerta de la ciudad deportiva y una ronda cruza el norte; barrios oeste (bloques, colegio y parque), este (chalets, mansiones y estación) y norte (torres con áticos, hospital y oficinas), con coches por toda la avenida. Los barrios lejanos no se dibujan; caminos con montículo binario (de punta a punta, ~13 ms). Falta: ciudad deportiva para pasear.
 - La ciudad del club cambia con la reputación más allá de banderas/árboles/mural (comercios nuevos, obras, grada de aficionados en la calle).
 - ~~Rendimiento en móvil~~ (en parte): calidad adaptable en el mundo 3D. Tras 3 s se mide la fluidez cada 2 s y, si no llega a 30 fps, baja un escalón (1: resolución 1x y sin sombras; 2: 0,8x, personas lejanas animadas cada 3 cuadros y las de más de 28 m sin dibujar; 3: 0,65x y a 20 m) y lo recuerda en el dispositivo. Con CPU x3 la calle queda en ~50 fps; con x6 (emulación que también dibuja por software) en 7-12. Prueba: `node tools/rendimiento_auto.js [escena] [x]`. Falta confirmarlo en un Android real.
 - ~~Coches y peatones~~: los coches frenan ante cualquier peatón en su carril, también fuera de los pasos. El músico sigue con una postura por código (no hay animación de guitarra en el paquete de Quaternius).
@@ -34,7 +34,7 @@
 - ~~Mapa interactivo~~: botón «Mapa» en la sede, la calle y el pueblo; se dibuja con la rejilla de caminos de cada escena, marca los puntos de interés y dónde estás, y al tocar un punto o un nombre vas andando hasta allí.
 - **Transporte** cuando la ciudad o el pueblo crezcan: bici, bus o metro con paradas, para moverse entre barrios sin cruzar todo andando.
 - **Mejorar la sede:** salas más detalladas y con más vida, mejor distribución (ya corregido: el banco de pesas del gimnasio tapaba la puerta de la enfermería), más interacciones por sala.
-- **Interiores en más sitios:** entrar en el pabellón, la tienda, la peña, el ayuntamiento, el bar y las casas del pueblo y la ciudad, con el mismo motor de la sede.
+- ~~Interiores~~ (`interiores.js`): pabellón (pista, gradas llenas el día de partido en casa, banquillos, marcador), tienda oficial, bar de la peña (barra, taburetes y mesas de Kenney, peñistas sentados) y ayuntamiento (columnas, alfombra, banderas). Cada uno con su panel de siempre, las actividades del mapa de Ciudad y gente; al salir vuelves a su puerta. Capturas: `node tools/interiores_capturas.js`. Falta: el bar y las casas del pueblo.
 - ~~Más que negocios~~: servicios públicos (plaza mayor, parque, alumbrado y calles, biblioteca, centro de día, carretera y autobús) y casas (de tus padres y de tus amigos, que mejoran esas relaciones). Los vecinos agradecen lo inaugurado y preguntan por las obras.
 
 - ~~«Mi pueblo» en 3D no mostraba los edificios nuevos~~: ya salen la plaza (bancos y, en el segundo nivel, farolas y guirnaldas), el parque, la biblioteca, el centro de día, el alumbrado por las calles, la carretera asfaltada con parada de autobús (y el autobús), y las casas de tus padres (con huerto) y de tus amigos. Las obras en marcha se ven con andamios y grúa.
@@ -42,7 +42,7 @@
 
 ## Ideas nuevas (octubre de 2026)
 ### Un solo mundo: lo que ves en los menús es lo que paseas
-- **Las vistas 3D de los menús y el mundo paseable deben ser el mismo sitio** (el detallado, el de pasear). Hoy son escenas distintas:
+- ~~Las vistas 3D de los menús y el mundo paseable son el mismo sitio~~ (pueblo y ciudad): «Mi pueblo» dibuja el pueblo que se pasea (pueblo_mundo.js) visto desde arriba; al tocar una parcela queda seleccionada en el panel con su estado, «Construir o mejorar» e «Ir andando» (abre el pueblo y te lleva hasta ella). El «Mapa 3D» de Ciudad es la ciudad paseable (calle3d + ciudad_barrios) desde arriba: cada lugar del mapa tiene una marca sobre su edificio y cada barrio una superficie que se toca y se tiñe con la afición; seleccionar no reconstruye la ciudad. Capturas: `node tools/unmundo_capturas.js`. Falta: la ciudad deportiva de los modos de gestión (no se puede pasear todavía).
   - Tu pueblo: «Mi pueblo» (pueblo3d.js, colina con 104 casas, edificios en sitios fijos) frente a «Pasear por el pueblo» (pueblo_mundo.js, parcelas, obras, calles y gente).
   - La ciudad: el mapa 3D de Ciudad (ciudad3d.js, barrios en círculo) frente a la calle (calle3d.js, el cruce con el pabellón, la tienda y la peña).
   - La ciudad deportiva en los modos de gestión (campus.js), que no se puede pasear.
@@ -50,7 +50,7 @@
 - **Viabilidad:** sí, con dos condiciones. Las escenas paseables tienen que poder construirse sin el motor de personas (más ligeras para la vista de menú) y cubrir todo lo que hoy enseñan los menús: la ciudad necesita los barrios conectados y la ciudad deportiva necesita su versión paseable.
 
 ### Casas con personalidad
-- **Varias casas, cada una con su carácter y su sitio en la ciudad:** hoy, al comprar otra vivienda, la anterior se guarda como propiedad (carrera.js), pero en 3D solo hay una casa: un piso diáfano que es un rectángulo personalizable (casa3d.js) y los mismos muebles para todas (`st.sede.casa`). Hace falta que cada vivienda tenga su forma y estilo según el tipo y el barrio (estudio con buhardilla, piso con balcón al mar, ático con terraza, casa de pueblo con patio, chalet con piscina, mansión), con habitaciones de verdad, sus propios muebles y reformas, y que estén en distintos puntos de la ciudad: se ven al caminar, se puede entrar en cada una y elegir dónde vives. Va de la mano de ampliar la ciudad (barrios conectados).
+- ~~Varias casas con su carácter y su sitio en la ciudad~~: comprar otra no vende la anterior (también en los modos de gestión) y puedes mudarte entre ellas («Vivir aquí» o hogar.vivirEn). Cada vivienda tiene su plano real (variante de hogar.js): habitaciones con tabiques y puertas, planta de arriba con escalera, y terraza, jardín o piscina; sus propios muebles y reformas (`st.sede.casas[id]`). En la calle, cada una ocupa una parcela de su barrio con su fachada (loft de ladrillo, buhardilla, bloque clásico o moderno, ático con terraza, casa mediterránea, de piedra o moderna, mansión clásica, moderna o villa con piscina) y se entra por su puerta (escena `casa:<id>`). Capturas: `node tools/casas_capturas.js` y `node tools/ciudad_paseo.js`.
 - **Tu casa en el pueblo:** comprar una casa en tu pueblo e ir los veranos.
 - **Mascota en casa:** un perro o un gato que te recibe y sube el ánimo.
 

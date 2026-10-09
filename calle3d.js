@@ -7,7 +7,7 @@
    Expone: construir(S, M, st), poblar(S, M, st), siguiente(S, M, n), actualizar(S, M, dt). No escribe en el estado. */
 (function () {
   const U = GM.util;
-  const LIM = [-42, -24, 42, 64];
+  const LIM = [-150, -110, 150, 64];   // centro (cruce y plaza) y, con ciudad_barrios.js, los barrios de alrededor
   const ESTILO = {
     ES: { muros: ['#ead9bd', '#dcc3a0', '#f2e6d2', '#d1b38c', '#e6cfae'], postigo: '#5a4630', persiana: true, balcon: true, teja: false },
     IT: { muros: ['#d9a86c', '#c98f58', '#e2bb85', '#cf9c63'], postigo: '#3f5f3a', persiana: true, balcon: true },
@@ -72,7 +72,7 @@
     // Con o.kit, las plantas se montan con piezas glTF (Building Kit de Kenney): la caja queda mientras cargan o si fallan
     if (o.kit && GM.edificioKit) {
       const vidrio = new THREE.MeshStandardMaterial({ color: 0x5f7f99, roughness: 0.15, metalness: 0.35, emissive: 0xffd28a, emissiveIntensity: 0 }); S_.ventanas.push(vidrio);
-      GM.edificioKit.cuerpo({ ancho: w, fondo: d, plantas: pisos, altoPlanta: hP, color: E.muros[(r() * E.muros.length) | 0], ventanas: o.kit === 'arcos' ? 'arcos' : 'cuadradas', vidrio }).then(k => {
+      GM.edificioKit.cuerpo({ ancho: w, fondo: d, plantas: pisos, altoPlanta: hP, color: o.colorMuro || E.muros[(r() * E.muros.length) | 0], ventanas: o.kit === 'arcos' ? 'arcos' : 'cuadradas', vidrio }).then(k => {
         if (!k) return; k.position.set(cx, hB, cz); if (lado === 'n') k.rotation.y = Math.PI; me.visible = false; bg.add(k);
       }).catch(() => {});
     }
@@ -154,8 +154,7 @@
     [[-18, c1], [-15.5, '#c8102e'], [-13, '#f1bf00']].forEach(([x, c]) => { cil(W, 0.04, 2.6, '#d7d7d7', x, 7.1, 6.5); plano(W, 1.0, 0.65, new THREE.MeshStandardMaterial({ color: c, side: THREE.DoubleSide }), x + 0.52, 9.3, 6.5, 0); });
     G.bloquea(-22, 7.3, -9, 18); for (let i = 0; i < 6; i++) G.bloquea(-21.4 + i * 2.2, 6.5, -20.6 + i * 2.2, 7.3);
     zonas.ayuntamiento = [-15.5, 5.2];
-    edificio(W, G, T, E, r, [-39, 6.5, -24, 17], 6, 's', { kit: true, banderas: Math.round(afi / 16), c1, c2, colorBajo: '#5c6a73', letrero: { txt: 'PORTAL 7', fondo: '#2a2f35', letra: '#fff', clave: 'portal', ancho: 3, x: -31.5 } });
-    zonas.casa = [-31.5, 5.2];
+    // (la parcela del antiguo «Portal 7» la ocupa una de tus viviendas o un edificio del barrio: ciudad_barrios.js)
     // Mural del escudo en una medianera si el club tiene reputación
     if (rep >= 68) plano(W, 6, 6, new THREE.MeshStandardMaterial({ map: T.escudo, transparent: true }), 31.45, 10, -13, -Math.PI / 2);
     // Mobiliario: árboles (más con más reputación), farolas, bancos, papeleras, parada de autobús, quiosco y semáforos
@@ -195,6 +194,10 @@
     letrero(W, T.letrero('Calle de ' + (bar[1] || club.siglas), '#1d4f91', '#fff', 'cc'), 3.2, 0.62, 6.4, 2.6, 8.4, -Math.PI / 2);
     const bz = barrio(S, M, W, G, T, E, r, club, st, c1, c2, afi, rep, bar);
     Object.assign(zonas, bz);
+    // Barrios de alrededor con tus viviendas, colegio, hospital, estación y la ciudad deportiva
+    const amp = GM.ciudadBarrios ? GM.ciudadBarrios.construir({ S, M, W, G, T, E, r, club, st, c1, c2, afi, h: { caja, cil, plano, letrero, edificio: (W2, G2, T2, E2, r2, rect, pisos, lado, o) => edificio(W2, G2, T2, E2, r2, rect, pisos, lado, o), ocluye, mat, uvM } }) : null;
+    if (amp) Object.assign(zonas, amp.zonas);
+    S.puertas = amp ? amp.puertas : {}; S.distritos = amp ? amp.distritos : null;
     // Zonas interactivas (puertas)
     const SALAS = {
       sede: { id: 'sede_calle', nombre: 'Sede del club', accion: 'Volver a las instalaciones', destino: {}, irA: 'sede', boton: 'Entrar en la sede' },
@@ -202,7 +205,6 @@
       tienda: { id: 'tienda', nombre: 'Tienda oficial', accion: 'Camisetas, bufandas y aficionados', destino: {} },
       pena: { id: 'pena', nombre: 'Bar La Peña', accion: 'Donde se reúne la afición', destino: {} },
       ayuntamiento: { id: 'ayuntamiento', nombre: 'Ayuntamiento de ' + club.ciudad, accion: 'Convenios y relación con la ciudad', destino: { todos: 'ciudad' } },
-      casa: { id: 'portal', nombre: 'Portal de tu casa', accion: 'Subir a tu piso', destino: {}, irA: 'casa', boton: 'Entrar en tu casa' },
       kiosco: { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {} },
       mercado: { id: 'mercado', nombre: 'Mercado de ' + S.plazaNombre, accion: 'Fruta, pescado y charla con los tenderos', destino: {} },
       parque: { id: 'parque', nombre: 'Canasta del parque', accion: 'Donde juegan los chavales del barrio', destino: {} },
@@ -210,7 +212,10 @@
       heladeria: { id: 'heladeria', nombre: 'Heladería La Ola', accion: 'Helados artesanos', destino: {} },
       musico: { id: 'musico', nombre: 'Músico callejero', accion: 'Toca en la plaza', destino: {} }
     };
-    S.zonas = Object.keys(SALAS).map(k => M.zona(W, SALAS[k], zonas[k][0], zonas[k][1], club));
+    if (amp) Object.assign(SALAS, amp.salas);
+    // Pabellón, tienda, peña y ayuntamiento tienen interior (interiores.js): se entra por la puerta y dentro está su panel
+    if (GM.interiores) [['pabellon', 'Entrar al pabellón'], ['tienda', 'Entrar en la tienda'], ['pena', 'Entrar en el bar'], ['ayuntamiento', 'Entrar en el ayuntamiento']].forEach(([k, b]) => { SALAS[k] = Object.assign({}, SALAS[k], { irA: 'interior:' + k, boton: b }); S.puertas['interior:' + k] = { x: zonas[k][0], z: zonas[k][1] + (zonas[k][1] < 0 ? 0.8 : -0.8), ry: zonas[k][1] < 0 ? 0 : Math.PI }; });
+    S.zonas = Object.keys(SALAS).filter(k => zonas[k]).map(k => M.zona(W, SALAS[k], zonas[k][0], zonas[k][1], club));
     S.spawnCalle = { x: 15, z: -4.4, ry: 0 };
     // Puntos de paseo para los vecinos
     S.paseo = [];
@@ -218,8 +223,8 @@
     for (let z = 8; z <= 21; z += 3) { S.paseo.push([-4.8, z], [4.8, z], [-4.8, -z], [4.8, -z]); }
     for (let x = -10; x <= 10; x += 4) for (let z = 27; z <= 50; z += 5) if (Math.hypot(x + 4, z - 41) > 4) S.paseo.push([x, z]);
     for (let x = -30; x <= -12; x += 6) S.paseo.push([x, 46]); for (let z = 30; z <= 54; z += 6) S.paseo.push([14, z], [32, z]);
-    Object.keys(zonas).forEach(k => S.paseo.push(zonas[k]));
-    S.cielo = true; S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xa9c6dc, 45, 110);
+    Object.keys(zonas).forEach(k => S.paseo.push(zonas[k])); if (amp) amp.paseo.forEach(p => S.paseo.push(p));
+    S.cielo = true; S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xa9c6dc, 55, 140);
     GM.kit.fusionar(W);
     return W;
   }
@@ -308,7 +313,7 @@
   const PIEL = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'], PELO = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#d8b46a', '#8a8a8a'];
   async function poblar(S, M, st) {
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
-    const n = partido ? 32 : 24, r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222';
+    const n = partido ? 40 : 32, r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222';
     const lista = await Promise.all(Array.from({ length: n }, (_, k) => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [r() < 0.6 ? c1 : c2, c1] : null }).then(p => Object.assign(p, { hincha })); }));
     lista.forEach((p, k) => {
       const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0] + (r() - 0.5), 0, q[1] + (r() - 0.5) * 0.6);
@@ -335,9 +340,10 @@
     // Coches
     S.coches = []; const colores = ['#c8102e', '#f4f4f4', '#1d2024', '#2f6f9e', '#8a8f94', '#e8b923', '#3a5a3a', '#7a2f22'];
     const carriles = [['x', 1, 1.5], ['x', -1, -1.5], ['z', 1, -1.5], ['z', -1, 1.5]];
-    carriles.forEach(([eje, dir, c], ci) => { const largo = eje === 'x' ? 88 : 48; for (let i = 0; i < (eje === 'x' ? 3 : 2); i++) { const obj = coche(colores[(ci * 3 + i) % colores.length]); S.mundo.add(obj); S.coches.push({ obj, eje, dir, c, pos: -largo / 2 + i * (largo / 3) + r() * 4, vel: 6, largo, len: 4.1 }); } });
+    const RANGO = { x: [-150, 150], z: [-100, 24] };
+    carriles.forEach(([eje, dir, c], ci) => { const [mn, mx] = RANGO[eje], largo = mx - mn, n = eje === 'x' ? 7 : 4; for (let i = 0; i < n; i++) { const obj = coche(colores[(ci * 3 + i) % colores.length]); S.mundo.add(obj); S.coches.push({ obj, eje, dir, c, pos: mn + (i + 0.3) * (largo / n) + r() * 4, vel: 6, largo, min: mn, max: mx, len: 4.1 }); } });
     // Autobús urbano con el anuncio del club: carril sur de la avenida, para en la parada
-    { const obj = autobus(club); S.mundo.add(obj); S.coches.push({ obj, eje: 'x', dir: 1, c: 1.5, pos: -20, vel: 5, largo: 88, len: 10.5, bus: true, parada: -36, tParada: 0 }); }
+    { const obj = autobus(club); S.mundo.add(obj); S.coches.push({ obj, eje: 'x', dir: 1, c: 1.5, pos: -20, vel: 5, largo: 300, min: -150, max: 150, len: 10.5, bus: true, parada: -36, tParada: 0 }); }
     S.tSem = 0;
   }
   function autobus(club) {
@@ -368,6 +374,7 @@
   }
   // ---------- Tráfico, semáforos y saludos ----------
   function actualizar(S, M, dt) {
+    if (GM.ciudadBarrios) GM.ciudadBarrios.actualizar(S, dt);
     if (!S.coches) return;
     moverPalomas(S, dt);
     S.perros && S.perros.forEach(p => { const o = p.dueno.obj, d = p.d, f = o.rotation.y, tx = o.position.x - Math.sin(f) * 0.9 + Math.cos(f) * 0.5, tz = o.position.z - Math.cos(f) * 0.9 - Math.sin(f) * 0.5, dx = tx - d.position.x, dz = tz - d.position.z, l = Math.hypot(dx, dz);
@@ -400,7 +407,7 @@
       if (!verde && delante > -16 && delante < -10.6) objetivo = Math.min(objetivo, Math.max(0, (-10.8 - delante) * 1.6));
       S.coches.forEach(o => { if (o === c || o.eje !== c.eje || o.dir !== c.dir) return; let gap = c.dir * (o.pos - c.pos); if (gap < 0) gap += c.largo; const hueco = gap - (c.len + o.len) / 2; if (hueco < 4) objetivo = Math.min(objetivo, Math.max(0, (hueco - 1.2) * 2)); });
       c.vel += Math.max(-9 * dt, Math.min(3 * dt, objetivo - c.vel)); c.pos += c.dir * c.vel * dt;
-      if (c.pos > c.largo / 2) c.pos -= c.largo; if (c.pos < -c.largo / 2) c.pos += c.largo;
+      const mn = c.min !== undefined ? c.min : -c.largo / 2, mx = c.max !== undefined ? c.max : c.largo / 2; if (c.pos > mx) c.pos -= c.largo; if (c.pos < mn) c.pos += c.largo;
       if (c.eje === 'x') { c.obj.position.set(c.pos, -0.12, c.c); c.obj.rotation.y = c.dir > 0 ? Math.PI / 2 : -Math.PI / 2; } else { c.obj.position.set(c.c, -0.12, c.pos); c.obj.rotation.y = c.dir > 0 ? 0 : Math.PI; }
     });
     S.tOcl = (S.tOcl || 0) - dt;

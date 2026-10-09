@@ -82,6 +82,27 @@
     if (!h.casa) { const t = nivel(st) >= 2 ? 'reformado' : 'piso'; h.casa = { id: 'h-' + t, tipo: t, modo: 'alquiler', barrio: 1, barrioNombre: barrios(st)[1] ? barrios(st)[1].nombre : 'Centro', ciudad: club(st).ciudad, precio: TIPOS[t].base }; }
     const a = h.casa, v = varianteDe(a.tipo, a.barrioNombre); return { id: a.id, tipo: a.tipo, nombre: v.nombre, lujo: TIPOS[a.tipo].lujo, modo: a.modo, barrioNombre: a.barrioNombre, ciudad: a.ciudad, cond: condicion(st, a.barrio, a.tipo), variante: v };
   }
+  // Todas tus viviendas: la que habitas y las que tienes en propiedad (cada una con su variante, su barrio y su sitio en la ciudad)
+  function viviendas(st) {
+    let lista = [];
+    if (modoCar(st)) { const v = C(st).vivienda || {}; if (C(st).fase === 'ncaa') return []; if (v.actual) lista.push(Object.assign({}, v.actual, { actual: true })); (v.propiedades || []).forEach(p => lista.push(Object.assign({}, p, { actual: false }))); }
+    else { casaActual(st); const h = hog(st); lista.push(Object.assign({}, h.casa, { actual: true })); (h.propiedades || []).forEach(p => lista.push(Object.assign({}, p, { actual: false }))); }
+    if (!lista.length && modoCar(st)) lista.push({ id: 'club-' + st.clubId, tipo: 'estudio', modo: 'club', barrio: 0, barrioNombre: 'Cerca del pabellón', actual: true });
+    return lista.filter(x => TIPOS[x.tipo]).map(x => { const v = varianteDe(x.tipo, x.barrioNombre); return Object.assign(x, { variante: v, nombre: v.nombre, ext: v.est.ext, barrio: x.barrio || 0 }); });
+  }
+  // Mudarse a otra de tus casas sin vender nada (la que dejas, si es tuya, queda en propiedad)
+  function vivirEn(st, id) {
+    if (modoCar(st)) {
+      const v = C(st).vivienda; if (!v) return { ok: false, motivo: 'No tienes viviendas.' }; if (v.actual && v.actual.id === id) return { ok: true };
+      const i = (v.propiedades || []).findIndex(p => p.id === id); if (i < 0) return { ok: false, motivo: 'No es tuya.' };
+      const nueva = v.propiedades.splice(i, 1)[0]; nueva.alquilada = false; if (v.actual && v.actual.modo === 'compra') v.propiedades.push(Object.assign({}, v.actual, { alquilada: false }));
+      v.actual = nueva; GM.noticia(st, 'Te mudas a tu ' + varianteDe(nueva.tipo, nueva.barrioNombre).nombre.toLowerCase() + ' de ' + nueva.barrioNombre + '.'); return { ok: true };
+    }
+    const h = hog(st); if (h.casa && h.casa.id === id) return { ok: true };
+    const i = (h.propiedades || []).findIndex(p => p.id === id); if (i < 0) return { ok: false, motivo: 'No es tuya.' };
+    const nueva = h.propiedades.splice(i, 1)[0]; if (h.casa && h.casa.modo === 'compra') h.propiedades.push(h.casa); h.casa = nueva;
+    GM.noticia(st, 'Te mudas a tu ' + varianteDe(nueva.tipo, nueva.barrioNombre).nombre.toLowerCase() + ' de ' + nueva.barrioNombre + '.'); return { ok: true };
+  }
   function barrios(st) { try { return GM.mods.carrera && GM.mods.carrera.barriosVivienda ? GM.mods.carrera.barriosVivienda(st) : []; } catch (e) { return []; } }
   function condicion(st, barrio, tipo) { const b = barrios(st)[barrio]; return U.clamp(0.35 + (b ? b.prestigio / 10 : 0.2) + TIPOS[tipo].lujo * 0.08, 0, 1); }
   function tipos(st, bi) {
@@ -95,6 +116,7 @@
     const b = barrios(st)[barrio], precio = Math.round(t.base * (b ? b.precio : 1)), alq = Math.max(1, Math.round(precio * 0.005 * 10) / 10), coste = modo === 'compra' ? precio : modo === 'hipoteca' ? Math.round(precio * 0.2) : alq * 2;
     if (dinero(st) < coste) return { ok: false, motivo: 'Te faltan ' + Math.round(coste - dinero(st)) + ' mil € de ahorros.' };
     gastar(st, coste); const h = hog(st), viejo = h.casa;
+    if (viejo && viejo.modo === 'compra') (h.propiedades = h.propiedades || []).push(viejo);   // comprar otra no vende la anterior
     h.casa = { id: 'h-' + tipo + '-' + barrio + '-' + st.fecha, tipo, modo, barrio, barrioNombre: b ? b.nombre : 'Centro', ciudad: club(st).ciudad, precio, alquiler: alq, cuota: alq };
     if (viejo && h.muebles[viejo.id] && modo === 'compra') { /* los muebles se quedan en la casa anterior */ }
     GM.noticia(st, 'Nuevo hogar: ' + t.nombre.toLowerCase() + ' en ' + h.casa.barrioNombre + '.');
@@ -194,5 +216,5 @@
     const ok = n >= 3 && r1.ok && !r2.ok && n >= 3 === !!r3.ok && r4.ok && quitar(st, 'salon', 'f-0-0').ok && habitaciones('mansion').length === 7 && efectos(st).moral >= 0;
     return ok && TIPOS.mansion.req === 5 && ITEMS.every(i => i.niv >= 0 && i.niv <= 5);
   }
-  GM.register('hogar', { VARIANTES, varianteDe, dims, usoDe, usar, energiaCasa, nivel, etiquetaNivel, dinero, casaActual, tipos, mudarse, habitaciones, catalogo, colocar, quitar, colorear, muebles, efectos, trofeos, selfTest, TIPOS, ITEMS, HABS, NIVELES, EXT });
+  GM.register('hogar', { viviendas, vivirEn, VARIANTES, varianteDe, dims, usoDe, usar, energiaCasa, nivel, etiquetaNivel, dinero, casaActual, tipos, mudarse, habitaciones, catalogo, colocar, quitar, colorear, muebles, efectos, trofeos, selfTest, TIPOS, ITEMS, HABS, NIVELES, EXT });
 })();

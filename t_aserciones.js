@@ -2,7 +2,7 @@
 const assert = require('assert');
 global.LZString = require('lz-string');
 const L = require('./load');
-L(['core', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'social', 'sponsor', 'pueblo', 'gente', 'estilo', 'movil', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d']);
+L(['core', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'finanzas', 'ciudad', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'ciudad3d', 'social', 'sponsor', 'pueblo', 'gente', 'estilo', 'movil', 'guardado', 'hogar', 'sede_plano', 'sede_acciones', 'casa3d']);
 let n = 0; const ok = (nombre, fn) => { fn(); n++; console.log('  ok', nombre); };
 const U = GM.util, C = GM.mods.competiciones;
 
@@ -147,5 +147,19 @@ ok('estilo y móvil: planes, consecuencias, sanción y decisiones por mensaje', 
   sr.carrera.pend.push({ id: 'mentor', fecha: sr.fecha }); const ch = Mv.chats(sr).find(c => Mv.chat(sr, c.id).some(m => m.dec && m.dec.id === 'mentor' && m.estado === 'pendiente'));
   assert.ok(ch, 'el evento llega como mensaje'); const m = Mv.chat(sr, ch.id).find(x => x.dec && x.dec.id === 'mentor');
   const v0 = Es.estado(sr).v; assert.ok(Mv.contestar(sr, ch.id, m.n, 0).ok); assert.ok(!sr.carrera.pend.some(p => p.id === 'mentor'), 'resuelto'); assert.ok(Es.estado(sr).v > v0, 'aceptar al mentor suma profesionalidad');
+});
+// ---- Viviendas: varias a la vez, mudarse sin vender ----
+ok('viviendas: comprar otra no vende la anterior y puedes mudarte entre ellas', () => {
+  GM.rng.seed(14); const sv = GM.newGame('joventut-badalona', 14, { modo: 'carrera', personaje: { nombre: 'Marc', apellido: 'Soler' }, carrera: { origen: 'europa', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
+  const H = GM.mods.hogar, nv = H.nivel; H.nivel = () => 5; sv.carrera.dinero = 5000;
+  assert.ok(GM.mods.carrera.comprarVivienda(sv, 2, 'piso', 'compra').ok); assert.ok(GM.mods.carrera.comprarVivienda(sv, 4, 'casa', 'compra').ok);
+  let vs = H.viviendas(sv); assert.strictEqual(vs.length, 2, 'las dos son tuyas'); assert.strictEqual(vs.find(v => v.actual).tipo, 'casa');
+  const piso = vs.find(v => v.tipo === 'piso'); assert.ok(H.vivirEn(sv, piso.id).ok); vs = H.viviendas(sv);
+  assert.strictEqual(vs.find(v => v.actual).tipo, 'piso', 'te mudas al piso'); assert.strictEqual(vs.length, 2, 'la casa sigue siendo tuya');
+  vs.forEach(v => { assert.ok(v.variante && v.variante.plano.length >= 2, 'cada una con su plano'); assert.ok(v.ext, 'y su fachada'); });
+  // modos de gestión: también se conservan
+  GM.rng.seed(15); const sg = GM.newGame('joventut-badalona', 15, { modo: 'gestor', personaje: { nombre: 'Marc', apellido: 'Soler' } }); GM.mods.hogar.dinero(sg); sg.hogar.ahorros = 5000;
+  assert.ok(H.mudarse(sg, 1, 'piso', 'compra').ok); assert.ok(H.mudarse(sg, 3, 'reformado', 'compra').ok); assert.strictEqual(H.viviendas(sg).length, 2, 'en gestión también se acumulan');
+  H.nivel = nv;
 });
 console.log('aserciones', n, 'de', n);

@@ -28,7 +28,7 @@
     ['kitchenStove', 'Cocina de gas', 0.4, 2, 'Cocina'], ['kitchenSink', 'Fregadero', 0.3, 1, 'Cocina'], ['kitchenMicrowave', 'Microondas', 0.1, 1, 'Cocina'], ['kitchenFridgeLarge', 'Nevera grande', 0.9, 3, 'Cocina'], ['toaster', 'Tostadora', 0.03, 1, 'Cocina'], ['kitchenBlender', 'Batidora', 0.04, 1, 'Cocina'], ['tableCross', 'Mesa de madera', 0.3, 1, 'Cocina'],
     ['bathtub', 'Bañera', 0.8, 5, 'Baño'], ['bathroomCabinetDrawer', 'Mueble de baño', 0.2, 1, 'Baño'], ['bathroomMirror', 'Espejo', 0.06, 1, 'Baño'], ['dryer', 'Secadora', 0.35, 1, 'Baño'], ['rugDoormat', 'Felpudo', 0.01, 0, 'Baño', true],
     ['deskCorner', 'Escritorio en L', 0.35, 2, 'Despacho'], ['lampRoundTable', 'Flexo', 0.03, 1, 'Despacho'],
-    ['plantSmall3', 'Cactus', 0.02, 1, 'Decoración'], ['rugSquare', 'Alfombra cuadrada', 0.09, 1, 'Decoración', true],
+    ['plantSmall3', 'Cactus', 0.02, 1, 'Decoración'], ['plantSmall2', 'Planta de interior', 0.02, 1, 'Decoración'], ['bench', 'Banco', 0.06, 1, 'Decoración'], ['rugSquare', 'Alfombra cuadrada', 0.09, 1, 'Decoración', true],
     // Obra: tabiques con el color de las paredes (hechos por código)
     ['_tabique', 'Tabique de 1 m', 0.15, 0, 'Obra'], ['_tabique2', 'Tabique de 2 m', 0.28, 0, 'Obra'], ['_mampara', 'Mampara de cristal', 0.2, 1, 'Obra']
   ];
@@ -49,40 +49,107 @@
   const nivel = st => (GM.mods.hogar && GM.mods.hogar.nivel ? GM.mods.hogar.nivel(st) : 1);
   const dinero = st => (GM.mods.hogar ? GM.mods.hogar.dinero(st) : 0);
   function gastar(st, k) { if (st.modo === 'carrera') st.carrera.dinero -= k; else { GM.mods.hogar.dinero(st); st.hogar.ahorros -= k; } }
-  function datos(st) {
-    st.sede = st.sede || { charlas: {} };
-    if (st.sede.casa && st.sede.casa.pared === undefined) Object.assign(st.sede.casa, { pared: 0, suelo: 0, luz: 0 });
-    if (!st.sede.casa) st.sede.casa = { pared: 0, suelo: 0, luz: 0, muebles: [{ m: 'bedSingle', x: -2, z: -1.5, r: 0 }, { m: 'loungeSofa', x: 1.5, z: 1, r: 180 }, { m: 'tableCoffee', x: 1.5, z: -0.5, r: 0 }, { m: 'kitchenFridge', x: 2.5, z: -2.3, r: 0 }, { m: 'pottedPlant', x: -3.3, z: 2.3, r: 0 }] };
-    return st.sede.casa;
+  // ---------- Viviendas: cada una con sus muebles y reformas (st.sede.casas[id]) ----------
+  let CASA_ID = null;   // la vivienda que se está viendo
+  const viviendas = st => (GM.mods.hogar && GM.mods.hogar.viviendas ? GM.mods.hogar.viviendas(st) : []);
+  const idActual = st => { const v = viviendas(st), a = v.find(x => x.actual) || v[0]; return a ? a.id : 'casa'; };
+  function datos(st, id) {
+    st.sede = st.sede || { charlas: {} }; const SD = st.sede; SD.casas = SD.casas || {};
+    id = id || CASA_ID || idActual(st);
+    if (!SD.casas[id]) {
+      const viejo = SD.casa; SD.casas[id] = { pared: viejo ? viejo.pared || 0 : 0, suelo: viejo ? viejo.suelo || 0 : 0, luz: viejo ? viejo.luz || 0 : 0, muebles: null };
+      if (viejo) delete SD.casa;   // la casa única de antes: sus reformas pasan a tu vivienda actual (los muebles se recolocan según las habitaciones)
+    }
+    const d = SD.casas[id]; if (d.pared === undefined) Object.assign(d, { pared: 0, suelo: 0, luz: 0 });
+    // Muebles de partida: los básicos de cada habitación, sin sitio todavía (se colocan al entrar: construirCon)
+    if (!d.muebles) { const v = viviendas(st).find(x => x.id === id) || viviendas(st).find(x => x.actual), H = GM.mods.hogar; const habs = v && H ? H.habitaciones(v.tipo, v.variante) : [{ id: 'estudio' }]; d.muebles = [].concat(...habs.map(r => (BASICOS[r.id] || []).map(m => ({ m, x: null, z: null, r: 0, hab: r.id })))); }
+    return d;
   }
-  function confort(st) { return datos(st).muebles.reduce((s, x) => s + ((CAT[x.m] || {}).confort || 0), 0); }
-  const sala = st => { const [w, d] = TAM[Math.max(0, Math.min(5, nivel(st)))]; return [-w / 2, -d / 2, w / 2, d / 2]; };
+  function confort(st, id) { return (datos(st, id).muebles || []).reduce((s, x) => s + ((CAT[x.m] || {}).confort || 0), 0); }
+  // Plano de la vivienda a partir de su variante (hogar.js): planta baja delante, planta de arriba detrás (con escalera) y
+  // terraza, jardín o piscina fuera, delante de la entrada. Devuelve habitaciones con su rectángulo y la puerta principal.
+  function plano(viv) {
+    const H = GM.mods.hogar, habs = H.habitaciones(viv.tipo, viv.variante);
+    const A = habs.filter(r => !r.ext && !r.planta), B = habs.filter(r => !r.ext && r.planta), X = habs.filter(r => r.ext);
+    const ancho = l => l.reduce((s, r) => s + r.w, 0), W = Math.max(ancho(A), ancho(B), 4), dA = Math.max(...A.map(r => r.d), 3.6), dB = B.length ? Math.max(...B.map(r => r.d)) : 0;
+    const fila = (l, za, zb, arriba) => { let x = -W / 2; return l.map((r, k) => { const x1 = k === l.length - 1 ? W / 2 : x + r.w, o = Object.assign({}, r, { x0: x, x1, z0: za, z1: zb, arriba }); x = x1; return o; }); };
+    const front = (dA + dB) / 2, rA = fila(A, front - dA, front, false), rB = B.length ? fila(B, front - dA - dB, front - dA, true) : [];
+    const anchoX = ancho(X), dX = X.length ? Math.max(...X.map(r => r.d)) : 0;
+    let xx = -Math.max(W, anchoX) / 2; const rX = X.map((r, k) => { const x1 = k === X.length - 1 ? Math.max(W, anchoX) / 2 : xx + r.w, o = Object.assign({}, r, { x0: xx, x1, z0: front + 0.4, z1: front + 0.4 + dX }); xx = x1; return o; });
+    const puertaX = rA.length ? (rA[0].x0 + rA[0].x1) / 2 : 0;
+    return { habs: rA.concat(rB), ext: rX, W, front, fondo: front - dA - dB, dX, puertaX, interiores: rA.length + rB.length };
+  }
+  // Muebles de partida según las habitaciones (lo que cabe se queda; lo demás, no)
+  const BASICOS = { estudio: ['bedSingle', 'loungeSofa', 'kitchenFridge'], salon: ['loungeSofa', 'tableCoffee', 'televisionModern'], dormitorio: ['bedDouble', 'sideTable'], cocina: ['kitchenFridge', 'kitchenCabinet', 'table'], despacho: ['desk', 'chairDesk'], gimnasio: ['bench'], cine: ['loungeSofaLong', 'televisionModern'], terraza: ['loungeChair', 'plantSmall2'], jardin: ['bench', 'pottedPlant'], piscina: ['loungeChairRelax'] };
 
   // ---------- Escena ----------
   let C = null; // estado del modo construcción
-  async function construir(S, M, st) {
-    const W = S.mundo, [x0, z0, x1, z1] = sala(st), w = x1 - x0, d = z1 - z0;
+  async function construir(S, M, st, id) {
+    const W = S.mundo, vs = viviendas(st), viv = vs.find(v => v.id === id) || vs.find(v => v.actual) || vs[0];
+    if (!viv) { const c0 = { id: 'casa', tipo: 'estudio', variante: GM.mods.hogar.VARIANTES.estudio[0], barrioNombre: '' }; return construirCon(S, M, st, c0); }
+    return construirCon(S, M, st, viv);
+  }
+  async function construirCon(S, M, st, viv) {
+    const W = S.mundo; CASA_ID = viv.id; S.casaId = viv.id; S.casaNombre = viv.variante.nombre + (viv.barrioNombre ? ', ' + viv.barrioNombre : '');
+    const PL = plano(viv), todas = PL.habs.concat(PL.ext), x0 = Math.min(...todas.map(r => r.x0)), x1 = Math.max(...todas.map(r => r.x1)), z0 = PL.fondo, z1 = PL.ext.length ? PL.front + 0.4 + PL.dX : PL.front;
     S.scene.background = new THREE.Color(0x1d232a); S.scene.fog = null;
-    const P = { limites: [x0 - 2, z0 - 2, x1 + 2, z1 + 4], CELDA: 0.5 }; S.G = M.rejilla(P); S.casaRect = [x0, z0, x1, z1];
-    // Suelo de tarima y franja exterior (rellano)
-    const D = datos(st), mSuelo = new THREE.MeshStandardMaterial({ color: 0xb98e63, roughness: 0.6 }); S.casaMats = { suelo: mSuelo, w, d }; ponerSuelo(S, M, D.suelo);
-    const suelo = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), mSuelo); suelo.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); suelo.receiveShadow = true; W.add(suelo);
-    const rellano = new THREE.Mesh(new THREE.PlaneGeometry(4, 3).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x9a948a })); rellano.position.set(0, -0.01, z1 + 1.5); W.add(rellano);
-    // Muros en corte con puerta al sur (centro) y ventanas al norte
-    const mMuro = new THREE.MeshStandardMaterial({ color: colorPared(st, D.pared), roughness: 0.9 }), mRemate = new THREE.MeshStandardMaterial({ color: 0x2b3038 }), alto = 1.15;
+    S.G = M.rejilla({ limites: [x0 - 2, z0 - 2, x1 + 2, z1 + 4], CELDA: 0.5 }); S.casaRect = [x0, z0, x1, z1]; S.casaPlano = PL;
+    const D = datos(st, viv.id), est = viv.variante.est || {};
+    const mSuelo = new THREE.MeshStandardMaterial({ color: 0xb98e63, roughness: 0.6 }); S.casaMats = { suelo: mSuelo, w: PL.W, d: PL.front - PL.fondo }; ponerSuelo(S, M, D.suelo);
+    const suelo = new THREE.Mesh(new THREE.PlaneGeometry(PL.W, PL.front - PL.fondo).rotateX(-Math.PI / 2), mSuelo); suelo.position.set(0, 0, (PL.front + PL.fondo) / 2); suelo.receiveShadow = true; W.add(suelo);
+    const mMuro = new THREE.MeshStandardMaterial({ color: D.pared ? colorPared(st, D.pared) : (est.pared || colorPared(st, 0)), roughness: 0.9 }), mRemate = new THREE.MeshStandardMaterial({ color: 0x2b3038 }), alto = 1.15;
     Object.assign(S.casaMats, { muro: mMuro, remate: mRemate, alto });
-    // Luz del techo (color según la reforma) y, de noche, más presencia de las lámparas
-    const luz = new THREE.PointLight(LUCES[D.luz || 0][1], 6 + w * d * 0.06, Math.max(w, d) * 1.4, 1.6); luz.position.set((x0 + x1) / 2, 2.6, (z0 + z1) / 2); luz.userData = { luzCasa: true }; W.add(luz); S.casaMats.luz = luz;
-    const muro = (xa, za, xb, zb) => { const l = Math.hypot(xb - xa, zb - za), m = new THREE.Mesh(new THREE.BoxGeometry(xa === xb ? 0.2 : l, alto, xa === xb ? l : 0.2), mMuro); m.position.set((xa + xb) / 2, alto / 2, (za + zb) / 2); m.castShadow = m.receiveShadow = true; W.add(m); const r = new THREE.Mesh(new THREE.BoxGeometry(xa === xb ? 0.21 : l, 0.04, xa === xb ? l : 0.21), mRemate); r.position.set(m.position.x, alto + 0.02, m.position.z); W.add(r); S.G.bloquea(Math.min(xa, xb) - 0.15, Math.min(za, zb) - 0.15, Math.max(xa, xb) + 0.15, Math.max(za, zb) + 0.15); };
-    muro(x0, z0, x1, z0); muro(x0, z0, x0, z1); muro(x1, z0, x1, z1); muro(x0, z1, -0.7, z1); muro(0.7, z1, x1, z1);
-    for (let i = 1; i < Math.floor(w / 3); i++) { const v = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.7, 0.22), new THREE.MeshStandardMaterial({ color: 0x9fc4dc, roughness: 0.1, metalness: 0.3 })); v.position.set(x0 + i * 3, 0.75, z0); W.add(v); }
-    // Muebles guardados
+    // Muros en corte: contorno, línea entre plantas y separaciones entre habitaciones, con puertas de 1 m
+    const muros = []; S.casaMuros = muros; S.casaPuertas = [];
+    const muro = (xa, za, xb, zb, huecos, m, h) => {
+      const horiz = za === zb, L = horiz ? xb - xa : zb - za, ini = horiz ? xa : za; let tramos = [[0, L]];
+      (huecos || []).forEach(c => { const a = c - ini - 0.5, b = c - ini + 0.5; tramos = tramos.flatMap(([p, q]) => b <= p || a >= q ? [[p, q]] : [[p, Math.max(p, a)], [Math.min(q, b), q]]).filter(([p, q]) => q - p > 0.05); S.casaPuertas.push(horiz ? [c, za] : [xa, c]); });
+      tramos.forEach(([p, q]) => { const l = q - p, cx = horiz ? xa + p + l / 2 : xa, cz = horiz ? za : za + p + l / 2, hh = h || alto;
+        const me = new THREE.Mesh(new THREE.BoxGeometry(horiz ? l : 0.2, hh, horiz ? 0.2 : l), m || mMuro); me.position.set(cx, hh / 2, cz); me.castShadow = me.receiveShadow = true; W.add(me);
+        if (!m) { const r = new THREE.Mesh(new THREE.BoxGeometry(horiz ? l : 0.21, 0.04, horiz ? 0.21 : l), mRemate); r.position.set(cx, hh + 0.02, cz); W.add(r); }
+        muros.push(horiz ? [xa + p, za - 0.15, xa + q, za + 0.15] : [xa - 0.15, za + p, xa + 0.15, za + q]); });
+    };
+    const xs = PL.habs.length ? PL.habs : [{ x0: -PL.W / 2, x1: PL.W / 2, z0: PL.fondo, z1: PL.front }];
+    const fA = xs.filter(r => !r.arriba), fB = xs.filter(r => r.arriba), zAB = fA.length ? fA[0].z0 : PL.fondo;
+    muro(-PL.W / 2, PL.front, PL.W / 2, PL.front, [PL.puertaX]);                                  // fachada con la puerta
+    muro(-PL.W / 2, PL.fondo, PL.W / 2, PL.fondo, []);                                           // fondo
+    muro(-PL.W / 2, PL.fondo, -PL.W / 2, PL.front, []); muro(PL.W / 2, PL.fondo, PL.W / 2, PL.front, []);
+    if (fB.length) muro(-PL.W / 2, zAB, PL.W / 2, zAB, fA.map(r => (r.x0 + r.x1) / 2));       // entre plantas: una puerta por habitación
+    [fA, fB].forEach(f => f.slice(0, -1).forEach(r => muro(r.x1, r.z0, r.x1, r.z1, [(r.z0 + r.z1) / 2])));
+    // Suelo propio en la cocina (baldosa) y el gimnasio (goma)
+    xs.forEach(r => { if (r.id !== 'cocina' && r.id !== 'gimnasio') return; const tx = r.id === 'cocina' ? M.textura('suelo-casa-2', 256, dibSuelo(2)) : null, mt = new THREE.MeshStandardMaterial(tx ? { map: tx.clone() } : { color: 0x3b4148, roughness: 0.95 }); if (tx) { mt.map.needsUpdate = true; mt.map.repeat.set((r.x1 - r.x0) / 2, (r.z1 - r.z0) / 2); } const p = new THREE.Mesh(new THREE.PlaneGeometry(r.x1 - r.x0 - 0.1, r.z1 - r.z0 - 0.1).rotateX(-Math.PI / 2), mt); p.position.set((r.x0 + r.x1) / 2, 0.004, (r.z0 + r.z1) / 2); p.receiveShadow = true; W.add(p); });
+    // Ventanas en la pared del fondo
+    for (let x = -PL.W / 2 + 1.5; x < PL.W / 2 - 1; x += 3) { const v = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.7, 0.22), new THREE.MeshStandardMaterial({ color: 0x9fc4dc, roughness: 0.1, metalness: 0.3 })); v.position.set(x, 0.75, PL.fondo); W.add(v); }
+    // Escalera a la planta de arriba (las habitaciones de detrás) y nombre de cada habitación
+    if (fB.length) { const ex = fA[0].x1 - 0.9, ez = zAB + 0.9; for (let k = 0; k < 5; k++) { const p = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.12 + k * 0.12, 0.28), mRemate); p.position.set(ex, (0.12 + k * 0.12) / 2, ez + 0.6 - k * 0.28); W.add(p); } muros.push([ex - 0.5, ez - 0.6, ex + 0.5, ez + 0.75]); }
+    xs.concat(PL.ext).forEach(r => { if (!r.nombre) return; const e = M.etiqueta(r.nombre + (r.arriba ? ' (arriba)' : '')); e.scale.multiplyScalar(0.62); e.position.set((r.x0 + r.x1) / 2, 2.0, (r.z0 + r.z1) / 2); e.userData = { etiqueta: true, rotulo: true }; W.add(e); });
+    // Exterior: terraza, jardín o piscina, con valla baja y salida hacia la calle
+    PL.ext.forEach(r => {
+      const w = r.x1 - r.x0, d = r.z1 - r.z0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
+      const col = r.id === 'jardin' ? 0x6f9a4a : r.id === 'terraza' ? 0xcbb79a : 0xdfe6ea, p = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: col, roughness: 0.9 })); p.position.set(cx, -0.005, cz); p.receiveShadow = true; W.add(p);
+      if (r.id === 'piscina') { const pw = Math.max(2, w - 3), pd = Math.max(1.6, d - 2.2), ag = new THREE.Mesh(new THREE.PlaneGeometry(pw, pd).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x3ea6d6, roughness: 0.08, metalness: 0.2 })); ag.position.set(cx, 0.03, cz); W.add(ag); const bo = new THREE.Mesh(new THREE.BoxGeometry(pw + 0.3, 0.06, pd + 0.3), new THREE.MeshStandardMaterial({ color: 0xf4f1ea })); bo.position.set(cx, 0.0, cz); W.add(bo); muros.push([cx - pw / 2, cz - pd / 2, cx + pw / 2, cz + pd / 2]); }
+      if (r.id === 'jardin') for (let k = 0; k < 3; k++) { const ar = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6, 1), new THREE.MeshStandardMaterial({ color: 0x4f8f45 })); const ax = r.x1 - 0.8, az = r.z0 + 0.9 + k * (d - 1.8) / 2; ar.position.set(ax, 1.3, az); W.add(ar); const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.9), new THREE.MeshStandardMaterial({ color: 0x6b5136 })); tr.position.set(ax, 0.45, az); W.add(tr); muros.push([ax - 0.4, az - 0.4, ax + 0.4, az + 0.4]); }
+    });
+    if (PL.ext.length) { const mV = new THREE.MeshStandardMaterial({ color: 0xf2efe8 }), ex0 = Math.min(...PL.ext.map(r => r.x0)), ex1 = Math.max(...PL.ext.map(r => r.x1)), ez1 = PL.front + 0.4 + PL.dX;
+      muro(ex0, PL.front, ex0, ez1, [], mV, 0.6); muro(ex1, PL.front, ex1, ez1, [], mV, 0.6); muro(ex0, ez1, ex1, ez1, [PL.puertaX], mV, 0.6);
+      PL.ext.slice(0, -1).forEach(r => muro(r.x1, r.z0, r.x1, r.z1, [(r.z0 + r.z1) / 2], mV, 0.4)); }
+    else { const rellano = new THREE.Mesh(new THREE.PlaneGeometry(4, 3).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x9a948a })); rellano.position.set(PL.puertaX, -0.01, PL.front + 1.5); W.add(rellano); }
+    // Luces del techo (una por planta, del color de la reforma)
+    const luz = new THREE.PointLight(LUCES[D.luz || 0][1], 6 + PL.W * (PL.front - PL.fondo) * 0.05, Math.max(PL.W, 8) * 1.3, 1.6); luz.position.set(0, 2.6, fB.length ? (zAB + PL.front) / 2 : (PL.fondo + PL.front) / 2); luz.userData = { luzCasa: true }; W.add(luz); S.casaMats.luz = luz;
+    if (fB.length) { const l2 = luz.clone(); l2.position.set(0, 2.6, (PL.fondo + zAB) / 2); W.add(l2); S.casaMats.luz2 = l2; }
+    // Muebles: los guardados de esta vivienda o, la primera vez, los básicos de cada habitación
     S.mueblesCasa = [];
-    await Promise.all(datos(st).muebles.map(x => colocarObj(S, M, x)));
+    const sinSitio = D.muebles.filter(x => x.x === null || x.x === undefined);
+    if (sinSitio.length) { await Promise.all(sinSitio.map(x => medir(M, x.m))); const k0 = {};
+      sinSitio.forEach(x => { const r = todas.find(q => q.id === x.hab) || todas[0], k = k0[r.id] = (k0[r.id] || 0) + 1, t = TAMS[x.m] || [1, 1], esq = [[r.x0 + t[0] / 2 + 0.25, r.z0 + t[1] / 2 + 0.25], [r.x1 - t[0] / 2 - 0.25, r.z0 + t[1] / 2 + 0.25], [(r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2]][(k - 1) % 3], px = esq[0], pz = esq[1]; x.x = 9999; if (cabe(S, st, x.m, px, pz, 0, x)) { x.x = px; x.z = pz; } });
+      D.muebles = D.muebles.filter(x => x.x !== 9999); }
+    await Promise.all(D.muebles.map(x => colocarObj(S, M, x)));
     rehacerRejilla(S, st);
-    S.zonas = [M.zona(W, { id: 'puerta_casa', nombre: 'Salir a la calle', accion: 'Bajar al portal', destino: {}, irA: 'calle', boton: 'Salir a la calle' }, 0, z1 + 1.2, st.equipos[st.clubId]),
-      M.zona(W, { id: 'casa', nombre: 'Tu casa', accion: 'Confort ' + confort(st) + '. Descansa o redecora.', destino: { todos: 'ciudad' } }, (x0 + x1) / 2 + 1.2, z1 - 1.2, st.equipos[st.clubId])];
-    S.spawnCasa = { x: 0, z: z1 + 0.8, ry: Math.PI };
+    const pz = PL.ext.length ? PL.front + 0.4 + PL.dX + 1.1 : PL.front + 2.2, club = st.equipos[st.clubId], salon = xs.find(r => r.id === 'salon' || r.id === 'estudio') || xs[0];
+    S.zonas = [M.zona(W, { id: 'puerta_casa', nombre: 'Salir a la calle', accion: 'Bajar a la calle', destino: {}, irA: 'calle', boton: 'Salir a la calle' }, PL.puertaX, pz, club),
+      M.zona(W, { id: 'casa', nombre: viv.actual === false ? 'Tu otra casa' : 'Tu casa', accion: 'Confort ' + confort(st, viv.id) + '. Descansa o redecora.', destino: { todos: 'ciudad' } }, Math.min(salon.x1 - 0.8, (salon.x0 + salon.x1) / 2 + 1.2), salon.z1 - 1.2, club)];
+    if (viv.actual === false && GM.mods.hogar.vivirEn) S.zonas.push(M.zona(W, { id: 'mudarse', nombre: 'Vivir aquí', accion: '', destino: {}, acciones: s2 => [{ id: 'mudarse', t: 'Mudarte a esta casa', d: 'Pasas a vivir aquí; la otra sigue siendo tuya.', disponible: true, fn: () => GM.mods.hogar.vivirEn(s2, viv.id).ok ? { ok: true, texto: 'Ahora vives aquí' } : { ok: false, motivo: 'No se ha podido' } }] }, salon.x0 + 1.0, (salon.z0 + salon.z1) / 2, club));
+    S.spawnCasa = { x: PL.puertaX, z: pz - (PL.ext.length ? 1.6 : 1.0), ry: Math.PI };   // ya dentro, lejos del círculo de salida
     return W;
   }
   // Modelo de cada pieza: los de Kenney o, si empieza por «_», un tabique hecho por código
@@ -102,16 +169,18 @@
   function huella(m, x, z, r) { const o = CAT[m]; const t = TAMS[m] || [1, 1], giro = Math.abs(Math.sin(r * Math.PI / 180)) > 0.5, w = giro ? t[1] : t[0], d = giro ? t[0] : t[1]; return [x - w / 2, z - d / 2, x + w / 2, z + d / 2]; }
   const TAMS = {}; // tamaño real en metros de cada modelo (se mide al cargarlo)
   function rehacerRejilla(S, st) {
-    const G = S.G; G.b.fill(0); const [x0, z0, x1, z1] = S.casaRect, b = (a, c, e, f) => G.bloquea(a, c, e, f);
-    b(x0 - 0.15, z0 - 0.15, x1 + 0.15, z0 + 0.15); b(x0 - 0.15, z0, x0 + 0.15, z1); b(x1 - 0.15, z0, x1 + 0.15, z1); b(x0, z1 - 0.15, -0.7, z1 + 0.15); b(0.7, z1 - 0.15, x1, z1 + 0.15);
-    datos(st).muebles.forEach(x => { if (CAT[x.m] && CAT[x.m].pisable) return; const h = huella(x.m, x.x, x.z, x.r); b(h[0] + 0.05, h[1] + 0.05, h[2] - 0.05, h[3] - 0.05); });
+    const G = S.G; G.b.fill(0); (S.casaMuros || []).forEach(m => G.bloquea(m[0], m[1], m[2], m[3]));
+    (datos(st).muebles || []).forEach(x => { if ((CAT[x.m] && CAT[x.m].pisable) || x.x === null || x.x === undefined) return; const h = huella(x.m, x.x, x.z, x.r); G.bloquea(h[0] + 0.05, h[1] + 0.05, h[2] - 0.05, h[3] - 0.05); });
   }
+  // Cabe si queda dentro de una habitación (o del exterior), no tapa una puerta ni la piscina y no pisa otro mueble
+  // (los muebles que aún no tienen sitio no estorban)
   function cabe(S, st, m, x, z, r, ignorar) {
-    const [x0, z0, x1, z1] = S.casaRect, h = huella(m, x, z, r);
-    if (h[0] < x0 + 0.1 || h[1] < z0 + 0.1 || h[2] > x1 - 0.1 || h[3] > z1 - 0.1) return false;
+    const PL = S.casaPlano, h = huella(m, x, z, r); if (!PL) return false;
+    const dentro = PL.habs.concat(PL.ext).some(q => h[0] >= q.x0 + 0.12 && h[2] <= q.x1 - 0.12 && h[1] >= q.z0 + 0.12 && h[3] <= q.z1 - 0.12); if (!dentro) return false;
     if (CAT[m] && CAT[m].pisable) return true;
-    if (Math.abs(x) < 1 && h[3] > z1 - 1.2) return false; // la entrada, libre
-    return datos(st).muebles.every(o => { if (o === ignorar || (CAT[o.m] && CAT[o.m].pisable)) return true; const k = huella(o.m, o.x, o.z, o.r); return h[2] <= k[0] + 0.01 || h[0] >= k[2] - 0.01 || h[3] <= k[1] + 0.01 || h[1] >= k[3] - 0.01; });
+    if ((S.casaPuertas || []).some(([px, pz]) => px > h[0] - 0.7 && px < h[2] + 0.7 && pz > h[1] - 0.7 && pz < h[3] + 0.7)) return false;   // las puertas, libres
+    if ((S.casaMuros || []).some(k => !(h[2] <= k[0] || h[0] >= k[2] || h[3] <= k[1] || h[1] >= k[3]))) return false;
+    return (datos(st).muebles || []).every(o => { if (o === ignorar || (CAT[o.m] && CAT[o.m].pisable) || o.x === null || o.x === undefined || o.x === 9999) return true; const k = huella(o.m, o.x, o.z, o.r); return h[2] <= k[0] + 0.01 || h[0] >= k[2] - 0.01 || h[3] <= k[1] + 0.01 || h[1] >= k[3] - 0.01; });
   }
   async function medir(M, m) { if (TAMS[m]) return; if (m[0] === '_') { TAMS[m] = [m === '_tabique2' ? 2 : 1, 0.16]; return; } const o = await M.mueble(m); const e = GM.sedePlano.ESCALA_MUEBLES; TAMS[m] = [Math.max(0.3, o.tam.x * e), Math.max(0.3, o.tam.z * e)]; }
 
@@ -180,8 +249,8 @@
     return h('div', { class: 'cc-reformas' },
       fila('Paredes', PAREDES, D.pared || 0, (x, i) => punto(colorPared(st, i)), (i, x) => pagar(x[2], () => { D.pared = i; K.muro.color.set(colorPared(st, i)); }, 'Paredes: ' + x[0].toLowerCase())),
       fila('Suelo', SUELOS, D.suelo || 0, x => punto(['#c4966a', '#704a2e', '#7a4a3a', '#e5e2dc', '#5d6b78', '#d6a86e'][x[1]]), (i, x) => pagar(x[2], () => { D.suelo = i; ponerSuelo(S, M, i); }, 'Suelo: ' + x[0].toLowerCase())),
-      fila('Luz del techo', LUCES, D.luz || 0, x => punto('#' + x[1].toString(16)), (i, x) => pagar(x[2], () => { D.luz = i; K.luz.color.setHex(x[1]); }, 'Luz ' + x[0].toLowerCase())));
+      fila('Luz del techo', LUCES, D.luz || 0, x => punto('#' + x[1].toString(16)), (i, x) => pagar(x[2], () => { D.luz = i; K.luz.color.setHex(x[1]); if (K.luz2) K.luz2.color.setHex(x[1]); }, 'Luz ' + x[0].toLowerCase())));
   }
   function rotar(S) { if (C && C.elegido) { C.r = (C.r + 90) % 360; if (C.pos) hover(S, { x: C.pos[0], z: C.pos[1] }); } }
-  GM.casa = { construir, activar, hover, toque, rotar, confort, datos, CATALOGO, PAREDES, SUELOS, LUCES, activo: () => !!C };
+  GM.casa = { construir, plano, idActual, activar, hover, toque, rotar, confort, datos, CATALOGO, PAREDES, SUELOS, LUCES, activo: () => !!C };
 })();

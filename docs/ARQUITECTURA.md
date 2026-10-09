@@ -170,6 +170,12 @@ PUEBLO 3D (GM.pueblo3d): escena del pueblo natal. Colina con relieve y campos, o
 ### `edificio_kit.js`
 EDIFICIOS CON MODELOS (GM.edificioKit) — fachadas montadas con piezas glTF del Building Kit de Kenney (CC0): paredes de 2 m con ventana o puerta, columnas y cornisa, escaladas al ancho y a la altura de planta; repinta la celda de los muros de la paleta con el color pedido y fusiona todo. Expone: cuerpo(opciones) -> Promise<Group|null>.
 
+### `ciudad_barrios.js`
+CIUDAD AMPLIADA (GM.ciudadBarrios): barrios oeste, este y norte alrededor del centro de la calle, parcelas para tus viviendas con fachada según su variante, colegio, hospital, estación y puerta de la ciudad deportiva con las actividades de ciudad3d; los barrios lejanos no se dibujan. Expone: construir(ctx), actualizar(S), LOTES.
+
+### `interiores.js`
+INTERIORES (GM.interiores): pabellón, tienda, peña y ayuntamiento por dentro (escena interior:<tipo>), con su panel, las actividades de ciudad3d y gente. Expone: construir, poblar, siguiente, actualizar.
+
 ### `copias.js`
 COPIAS AUTOMÁTICAS (GM.mods.copias): con cada autoguardado (evento `guardado:auto` de guardado.js) guarda una copia GM2: en IndexedDB (las 10 últimas) y, si se eligió, en una carpeta del ordenador (File System Access). Expone: copiar, listar, restaurar, carpeta, carpetaEstado, reactivar, hayCarpeta.
 

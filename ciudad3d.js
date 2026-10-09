@@ -360,11 +360,47 @@
     CP.ambiente(v, V.hora || 'dia'); V.pos = null;
   }
   function viv(st, bi) { const x = st.modo === 'carrera' && st.carrera && st.carrera.vivienda && st.carrera.vivienda.actual; return !!x && x.barrio === bi && x.ciudad === st.equipos[st.clubId].ciudad; }
-  function escena(st) { if (V.modo === 'calles') escenaCalles(st); else escenaMapa(st); }
+  // Un solo mundo: el mapa es la ciudad que se pasea (calle3d.js + ciudad_barrios.js) vista desde arriba. Cada lugar del mapa lleva una
+  // marca sobre su edificio (las mismas actividades que dentro) y cada barrio una superficie que se toca (y se tiñe con la afición).
+  const paseable = () => !!(GM.calle && GM.ciudadBarrios && GM.sede && GM.sede.motor);
+  const ZONA_LUGAR = { colegio: 'lugar_colegio', hospital: 'lugar_hospital', estacion: 'lugar_estacion', campus: 'lugar_campus', pena: 'pena', ayuntamiento: 'ayuntamiento', pabellon: 'pabellon', plaza: 'mercado', comercio: 'tienda' };
+  const RECT_BARRIO = [[-42, -24, 42, 24], [3, -110, 150, -33], [-42, 24, 42, 64], [-150, -27, -42, 24], [42, -27, 150, 24], [-150, -110, -3, -33]];
+  function mapaPaseable(st) {
+    const K = GM.kit, v = V.vista, W = V.mundo, bar = barrios(st), heat = a => a >= 60 ? 0x6fcf97 : a >= 40 ? 0xf2d16b : 0xe27b6c;
+    const clave = [V.calor, bar.map(b => b.aficion).join(','), (GM.mods.hogar && GM.mods.hogar.viviendas ? GM.mods.hogar.viviendas(st).map(x => x.id + x.actual).join(',') : '')].join('|');
+    if (V.claveMapa === clave && V.posLugar) { marcarSeleccion(); return; }
+    V.claveMapa = clave; v.limpiar(W); V.lugares = []; V.suelos = []; V.posLugar = {};
+    const Sx = { mundo: W, scene: v.scene, camera: v.camera, st, dia: { tipo: 'normal', texto: '' } };
+    GM.calle.construir(Sx, GM.sede.motor(), st);
+    W.traverse(o => { if (o.userData && (o.userData.sala || o.userData.etiqueta)) o.visible = false; });
+    v.scene.fog = null; v.camera.far = 1000; v.camera.updateProjectionMatrix();
+    RECT_BARRIO.forEach((r, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(r[2] - r[0], r[3] - r[1]).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: V.calor ? heat(bar[i].aficion) : 0xffd54a, transparent: true, opacity: V.calor ? 0.38 : 0, depthWrite: false })); m.position.set((r[0] + r[2]) / 2, 0.3, (r[1] + r[3]) / 2); m.userData = { barrio: i }; m.renderOrder = 2; W.add(m); V.suelos.push(m); });
+    const zs = Sx.zonas || [], cuenta = {};
+    lugares(st).forEach(l => {
+      const z = zs.find(q => q.sala.id === ZONA_LUGAR[l.tipo]); if (!z) return; const k = cuenta[l.tipo] = (cuenta[l.tipo] || 0) + 1;
+      const x = z.obj.position.x + (k - 1) * 3.2, zz = z.obj.position.z, g = new THREE.Group(); g.position.set(x, 0, zz);
+      const disp = acciones(st, l.id).some(a => a.disponible), marca = new THREE.Mesh(new THREE.ConeGeometry(1.1, 2.4, 4), K.mat(disp ? 0x4cc38a : 0x8a939c)); marca.rotation.x = Math.PI; marca.position.y = 13; g.add(marca);
+      marca.userData.anim = t => { marca.position.y = 12.5 + Math.sin(t * 2 + x) * 0.8; marca.rotation.y = t; };
+      g.userData = { lugar: l.id }; W.add(g); V.lugares.push(g); V.posLugar[l.id] = [x, zz];
+    });
+    const an = []; W.traverse(o => { if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim); });
+    v.anim = an.length && GM.campus.config.calidad === 'alta' ? (t => an.forEach(f => f(t))) : null;
+    if (GM.campus.config.calidad === 'alta') K.sombrear(W);
+    V.pos = { cs: RECT_BARRIO.map(r => ({ x: (r[0] + r[2]) / 2, z: (r[1] + r[3]) / 2 })) };
+    marcarSeleccion();
+  }
+  // Selección sin reconstruir la ciudad: aro sobre el lugar o barrio resaltado, y la cámara se acerca
+  function marcarSeleccion() {
+    const W = V.mundo; if (V.aro) { W.remove(V.aro); V.aro = null; }
+    V.suelos.forEach((m, i) => { if (!V.calor) m.material.opacity = V.sel && V.sel.barrio === i ? 0.22 : 0; });
+    if (V.sel && V.sel.lugar && V.posLugar[V.sel.lugar]) { const [x, z] = V.posLugar[V.sel.lugar]; V.aro = new THREE.Mesh(new THREE.RingGeometry(3.4, 4.2, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); V.aro.position.set(x, 0.4, z); W.add(V.aro); enfocar(x, z, 60); }
+    else if (V.sel && V.sel.barrio !== undefined && V.pos) { const c = V.pos.cs[V.sel.barrio]; enfocar(c.x, c.z, 110); }
+  }
+  function escena(st) { if (V.modo === 'calles') escenaCalles(st); else if (paseable()) { try { mapaPaseable(st); } catch (e) { console.warn('ciudad paseable en el mapa', e); V.claveMapa = null; escenaMapa(st); } } else escenaMapa(st); }
   function camara(modo) {
     const v = V.vista; if (!v) return;
     clearInterval(V.tw);
-    if (modo === 'calles') { v.target.set(0, 0.8, 0); v.radio = 15; v.phi = 1.3; v.theta = 0.35; } else { v.target.set(0, 0, 0); v.radio = 40; v.phi = 0.75; v.theta = 0.5; }
+    if (modo === 'calles') { v.target.set(0, 0.8, 0); v.radio = 15; v.phi = 1.3; v.theta = 0.35; } else if (paseable()) { v.target.set(0, 0, -20); v.radio = 170; v.phi = 0.75; v.theta = 0.5; } else { v.target.set(0, 0, 0); v.radio = 40; v.phi = 0.75; v.theta = 0.5; }
     v.place();
   }
   function enfocar(x, z, radio) {
@@ -379,7 +415,7 @@
     P.append(h('div', { class: 'fila' }, h('b', null, eq.ciudad), h('span', { class: 'muted' }, 'Mapa estilizado')));
     P.append(h('div', { class: 'chips' }, st.modo === 'carrera' ? [h('span', { class: 'chip' }, 'Fama ' + Math.round(st.carrera.fama)), h('span', { class: 'chip' }, 'Moral ' + Math.round(st.carrera.moral)), h('span', { class: 'chip' }, 'Ahorros ' + Math.round(st.carrera.dinero).toLocaleString('es-ES') + ' k€')] : [h('span', { class: 'chip' }, 'Afición ' + Math.round(c.aficion)), h('span', { class: 'chip' }, 'Ambiente ' + Math.round(c.ambiente)), h('span', { class: 'chip' }, 'Ayuntamiento ' + Math.round(c.apoyoAyuntamiento)), h('span', { class: 'chip' }, 'Caja ' + U.eur(st.finanzas[st.clubId].caja))]));
     if (V.vista) P.append(h('div', { class: 'seg compacto' },
-      [['mapa', '🗺️ Mapa'], ['calles', '🚶 Calle']].map(o => h('button', { class: 'tab' + (V.modo === o[0] ? ' on' : ''), onclick: () => { V.modo = o[0]; if (o[0] === 'calles' && V.barrio === undefined) V.barrio = 0; camara(o[0]); V.refrescar(); } }, o[1])),
+      [['mapa', '🗺️ Mapa'], ['calles', '🚶 Calle']].map(o => h('button', { class: 'tab' + (V.modo === o[0] ? ' on' : ''), onclick: () => { V.modo = o[0]; V.claveMapa = null; if (o[0] === 'calles' && V.barrio === undefined) V.barrio = 0; camara(o[0]); V.refrescar(); } }, o[1])),
       V.modo === 'mapa' ? h('button', { class: 'tab' + (V.calor ? ' on' : ''), onclick: () => { V.calor = !V.calor; V.refrescar(); } }, '🔥 Afición') : h('button', { class: 'tab', onclick: () => { V.hora = V.hora === 'noche' ? 'dia' : 'noche'; V.refrescar(); } }, V.hora === 'noche' ? '☀️ Día' : '🌙 Noche')));
     P.append(h('div', { class: 'seg compacto' }, bar.map(b => h('button', { class: 'tab' + (V.sel && V.sel.barrio === b.i ? ' on' : ''), onclick: () => { V.sel = { barrio: b.i }; if (V.modo === 'calles') { V.barrio = b.i; camara('calles'); } V.refrescar(); if (V.vista && V.pos && V.modo === 'mapa') { const q = V.pos.cs[b.i]; enfocar(q.x, q.z, 24); } } }, b.nombre))));
     const sel = V.sel;
@@ -399,7 +435,7 @@
     V = { raiz, panel: panelEl, vista: null, mundo: null, st, sel: null, calor: false, modo: 'mapa', barrio: 0, hora: 'dia', lugares: [], suelos: [], personas: [] };
     if (GM.kit && GM.kit.disponible()) {
       try {
-        V.vista = GM.kit.crear(vistaEl, { radio: 40, theta: 0.5, phi: 0.75, min: 6, max: 70, fondo: 0xa9d6f2, sombras: GM.campus.config.calidad === 'alta' });
+        V.vista = GM.kit.crear(vistaEl, { radio: paseable() ? 170 : 40, theta: 0.5, phi: 0.75, min: 6, max: paseable() ? 320 : 70, fondo: 0xa9d6f2, sombras: GM.campus.config.calidad === 'alta' });
         V.mundo = new THREE.Group(); V.vista.scene.add(V.mundo);
         V.vista.onTap = (cx, cy) => {
           const hits = V.vista.pick(cx, cy, V.mundo.children);

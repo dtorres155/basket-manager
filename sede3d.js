@@ -190,13 +190,17 @@
     let [si, sj] = G.celda(desde[0], desde[1]), [ti, tj] = G.celda(hasta[0], hasta[1]);
     const cerca = (i, j) => { if (G.libre(i, j)) return [i, j]; for (let r = 1; r < 8; r++) for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) if (G.libre(i + di, j + dj)) return [i + di, j + dj]; return null; };
     const s = cerca(si, sj), t = cerca(ti, tj); if (!s || !t) return null; [si, sj] = s; [ti, tj] = t;
-    const N = G.W * G.H, gS = new Float32Array(N).fill(Infinity), de = new Int32Array(N).fill(-1), cerrado = new Uint8Array(N), abierto = [];
+    const N = G.W * G.H, gS = new Float32Array(N).fill(Infinity), de = new Int32Array(N).fill(-1), cerrado = new Uint8Array(N);
     const h = (i, j) => Math.hypot(i - ti, j - tj), ini = G.idx(si, sj), fin = G.idx(ti, tj);
+    // Lista abierta como montículo binario (antes se recorría entera en cada paso: con la ciudad grande era muy lento)
+    const hf = [], hn = [];
+    const meter = (f, n) => { let i = hf.length; hf.push(f); hn.push(n); while (i > 0) { const p = (i - 1) >> 1; if (hf[p] <= f) break; hf[i] = hf[p]; hn[i] = hn[p]; i = p; } hf[i] = f; hn[i] = n; };
+    const sacar = () => { const n0 = hn[0], f = hf.pop(), n = hn.pop(); if (hf.length) { let i = 0; const L = hf.length; for (;;) { let c = 2 * i + 1; if (c >= L) break; if (c + 1 < L && hf[c + 1] < hf[c]) c++; if (hf[c] >= f) break; hf[i] = hf[c]; hn[i] = hn[c]; i = c; } hf[i] = f; hn[i] = n; } return n0; };
+    const abierto = { push: ([f, n]) => meter(f, n), get length() { return hf.length; } };
     gS[ini] = 0; abierto.push([h(si, sj), ini]);
     const DIR = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
     while (abierto.length) {
-      let m = 0; for (let k = 1; k < abierto.length; k++) if (abierto[k][0] < abierto[m][0]) m = k;
-      const [, cur] = abierto[m]; abierto[m] = abierto[abierto.length - 1]; abierto.pop();
+      const cur = sacar();
       if (cur === fin) break; if (cerrado[cur]) continue; cerrado[cur] = 1;
       const ci = cur % G.W, cj = (cur / G.W) | 0;
       for (const [di, dj, cost] of DIR) {
@@ -240,6 +244,7 @@
   // Rutina de cada jugador: elegir sala y sitio, ir, hacer la actividad un rato y repetir
   function siguienteActividad(n) {
     if (S.escena === 'calle') return GM.calle.siguiente(S, motor(), n);
+    if (S.escena === 'interior') return GM.interiores ? GM.interiores.siguiente(S, motor(), n) : (n.espera = 99);
     if (S.escena === 'pueblo') return GM.puebloMundo.siguiente(S, motor(), n);
     if (S.escena === 'casa') { n.espera = 99; return; }
     const P = GM.sedePlano, st = S.st, j = n.jugador && st.jugadores[n.jugador];
@@ -263,7 +268,8 @@
   // ---------- Construcción de la escena ----------
   async function construir(st) {
     if (S.escena === 'calle') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.calle.construir(S, motor(), st); }
-    if (S.escena === 'casa') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.casa.construir(S, motor(), st); }
+    if (S.escena === 'casa') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.casa.construir(S, motor(), st, S.escenaArg); }
+    if (S.escena === 'interior' && GM.interiores) { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.interiores.construir(S, motor(), st, S.escenaArg); }
     if (S.escena === 'pueblo') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.puebloMundo.construir(S, motor(), st); }
     const P = GM.sedePlano, club = st.equipos[st.clubId], G = rejilla(P), W = new THREE.Group(); S.G = G; S.redes = []; S.mundo = W; S.scene.add(W);
     // Suelos: exterior, pasillo y salas
@@ -334,9 +340,12 @@
       S.flotantes.forEach(f => f.el.remove()); S.flotantes = []; S.coches = null; S.entrenador = null;
       if (S.marcaDestino) S.scene.remove(S.marcaDestino);
       S.mundo.remove(S.yo.obj); S.scene.remove(S.mundo); S.mundo.traverse(o => { if (o.geometry) o.geometry.dispose(); });
-      S.escena = dest; if (dest === 'sede') { S.scene.background = new THREE.Color(0x9fb8c8); S.scene.fog = null; }
+      const deArg = S.escenaArg, [esc, arg] = String(dest).split(':'); dest = esc;
+      S.escena = esc; S.escenaArg = arg || null; S.scene.fog = null; if (dest === 'sede') { S.scene.background = new THREE.Color(0x9fb8c8); }
       await construir(S.st);
-      const sp = dest === 'pueblo' ? (de === 'pueblo' ? { x: S.yo.obj.position.x, z: S.yo.obj.position.z, ry: S.yo.obj.rotation.y } : S.spawnPueblo) : dest === 'calle' ? (de === 'casa' ? { x: -31.5, z: 4.4, ry: Math.PI } : S.spawnCalle) : dest === 'casa' ? S.spawnCasa : { x: GM.sedePlano.entrada.x, z: 12.4, ry: Math.PI };
+      // Al volver a la calle desde una casa o un interior, se aparece en su puerta (calle3d.js guarda S.puertas)
+      const puerta = dest === 'calle' && S.puertas && (S.puertas[de + ':' + deArg] || S.puertas[de]);
+      const sp = dest === 'pueblo' ? (de === 'pueblo' ? { x: S.yo.obj.position.x, z: S.yo.obj.position.z, ry: S.yo.obj.rotation.y } : S.spawnPueblo) : dest === 'calle' ? (puerta || S.spawnCalle) : dest === 'casa' ? S.spawnCasa : dest === 'interior' ? S.spawnInterior : { x: GM.sedePlano.entrada.x, z: 12.4, ry: Math.PI };
       S.yo.camino = null; S.yo.obj.position.set(sp.x, 0, sp.z); S.yo.obj.rotation.y = sp.ry; S.mundo.add(S.yo.obj); S.foco.set(sp.x, 0, sp.z); anim(S.yo, 'idle');
       hud(S.st); await poblar(S.st);
     } catch (e) { console.error(e); GM.ui.toast && GM.ui.toast('No se ha podido cambiar de escena: ' + e.message); }
@@ -420,7 +429,7 @@
     const fecha = h('span', null, U.fechaLarga(st.fecha));
     const top = h('div', { class: 'sede-hud sede-top' },
       h('button', { class: 'btn btn-sec peq', onclick: cerrar }, 'Salir'),
-      h('div', { class: 'ct' }, h('b', null, S.escena === 'casa' ? 'Tu casa' : S.escena === 'calle' || S.escena === 'pueblo' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'pueblo' ? h('span', null, 'Tu pueblo, ' + U.fechaLarga(st.fecha)) : S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('span', { class: 'sede-hora' }, '9:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
+      h('div', { class: 'ct' }, h('b', null, S.escena === 'casa' ? (S.casaNombre || 'Tu casa') : S.escena === 'interior' ? (S.interiorNombre || 'Interior') : S.escena === 'calle' || S.escena === 'pueblo' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'pueblo' ? h('span', null, 'Tu pueblo, ' + U.fechaLarga(st.fecha)) : S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('span', { class: 'sede-hora' }, '9:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn btn-sec peq', onclick: () => mapa() }, 'Mapa'),
       st.modo === 'carrera' && GM.mods.movil && GM.ui.movil ? (() => { const n = GM.mods.movil.noLeidos(st); return h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil' + (n ? ' (' + n + ')' : '')); })() : null,
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
@@ -827,6 +836,7 @@
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
     S.dia = estadoDia(st); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
     if (S.escena === 'casa') { if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
+    if (S.escena === 'interior') { if (GM.interiores) await GM.interiores.poblar(S, motor(), st, S.escenaArg); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'calle') { await GM.calle.poblar(S, motor(), st); await conNombre(st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'pueblo') { await GM.puebloMundo.poblar(S, motor(), st); await conNombre(st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     let ids = eq.plantilla.filter(i => i !== 'yo').slice(0, 12);
@@ -874,6 +884,7 @@
   // ---------- Bucle, cámara y controles ----------
   function abrir(st, escena) {
     if (S) cerrar();
+    const escArg = escena && String(escena).split(':'); escena = escArg && escArg[0]; const argEsc = escArg && escArg[1] || null;   // 'casa:<id>', 'interior:pabellon'
     const h = GM.h, raiz = h('div', { class: 'sede' }), lienzo = h('div', { class: 'sede-3d' });
     raiz.append(lienzo); document.body.append(raiz);
     const alta = !GM.campus || GM.campus.config.calidad === 'alta'; // en «normal» (móvil): sin sombras en tiempo real y menos resolución
@@ -885,14 +896,14 @@
     const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
     const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
     Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; scene.add(sol, sol.target);
-    S = { hora: 9, luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: escena || 'sede', gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
+    S = { hora: 9, luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
     if (nivelRend()) aplicarRend(nivelRend(), false);   // lo que se aprendió en escenas anteriores de este dispositivo
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, S.escena === 'pueblo' ? 'Llegando al pueblo…' : 'Abriendo la sede del club…'); raiz.append(cargando);
     construir(st).then(async () => {
-      const yo = await personaje(aspecto(st)); { const sp = S.escena === 'pueblo' && S.spawnPueblo ? S.spawnPueblo : { x: GM.sedePlano.entrada.x, z: 12.5, ry: Math.PI }; yo.obj.position.set(sp.x, 0, sp.z); yo.obj.rotation.y = sp.ry; S.foco.set(sp.x, 0, sp.z); } S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
+      const yo = await personaje(aspecto(st)); { const sp = S.escena === 'pueblo' && S.spawnPueblo ? S.spawnPueblo : S.escena === 'calle' && S.spawnCalle ? S.spawnCalle : S.escena === 'casa' && S.spawnCasa ? S.spawnCasa : S.escena === 'interior' && S.spawnInterior ? S.spawnInterior : { x: GM.sedePlano.entrada.x, z: 12.5, ry: Math.PI }; yo.obj.position.set(sp.x, 0, sp.z); yo.obj.rotation.y = sp.ry; S.foco.set(sp.x, 0, sp.z); } S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
       const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / yo.obj.scale.x);
       if (S.escena !== 'sede') hud(st);   // la cabecera usa datos de la escena (nombre del pueblo)
       await poblar(st); cargando.remove();
@@ -908,6 +919,7 @@
       S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente(); }
       if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
+      if (S.escena === 'interior' && GM.interiores && GM.interiores.actualizar) GM.interiores.actualizar(S, motor(), dt);
       if (S.escena === 'pueblo' && GM.puebloMundo) GM.puebloMundo.actualizar(S, motor(), dt);
       { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {
@@ -983,5 +995,5 @@
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

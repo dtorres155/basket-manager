@@ -134,6 +134,16 @@
   function escena(st) {
     const K = GM.kit, v = V.vista, W = V.mundo, e = estado(st), p = P(st), pj = st.personaje, eq = st.equipos[st.clubId], CP = GM.campus; v.limpiar(W);
     const S = { c1: col(eq.colores[0] === '#000000' ? '#333333' : eq.colores[0]), c2: col(eq.colores[1] || '#ffffff'), h1: eq.colores[0] === '#000000' ? '#333333' : eq.colores[0], h2: eq.colores[1] || '#ffffff' }, n = e.nivel;
+    if (GM.puebloMundo && GM.sede && GM.sede.motor) { // un solo mundo: el pueblo que se pasea (pueblo_mundo.js), visto desde arriba
+      const Sx = { mundo: W, scene: v.scene, camera: v.camera, puebloAnim: [] };
+      try {
+        GM.puebloMundo.construir(Sx, GM.sede.motor(), st);
+        W.traverse(o => { if (o.userData && (o.userData.sala || o.userData.etiqueta)) o.visible = false; });
+        if (CP.config.calidad === 'alta') K.sombrear(W);
+        v.anim = Sx.puebloAnim.length && CP.config.calidad === 'alta' ? (t => Sx.puebloAnim.forEach(f => f(t))) : null;
+        V.lotes = Sx.lotes; V.info = { mundo: true }; v.target.set(0, -2, 8); v.place(); return;
+      } catch (e) { console.warn('pueblo paseable en el menú', e); v.limpiar(W); }
+    }
     if (GM.pueblo3d) { // pueblo de colina amurallado con estilo regional (pueblo3d.js); la escena de abajo queda como alternativa
       V.info = GM.pueblo3d.construir(v, W, st, { nivel: n, estilo: GM.pueblo3d.estiloDe(p.nombre, p.nac), S, nombre: p.nombre, cariño: p.cariño, edificios: edificios(st), edificio, jugador: { apellido: (pj && pj.apellido) || st.jugadores.yo.nombre.split(' ').pop(), dorsal: 2 + (U.hash(pj ? pj.nombre + pj.apellido : 'yo') % 30) } });
       K.fusionar(W); if (CP.config.calidad === 'alta') K.sombrear(W);
@@ -177,6 +187,10 @@
   function panel(st) {
     const h = GM.h, Pn = V.panel; Pn.innerHTML = '';
     const e = estado(st), msg = h('div', { class: 'aviso', style: { display: 'none' } }), resp = r => { if (!r.ok) { msg.style.display = 'block'; msg.textContent = r.motivo; } else { if (GM.ui && GM.ui.toast) GM.ui.toast(r.texto ? r.texto + ': ' + r.efectos.join(', ') : r.efectos ? r.efectos.join(', ') : 'Hecho'); V.refrescar(); if (GM.ui && GM.ui.cabecera) GM.ui.cabecera(); } };
+    if (V.sel) { const b = edificios(st).find(x => x.tipo === V.sel); if (b) Pn.append(h('div', { class: 'tarjeta' }, h('div', { class: 'fila' }, h('b', null, b.nombre), h('button', { class: 'btn-ic', 'aria-label': 'Quitar selección', onclick: () => { V.sel = null; panel(st); } }, '×')),
+      h('p', { class: 'muted' }, b.obra ? 'En obras: ' + Math.round(b.obra.progreso * 100) + ' %, ' + b.obra.proximo + '.' : b.nivel ? (b.actual || 'Nivel ' + b.nivel) : (b.motivo || 'Solar: se puede construir.')),
+      h('div', { class: 'par' }, b.proximo && !b.obra ? h('button', { class: 'btn peq', disabled: !!b.motivo, onclick: () => resp(invertir(st, b.tipo)) }, (b.nivel ? 'Mejorar' : 'Construir') + ' (' + b.coste + ' k€)') : null,
+        GM.sede ? h('button', { class: 'btn btn-sec peq', onclick: () => irAndando(st, b.tipo) }, 'Ir andando') : null))); }
     Pn.append(h('div', { class: 'fila' }, h('div', { class: 'ct' }, h('b', null, e.nombre), h('span', { class: 'muted' }, e.etiqueta + ', ' + e.poblacion.toLocaleString('es-ES') + ' habitantes')), h('b', null, Math.round(GM.mods.hogar.dinero(st)).toLocaleString('es-ES') + ' k€')));
     Pn.append(h('div', { class: 'fila' }, h('span', { class: 'muted' }, 'Cariño del pueblo'), h('b', null, Math.round(e.cariño))), h('span', { class: 'barra ' + (e.cariño >= 60 ? 'verde' : 'ambar') }, h('i', { style: { width: e.cariño + '%' } })));
     Pn.append(h('div', { class: 'fila' }, h('span', { class: 'muted' }, e.sig ? 'Crecimiento hacia ' + NIVELES[e.nivel] : 'Nivel máximo'), h('b', null, Math.round(e.frac * 100) + ' %')), h('span', { class: 'barra' }, h('i', { style: { width: e.frac * 100 + '%' } })));
@@ -195,12 +209,18 @@
     const hi = P(st).hitos.slice(0, 5); if (hi.length) { Pn.append(h('h4', null, 'Historia del pueblo')); Pn.append(h('div', { class: 'lista' }, hi.map(x => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(x.fecha)), h('span', { class: 'ct' }, x.texto))))); }
     Pn.append(msg);
   }
+  // Del menú al mundo: abre el pueblo paseable y lleva a tu personaje hasta la parcela
+  function irAndando(st, tipo) {
+    GM.sede.abrir(st, 'pueblo'); let n = 0;
+    const t = setInterval(() => { const S = GM.sede._estado && GM.sede._estado(); n++; if (n > 60 || !S) { clearInterval(t); return; } if (S.yo && S.lotes && S.lotes[tipo] && GM.sede._motor) { clearInterval(t); const L = S.lotes[tipo]; GM.sede._motor().irA(S.yo, L.zx, L.zz, () => {}); } }, 250);
+  }
   function mount(el, st) {
     unmount(); const h = GM.h, raiz = h('div', { class: 'c3d' }), vistaEl = h('div', { class: 'vista3d' }), panelEl = h('div', { class: 'panel3d' });
     raiz.append(vistaEl, panelEl); el.appendChild(raiz); V = { raiz, panel: panelEl, vista: null, mundo: null, st };
     if (GM.kit && GM.kit.disponible()) {
-      try { V.vista = GM.kit.crear(vistaEl, { radio: GM.pueblo3d ? 56 : 40, theta: 0.55, phi: GM.pueblo3d ? 1.05 : 0.95, min: 8, max: 95, fondo: 0xb9d9ee, sombras: GM.campus && GM.campus.config.calidad === 'alta' }); V.mundo = new THREE.Group(); V.vista.scene.add(V.mundo); V.vista.target.set(0, 0, 2); V.vista.place();
-        V.vista.onTap = (cx, cy) => { const hits = V.vista.pick(cx, cy, V.mundo.children); for (const it of hits) { let o = it.object; while (o && !(o.userData && o.userData.tipo)) o = o.parent; if (o) { const b = edificios(st).find(x => x.tipo === o.userData.tipo); if (b && GM.ui && GM.ui.toast) GM.ui.toast(b.nombre + (b.nivel ? ' (nivel ' + b.nivel + ')' : ': ' + (b.motivo || 'disponible'))); return; } } };
+      const mundo = !!(GM.puebloMundo && GM.sede && GM.sede.motor);
+      try { V.vista = GM.kit.crear(vistaEl, { radio: mundo ? 120 : GM.pueblo3d ? 56 : 40, theta: 0.55, phi: mundo ? 0.9 : GM.pueblo3d ? 1.05 : 0.95, min: 8, max: mundo ? 240 : 95, fondo: 0xb9d9ee, sombras: GM.campus && GM.campus.config.calidad === 'alta' }); V.mundo = new THREE.Group(); V.vista.scene.add(V.mundo); V.vista.target.set(0, 0, 2); V.vista.place();
+        V.vista.onTap = (cx, cy) => { const hits = V.vista.pick(cx, cy, V.mundo.children); for (const it of hits) { let o = it.object; while (o && !(o.userData && o.userData.tipo)) o = o.parent; if (o) { const b = edificios(st).find(x => x.tipo === o.userData.tipo); if (b) { V.sel = b.tipo; panel(st); if (V.lotes && V.lotes[b.tipo]) { const L = V.lotes[b.tipo], vv = V.vista; vv.target.set(L.x, 0, L.z); vv.radio = Math.min(vv.radio, 45); vv.place(); } } return; } } };
       } catch (e) { V.vista = null; }
     }
     if (!V.vista) vistaEl.append(h('div', { class: 'vacio' }, 'La vista 3D no está disponible en este dispositivo o sin conexión. Gestiona tu pueblo desde la lista.'));
