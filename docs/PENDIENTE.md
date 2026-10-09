@@ -41,6 +41,14 @@
 
 
 ## Ideas nuevas (octubre de 2026)
+### Un solo mundo: lo que ves en los menús es lo que paseas
+- **Las vistas 3D de los menús y el mundo paseable deben ser el mismo sitio** (el detallado, el de pasear). Hoy son escenas distintas:
+  - Tu pueblo: «Mi pueblo» (pueblo3d.js, colina con 104 casas, edificios en sitios fijos) frente a «Pasear por el pueblo» (pueblo_mundo.js, parcelas, obras, calles y gente).
+  - La ciudad: el mapa 3D de Ciudad (ciudad3d.js, barrios en círculo) frente a la calle (calle3d.js, el cruce con el pabellón, la tienda y la peña).
+  - La ciudad deportiva en los modos de gestión (campus.js), que no se puede pasear.
+- **Cómo:** la vista del menú pasa a ser la misma escena vista desde arriba (misma construcción, otra cámara y sin personaje), y los menús quedan conectados con el mundo: tocar un edificio en el menú abre su panel o te lleva andando hasta él, y lo que mejoras en un sitio se ve en el otro al momento.
+- **Viabilidad:** sí, con dos condiciones. Las escenas paseables tienen que poder construirse sin el motor de personas (más ligeras para la vista de menú) y cubrir todo lo que hoy enseñan los menús: la ciudad necesita los barrios conectados y la ciudad deportiva necesita su versión paseable.
+
 ### Casas con personalidad
 - **Varias casas, cada una con su carácter y su sitio en la ciudad:** hoy, al comprar otra vivienda, la anterior se guarda como propiedad (carrera.js), pero en 3D solo hay una casa: un piso diáfano que es un rectángulo personalizable (casa3d.js) y los mismos muebles para todas (`st.sede.casa`). Hace falta que cada vivienda tenga su forma y estilo según el tipo y el barrio (estudio con buhardilla, piso con balcón al mar, ático con terraza, casa de pueblo con patio, chalet con piscina, mansión), con habitaciones de verdad, sus propios muebles y reformas, y que estén en distintos puntos de la ciudad: se ven al caminar, se puede entrar en cada una y elegir dónde vives. Va de la mano de ampliar la ciudad (barrios conectados).
 - **Tu casa en el pueblo:** comprar una casa en tu pueblo e ir los veranos.

@@ -23,6 +23,7 @@
 20. **Pueblo, casas, formas y modelos (oct 2026):** que la muralla del pueblo no se atraviese, calles más anchas y trabajadas, más textura; y los puntos 14 (edificios con modelos y público en la grada), 16 (formas orgánicas en campus y ciudad) y 17 (casas más personalizables e iluminadas).
 21. **Estilo y móvil (oct 2026):** que se note ser disciplinado o rebelde (indicador, consecuencias y planes de rebelde) y un móvil dentro del juego con mensajes y decisiones.
 22. **Más ideas para pendientes (oct 2026):** el usuario acepta todas las ideas propuestas (compañeros, lesiones jugables, redes sociales, familia, retirada, logros, momentos clave, selección y verano, All-Star, ojeadores, negociaciones, rivalidades, prensa con memoria, día y noche, rúa, casa en el pueblo, mascota, nube, tutorial, accesibilidad) y añade: casas con personalidad (no simples rectángulos), poder tener varias sin vender la anterior y que estén en distintos puntos de la ciudad, visibles al caminar (junto con ampliar la ciudad).
+23. **Un solo mundo (oct 2026):** que lo que se ve en los menús (Mi pueblo, el mapa de la ciudad, la ciudad deportiva en los modos de gestión) sea lo mismo que se pasea, en su versión detallada, y que los menús estén conectados con la parte paseable.
 
 ## Preferencias del usuario
 Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.
