@@ -349,7 +349,10 @@
       }
       if (b.nivel || b.obra) G.bloquea(x - Math.min(w, d) / 2 + 0.3, z - Math.min(w, d) / 2 + 0.3, x + Math.min(w, d) / 2 - 0.3, z + Math.min(w, d) / 2 - 0.3);
       const zx = x + fx * (d / 2 + 0.9), zz = z + fz * (d / 2 + 0.9);
-      zonas.push([{ id: 'pueblo_' + tipo, nombre: b.nombre, accion: '', destino: {}, acciones: s2 => accionesLote(s2, tipo) }, zx, zz]);
+      // El bar y las casas de los tuyos, una vez construidos, tienen interior (interiores.js) y se vuelve a su puerta
+      const INT = { bar: 'bar_pueblo', casapadres: 'casa_padres', casaamigos: 'casa_amigos' }[tipo], dentro = INT && b.nivel > 0 && GM.interiores;
+      zonas.push([Object.assign({ id: 'pueblo_' + tipo, nombre: b.nombre, accion: '', destino: {}, acciones: s2 => accionesLote(s2, tipo) }, dentro ? { irA: 'interior:' + INT, boton: tipo === 'bar' ? 'Entrar en el bar' : 'Entrar en casa' } : {}), zx, zz]);
+      if (dentro) (S.puertas = S.puertas || {})['interior:' + INT] = { x: zx + fx * 1.4, z: zz + fz * 1.4, ry: Math.atan2(fx, fz) };   // un poco fuera del círculo
       S.lotes[tipo] = { x, z, zx, zz, fx, fz, w, d };
     });
     zonas.push([{ id: 'pueblo_plaza', nombre: 'Plaza mayor', accion: '', destino: {}, acciones: s2 => accionesPlaza(s2) }, -1.5, 3.2]);
@@ -436,5 +439,5 @@
     return fr[(n.r() * fr.length) | 0];
   }
   function actualizar(S, M, dt) { const t = performance.now() / 1000; (S.puebloAnim || []).forEach(f => f(t)); }
-  GM.puebloMundo = { construir, poblar, siguiente, actualizar, LOTES };
+  GM.puebloMundo = { construir, poblar, siguiente, actualizar, accionesLote, LOTES };
 })();

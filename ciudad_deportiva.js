@@ -146,13 +146,13 @@
 
   // ---------- Vista 3D ----------
   function color(hex) { return GM.kit.color(hex); }
-  function escena(st, id) {
-    const K = GM.kit, v = V.vista, eq = st.equipos[id], L = lay(st, id), c = cd(st, id), CP = GM.campus;
+  // El campus (entorno y edificios de cada parcela) en un grupo: lo usan la vista del menú y la escena para pasear (sede3d, escena
+  // 'deportiva', que lo escala a tamaño real): es el mismo sitio. Devuelve el layout y las mallas de cada parcela.
+  function campusEn(W, st, id) {
+    const eq = st.equipos[id], L = lay(st, id), c = cd(st, id), CP = GM.campus;
     const S = { c1: color(eq.colores[0] === '#000000' ? '#333333' : eq.colores[0]), c2: color(eq.colores[1] || '#ffffff'), e: CP.estilo(eq), sig: eq.siglas, mascota: st.fans && st.fans.identidad && st.fans.identidad.mascota ? st.fans.identidad.mascota : null };
-    v.limpiar(V.mundo);
-    CP.entorno(V.mundo, L, id, S);
-    V.parcelas = [];
-    const ps = parcelas(st, id);
+    CP.entorno(W, L, id, S);
+    const mallas = [], ps = parcelas(st, id);
     L.slots.forEach(sl => {
       const b = bSlot(c, sl.id), Sv = Object.assign({}, S, { variante: sl.variante });
       let m;
@@ -160,8 +160,14 @@
       else if (b) m = CP.modelo(b.tipo, b.nivel, Sv);
       else m = CP.solar(Sv, sl.nombre, ps.find(x => x.slot === sl.id).estado === 'bloqueado');
       m.position.set(sl.x, 0.02, sl.z); m.rotation.y = sl.rot || 0; m.userData = { slot: sl.id };
-      V.mundo.add(m); V.parcelas.push(m);
+      W.add(m); mallas.push(m);
     });
+    return { L, S, mallas };
+  }
+  function escena(st, id) {
+    const K = GM.kit, v = V.vista, CP = GM.campus;
+    v.limpiar(V.mundo);
+    const { L, S, mallas } = campusEn(V.mundo, st, id); V.parcelas = mallas;
     if (V.sel) {
       const sl = L.slots.find(x => x.id === V.sel);
       if (sl) { const r = new THREE.Mesh(new THREE.RingGeometry(2.9, 3.1, 4), K.mat(0xffd54a)); r.rotation.x = -Math.PI / 2; r.rotation.z = Math.PI / 4; r.position.set(sl.x, 0.15, sl.z); V.mundo.add(r); }
@@ -197,6 +203,7 @@
     if (V.vista) p.append(h('div', { class: 'seg compacto' },
       h('button', { class: 'tab', onclick: () => { V.sel = null; V.refrescar(); enfocar(0, (L.z0 + L.z1) / 2 - 2, 56, 0.7); } }, 'Vista general'),
       h('button', { class: 'tab', onclick: () => enfocar(0, L.z1 - 3, 16, 0) }, 'Entrada'),
+      GM.sede && GM.deportivaMundo ? h('button', { class: 'tab', onclick: () => GM.sede.abrir(st, 'deportiva') }, 'Pasear') : null,
       h('button', { class: 'tab', onclick: () => { const o = ps.find(x => x.estado === 'obra'); if (o) seleccionar(o.slot, true); else { m.style.display = 'block'; m.textContent = 'No hay obras en marcha.'; } } }, 'Ver obras')));
     if (V.vista) p.append(h('div', { class: 'seg compacto' },
       [['dia', '☀️ Día'], ['tarde', '🌇 Tarde'], ['noche', '🌙 Noche']].map(o => h('button', { class: 'tab' + (V.hora === o[0] ? ' on' : ''), onclick: () => { V.hora = o[0]; V.refrescar(); } }, o[1])),
@@ -255,5 +262,5 @@
     const jv = parcelas(st, 'joventut-badalona');
     return r1.ok && r2.ok && !r3.ok && cd(st, 'a').edificios.every(b => !b.obra) && !!bSlot(cd(st, 'a'), 'cantera') && efectos(st, 'a').entrenamiento > 1.04 && jv.some(p => p.slot === 'emblema' && p.nivel === 1) && jv.find(p => p.slot === 'cantera').nivel === 0 && !construir(st, 'a', 'emblema').ok;
   }
-  GM.register('ciudadDeportiva', { actividades, hacerActividad, catalogo, parcelas, construir, mejorar, efectos, mantenimiento, mount, unmount, nuevaPartida, selfTest });
+  GM.register('ciudadDeportiva', { campusEn, actividades, hacerActividad, catalogo, parcelas, construir, mejorar, efectos, mantenimiento, mount, unmount, nuevaPartida, selfTest });
 })();

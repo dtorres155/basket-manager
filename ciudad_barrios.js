@@ -98,7 +98,8 @@
     // Puerta de la ciudad deportiva al final de la calle central
     { const g = grupos.norte; for (const s of [-1, 1]) caja(g, 1.6, 7, 1.6, c1, s * 6, 0, -104); caja(g, 13.6, 1.6, 1.6, c2 === '#ffffff' ? '#e8eef2' : c2, 0, 7, -104);
       letrero(g, T.letrero((club.ciudadDeportiva && club.ciudadDeportiva.nombre ? club.ciudadDeportiva.nombre : 'Ciudad deportiva').toUpperCase(), c1, '#ffffff', 'cdep'), 11, 1.4, 0, 7.8, -103.15, 0);
-      G.bloquea(-7, -105, -5, -103); G.bloquea(5, -105, 7, -103); G.bloquea(-150, -110, 150, -105); salaLugar('lugar_campus', club.ciudadDeportiva && club.ciudadDeportiva.nombre ? club.ciudadDeportiva.nombre : 'Ciudad deportiva', 'campus', [0, -100]); }
+      G.bloquea(-7, -105, -5, -103); G.bloquea(5, -105, 7, -103); G.bloquea(-150, -110, 150, -105); salaLugar('lugar_campus', club.ciudadDeportiva && club.ciudadDeportiva.nombre ? club.ciudadDeportiva.nombre : 'Ciudad deportiva', 'campus', [0, -100]);
+      if (GM.deportivaMundo) { Object.assign(out.salas.lugar_campus, { irA: 'deportiva', boton: 'Entrar en la ciudad deportiva' }); out.puertas.deportiva = { x: 0, z: -97, ry: 0 }; } }
     // Estación de tren (este)
     { const g = grupos.este; edificio(g, G, T, E, r, [124, 9, 150, 22], 2, 'n', { colorBajo: '#8a6d3b', letrero: { txt: 'ESTACIÓN ' + club.ciudad.toUpperCase(), fondo: '#2a2f35', letra: '#f2d27a', clave: 'esta', ancho: 10 } });
       cil(g, 0.9, 0.12, '#f4f1e8', 137, 9.6, 8.94).rotation.x = Math.PI / 2; caja(g, 26, 0.12, 3.4, '#5d6b78', 137, 3.6, 7.2); for (const x of [126, 137, 148]) cil(g, 0.08, 3.6, '#2a2f35', x, 0, 5.8);
