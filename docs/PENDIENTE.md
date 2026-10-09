@@ -39,6 +39,41 @@
 
 - ~~«Mi pueblo» en 3D no mostraba los edificios nuevos~~: ya salen la plaza (bancos y, en el segundo nivel, farolas y guirnaldas), el parque, la biblioteca, el centro de día, el alumbrado por las calles, la carretera asfaltada con parada de autobús (y el autobús), y las casas de tus padres (con huerto) y de tus amigos. Las obras en marcha se ven con andamios y grúa.
 
+
+## Ideas nuevas (octubre de 2026)
+### Casas con personalidad
+- **Varias casas, cada una con su carácter y su sitio en la ciudad:** hoy, al comprar otra vivienda, la anterior se guarda como propiedad (carrera.js), pero en 3D solo hay una casa: un piso diáfano que es un rectángulo personalizable (casa3d.js) y los mismos muebles para todas (`st.sede.casa`). Hace falta que cada vivienda tenga su forma y estilo según el tipo y el barrio (estudio con buhardilla, piso con balcón al mar, ático con terraza, casa de pueblo con patio, chalet con piscina, mansión), con habitaciones de verdad, sus propios muebles y reformas, y que estén en distintos puntos de la ciudad: se ven al caminar, se puede entrar en cada una y elegir dónde vives. Va de la mano de ampliar la ciudad (barrios conectados).
+- **Tu casa en el pueblo:** comprar una casa en tu pueblo e ir los veranos.
+- **Mascota en casa:** un perro o un gato que te recibe y sube el ánimo.
+
+### Carrera y vida del jugador
+- **Relación con los compañeros:** química en el vestuario, rivalidad por el puesto, un capitán que te protege o te hunde.
+- **Lesiones con recuperación jugable:** elegir el tratamiento (conservador o volver antes arriesgando) y visitas al fisio en la sede.
+- **Redes sociales propias:** seguidores, publicaciones que eliges y comentarios de aficionados (encaja con el móvil y el estilo).
+- **Familia que evoluciona:** padres que envejecen, hermanos que también juegan, hijos que van a verte.
+- **Vida después de la retirada:** pasar a entrenador, director deportivo o comentarista con la misma partida.
+- **Logros y retos** («50 puntos en un partido», «MVP con 21 años», «ganar en tu pueblo») con una vitrina en tu casa.
+
+### Partidos
+- **Momentos clave jugables en la carrera:** en los últimos segundos decides tú: tirar, pasar o penetrar.
+- **Pretemporada, torneos de verano y selección:** amistosos, torneos de pretemporada, Eurobasket, Mundial y Juegos Olímpicos.
+- **All-Star y concursos** de triples y mates a mitad de temporada.
+
+### Gestión
+- **Ojeadores por el mundo:** enviarlos a otras ligas y descubrir jóvenes ocultos.
+- **Negociaciones con más matices:** cláusulas de rescisión, opciones de jugador, bonus por objetivos, agentes difíciles.
+- **Rivalidades con historia:** clásicos con ambiente especial, derbis que mueven más afición, recuerdos de finales.
+- **Prensa con memoria:** titulares que recuerdan lo que dijiste y si se ha cumplido.
+
+### Mundo
+- **Día y noche, y clima:** lluvia en la calle, noches de partido con luces, fuegos artificiales al ganar un título.
+- **Celebraciones:** rúa con autobús descubierto por la ciudad al ganar la liga.
+
+### Técnico
+- **Copia en la nube o exportación automática** de las partidas, para no perder nada si se borra el navegador.
+- **Tutorial guiado** de cada modo la primera vez.
+- **Accesibilidad:** tamaño de letra, contraste y velocidad de las animaciones.
+
 ## P1 — Distribución
 - ~~Dejar de depender de CDN~~: hecho en la fase 1.1 (`vendor/` y `dist/`).
 - ~~PWA con modo sin conexión~~: hecho en la fase 1.2 (manifiesto, iconos, service worker con caché versionada y aviso de nueva versión). Publicada por HTTPS (1.5) en https://dtorres155.github.io/basket-manager/ (GitHub Actions publica dist/ en cada push a main).
