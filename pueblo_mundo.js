@@ -226,7 +226,8 @@
     return g;
   }
   function muralla(W, G, O, E, nivel, club) {
-    const piedra = mat(E.clave === 'toscano' ? '#b4724a' : E.clave === 'andaluz' ? '#ece6da' : '#a99377'), N = 84, alto = 5.5 + Math.min(2, nivel * 0.4);
+    const piedra = mat(E.clave === 'toscano' ? '#b4724a' : E.clave === 'andaluz' ? '#ece6da' : '#a99377'); if (GM.texturas) GM.texturas.aplicar(piedra, E.clave === 'andaluz' ? 'Plaster003' : 'Bricks085', E.clave === 'andaluz' ? { color: false, escala: 2, relieve: 1 } : { color: false, escala: 1.4, relieve: 1.3 });
+    const N = 84, alto = 5.5 + Math.min(2, nivel * 0.4);
     const puerta = am => Math.abs(am - Math.PI / 2) < 0.07 || Math.abs(am - 3 * Math.PI / 2) < 0.08;
     for (let i = 0; i < N; i++) {
       const a = i / N * Math.PI * 2, b = (i + 1) / N * Math.PI * 2, am = (a + b) / 2, pa = muro(a), pb = muro(b); if (puerta(am)) continue;
@@ -294,6 +295,11 @@
     const mObra = tx('obra-pueblo', (x, n) => manchas(x, n, '#b5a585', ['rgba(150,130,100,.5)', 'rgba(200,190,160,.4)', 'rgba(120,110,95,.4)'], 17, 4)) || mat('#b5a585');
     const mLosas = tx('losas-pueblo', (x, n) => { x.fillStyle = '#7d705c'; x.fillRect(0, 0, n, n); const rr = rnd(21), f = 8, h = n / f; for (let j = 0; j < f; j++) { const off = (j % 2) * h / 2; for (let i = -1; i < f; i++) { const v = 196 + rr() * 30 | 0; x.fillStyle = 'rgb(' + v + ',' + (v - 10) + ',' + (v - 28) + ')'; x.fillRect(i * h + off + 2, j * h + 2, h - 4, h - 4); x.fillStyle = 'rgba(0,0,0,.06)'; x.fillRect(i * h + off + 2 + rr() * h * 0.5, j * h + 2 + rr() * h * 0.5, h * 0.3, h * 0.2); } } }) || mat('#d8cdb5');
     const mBordillo = mat(E.clave === 'andaluz' ? '#cfc6b4' : '#8f8170');
+    if (GM.texturas) { const TR = GM.texturas, claro = E.clave === 'andaluz';
+      TR.aplicar(mCalle, 'PavingStones070', { escala: 2.2, tinte: claro ? 0xf2e6d0 : 0xdcc6a2 }); if (mLosas.isMaterial) TR.aplicar(mLosas, 'PavingStones070', { escala: 3.4, tinte: claro ? 0xf0e8d8 : 0xd6cab4 });
+      if (mTierra.isMaterial) TR.aplicar(mTierra, 'Ground054', { escala: 4, tinte: 0xd8ccb0 }); if (mSolar.isMaterial) TR.aplicar(mSolar, 'Grass004', { escala: 3.5, tinte: 0xc8d0a0 });
+      (E.muros || []).forEach(c => TR.aplicar(mat(c), 'Plaster003', { color: false, escala: 1.8, relieve: 1 })); if (E.zocalo) TR.aplicar(mat(E.zocalo), 'Concrete034', { color: false, escala: 1.5 });
+      TR.aplicar(mat(E.teja), 'RoofingTiles013A', { color: false, escala: 1.4, relieve: 1.2 }); }
     const uvEsc = (g, e) => { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / e, uv.getY(i) / e); return g; };
     const carr = ed('carretera').nivel;
     entorno(W, M, E, r, carr);

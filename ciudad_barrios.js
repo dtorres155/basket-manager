@@ -36,8 +36,9 @@
     const grupos = {}; Object.keys(DISTRITOS).forEach(k => { if (k === 'centro') return; const g = new THREE.Group(); g.userData = { distrito: k }; W.add(g); grupos[k] = g; out.distritos.push({ g, d: DISTRITOS[k] }); });
     const enG = k => grupos[k] || W;
     // ---- Suelo: asfalto bajo toda la ciudad, aceras por manzanas, avenida, calle central, ronda y pasos de peatones ----
-    const asf = new THREE.Mesh(new THREE.PlaneGeometry(300, 140).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 })); H.uvM(asf.geometry, 4, 4); asf.position.set(0, -0.125, -43); asf.receiveShadow = true; W.add(asf);
-    const mAcera = new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9 });
+    const asf = new THREE.Mesh(new THREE.PlaneGeometry(300, 140).rotateX(-Math.PI / 2), (GM.texturas ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { escala: 5, tinte: 0xb4b4b4 }) : new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }))); H.uvM(asf.geometry, 4, 4); asf.position.set(0, -0.125, -43); asf.receiveShadow = true; W.add(asf);
+    const mAcera = GM.texturas ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9, color: 0xaea99f }), 'Concrete034', { color: false, escala: 2.4, relieve: 0.6 }) : new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9 });
+    if (GM.texturas) { GM.texturas.aplicar(mat('#6f9a4a', { roughness: 1 }), 'Grass004', { escala: 3, tinte: 0xb8d0a0 }); GM.texturas.aplicar(H.mat('#76a050', { roughness: 1 }), 'Grass004', { escala: 3, tinte: 0xc0d8a8 }); }
     const acera = (x0, z0, x1, z1, g) => { const geo = new THREE.BoxGeometry(x1 - x0, 0.12, z1 - z0); H.uvM(geo, 1.5, 1.5); const me = new THREE.Mesh(geo, mAcera); me.position.set((x0 + x1) / 2, -0.06, (z0 + z1) / 2); me.receiveShadow = true; (g || W).add(me); };
     acera(-150, 3, -42, 24, grupos.oeste); acera(42, 3, 150, 24, grupos.este); acera(-150, -27, -42, -3, grupos.oeste); acera(42, -27, 150, -3, grupos.este);
     acera(-42, -27, -3, -24); acera(3, -27, 42, -24); acera(-150, -110, -3, -33, grupos.norte); acera(3, -110, 150, -33, grupos.norte);

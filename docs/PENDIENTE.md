@@ -17,19 +17,19 @@
 
 ## Mundo explorable (sede, calle, barrio, casa)
 ### Mejoras generales del juego que pide el usuario (oct 2026): la ciudad y el campus necesitan mucho más trabajo (en todas las plataformas)
-- **Movimiento del personaje:** a veces «se vuelve tonto» (rodeos raros, se atasca en esquinas, no llega a donde tocas). Revisar el A* (celdas bloqueadas por márgenes, destino en celda ocupada, suavizado del camino, giros bruscos) y el control táctil.
+- ~~Movimiento del personaje~~: la búsqueda de caminos elige la celda libre más cercana de verdad (hasta 30 m), si no hay camino va al punto alcanzable más cercano, el recorte del camino deja margen para no rozar esquinas y ya no se añade el punto tocado si está dentro de un obstáculo; tocar una fachada lleva delante de ella. Antes, 23 de 40 caminos al azar cruzaban zonas bloqueadas y 5 no encontraban camino; ahora ninguno (`node tools/movimiento.js [escena] [n]`).
 - **Vida en la ciudad:** ahora es monótona. Peatones con rutinas (entran en tiendas y portales, terrazas llenas, niños, gente paseando al perro, repartidores, colas en el pabellón), más variedad de coches, ambiente según la hora y el día.
 - **Diseño, detalle y profundidad:** texturas de fachadas, aceras y asfalto con desgaste, mobiliario urbano variado, edificios de fondo y silueta de la ciudad en el horizonte, menos repetición de bloques.
 - **Variedad entre clubes y varias ciudades:** cada ciudad con su estilo (mediterránea, centroeuropea, griega, turca, americana), algún monumento o rasgo reconocible, y más de una ciudad en el juego (la del club al que fichas, la de los rivales al jugar fuera).
 - **Ciudades más grandes, orgánicas y parecidas a las reales:** ampliarlas más, con calles que no sean una cuadrícula (trazado irregular, plazas, diagonales, desniveles, río o costa) y, en algunas, lo más parecido posible a la real: trazado de sus calles principales, su pabellón donde está y sus monumentos. Por tandas, empezando por las más reconocibles (por ejemplo Madrid, Barcelona, Atenas, Estambul, Milán, Belgrado o Kaunas y alguna de la NBA como Boston o Nueva York). Idea: generar el plano a partir de OpenStreetMap (licencia ODbL: hay que citarlo) y guardarlo en el juego para que funcione sin conexión.
-- **Campus (ciudad deportiva):** escenario soso, monótono y poco trabajado; tiene que parecerse a una ciudad deportiva real: pistas exteriores y campos, pabellón de entrenamiento con grada, residencia de canteranos, edificio de oficinas, aparcamiento, accesos y control, vallas, arbolado, y ambiente (canteranos entrenando, cuerpo técnico, prensa en los entrenamientos abiertos, aficionados en la valla).
+- ~~Campus (ciudad deportiva)~~ (`entornoReal` en deportiva_mundo.js, también en la vista del menú): puerta con nombre, caseta con vigilante y barrera que se levanta, carretera de entrada con aceras y aparcamiento con coches, vial de circunvalación con árboles y farolas, explanada y camino a cada edificio, plaza central con monolito y mástiles, dos pistas exteriores con canastas y vallas, campo con pista de atletismo, arboledas y valla perimetral de malla; canteranos entrenando con su entrenador, gente corriendo por la pista y, los miércoles y sábados (entrenamiento abierto), aficionados en la valla y fotógrafos. Capturas: `node tools/campus_paseo.js` y `node tools/campus_capturas.js [nivel]`.
 - **Mejoras visuales en general:** es una línea de trabajo continua; cualquier idea de detalle, iluminación o variedad suma.
 
 ### Ideas para un mundo más vivo y un acabado profesional (oct 2026)
 **Mundo vivo**
-- Rutinas por hora: por la mañana la gente va a trabajar y al colegio, a mediodía las terrazas se llenan, por la tarde se pasea y por la noche hay bares abiertos y farolas.
+- ~~Rutinas por hora~~: el día empieza a las 8 y tocar el reloj adelanta una hora; cada vecino elige destino según la franja (trabajo y colegio, compras, comer y terrazas, paseo y parque, bares o casa), entra en el trabajo, el colegio o su portal y desaparece un rato, y la cantidad de gente sigue la hora; hay niños que van al colegio y luego al parque.
 - Eventos en la calle: mercadillo semanal, fiesta mayor con casetas y música, maratón, aficionados que se concentran antes de un derbi, obras que cortan una calle.
-- Día de partido completo: previa en los bares, cola en las taquillas, el autobús del equipo llegando al pabellón y la salida de la gente al acabar.
+- ~~Día de partido completo~~ (calle, partido en casa): desde las 16, previa con grupos cantando delante de la peña y la terraza y cola en las taquillas; a las 19, el autobús del equipo llega al pabellón y la plantilla entra; durante el partido los aficionados entran en el pabellón y la calle se vacía; al acabar, cientos salen y se reparten por la avenida. Prueba: `node tools/dia_partido.js`.
 - Animales: palomas que se espantan al pasar, perros paseando, gatos en los tejados y pájaros en los árboles.
 - Sonido ambiente: tráfico, pájaros, cánticos el día de partido, bote del balón en la sede (sonidos libres o hechos por código, sin conexión).
 - La gente reacciona: bocadillos según el último resultado o el tiempo, te piden una foto, te pitan si perdisteis el derbi y, si eres «chico malo», te siguen fotógrafos.
@@ -38,9 +38,9 @@
 - Viento: árboles, toldos y banderas que se mueven.
 
 **Calidad visual**
-- Iluminación: cielo con reflejos de entorno, sombras suaves, oclusión ambiental y un brillo suave en farolas y pantallas en calidad alta; niebla de distancia y un tono de color propio por ciudad.
+- ~~Iluminación~~: reflejos de entorno (cielo de verdad fuera y una sala neutra dentro), sombras con más resolución y bordes suaves y, en calidad alta, oclusión ambiental (GTAO), brillo en farolas y ventanas de noche y antialiasing; tono de luz por país (mediterráneo, centroeuropeo o de EE. UU.). Si el equipo va justo, lo primero que se apaga es el posprocesado. Capturas: `node tools/luz_capturas.js [carpeta] [escenas]`.
 - Antialiasing y postprocesado opcionales en calidad alta.
-- Materiales con texturas reales libres (ambientCG, Poly Haven) comprimidas para no inflar la descarga.
+- ~~Texturas reales~~ (`texturas.js`): 12 materiales CC0 de ambientCG (asfalto, adoquines, ladrillo, revoco, hormigón, hierba, tarima, baldosa, tejas, tierra, mármol y fachada de cristal) con color, relieve y rugosidad (4,9 MB en total), proyectados en coordenadas del mundo; en la calle y los barrios, el pueblo, la sede, los interiores y la ciudad deportiva.
 - Detalles pegados al suelo y a las paredes: grietas, manchas, pasos de cebra gastados, grafitis y carteles.
 - Niveles de detalle e imágenes planas para los edificios lejanos, que permiten ciudades mucho más grandes.
 - Agua de verdad en fuentes, ríos y piscinas, con reflejos.
@@ -58,7 +58,7 @@
 **Jugabilidad**
 - Encargos diarios y semanales marcados en el mapa, con recompensa.
 - Minijuegos: concurso de triples en el parque, uno contra uno callejero y entrenamientos jugables (tirar con una barra de precisión).
-- Moverse mejor: joystick virtual, correr con doble toque y viaje rápido desde el mapa a sitios ya visitados.
+- ~~Moverse mejor~~: joystick táctil (a fondo, corres), doble toque o doble clic para correr y, en el mapa, «Ir ya» para viajar al momento a los sitios ya visitados.
 - Modo foto (cámara libre y filtros) para compartir capturas.
 - Coleccionables: camisetas de rivales, cromos y balones firmados, con su sitio en casa.
 - Coche propio para conducir por la ciudad.

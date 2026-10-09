@@ -151,7 +151,8 @@
   function campusEn(W, st, id) {
     const eq = st.equipos[id], L = lay(st, id), c = cd(st, id), CP = GM.campus;
     const S = { c1: color(eq.colores[0] === '#000000' ? '#333333' : eq.colores[0]), c2: color(eq.colores[1] || '#ffffff'), e: CP.estilo(eq), sig: eq.siglas, mascota: st.fans && st.fans.identidad && st.fans.identidad.mascota ? st.fans.identidad.mascota : null };
-    CP.entorno(W, L, id, S);
+    if (GM.deportivaMundo && GM.deportivaMundo.entornoReal) { const g = new THREE.Group(); g.scale.setScalar(1 / GM.deportivaMundo.ESCALA); W.add(g); W.userData.campusReal = GM.deportivaMundo.entornoReal(g, L, S, eq, { esc: 1 / GM.deportivaMundo.ESCALA }); }
+    else CP.entorno(W, L, id, S);
     const mallas = [], ps = parcelas(st, id);
     L.slots.forEach(sl => {
       const b = bSlot(c, sl.id), Sv = Object.assign({}, S, { variante: sl.variante });
@@ -160,6 +161,7 @@
       else if (b) m = CP.modelo(b.tipo, b.nivel, Sv);
       else m = CP.solar(Sv, sl.nombre, ps.find(x => x.slot === sl.id).estado === 'bloqueado');
       m.position.set(sl.x, 0.02, sl.z); m.rotation.y = sl.rot || 0; m.userData = { slot: sl.id };
+      if (W.userData.campusReal && m.children[0] && m.children[0].isMesh) { if (b) m.children[0].visible = false; else m.children[0].material = new THREE.MeshStandardMaterial({ color: 0xa08c6a, roughness: 1 }); }   // con el entorno real, sin el disco claro de base
       W.add(m); mallas.push(m);
     });
     return { L, S, mallas };

@@ -28,6 +28,7 @@
 25. **Los puntos más exigentes (oct 2026):** un solo mundo (menús = escenas paseables), casas con personalidad repartidas por la ciudad sin vender las anteriores, ciudad ampliada con barrios conectados e interiores.
 26. **Siete pendientes de golpe (oct 2026):** ciudad deportiva para pasear y unificada con su menú, interiores del pueblo (bar, casa de los padres y de los amigos), la ciudad que cambia con la reputación (comercios, obras, aficionados en la calle), transporte (metro, bicis y autobús al pueblo), una sede con más vida y acciones, momentos decisivos jugables en los últimos segundos y la rúa de campeones.
 27. **Vida del jugador (oct 2026):** relación con los compañeros, lesiones jugables, redes sociales, familia que evoluciona, vida tras la retirada, logros y retos con vitrina, casa en el pueblo y mascota.
+28. **Movimiento, luz, texturas, vida y campus (oct 2026):** arreglar el movimiento del personaje, joystick y viaje rápido, mejor iluminación y texturas reales (lo más completas posible aunque pesen más), rutinas por hora, día de partido completo y una ciudad deportiva que parezca real.
 
 ## Preferencias del usuario
 Respuestas concisas, directas y con recomendaciones concretas; le gusta que se le corrija con claridad; dicta por voz; quiere ver primero un borrador de lo que se va a crear y luego que se haga; no quiere interfaces genéricas ni cuadrículas rígidas.

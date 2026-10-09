@@ -24,7 +24,10 @@
     const G = M.rejilla({ limites: [x0 - 2, z0 - 2, x1 + 2, z1 + 5], CELDA: 0.5 }); S.G = G;
     // Suelo y muros en corte con la puerta al sur
     const suelo = { pabellon: '#3a3f46', tienda: '#d9d4cb', pena: '#7a5638', ayuntamiento: '#d8cdb8', bar_pueblo: '#8a6a4a', casa_padres: '#b98e63', casa_amigos: '#9a8f7a', casa_pueblo: '#a5794f' }[tipo];
-    const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), mat(suelo, { roughness: tipo === 'ayuntamiento' ? 0.35 : 0.8 })); fl.receiveShadow = true; W.add(fl);
+    const mSuelo = new THREE.MeshStandardMaterial({ color: suelo, roughness: tipo === 'ayuntamiento' ? 0.35 : 0.8 }), TR = GM.texturas;
+    if (TR) { if (['pena', 'bar_pueblo', 'casa_padres', 'casa_amigos', 'casa_pueblo'].indexOf(tipo) >= 0) TR.aplicar(mSuelo, 'WoodFloor051', { escala: 2.2, tinte: new THREE.Color(suelo).lerp(new THREE.Color(0xffffff), 0.45).getHex() }); else if (tipo === 'ayuntamiento') TR.aplicar(mSuelo, 'Tiles074', { escala: 1.6, rugosidad: 0.3 }); else TR.aplicar(mSuelo, 'Concrete034', { color: false, escala: 3, relieve: 0.6 }); }
+    const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), mSuelo); fl.receiveShadow = true; W.add(fl);
+    if (TR) TR.aplicar(mat(muroC), 'Plaster003', { color: false, escala: 1.6, relieve: 0.8 });
     const alto = tipo === 'pabellon' ? 3.2 : 1.8, muroC = { pabellon: '#5d6873', tienda: '#f2efe8', pena: '#c9a27a', ayuntamiento: '#efe6d2', bar_pueblo: '#e8dcc4', casa_padres: '#efe3cf', casa_amigos: '#c9d3dc', casa_pueblo: '#e6d8bf' }[tipo];
     const muro = (xa, za, xb, zb) => { const L = Math.hypot(xb - xa, zb - za), m = caja(W, xa === xb ? 0.25 : L, alto, xa === xb ? L : 0.25, muroC, (xa + xb) / 2, 0, (za + zb) / 2); void m; G.bloquea(Math.min(xa, xb) - 0.2, Math.min(za, zb) - 0.2, Math.max(xa, xb) + 0.2, Math.max(za, zb) + 0.2); };
     muro(x0, z0, x1, z0); muro(x0, z0, x0, z1); muro(x1, z0, x1, z1); muro(x0, z1, -1.2, z1); muro(1.2, z1, x1, z1);

@@ -4,6 +4,7 @@
 |---|---|---|---|
 | Three.js 0.186 con GLTFLoader, BufferGeometryUtils, RoundedBoxGeometry y Sky (`three.min.js`, empaquetado con esbuild) | Three.js Authors | MIT | `vendor/three.min.js`, `vendor/three.LICENSE` |
 | Ultimate Modular Men Pack y Ultimate Modular Women Pack (14 personas vestidas y sus animaciones) | Quaternius (quaternius.com) | CC0 1.0 | `vendor/modelos/personas/` (procesados con `tools/preparar_personas.mjs`) |
+| Texturas: Asphalt010, PavingStones070, Bricks085, Plaster003, Concrete034, Grass004, WoodFloor051, Tiles074, RoofingTiles013A, Ground054, Marble006, Facade006 (color, relieve y rugosidad, reducidas) | ambientCG (ambientcg.com) | CC0 1.0 | `vendor/texturas/` |
 | Kenney Furniture Kit (78 muebles usados) | Kenney (kenney.nl) | CC0 1.0 | `vendor/modelos/muebles/` |
 | Kenney Building Kit (paredes, ventanas, puertas, columnas y cornisas) | Kenney (kenney.nl) | CC0 1.0 | `vendor/modelos/edificio/` |
 | LZ-string 1.5 (`lz-string.min.js`) | Pieroxy | MIT | `vendor/lz-string.min.js`, `vendor/lz-string.LICENSE` |

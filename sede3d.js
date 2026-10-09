@@ -33,7 +33,14 @@
     marmol: (x, n) => { x.fillStyle = '#ece8e1'; x.fillRect(0, 0, n, n); const r = rnd(7); x.strokeStyle = 'rgba(120,110,100,.25)'; for (let i = 0; i < 12; i++) { x.beginPath(); let px = r() * n, py = r() * n; x.moveTo(px, py); for (let k = 0; k < 6; k++) { px += (r() - 0.5) * 60; py += r() * 40; x.lineTo(px, py); } x.stroke(); } x.fillStyle = 'rgba(0,0,0,.08)'; x.fillRect(0, 0, n, 2); x.fillRect(0, 0, 2, n); },
     hormigon: (x, n) => { x.fillStyle = '#b9b6b0'; x.fillRect(0, 0, n, n); const r = rnd(8); for (let i = 0; i < 2500; i++) { x.fillStyle = r() < 0.5 ? 'rgba(0,0,0,.05)' : 'rgba(255,255,255,.06)'; x.fillRect(r() * n, r() * n, 3, 3); } }
   };
-  function sueloMat(tipo) { const t = textura('suelo-' + tipo, 256, SUELOS[tipo] || SUELOS.hormigon); return new THREE.MeshStandardMaterial({ map: t, color: t ? 0xffffff : 0x999999, roughness: tipo === 'marmol' ? 0.35 : tipo === 'parquet' ? 0.5 : 0.85 }); }
+  function sueloMat(tipo) { const t = textura('suelo-' + tipo, 256, SUELOS[tipo] || SUELOS.hormigon), m = new THREE.MeshStandardMaterial({ map: t, color: t ? 0xffffff : 0x999999, roughness: tipo === 'marmol' ? 0.35 : tipo === 'parquet' ? 0.5 : 0.85 });
+    const TR = GM.texturas; if (!TR) return m;
+    if (tipo === 'madera') return TR.aplicar(m, 'WoodFloor051', { escala: 2.2, rugosidad: 0.6, rugMin: 0.35 });
+    if (tipo === 'madera_oscura') return TR.aplicar(m, 'WoodFloor051', { escala: 2.2, tinte: 0x8a6650, rugosidad: 0.55, rugMin: 0.3 });
+    if (tipo === 'marmol') return TR.aplicar(m, 'Marble006', { escala: 3, tinte: 0xd8d8d8, rugosidad: 0.25, rugMin: 0.12 });
+    if (tipo === 'parquet') return TR.aplicar(m, 'WoodFloor051', { color: false, escala: 2.2, relieve: 0.7, rugosidad: 0.45, rugMin: 0.3 });
+    if (tipo === 'hormigon' || tipo === 'baldosa') return TR.aplicar(m, 'Concrete034', { color: false, escala: 2.5, relieve: 0.5 });
+    return m; }
   function plano(w, d, m, x, z, y, escUV) {
     const g = new THREE.PlaneGeometry(w, d); g.rotateX(-Math.PI / 2);
     const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w / (escUV || 2), uv.getY(i) * d / (escUV || 2));
@@ -188,8 +195,11 @@
   }
   function aEstrella(G, desde, hasta) {
     let [si, sj] = G.celda(desde[0], desde[1]), [ti, tj] = G.celda(hasta[0], hasta[1]);
-    const cerca = (i, j) => { if (G.libre(i, j)) return [i, j]; for (let r = 1; r < 8; r++) for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) if (G.libre(i + di, j + dj)) return [i + di, j + dj]; return null; };
-    const s = cerca(si, sj), t = cerca(ti, tj); if (!s || !t) return null; [si, sj] = s; [ti, tj] = t;
+    const cerca = (i, j, ri, rj) => { if (G.libre(i, j)) return [i, j]; let mejor = null, md = Infinity;
+      for (let r = 1; r <= 60; r++) { if (mejor && r > Math.sqrt(md) + 1) break;
+        for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) { if (Math.max(Math.abs(di), Math.abs(dj)) !== r || !G.libre(i + di, j + dj)) continue; const d = di * di + dj * dj + (ri === undefined ? 0 : Math.hypot(i + di - ri, j + dj - rj) * 0.02); if (d < md) { md = d; mejor = [i + di, j + dj]; } } }
+      return mejor; };
+    const s = cerca(si, sj), t = cerca(ti, tj, si, sj); if (!s || !t) return null; [si, sj] = s; [ti, tj] = t;
     const N = G.W * G.H, gS = new Float32Array(N).fill(Infinity), de = new Int32Array(N).fill(-1), cerrado = new Uint8Array(N);
     const h = (i, j) => Math.hypot(i - ti, j - tj), ini = G.idx(si, sj), fin = G.idx(ti, tj);
     // Lista abierta como montículo binario (antes se recorría entera en cada paso: con la ciudad grande era muy lento)
@@ -197,24 +207,26 @@
     const meter = (f, n) => { let i = hf.length; hf.push(f); hn.push(n); while (i > 0) { const p = (i - 1) >> 1; if (hf[p] <= f) break; hf[i] = hf[p]; hn[i] = hn[p]; i = p; } hf[i] = f; hn[i] = n; };
     const sacar = () => { const n0 = hn[0], f = hf.pop(), n = hn.pop(); if (hf.length) { let i = 0; const L = hf.length; for (;;) { let c = 2 * i + 1; if (c >= L) break; if (c + 1 < L && hf[c + 1] < hf[c]) c++; if (hf[c] >= f) break; hf[i] = hf[c]; hn[i] = hn[c]; i = c; } hf[i] = f; hn[i] = n; } return n0; };
     const abierto = { push: ([f, n]) => meter(f, n), get length() { return hf.length; } };
-    gS[ini] = 0; abierto.push([h(si, sj), ini]);
+    gS[ini] = 0; abierto.push([h(si, sj), ini]); let mejorN = ini, mejorH = h(si, sj);
     const DIR = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
     while (abierto.length) {
       const cur = sacar();
       if (cur === fin) break; if (cerrado[cur]) continue; cerrado[cur] = 1;
-      const ci = cur % G.W, cj = (cur / G.W) | 0;
+      const ci = cur % G.W, cj = (cur / G.W) | 0; { const hh = h(ci, cj); if (hh < mejorH) { mejorH = hh; mejorN = cur; } }
       for (const [di, dj, cost] of DIR) {
         const ni = ci + di, nj = cj + dj; if (!G.libre(ni, nj)) continue; if (di && dj && (!G.libre(ci + di, cj) || !G.libre(ci, cj + dj))) continue;
         const n = G.idx(ni, nj), g = gS[cur] + cost; if (g < gS[n]) { gS[n] = g; de[n] = cur; abierto.push([g + h(ni, nj), n]); }
       }
     }
-    if (de[fin] < 0 && fin !== ini) return null;
-    const camino = []; for (let k = fin; k >= 0; k = k === ini ? -1 : de[k]) camino.push(G.centro(k % G.W, (k / G.W) | 0));
+    const llega = de[fin] >= 0 || fin === ini, meta = llega ? fin : mejorN; if (!llega && meta === ini) return null;
+    const camino = []; for (let k = meta; k >= 0; k = k === ini ? -1 : de[k]) camino.push(G.centro(k % G.W, (k / G.W) | 0));
     camino.reverse();
     // Suavizado: salta puntos intermedios si hay línea de visión
-    const ve = (a, b) => { const d = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.ceil(d / 0.2); for (let k = 1; k < n; k++) { const [i, j] = G.celda(a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n); if (!G.libre(i, j)) return false; } return true; };
+    const ve = (a, b) => { const d = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.ceil(d / 0.2), px = d ? -(b[1] - a[1]) / d * 0.22 : 0, pz = d ? (b[0] - a[0]) / d * 0.22 : 0;
+      for (let k = 1; k < n; k++) { const x = a[0] + (b[0] - a[0]) * k / n, z = a[1] + (b[1] - a[1]) * k / n; for (const s of [0, 1, -1]) { const [i, j] = G.celda(x + px * s, z + pz * s); if (!G.libre(i, j)) return false; } } return true; };
+    aEstrella.ve = ve;
     const out = [camino[0]]; let k = 0; while (k < camino.length - 1) { let l = camino.length - 1; while (l > k + 1 && !ve(camino[k], camino[l])) l--; out.push(camino[l]); k = l; }
-    return out;
+    out.llega = llega; return out;
   }
 
   // ---------- Personajes que caminan ----------
@@ -231,7 +243,8 @@
   }
   function irA(p, x, z, alLlegar) {
     const c = aEstrella(S.G, [p.obj.position.x, p.obj.position.z], [x, z]); if (!c) return false;
-    c.push([x, z]); p.camino = c.slice(1); p.alLlegar = alLlegar || null; anim(p, p.rapido ? 'sprint' : 'walk'); return true;
+    const [ci, cj] = S.G.celda(x, z), ult = c[c.length - 1]; if (c.llega && S.G.libre(ci, cj) && (!aEstrella.ve || aEstrella.ve(ult, [x, z]))) c.push([x, z]);
+    p.camino = c.slice(1); p.alLlegar = alLlegar || null; anim(p, p.rapido ? 'sprint' : 'walk'); return true;
   }
   function moverPaso(p, dt) {
     if (!p.camino || !p.camino.length) return;
@@ -267,7 +280,21 @@
   }
 
   // ---------- Construcción de la escena ----------
+  // Entorno (reflejos y luz ambiente realista): un cielo de verdad en exteriores y una sala neutra en interiores; se calcula una vez por tipo
+  function entorno() {
+    const r = S.renderer, interior = ['sede', 'casa', 'interior'].indexOf(S.escena) >= 0, k = interior ? 'int' : 'ext'; if (S.envK === k) return;
+    try {
+      const pm = new THREE.PMREMGenerator(r); let tex;
+      if (interior && THREE.RoomEnvironment) tex = pm.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+      else if (THREE.Sky) { const sky = new THREE.Sky(), u = sky.material.uniforms, sc = new THREE.Scene(); sky.scale.setScalar(1000); u.turbidity.value = 5; u.rayleigh.value = 1.4; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.8; u.sunPosition.value.setFromSphericalCoords(1, THREE.MathUtils.degToRad(58), THREE.MathUtils.degToRad(205)); sc.add(sky); tex = pm.fromScene(sc).texture; }
+      pm.dispose(); if (!tex) return; if (S.scene.environment) S.scene.environment.dispose(); S.scene.environment = tex; S.envK = k; S.envBase = interior ? 0.4 : 0.3; S.scene.environmentIntensity = S.envBase;
+    } catch (e) { S.envK = k; }
+  }
+  // Tono de cada ciudad: más cálido y luminoso en el Mediterráneo, más frío y neutro en el centro de Europa, nítido en EE. UU.
+  const TONOS = { med: { sol: 0xffecc8, cielo: 0xe2e9f2, exp: 0.95 }, centro: { sol: 0xf1f3ff, cielo: 0xd0dbe8, exp: 0.88 }, us: { sol: 0xfff4e4, cielo: 0xdfe9f5, exp: 0.92 } };
+  function tonoCiudad(st) { const p = (st.equipos[st.clubId] || {}).pais; return TONOS[p === 'US' ? 'us' : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? 'centro' : 'med']; }
   async function construir(st) {
+    entorno();
     if (S.escena === 'calle') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.calle.construir(S, motor(), st); }
     if (S.escena === 'casa') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.casa.construir(S, motor(), st, S.escenaArg); }
     if (S.escena === 'interior' && GM.interiores) { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.interiores.construir(S, motor(), st, S.escenaArg); }
@@ -283,7 +310,7 @@
     for (const s of [-1, 1]) { const x = -9 + s * 9.6, g = new THREE.Group(); const poste = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.05), new THREE.MeshStandardMaterial({ color: 0x333a40 })); poste.position.y = 1.52; g.add(poste); const tab = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.05, 1.8), new THREE.MeshStandardMaterial({ color: 0xf4f4f4 })); tab.position.set(-s * 0.35, 3.0, 0); g.add(tab); const aro = new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.02, 6, 20), new THREE.MeshStandardMaterial({ color: 0xe8590c })); aro.rotation.x = Math.PI / 2; aro.position.set(-s * 0.62, 2.85, 0); g.add(aro); g.position.set(x, 0, -6); g.traverse(n => { if (n.isMesh) n.castShadow = true; }); W.add(g); G.bloquea(x - 0.3, -6.3, x + 0.3, -5.7);
       const red = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.14, 0.42, 12, 3, true), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.85 })); red.position.set(x - s * 0.62, 2.62, -6); red.userData = { red: true }; W.add(red); S.redes.push({ obj: red, aro: new THREE.Vector3(x - s * 0.62, 2.85, -6), t: 9 }); }
     // Muros bajos (vista en corte, como en Big Ambitions): segmentos de 0,5 m sin duplicar, con huecos en las puertas
-    const muro = new THREE.MeshStandardMaterial({ color: 0xf1ede6, roughness: 0.9 }), remate = new THREE.MeshStandardMaterial({ color: 0x2b3038 }), segs = new Map();
+    const muro = GM.texturas ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ color: 0xf1ede6, roughness: 0.9 }), 'Plaster003', { color: false, escala: 1.6, relieve: 0.8 }) : new THREE.MeshStandardMaterial({ color: 0xf1ede6, roughness: 0.9 }), remate = new THREE.MeshStandardMaterial({ color: 0x2b3038 }), segs = new Map();
     const borde = (xa, za, xb, zb) => { const n = Math.round(Math.hypot(xb - xa, zb - za) / 0.5); for (let k = 0; k < n; k++) { const x = xa + (xb - xa) * (k + 0.5) / n, z = za + (zb - za) * (k + 0.5) / n; segs.set(x.toFixed(2) + ',' + z.toFixed(2), [x, z, xa === xb]); } };
     const rectBordes = ([x0, z0, x1, z1]) => { borde(x0, z0, x1, z0); borde(x0, z1, x1, z1); borde(x0, z0, x0, z1); borde(x1, z0, x1, z1); };
     P.salas.forEach(s => rectBordes(s.rect)); rectBordes(P.pasillo.rect);
@@ -460,7 +487,7 @@
     const fecha = h('span', null, U.fechaLarga(st.fecha));
     const top = h('div', { class: 'sede-hud sede-top' },
       h('button', { class: 'btn btn-sec peq', onclick: cerrar }, 'Salir'),
-      h('div', { class: 'ct' }, h('b', null, S.escena === 'casa' ? (S.casaNombre || 'Tu casa') : S.escena === 'interior' ? (S.interiorNombre || 'Interior') : S.escena === 'deportiva' ? (S.calleNombre || 'Ciudad deportiva') : S.escena === 'calle' || S.escena === 'pueblo' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'pueblo' ? h('span', null, 'Tu pueblo, ' + U.fechaLarga(st.fecha)) : S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('span', { class: 'sede-hora' }, '9:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
+      h('div', { class: 'ct' }, h('b', null, S.escena === 'casa' ? (S.casaNombre || 'Tu casa') : S.escena === 'interior' ? (S.interiorNombre || 'Interior') : S.escena === 'deportiva' ? (S.calleNombre || 'Ciudad deportiva') : S.escena === 'calle' || S.escena === 'pueblo' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'pueblo' ? h('span', null, 'Tu pueblo, ' + U.fechaLarga(st.fecha)) : S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('button', { class: 'sede-hora', title: 'Pasar una hora', onclick: () => { if (S.hora >= 23) return GM.ui.toast('Es tarde: avanza al día siguiente'); S.hora = Math.min(23, Math.floor(S.hora) + 1); S.tLuz = 0; GM.ui.toast('Pasa una hora: ' + Math.floor(S.hora) + ':00'); } }, '8:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn btn-sec peq', onclick: () => mapa() }, 'Mapa'),
       st.modo === 'carrera' && GM.mods.movil && GM.ui.movil ? (() => { const n = GM.mods.movil.noLeidos(st); return h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil' + (n ? ' (' + n + ')' : '')); })() : null,
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
@@ -468,12 +495,19 @@
     S.ficha = h('div', { class: 'sede-hud sede-ficha', style: { display: 'none' } });
     // Ayuda según el dispositivo; en pantallas táctiles, además, botones para girar y acercar la cámara. Se oculta sola a los 8 s (o al tocarla).
     const tactil = (() => { try { return window.matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
-    const ayuda = h('div', { class: 'sede-hud sede-ayuda', onclick: () => ayuda.remove() }, tactil ? 'Toca el suelo para caminar, arrastra para girar la cámara y pellizca para acercar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.' : 'Toca el suelo para caminar o usa WASD (Mayúsculas para correr). Rueda para acercar, Q y E para girar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.');
+    const ayuda = h('div', { class: 'sede-hud sede-ayuda', onclick: () => ayuda.remove() }, tactil ? 'Toca el reloj para pasar una hora. Toca el suelo para caminar (doble toque para correr) o usa el joystick, arrastra para girar la cámara y pellizca para acercar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.' : 'Clic en el reloj para pasar una hora. Toca el suelo para caminar (doble clic para correr) o usa WASD (Mayúsculas para correr). Rueda para acercar, Q y E para girar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.');
     setTimeout(() => { if (ayuda.isConnected) ayuda.classList.add('fuera'); setTimeout(() => ayuda.remove(), 600); }, 8000);
     const ctrl = tactil ? h('div', { class: 'sede-hud sede-ctrl' },
       h('button', { 'aria-label': 'Girar a la izquierda', onclick: () => { S.yawObj += Math.PI / 4; } }, '⟲'), h('button', { 'aria-label': 'Girar a la derecha', onclick: () => { S.yawObj -= Math.PI / 4; } }, '⟳'),
       h('button', { 'aria-label': 'Acercar', onclick: () => { S.zoom = Math.max(8, S.zoom * 0.8); } }, '+'), h('button', { 'aria-label': 'Alejar', onclick: () => { S.zoom = Math.min(42, S.zoom * 1.25); } }, '−')) : null;
     S.raiz.append(top, S.panel, S.ficha, ayuda); if (ctrl) S.raiz.append(ctrl);
+    // Joystick táctil: abajo a la izquierda; a fondo, corres. Se mueve en la dirección de la cámara.
+    if (tactil) { const pomo = h('div', { class: 'sede-joy-p' }), joy = h('div', { class: 'sede-hud sede-joy', 'aria-label': 'Joystick para caminar' }, pomo); S.joy = { activo: false, x: 0, y: 0 };
+      const mover = e => { const r = joy.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, R = r.width / 2; let dx = (e.clientX - cx) / R, dy = (e.clientY - cy) / R; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } S.joy.x = dx; S.joy.y = dy; pomo.style.transform = 'translate(' + dx * R * 0.6 + 'px,' + dy * R * 0.6 + 'px)'; };
+      joy.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); joy.setPointerCapture && joy.setPointerCapture(e.pointerId); S.joy.activo = true; mover(e); });
+      joy.addEventListener('pointermove', e => { if (S.joy.activo) { e.preventDefault(); mover(e); } });
+      const soltar = () => { S.joy.activo = false; S.joy.x = S.joy.y = 0; pomo.style.transform = ''; }; joy.addEventListener('pointerup', soltar); joy.addEventListener('pointercancel', soltar);
+      S.raiz.append(joy); }
     if (S.escena === 'casa' && GM.casa) { S.btnConstruir = h('button', { class: 'btn casa-btn', onclick: () => GM.casa.activar(S, motor()) }, S.construccion ? 'Salir del modo construcción' : 'Modo construcción'); S.raiz.append(h('div', { class: 'sede-hud casa-btn-cont' }, S.btnConstruir)); }
   }
   // ---------- Mapa interactivo ----------
@@ -491,9 +525,12 @@
       const [yx, yz] = aPx(S.yo.obj.position.x, S.yo.obj.position.z); x.fillStyle = '#2f80ed'; x.beginPath(); x.arc(yx, yz, Math.max(6, esc * 2.3), 0, 6.3); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 3; x.stroke();
     };
     pinta();
-    const lista = h('div', { class: 'mapa-lista' }, (S.zonas || []).map(z => h('button', { class: 'btn btn-sec peq', onclick: () => ir(z) }, z.sala.nombre)));
-    const capa = h('div', { class: 'sede-hud sede-mapa' }, h('div', { class: 'mapa-cab' }, h('b', null, 'Mapa'), h('span', null, 'Toca un punto o un nombre para ir andando'), h('button', { class: 'sp-cerrar', onclick: () => capa.remove() }, '×')), h('div', { class: 'mapa-lienzo' }, cv), lista);
+    const visto = (S.st.sede && S.st.sede.visitadas && S.st.sede.visitadas[S.escena + (S.escenaArg ? ':' + S.escenaArg : '')]) || {};
+    const lista = h('div', { class: 'mapa-lista' }, (S.zonas || []).map(z => visto[z.sala.id] ? h('span', { class: 'mapa-par' }, h('button', { class: 'btn btn-sec peq', onclick: () => ir(z) }, z.sala.nombre), h('button', { class: 'btn peq mapa-ya', title: 'Viaje rápido', onclick: () => saltar(z) }, 'Ir ya')) : h('button', { class: 'btn btn-sec peq', onclick: () => ir(z) }, z.sala.nombre)));
+    const capa = h('div', { class: 'sede-hud sede-mapa' }, h('div', { class: 'mapa-cab' }, h('b', null, 'Mapa'), h('span', null, 'Toca un punto o un nombre para ir andando; «Ir ya» te lleva al momento a los sitios que ya conoces'), h('button', { class: 'sp-cerrar', onclick: () => capa.remove() }, '×')), h('div', { class: 'mapa-lienzo' }, cv), lista);
     function ir(z) { capa.remove(); irA(S.yo, z.obj.position.x, z.obj.position.z, () => entrar(z.sala)); }
+    function saltar(z) { capa.remove(); const velo = h('div', { class: 'sede-velo' }); S.raiz.append(velo);
+      setTimeout(() => { const zx = z.obj.position.x, zz = z.obj.position.z, cs = aEstrella(S.G, [zx, zz + 1.2], [zx, zz]), q = cs && cs.length ? cs[0] : [zx, zz]; S.yo.camino = null; S.yo.obj.position.set(q[0], 0, q[1]); S.foco.set(q[0], 0, q[1]); anim(S.yo, 'idle'); velo.classList.add('fuera'); setTimeout(() => velo.remove(), 450); entrar(z.sala); }, 300); }
     cv.addEventListener('click', e => {
       const r = cv.getBoundingClientRect(), wx = G.x0 + (e.clientX - r.left) / r.width * cv.width / esc * G.c, wz = G.z0 + (e.clientY - r.top) / r.height * cv.height / esc * G.c;
       const z = (S.zonas || []).map(z => ({ z, d: Math.hypot(z.obj.position.x - wx, z.obj.position.z - wz) })).sort((a, b) => a.d - b.d)[0];
@@ -508,6 +545,7 @@
     if (S.construccion) { if (S.panel) S.panel.style.display = 'none'; S.zonaActual = null; return; }
     if (!zona) { if (S.zonaActual) { S.zonaActual = null; if (!S.panelFijo) S.panel.style.display = 'none'; } return; }
     if (S.zonaActual === zona) return; S.zonaActual = zona; S.panelFijo = false; abrirSala(zona.sala);
+    { const st = S.st, k = S.escena + (S.escenaArg ? ':' + S.escenaArg : ''); st.sede = st.sede || { charlas: {} }; const V = st.sede.visitadas = st.sede.visitadas || {}; (V[k] = V[k] || {})[zona.sala.id] = 1; }
   }
   function abrirSala(sala, panelId) {
     if (!panelId) GM.bus.emit('sala:abierta', { id: sala.id, escena: S.escena });
@@ -590,7 +628,7 @@
       setTimeout(() => {
         if (!S) return; const d = estadoDia(S.st);
         velo.append(GM.h('b', null, U.fechaLarga(S.st.fecha)), GM.h('span', null, d.texto));
-        S.hora = 9; hud(S.st); if (S.escena === 'pueblo') { S.cambiando = false; cambiarEscena('pueblo'); } else repoblar(); if (S.zonaActual) abrirSala(S.zonaActual.sala, 'partido');
+        S.hora = 8; hud(S.st); if (S.escena === 'pueblo') { S.cambiando = false; cambiarEscena('pueblo'); } else repoblar(); if (S.zonaActual) abrirSala(S.zonaActual.sala, 'partido');
         setTimeout(() => { velo.classList.add('fuera'); setTimeout(() => velo.remove(), 450); if (S) S.cambiando = false; }, 1200);
       }, 80);
     }, 300);
@@ -748,9 +786,13 @@
     const h = S.hora || 9, tarde = Math.max(0, Math.min(1, (h - 17.5) / 2.5)), noche = Math.max(0, Math.min(1, (h - 19.5) / 1.5)), triste = S.dia.tipo === 'derrota' ? 0.72 : S.dia.tipo === 'victoria' ? 1.08 : 1;
     S.noche = noche;
     S.luces.sol.intensity = (2.6 * (1 - noche) + 0.7 * noche) * triste;
-    S.luces.sol.color.setHex(noche > 0 ? mezcla(0xffa060, 0x8fa6d6, noche) : mezcla(S.dia.tipo === 'derrota' ? 0xd9e2f0 : 0xfff1dc, 0xffa060, tarde));
-    S.luces.cielo.intensity = (1.1 * (1 - noche) + 0.75 * noche) * triste;
-    S.luces.cielo.color.setHex(mezcla(0xdfe8f2, 0x5a6c9a, noche));
+    const T0 = tonoCiudad(S.st);
+    S.luces.sol.color.setHex(noche > 0 ? mezcla(0xffa060, 0x8fa6d6, noche) : mezcla(S.dia.tipo === 'derrota' ? 0xd9e2f0 : T0.sol, 0xffa060, tarde));
+    S.luces.cielo.intensity = ((S.scene.environment ? 0.55 : 1.1) * (1 - noche) + 0.5 * noche) * triste;
+    S.luces.cielo.color.setHex(mezcla(T0.cielo, 0x5a6c9a, noche));
+    S.renderer.toneMappingExposure = T0.exp * (1 - noche * 0.12);
+    if (S.scene.environment) S.scene.environmentIntensity = (S.envBase || 0.5) * (1 - noche * 0.75) * triste;
+    if (S.bloom) { S.bloom.enabled = noche > 0.05; S.bloom.strength = noche * 0.5; S.bloom.threshold = 2.4 - noche * 1.5; }
     if (S.escena === 'calle') { const f = noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0xa9c6dc, 0xf0a46a, tarde); S.scene.background = new THREE.Color(f); if (S.scene.fog) S.scene.fog.color.setHex(f); }
     else S.scene.background = new THREE.Color(noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0x9fb8c8, 0xf0a46a, tarde));
     if (S.farolas) { S.farolas.emissiveIntensity = 0.4 + noche * 3.5; }
@@ -927,14 +969,20 @@
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
     const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
     const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
-    Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; scene.add(sol, sol.target);
-    S = { hora: 9, luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
+    Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; sol.shadow.radius = 4; sol.shadow.blurSamples = 12; scene.add(sol, sol.target);
+    S = { hora: 8, luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
-    const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); };
+    if (alta && THREE.EffectComposer && renderer.capabilities && renderer.capabilities.isWebGL2) { try {
+      const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 }), comp = new THREE.EffectComposer(renderer, rt);
+      comp.addPass(new THREE.RenderPass(scene, camera));
+      const ao = new THREE.GTAOPass(scene, camera, 4, 4); ao.blendIntensity = 0.75; ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.2, thickness: 1, scale: 1 }); ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 }); comp.addPass(ao);
+      const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.28, 0.5, 1.6); comp.addPass(bloom); comp.addPass(new THREE.OutputPass());
+      S.composer = comp; S.ao = ao; S.bloom = bloom; } catch (e) { S.composer = null; console.warn('Sin posprocesado:', e.message); } }
+    const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); if (S.composer) { S.composer.setPixelRatio(Math.min(renderer.getPixelRatio(), 1.5)); S.composer.setSize(w, hh); } };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
     if (nivelRend()) aplicarRend(nivelRend(), false);   // lo que se aprendió en escenas anteriores de este dispositivo
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, S.escena === 'pueblo' ? 'Llegando al pueblo…' : 'Abriendo la sede del club…'); raiz.append(cargando);
-    construir(st).then(async () => {
+    (GM.texturas ? GM.texturas.precargar() : Promise.resolve()).then(() => construir(st)).then(async () => {
       const yo = await personaje(aspecto(st)); { const sp = S.escena === 'pueblo' && S.spawnPueblo ? S.spawnPueblo : S.escena === 'calle' && S.spawnCalle ? S.spawnCalle : S.escena === 'casa' && S.spawnCasa ? S.spawnCasa : S.escena === 'interior' && S.spawnInterior ? S.spawnInterior : S.escena === 'deportiva' && S.spawnDeportiva ? S.spawnDeportiva : { x: GM.sedePlano.entrada.x, z: 12.5, ry: Math.PI }; yo.obj.position.set(sp.x, 0, sp.z); yo.obj.rotation.y = sp.ry; S.foco.set(sp.x, 0, sp.z); } S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
       const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / yo.obj.scale.x);
       if (S.escena !== 'sede') hud(st);   // la cabecera usa datos de la escena (nombre del pueblo)
@@ -953,6 +1001,7 @@
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
       if (S.escena === 'interior' && GM.interiores && GM.interiores.actualizar) GM.interiores.actualizar(S, motor(), dt);
       if (S.mascota && GM.mods.vida) GM.mods.vida.moverMascota(S, dt);
+      if (S.escena === 'deportiva' && GM.deportivaMundo && GM.deportivaMundo.actualizar) GM.deportivaMundo.actualizar(S, motor(), dt);
       if (S.escena === 'pueblo' && GM.puebloMundo) GM.puebloMundo.actualizar(S, motor(), dt);
       { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {
@@ -967,17 +1016,18 @@
       if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
       const inc = S.inc || 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z);
-      renderer.render(scene, camera);
+      if (S.composer) S.composer.render(); else renderer.render(scene, camera);
     })();
   }
   function zonaCercana() {
     const p = S.yo.obj.position; let mejor = null; S.zonas && S.zonas.forEach(z => { if (Math.hypot(z.obj.position.x - p.x, z.obj.position.z - p.z) < 1.3) mejor = z; }); mostrarAviso(mejor);
   }
   function teclado(dt) {
-    const k = S.teclas, ax = (k.d || k.arrowright ? 1 : 0) - (k.a || k.arrowleft ? 1 : 0), az = (k.s || k.arrowdown ? 1 : 0) - (k.w || k.arrowup ? 1 : 0);
+    const k = S.teclas, J = S.joy; let ax = (k.d || k.arrowright ? 1 : 0) - (k.a || k.arrowleft ? 1 : 0), az = (k.s || k.arrowdown ? 1 : 0) - (k.w || k.arrowup ? 1 : 0), corre = !!k.shift, fuerza = 1;
+    if (J && J.activo && Math.hypot(J.x, J.y) > 0.15) { ax = J.x; az = J.y; fuerza = Math.min(1, Math.hypot(J.x, J.y)); corre = fuerza > 0.92; }
     if (!ax && !az) { if (S.yo.teclado) { S.yo.teclado = false; anim(S.yo, 'idle'); } return; }
-    S.yo.camino = null; S.yo.teclado = true; anim(S.yo, k.shift ? 'sprint' : 'walk');
-    const c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = ax * c + az * s, dz = -ax * s + az * c, l = Math.hypot(dx, dz), v = (k.shift ? 4.2 : 2.1) * (S.yo.bici ? 2.5 : 1) * dt, o = S.yo.obj.position;
+    S.yo.camino = null; S.yo.teclado = true; anim(S.yo, corre ? 'sprint' : 'walk');
+    const c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = ax * c + az * s, dz = -ax * s + az * c, l = Math.hypot(dx, dz), v = (corre ? 4.2 : 2.1 * Math.max(0.5, fuerza)) * (S.yo.bici ? 2.5 : 1) * dt, o = S.yo.obj.position;
     const nx = o.x + dx / l * v, nz = o.z + dz / l * v, G = S.G, ok = (x, z) => { const [i, j] = G.celda(x, z); return G.libre(i, j); };
     if (ok(nx, nz)) { o.x = nx; o.z = nz; } else if (ok(nx, o.z)) o.x = nx; else if (ok(o.x, nz)) o.z = nz;
     girar(S.yo, Math.atan2(dx, dz), dt);
@@ -988,13 +1038,14 @@
   const NIVELES_REND = [null, 1, 0.8, 0.65];
   function nivelRend() { try { return Math.min(3, +window.localStorage.getItem('gm1:rendimiento') || 0); } catch (e) { return 0; } }
   function aplicarRend(n, avisar) {
-    const r = S.renderer; if (!r || !n) return; S.nivelRend = n;
+    const r = S.renderer; if (!r || !n) return; S.nivelRend = n; if (S.composer) { S.composer.dispose && S.composer.dispose(); S.composer = null; }
     r.setPixelRatio(NIVELES_REND[n]);
     if (r.shadowMap.enabled) { r.shadowMap.enabled = false; if (S.luces && S.luces.sol) S.luces.sol.castShadow = false; S.scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); }); }
     try { window.localStorage.setItem('gm1:rendimiento', String(n)); } catch (e) { }
     if (avisar && GM.ui && GM.ui.toast) GM.ui.toast('Calidad ajustada para que vaya más fluido');
   }
   function rendimiento() {
+    if (typeof window !== 'undefined' && window.__sinAdaptar) return;   // capturas: no bajar la calidad
     const ahora = performance.now(), R = S.rend || (S.rend = { ini: ahora, ult: ahora, n: 0, acum: 0 });
     const d = ahora - R.ult; R.ult = ahora; if (ahora - R.ini < 3000 || d > 500) return;   // arranque o pestaña en segundo plano
     R.n++; R.acum += d; if (R.acum < 2000) return;
@@ -1009,6 +1060,9 @@
       const npcs = S.gente.map(n => n.obj), hit = ray.intersectObjects(npcs, true)[0];
       if (hit) { let o = hit.object; while (o && !(o.userData && o.userData.npc !== undefined)) o = o.parent; if (o) { const n = S.gente[o.userData.npc]; fichaJugador(n); const yo = S.yo.obj.position; if (!n.fijo && n.camino) { n.camino = null; anim(n, 'idle'); n.espera = 6; } n.obj.lookAt(yo.x, 0, yo.z); return; } }
       const p = new THREE.Vector3(); if (!ray.ray.intersectPlane(suelo, p)) return;
+      { const dur = (ray.intersectObject(S.mundo, true).find(i => i.object.visible && !i.object.isSprite && !(i.object.userData && i.object.userData.etiqueta) && i.object !== S.marcaDestino && i.object.material && !i.object.material.transparent)) || null;
+        if (dur && dur.point.y > 0.25 && dur.distance < ray.ray.origin.distanceTo(p)) { const back = new THREE.Vector3(ray.ray.direction.x, 0, ray.ray.direction.z).normalize().multiplyScalar(0.7); p.set(dur.point.x - back.x, 0, dur.point.z - back.z); } }
+      { const ahora = Date.now(), prev = S.ultToque; S.yo.rapido = !!(prev && ahora - prev.t < 350 && Math.hypot(prev.x - p.x, prev.z - p.z) < 3); S.ultToque = { t: ahora, x: p.x, z: p.z }; }
       { let mejor = null, dm = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 1.4 : 0.9; S.gente.forEach(n => { const d = Math.hypot(n.obj.position.x - p.x, n.obj.position.z - p.z); if (d < dm) { dm = d; mejor = n; } }); if (mejor) { fichaJugador(mejor); if (!mejor.fijo && mejor.camino) { mejor.camino = null; anim(mejor, 'idle'); mejor.espera = 6; } mejor.obj.lookAt(S.yo.obj.position.x, 0, S.yo.obj.position.z); return; } }
       const z = S.zonas && S.zonas.find(z => Math.hypot(z.obj.position.x - p.x, z.obj.position.z - p.z) < 0.9);
       irA(S.yo, p.x, p.z, z ? () => entrar(z.sala) : null);

@@ -455,6 +455,8 @@ body{background:var(--bg)}
 
 /* Mundo explorable en el móvil: ayuda que se va sola, controles táctiles y paneles como hoja inferior */
 .sede-ayuda{transition:opacity .5s}.sede-ayuda.fuera{opacity:0}
+.sede-joy{left:18px;bottom:calc(22px + env(safe-area-inset-bottom,0px));width:112px;height:112px;border-radius:50%;background:rgba(18,22,28,.32);border:2px solid rgba(255,255,255,.35);touch-action:none;display:flex;align-items:center;justify-content:center;z-index:3}.sede-joy-p{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:none;transition:transform .05s}
+.mapa-par{display:inline-flex;gap:4px}.mapa-ya{padding:4px 10px}
 .sede-ctrl{right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px}
 .sede-ctrl button{width:46px;height:46px;border-radius:50%;border:0;background:rgba(18,22,28,.78);color:#fff;font:700 22px/1 var(--fb);box-shadow:0 2px 8px rgba(0,0,0,.35)}
 @media (max-width:640px){

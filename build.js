@@ -1,6 +1,6 @@
 // Ensambla el juego en dist/ (autocontenido, funciona sin conexión): index.html + three.min.js + fuentes locales.
 const fs = require('fs'), path = require('path');
-const mods = ['core','datos_util','datos_valoraciones','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','finanzas','ciudad','campus','contratos','ciudad3d','ciudad_deportiva','estadio','legado','directiva_ia','guardado','copias','partidos','competiciones','mercado','cantera','personaje','carrera','estilo','movil','fans','copas','continental','rivalidades','directo','rua','entrenador','social','sponsor','pueblo','vida','gente','pueblo3d','hogar','hogar3d','sede_plano','sede_acciones','sede3d','edificio_kit','calle3d','ciudad_barrios','interiores','deportiva_mundo','pueblo_mundo','casa3d','portada3d','ui','ui_gestion','ui_ciudad','ui_presidente','ui_carrera','ui_entrenador','ui_tutorial'];
+const mods = ['core','datos_util','datos_valoraciones','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','texturas','finanzas','ciudad','campus','contratos','ciudad3d','ciudad_deportiva','estadio','legado','directiva_ia','guardado','copias','partidos','competiciones','mercado','cantera','personaje','carrera','estilo','movil','fans','copas','continental','rivalidades','directo','rua','entrenador','social','sponsor','pueblo','vida','gente','pueblo3d','hogar','hogar3d','sede_plano','sede_acciones','sede3d','edificio_kit','calle3d','ciudad_barrios','interiores','deportiva_mundo','pueblo_mundo','casa3d','portada3d','ui','ui_gestion','ui_ciudad','ui_presidente','ui_carrera','ui_entrenador','ui_tutorial'];
 const DIST = path.join(__dirname, 'dist'), VENDOR = path.join(__dirname, 'vendor');
 const LAT = 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD';
 const EXT = 'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF';
@@ -90,11 +90,14 @@ ICONOS.forEach(f => fs.copyFileSync(path.join(VENDOR, 'icons', f), path.join(DIS
 // Modelos 3D (glb y texturas, CC0): vendor/modelos -> dist/modelos (las licencias .txt no se publican)
 const MODELOS = [];
 (function copia(rel) { const src = path.join(VENDOR, 'modelos', rel); fs.readdirSync(src, { withFileTypes: true }).forEach(e => { const r = rel ? rel + '/' + e.name : e.name; if (e.isDirectory()) { fs.mkdirSync(path.join(DIST, 'modelos', r), { recursive: true }); copia(r); } else if (!/.txt$/.test(e.name)) { fs.copyFileSync(path.join(src, e.name), path.join(DIST, 'modelos', r)); MODELOS.push('modelos/' + r); } }); })('');
+// Texturas reales (CC0, ambientCG): vendor/texturas -> dist/texturas
+const TEXTURAS = []; fs.mkdirSync(path.join(DIST, 'texturas'), { recursive: true });
+fs.readdirSync(path.join(VENDOR, 'texturas')).filter(f => /\.jpg$/.test(f)).forEach(f => { fs.copyFileSync(path.join(VENDOR, 'texturas', f), path.join(DIST, 'texturas', f)); TEXTURAS.push('texturas/' + f); });
 fs.writeFileSync(path.join(DIST, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2));
 
 // Service worker: precarga todo dist/. La versión es un hash del contenido, así que cada cambio crea una caché nueva
 // y el juego ofrece actualizar (ver registroSW). Estrategia: primero caché, red como respaldo.
-const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].concat(FUENTES.map(x => 'fonts/' + x[2]), ICONOS.map(f => 'icons/' + f), MODELOS);
+const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].concat(FUENTES.map(x => 'fonts/' + x[2]), ICONOS.map(f => 'icons/' + f), MODELOS, TEXTURAS);
 const hash = require('crypto').createHash('sha1');
 archivos.filter(f => f !== './').forEach(f => hash.update(fs.readFileSync(path.join(DIST, f))));
 const VERSION = hash.digest('hex').slice(0, 10);

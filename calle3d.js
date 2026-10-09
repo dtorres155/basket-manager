@@ -19,6 +19,8 @@
   const rnd = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
   const MATS = {}; const mat = (hex, o) => { const k = hex + JSON.stringify(o || {}); return MATS[k] || (MATS[k] = new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: 0.85 }, o || {}))); };
   // UV en metros para que las texturas de fachada se repitan por planta (3 m de ancho, 3,2 m de alto)
+  // Texturas reales (texturas.js) sobre un material, si están cargadas
+  const real = (m, id, o) => (GM.texturas ? GM.texturas.aplicar(m, id, o) : m);
   function uvM(geo, ex, ey) {
     const p = geo.attributes.position, n = geo.attributes.normal, uv = geo.attributes.uv;
     for (let i = 0; i < p.count; i++) { const ax = Math.abs(n.getX(i)), ay = Math.abs(n.getY(i)); const u = ay > 0.5 ? p.getX(i) : ax > 0.5 ? p.getZ(i) : p.getX(i), v = ay > 0.5 ? p.getZ(i) : p.getY(i); uv.setXY(i, u / ex, v / ey); }
@@ -64,7 +66,7 @@
   function edificio(W, G, T, E, r, rect, pisos, lado, o) {
     o = o || {};
     const [x0, z0, x1, z1] = rect, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, hB = 3.4, hP = 3.2;
-    const fach = o.cristal ? new THREE.MeshStandardMaterial({ map: T.cristal, roughness: 0.25, metalness: 0.3, emissive: 0xbfd8ff, emissiveIntensity: 0 }) : new THREE.MeshStandardMaterial({ map: T.fachadas[(r() * T.fachadas.length) | 0], roughness: 0.9, emissive: 0xffd28a, emissiveMap: T.ventanas || null, emissiveIntensity: 0 });
+    const fach = o.cristal ? real(new THREE.MeshStandardMaterial({ map: T.cristal, roughness: 0.25, metalness: 0.3, emissive: 0xbfd8ff, emissiveIntensity: 0 }), 'Facade006', { escala: 9, rugosidad: 0.3, rugMin: 0.1 }) : real(new THREE.MeshStandardMaterial({ map: T.fachadas[(r() * T.fachadas.length) | 0], roughness: 0.9, emissive: 0xffd28a, emissiveMap: T.ventanas || null, emissiveIntensity: 0 }), 'Plaster003', { color: false, escala: 2.5, relieve: 1.2 });
     (S_.ventanas = S_.ventanas || []).push(fach);
     const cuerpo = new THREE.BoxGeometry(w, pisos * hP, d); uvM(cuerpo, 3, hP); cuerpo.translate(0, hB + pisos * hP / 2, 0);
     const bg = new THREE.Group(); W.add(bg); ocluye(bg); // grupo del edificio: se funde por dentro y se aclara entero
@@ -118,8 +120,8 @@
     const ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, rep = club.reputacion || 60, afi = ciu.aficion || 50;
     const G = M.rejilla({ limites: LIM, CELDA: 0.5 }); S.G = G; OCL = []; S.oclusores = OCL;
     // Suelo: asfalto, aceras de panot y pasos de peatones elevados
-    suelo(W, 90, 50, new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 0, -0.12, 0);
-    const mAcera = new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9 });
+    suelo(W, 90, 50, real(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { escala: 5, tinte: 0xb4b4b4 }), 0, -0.12, 0);
+    const mAcera = real(new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9, color: 0xaea99f }), 'Concrete034', { color: false, escala: 2.4, relieve: 0.6 });
     const acera = (x0, z0, x1, z1) => { const w = x1 - x0, d = z1 - z0, g = new THREE.BoxGeometry(w, 0.12, d); uvM(g, 1.5, 1.5); const me = new THREE.Mesh(g, mAcera); me.position.set((x0 + x1) / 2, -0.06, (z0 + z1) / 2); me.receiveShadow = true; W.add(me); };
     acera(-42, -24, -3, -3); acera(3, -24, 42, -3); acera(-42, 3, -3, 24); acera(3, 3, 42, 24);
     G.bloquea(-42, -3, 42, 3); G.bloquea(-3, -24, 3, 24); // la calzada no se pisa…
@@ -233,7 +235,7 @@
   function barrio(S, M, W, G, T, E, r, club, st, c1, c2, afi, rep, bar) {
     const zonas = {}; S.plazaNombre = bar[2] || bar[1] || club.ciudad;
     const tAdoq = M.textura('adoquin', 128, (x, n) => { x.fillStyle = '#8f8576'; x.fillRect(0, 0, n, n); const rr = rnd(5); for (let f = 0; f < 8; f++) for (let k = -1; k < 8; k++) { const t = 0.85 + rr() * 0.25; x.fillStyle = 'rgb(' + (190 * t | 0) + ',' + (178 * t | 0) + ',' + (160 * t | 0) + ')'; x.fillRect(k * 16 + (f % 2) * 8 + 1, f * 16 + 1, 14, 14); } });
-    const plaza = new THREE.PlaneGeometry(84, 40).rotateX(-Math.PI / 2); uvM(plaza, 3, 3); const pm = new THREE.Mesh(plaza, new THREE.MeshStandardMaterial({ map: tAdoq, roughness: 0.95 })); pm.position.set(0, 0.0, 44); pm.receiveShadow = true; W.add(pm);
+    const plaza = new THREE.PlaneGeometry(84, 40).rotateX(-Math.PI / 2); uvM(plaza, 3, 3); const pm = new THREE.Mesh(plaza, real(new THREE.MeshStandardMaterial({ map: tAdoq, roughness: 0.95 }), 'PavingStones070', { escala: 2.6, tinte: 0xd8d2c8 })); pm.position.set(0, 0.0, 44); pm.receiveShadow = true; W.add(pm);
     // Jardineras que cierran la calle al tráfico
     for (let x = -2.4; x <= 2.4; x += 1.6) { caja(W, 1.2, 0.6, 1.2, '#8a8276', x, 0, 23.4); const ar = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0), mat('#4f7f3a')); ar.position.set(x, 0.95, 23.4); W.add(ar); G.bloquea(x - 0.6, 22.8, x + 0.6, 24); }
     letrero(W, T.letrero('Plaza de ' + S.plazaNombre, '#1d4f91', '#fff', 'plaza'), 3.6, 0.7, 4.2, 2.6, 24.6, 0); cil(W, 0.05, 2.9, '#2a2f35', 4.2, 0, 24.5);
@@ -320,8 +322,12 @@
       Object.assign(p, { peaton: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino de ' + club.ciudad, r: rnd(U.hash(st.fecha + 'p' + k)), espera: r() * 3 });
       p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p);
     });
+    // Niños que van al colegio y luego al parque, y vecinos que pasean al perro
+    S.destinos = null;
+    { const ninos = await Promise.all(Array.from({ length: 6 }, (_, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'm-casual'][k % 3], altura: 118 + r() * 26, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: k % 2 ? [c1, c2] : null })));
+      ninos.forEach((p, k) => { const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0], 0, q[1]); Object.assign(p, { peaton: true, nino: true, rol: 'Chaval que va al colegio', r: rnd(U.hash(st.fecha + 'n' + k)), espera: r() * 3 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); }); }
     // Día de partido en casa: aficionados de pie en la acera del pabellón y a lo largo de la avenida
-    S.multitud = null;
+    S.multitud = null; S.fasePartido = null; S.partidoCasa = !!partido;
     if (partido && GM.kit.publico) {
       const piel = PIEL, fans = [], r2 = rnd(U.hash(st.fecha + 'multitud'));
       for (let i = 0; i < 160; i++) { const x = -40 + r2() * 30, z = -5.4 - r2() * 1.6; fans.push({ x, y: 0.88, z, ry: Math.PI + (r2() - 0.5) * 1.2, ropa: r2() < 0.7 ? c1 : c2, piel: piel[(r2() * 5) | 0], pelo: PELO[(r2() * 6) | 0], pantalon: '#2f3640' }); }
@@ -389,6 +395,15 @@
     for (const s of [-1, 1]) { const a = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 12), oro); a.position.set(0, 0.85, s * 0.42); a.rotation.y = Math.PI / 2; copa.add(a); }
     g.userData = { rua: true }; return g;
   }
+  // Autobús del equipo (cerrado, con los colores y el nombre del club)
+  function autobusEquipo(club) {
+    const g = new THREE.Group(), c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff', B = (w, h, d, m, x, y, z) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'string' ? mat(m) : m); me.position.set(x, y, z); me.castShadow = true; g.add(me); return me; };
+    B(2.5, 3.1, 11.5, c1, 0, 1.95, 0); B(2.52, 0.9, 11.2, mat('#1b2229', { roughness: 0.1, metalness: 0.5 }), 0, 2.5, 0.2); B(2.54, 0.4, 11.52, c2, 0, 0.95, 0);
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 128; const x = c.getContext('2d');
+    if (x) { x.fillStyle = c1; x.fillRect(0, 0, 1024, 128); x.fillStyle = c2 === c1 ? '#fff' : c2; x.font = 'bold 70px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(club.nombre.toUpperCase(), 512, 66); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(9, 1.1), new THREE.MeshBasicMaterial({ map: t })); p.position.set(s * 1.27, 1.45, 0); p.rotation.y = s * Math.PI / 2; g.add(p); } }
+    for (const [px, pz] of [[-1.1, 3.9], [1.1, 3.9], [-1.1, -3.6], [1.1, -3.6]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.3, 14), mat('#151515')); w.rotation.z = Math.PI / 2; w.position.set(px, 0.52, pz); g.add(w); }
+    g.userData = { autobusEquipo: true }; return g;
+  }
   function autobus(club) {
     const g = new THREE.Group(), c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0];
     const B = (w, h, d, m, x, y, z) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.castShadow = true; g.add(me); return me; };
@@ -406,22 +421,94 @@
     for (const [x, z] of [[-0.85, 1.3], [0.85, 1.3], [-0.85, -1.3], [0.85, -1.3]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.25, 14), rueda); w.rotation.z = Math.PI / 2; w.position.set(x, 0.34, z); g.add(w); }
     g.position.y = -0.12; g.userData = { coche: true }; GM.kit.fusionar(g); return g;
   }
+  // ---------- Rutinas por hora ----------
+  // Por la mañana se va al trabajo y al colegio, a media mañana de compras, a mediodía a comer y a las terrazas, por la tarde de paseo
+  // y al parque, y por la noche a los bares o a casa. Cuánta gente hay en la calle depende de la hora; quien se va a casa entra en un
+  // portal y no vuelve a salir hasta que le toca.
+  const DENS = h => h < 7 ? 0.15 : h < 9 ? 0.6 : h < 13 ? 0.75 : h < 16 ? 0.9 : h < 20 ? 1 : h < 22 ? 0.6 : 0.3;
+  const FRANJA = h => h < 10 ? 'manana' : h < 13 ? 'media' : h < 16 ? 'comida' : h < 20 ? 'tarde' : h < 22.5 ? 'noche' : 'tarde_noche';
+  const PESOS = { manana: { trabajo: 0.55, compras: 0.15, paseo: 0.3 }, media: { compras: 0.45, trabajo: 0.15, paseo: 0.4 }, comida: { comer: 0.6, paseo: 0.25, compras: 0.15 }, tarde: { paseo: 0.55, compras: 0.25, comer: 0.2 }, noche: { bares: 0.55, paseo: 0.25, casa: 0.2 }, tarde_noche: { casa: 0.8, bares: 0.2 } };
+  function destinos(S) {
+    if (S.destinos) return S.destinos; const Z = (S.zonas || []).map(z => [z.sala.id, z.obj.position.x, z.obj.position.z]), de = re => Z.filter(z => re.test(z[0])).map(z => [z[1], z[2]]);
+    const portales = []; for (let x = -130; x <= 130; x += 13) { portales.push([x + 2, 5.6], [x - 3, -5.6]); }
+    return (S.destinos = { trabajo: de(/hospital|ayuntamiento|sede_calle|estacion|metro|kiosco/), colegio: de(/colegio/), compras: de(/tienda|mercado|kiosco|heladeria/), comer: de(/terraza|pena|heladeria|mercado/), bares: de(/pena|terraza/), paseo: de(/parque|musico|plaza/).concat(S.paseo.filter((_, i) => i % 7 === 0)), parque: de(/parque/), casa: portales });
+  }
+  function elegir(n, pesos) { let x = n.r(), k; for (k in pesos) { x -= pesos[k]; if (x <= 0) return k; } return k; }
   function siguiente(S, M, n) {
-    // De noche la calle se vacía: parte de los vecinos se van a casa (desaparecen al llegar a un portal)
-    if (S.noche > 0.4 && !n.hincha && !n.recogido && n.r() < 0.5) { const port = [[-31.5, 5.2], [35, -5.2], [-35, -5.2], [30, 5.2]][(n.r() * 4) | 0]; n.recogido = true; if (M.irA(n, port[0], port[1], () => { n.oculto = true; n.espera = 9999; })) return; }
-    if (n.recogido && S.noche < 0.2) { n.recogido = false; n.oculto = false; }
-    const q = S.paseo[(n.r() * S.paseo.length) | 0];
-    if (S.dia && S.dia.tipo === 'partido' && n.hincha && n.r() < 0.6) { const ok = M.irA(n, -19.5 + (n.r() - 0.5) * 8, -5.4 + (n.r() - 0.5) * 1.2, () => { M.anim(n, 'emote-yes'); n.espera = 6 + n.r() * 8; }); if (ok) return; }
-    const ok = M.irA(n, q[0] + (n.r() - 0.5) * 0.8, q[1] + (n.r() - 0.5) * 0.5, () => { M.anim(n, n.r() < 0.15 ? 'emote-yes' : 'idle'); n.espera = 1 + n.r() * 6; });
-    if (!ok) n.espera = 1;
+    const h = S.hora || 9, D = destinos(S);
+    if (n.k === undefined) n.k = n.r();
+    // ¿Le toca estar en la calle a esta hora?
+    const activo = n.nino ? (h >= 7.5 && h < 21) : n.k < DENS(h);
+    if (n.enCasa) { if (activo && !(n.hasta && h < n.hasta)) { n.enCasa = false; n.oculto = false; n.hasta = 0; } else { n.espera = 6; return; } }
+    if (n.dentro) { if (h >= n.hasta) { n.dentro = false; n.oculto = false; } else { n.espera = 4; return; } }
+    if (!activo && !n.hincha) { const q = D.casa[(n.r() * D.casa.length) | 0]; if (M.irA(n, q[0], q[1], () => { n.oculto = true; n.enCasa = true; n.espera = 8; })) return; }
+    if (S.dia && S.dia.tipo === 'partido' && S.dia.casa && (n.hincha || n.r() < 0.25) && h >= 16 && h < 20.5 && GM.calle.partidoFase) {   // a la previa
+      const q = n.r() < 0.5 ? [19 + (n.r() - 0.5) * 6, 6.2] : [-19.5 + (n.r() - 0.5) * 10, -5.6]; if (M.irA(n, q[0], q[1], () => { M.anim(n, 'emote-yes'); n.espera = 6 + n.r() * 8; })) return;
+    }
+    if (S.dia && S.dia.tipo === 'partido' && S.dia.casa && h >= 20.4 && h < 22.25 && (n.hincha || n.r() < 0.4)) {   // el partido: los aficionados entran en el pabellón (vuelven a salir al acabar)
+      if (M.irA(n, -19.5 + (n.r() - 0.5) * 3, -6.2, () => { n.oculto = true; n.dentro = true; n.hasta = 22.3 + n.r() * 0.3; n.espera = 4; })) return;
+    }
+    let cat;
+    if (n.nino) cat = h < 9 ? 'colegio' : h < 14 ? 'colegio' : h < 20 ? 'parque' : 'casa';
+    else cat = elegir(n, PESOS[FRANJA(h)]);
+    const L = D[cat] && D[cat].length ? D[cat] : S.paseo, q = L[(n.r() * L.length) | 0];
+    n.rapido = !!n.nino && n.r() < 0.5; n.destino = cat;
+    const ok = M.irA(n, q[0] + (n.r() - 0.5) * 1.6, q[1] + (n.r() - 0.5) * 1.2, () => {
+      if (cat === 'colegio' && h < 14) { n.oculto = true; n.dentro = true; n.hasta = 14 + n.r(); n.espera = 4; return; }
+      if (cat === 'trabajo' && n.r() < 0.6) { n.oculto = true; n.dentro = true; n.hasta = h + 2 + n.r() * 5; n.espera = 4; return; }
+      if (cat === 'casa') { n.oculto = true; n.enCasa = true; n.hasta = h + 3; n.espera = 8; return; }
+      M.anim(n, cat === 'compras' ? 'interact-right' : cat === 'parque' && n.nino ? 'emote-yes' : (cat === 'bares' || cat === 'comer') && n.r() < 0.4 ? 'emote-yes' : 'idle');
+      n.espera = cat === 'comer' || cat === 'bares' ? 8 + n.r() * 14 : cat === 'parque' ? 4 + n.r() * 6 : 2 + n.r() * 6; });
+    if (ok) return;
+    const q2 = S.paseo[(n.r() * S.paseo.length) | 0]; if (!M.irA(n, q2[0], q2[1], () => { M.anim(n, 'idle'); n.espera = 2 + n.r() * 4; })) n.espera = 1;
   }
   // ---------- Tráfico, semáforos y saludos ----------
+  async function fasePartido(S, M, st) {
+    const h = S.hora || 9, f = h < 16 ? 'antes' : h < 20.5 ? 'previa' : h < 22.25 ? 'juego' : 'salida';
+    if (S.fasePartido === f || S.cambiandoFase) return; S.cambiandoFase = true; S.fasePartido = f;
+    const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222', r = rnd(U.hash(st.fecha + f)), P = S.partidoObj || (S.partidoObj = {});
+    const quitar = k => { if (P[k]) { S.mundo.remove(P[k].grupo || P[k]); P[k] = null; } };
+    if (S.multitud) S.multitud.grupo.visible = f === 'previa';
+    if (f === 'previa') {
+      // cola en las taquillas y grupos cantando delante de la peña y la terraza
+      const cola = []; for (let i = 0; i < 34; i++) cola.push({ x: -15 + (i % 17) * 0.62, y: 0.88, z: -4.3 - (i >= 17 ? 0.65 : 0) + (r() - 0.5) * 0.2, ry: -Math.PI / 2 + (r() - 0.5) * 0.4, ropa: r() < 0.7 ? c1 : c2, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], pantalon: '#2f3640' });
+      P.cola = GM.kit.publico(cola, 1, true); S.mundo.add(P.cola.grupo); P.colaSitios = cola; P.colaT = 0;
+      const bar = []; for (let i = 0; i < 40; i++) { const a = r() * Math.PI * 2, d = 0.6 + r() * 2.4, enPena = i < 26, cx = enPena ? 19 : -10, cz = enPena ? 6.6 : 50; bar.push({ x: cx + Math.cos(a) * d * 1.6, y: 0.88, z: cz + Math.sin(a) * d * 0.5, ry: r() * Math.PI * 2, ropa: r() < 0.75 ? c1 : c2, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], pantalon: '#2f3640' }); }
+      P.bares = GM.kit.publico(bar, 1, true); S.mundo.add(P.bares.grupo);
+    } else { quitar('cola'); quitar('bares'); }
+    if (f === 'salida') {
+      // al acabar, el público sale del pabellón y se reparte por la avenida hacia el metro y los barrios
+      const sal = []; for (let i = 0; i < 260; i++) sal.push({ x: -19.5 + (r() - 0.5) * 6, y: 0.88, z: -6 + (r() - 0.5) * 1.5, ry: 0, ropa: r() < 0.7 ? c1 : c2, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], pantalon: '#2f3640', vx: (r() < 0.5 ? -1 : 1) * (0.9 + r() * 0.7), vz: (r() - 0.5) * 0.15, retraso: r() * 40 });
+      P.salida = GM.kit.publico(sal, 1, true); S.mundo.add(P.salida.grupo); P.salidaSitios = sal; P.salidaT = 0;
+      sal.forEach(s => { s.ry = s.vx > 0 ? Math.PI / 2 : -Math.PI / 2; s.y = -20; });
+    }
+    S.cambiandoFase = false;
+  }
+  async function busEquipo(S, M, st) {
+    // a las 19:00 llega el autobús del equipo, se baja la plantilla y entra en el pabellón
+    if (S.busEquipo || (S.hora || 9) < 19 || (S.hora || 9) >= 20.5) return; const club = st.equipos[st.clubId], bus = autobusEquipo(club); bus.position.set(90, -0.12, -1.5); bus.rotation.y = -Math.PI / 2; S.mundo.add(bus);
+    S.busEquipo = { obj: bus, fase: 'llega', t: 0, jugadores: [] };
+    const jug = club.plantilla.map(i => st.jugadores[i]).filter(p => p && p.id !== 'yo').sort((a, b) => b.ovr - a.ovr).slice(0, 6), c1 = club.colores[0], c2 = club.colores[1] || '#222';
+    S.busEquipo.jugadores = await Promise.all(jug.map((j, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][k % 3], altura: j.altura || 198, piel: PIEL[(U.hash(j.id) >>> 2) % 5], pelo: PELO[(U.hash(j.id) >>> 5) % 6], ropa: [c1, c2] }).then(p => { Object.assign(p, { rol: j.nombre, jugador: j.id, fijo: true, oculto: true, r: rnd(U.hash(j.id)), espera: 999 }); p.obj.visible = false; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); S.gente.push(p); return p; })));
+  }
+  function moverPartido(S, M, dt) {
+    const P = S.partidoObj; if (!P) return; const t = performance.now() / 1000;
+    if (P.cola) { P.colaT -= dt; if (P.colaT <= 0) { P.colaT = 0.15; P.colaSitios.forEach(s => { s.x -= 0.03; if (s.x < -15.3) s.x += 17 * 0.62; }); P.cola.colocar(i => (Math.sin(t * 2 + i) > 0.85 ? { brazos: 0.6 } : null)); } }
+    if (P.bares) { P.baresT = (P.baresT || 0) - dt; if (P.baresT <= 0) { P.baresT = 0.12; P.bares.colocar(i => { const v = Math.sin(t * 5 + i * 1.7); return v > 0.3 ? { salto: (v - 0.3) * 0.4, brazos: 1 } : null; }); } }
+    if (P.salida) { P.salidaT += dt; P.salidaCad = (P.salidaCad || 0) - dt; if (P.salidaCad <= 0) { P.salidaCad = 0.08; P.salidaSitios.forEach(s => { if (P.salidaT < s.retraso) return; if (s.y < 0) { s.y = 0.88; s.z = -4.2 + (Math.random() - 0.5) * 2.4; } s.x += s.vx * 0.08 * 2.4; s.z += s.vz * 0.08; if (Math.abs(s.x) > 140) s.y = -20; }); P.salida.colocar(() => null); } }
+    const B = S.busEquipo; if (B) { const o = B.obj.position; B.t += dt;
+      if (B.fase === 'llega') { o.x = Math.max(-19.5, o.x - dt * 7); if (o.x <= -19.5) { B.fase = 'bajan'; B.t = 0; if (S.multitud) S.multitud.saltaHasta = performance.now() / 1000 + 12; GM.ui && GM.ui.toast && GM.ui.toast('Llega el autobús del equipo'); } }
+      else if (B.fase === 'bajan') { B.jugadores.forEach((p, k) => { if (B.t > k * 1.2 && !p.bajado) { p.bajado = true; p.oculto = false; p.obj.visible = true; p.obj.position.set(-19.5 + (k - 2.5) * 0.9, 0, -3.1); M.irA(p, -19.5 + (k - 2.5) * 0.4, -7.2, () => { p.oculto = true; p.obj.visible = false; }); } }); if (B.t > 14) { B.fase = 'se_va'; } }
+      else if (B.fase === 'se_va') { o.x -= dt * 7; if (o.x < -160) { S.mundo.remove(B.obj); B.fase = 'fuera'; } } }
+  }
   function actualizar(S, M, dt) {
     if (GM.ciudadBarrios) GM.ciudadBarrios.actualizar(S, dt);
+    if (S.partidoCasa) { S.tFase = (S.tFase || 0) - dt; if (S.tFase <= 0) { S.tFase = 1; fasePartido(S, M, S.st); busEquipo(S, M, S.st); } }
+    moverPartido(S, M, dt);
     if (S.rua) { const R = S.rua, t = performance.now() / 1000; R.x += dt * 2.2; if (R.x > 76) R.x = -76; R.bus.position.x = R.x; R.conf.position.x = R.x; R.gente.forEach(p => p.mixer.update(dt));
       const a = R.conf.geometry.attributes.position; for (let i = 0; i < a.count; i++) { let y = a.getY(i) - dt * (0.7 + (i % 5) * 0.18); if (y < 0.05) y += 10; a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(t * 1.7 + i) * dt * 0.5); } a.needsUpdate = true;
       R.tCol -= dt; if (R.tCol <= 0) { R.tCol = 0.12; R.publico.colocar(i => { const f = R.fans[i], cerca = Math.abs(f.x - R.x) < 14, v = Math.sin(t * (cerca ? 7 : 3) + i * 2.3); return cerca ? { salto: Math.max(0, v) * 0.35, brazos: 1 } : v > 0.5 ? { salto: (v - 0.5) * 0.3, brazos: 1 } : null; }); } }
-    if (S.multitud) { S.tMult = (S.tMult || 0) - dt; if (S.tMult <= 0) { S.tMult = 0.12; const t = performance.now() / 1000; S.multitud.colocar(i => { const v = Math.sin(t * 4 + i * 2.3); return v > 0.6 ? { salto: (v - 0.6) * 0.6, brazos: 1 } : null; }); } }
+    if (S.multitud) { S.tMult = (S.tMult || 0) - dt; if (S.tMult <= 0) { S.tMult = 0.12; const t = performance.now() / 1000; const loco = S.multitud.saltaHasta && t < S.multitud.saltaHasta; S.multitud.colocar(i => { const v = Math.sin(t * (loco ? 8 : 4) + i * 2.3); return v > (loco ? 0 : 0.6) ? { salto: (v - (loco ? 0 : 0.6)) * 0.6, brazos: 1 } : null; }); } }
     if (!S.coches) return;
     moverPalomas(S, dt);
     S.perros && S.perros.forEach(p => { const o = p.dueno.obj, d = p.d, f = o.rotation.y, tx = o.position.x - Math.sin(f) * 0.9 + Math.cos(f) * 0.5, tz = o.position.z - Math.cos(f) * 0.9 - Math.sin(f) * 0.5, dx = tx - d.position.x, dz = tz - d.position.z, l = Math.hypot(dx, dz);
@@ -473,5 +560,5 @@
     M.bocadillo(fr[(Math.random() * fr.length) | 0], p.obj); p.obj.lookAt(S.yo.obj.position.x, 0, S.yo.obj.position.z); M.anim(p, 'emote-yes'); p.espera = Math.max(p.espera, 2);
   }
   const _ray = new THREE.Raycaster();
-  GM.calle = { construir, poblar, siguiente, actualizar, LIM };
+  GM.calle = { partidoFase: true, construir, poblar, siguiente, actualizar, LIM };
 })();
