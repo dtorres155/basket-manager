@@ -49,6 +49,9 @@
 - **Cómo:** la vista del menú pasa a ser la misma escena vista desde arriba (misma construcción, otra cámara y sin personaje), y los menús quedan conectados con el mundo: tocar un edificio en el menú abre su panel o te lleva andando hasta él, y lo que mejoras en un sitio se ve en el otro al momento.
 - **Viabilidad:** sí, con dos condiciones. Las escenas paseables tienen que poder construirse sin el motor de personas (más ligeras para la vista de menú) y cubrir todo lo que hoy enseñan los menús: la ciudad necesita los barrios conectados y la ciudad deportiva necesita su versión paseable.
 
+- **Ciudad deportiva para pasear y unificada:** en los modos de gestión la ciudad deportiva sigue siendo la vista antigua (campus.js); hay que hacerla paseable (entrar por la puerta del final de la calle central) y que su vista de menú sea esa misma escena desde arriba.
+- **Interiores del pueblo:** el bar de la peña del pueblo y las casas del pueblo (las de tus padres y tus amigos) por dentro.
+
 ### Casas con personalidad
 - ~~Varias casas con su carácter y su sitio en la ciudad~~: comprar otra no vende la anterior (también en los modos de gestión) y puedes mudarte entre ellas («Vivir aquí» o hogar.vivirEn). Cada vivienda tiene su plano real (variante de hogar.js): habitaciones con tabiques y puertas, planta de arriba con escalera, y terraza, jardín o piscina; sus propios muebles y reformas (`st.sede.casas[id]`). En la calle, cada una ocupa una parcela de su barrio con su fachada (loft de ladrillo, buhardilla, bloque clásico o moderno, ático con terraza, casa mediterránea, de piedra o moderna, mansión clásica, moderna o villa con piscina) y se entra por su puerta (escena `casa:<id>`). Capturas: `node tools/casas_capturas.js` y `node tools/ciudad_paseo.js`.
 - **Tu casa en el pueblo:** comprar una casa en tu pueblo e ir los veranos.
