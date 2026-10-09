@@ -76,5 +76,5 @@
 - ~~Tamaño del guardado~~: hecho, comprimido con LZ-string (1,7 MB -> ~0,17 MB).
 
 ## Límites conocidos / avisos
-- Barrios reales en 54 ciudades (todas las españolas, las de Euroliga y las grandes europeas); las ciudades pequeñas y las de la NBA siguen con nombres genéricos. El mapa de la ciudad es estilizado.
+- Barrios reales en 90 ciudades: todas las españolas, las de Euroliga, las grandes europeas, las 29 de la NBA y algunas pequeñas de Italia y Alemania. Siguen con nombres genéricos 15 ciudades pequeñas sin datos fiables (Tortona, Cantù, Scafati, Weißenfels, Vechta, las griegas pequeñas y las turcas pequeñas). El mapa de la ciudad es estilizado.
 - Los pabellones y campus de cada club son inspirados, no réplicas; solo la ciudad deportiva del Barça y el pabellón de Joventut se basaron en información real.
