@@ -30,6 +30,9 @@
     const bar = (GM.mods.ciudad3d && GM.mods.ciudad3d.barrios ? GM.mods.ciudad3d.barrios(st).map(b => b.nombre) : []);
     const nomDist = { oeste: bar[3] || 'Oeste', este: bar[4] || 'Este', norte: bar[1] || 'Norte', centro: bar[0] || club.ciudad };
     const out = { zonas: {}, salas: {}, paseo: [], puertas: {}, distritos: [] };
+    // La ciudad cambia con el club: reputación (comercios, obras) y afición de cada barrio (banderines, murales)
+    const rep = club.reputacion || 50, afiB = (GM.mods.ciudad3d && GM.mods.ciudad3d.barrios ? GM.mods.ciudad3d.barrios(st).map(b => b.aficion) : []), afiDe = k => afiB[{ oeste: 3, este: 4, norte: 1, centro: 0 }[k]] || afi;
+    ctx.rep = rep;
     const grupos = {}; Object.keys(DISTRITOS).forEach(k => { if (k === 'centro') return; const g = new THREE.Group(); g.userData = { distrito: k }; W.add(g); grupos[k] = g; out.distritos.push({ g, d: DISTRITOS[k] }); });
     const enG = k => grupos[k] || W;
     // ---- Suelo: asfalto bajo toda la ciudad, aceras por manzanas, avenida, calle central, ronda y pasos de peatones ----
@@ -94,7 +97,8 @@
     { const g = grupos.norte; edificio(g, G, T, E, r, [-40, -62, -8, -38], 5, 's', { cristal: true, colorBajo: '#e9edf1', letrero: { txt: 'HOSPITAL ' + nomDist.norte.toUpperCase(), fondo: '#ffffff', letra: '#c0392b', clave: 'hosp', ancho: 12 } });
       caja(g, 3, 1, 0.3, '#d62d2d', -24, 18, -37.7); caja(g, 1, 3, 0.3, '#d62d2d', -24, 17, -37.7); salaLugar('lugar_hospital', 'Hospital ' + nomDist.norte, 'hospital', [-24, -35.6]); }
     // Bloques y oficinas del norte
-    [[-150, -82, -120, -62], [-112, -58, -84, -38], [-80, -58, -46, -38], [48, -82, 80, -62], [84, -58, 116, -38], [120, -58, 150, -38], [-40, -100, -8, -70], [8, -100, 40, -66]].forEach((rc, k) => { const g = grupos.norte; edificio(g, G, T, E, r, rc, 4 + (k % 4), 's', { kit: k % 3 === 0 ? true : k % 3 === 1 ? 'arcos' : false, cristal: k % 4 === 3, banderas: Math.round(afi / 30), c1, c2, letrero: k % 2 ? { txt: ['BANCO', 'SUPERMERCADO', 'GIMNASIO', 'ÓPTICA'][k % 4], fondo: ['#1d4f91', '#c0392b', '#2e5d3a', '#6b3a7a'][k % 4], letra: '#fff', clave: 'n' + k, ancho: 5 } : null }); });
+    [[-150, -82, -120, -62], [-112, -58, -84, -38], [-80, -58, -46, -38], [48, -82, 80, -62], [84, -58, 116, -38], [120, -58, 150, -38], [-40, -100, -8, -70], [8, -100, 40, -66]].forEach((rc, k) => { if ((rep >= 60 && rc[0] === 120) || (rep >= 75 && rc[0] === -150 && rc[1] === -82)) return;   // esas parcelas están en obras
+      const g = grupos.norte; edificio(g, G, T, E, r, rc, 4 + (k % 4), 's', { kit: k % 3 === 0 ? true : k % 3 === 1 ? 'arcos' : false, cristal: k % 4 === 3, banderas: Math.round(afi / 30), c1, c2, letrero: k % 2 ? { txt: ['BANCO', 'SUPERMERCADO', 'GIMNASIO', 'ÓPTICA'][k % 4], fondo: ['#1d4f91', '#c0392b', '#2e5d3a', '#6b3a7a'][k % 4], letra: '#fff', clave: 'n' + k, ancho: 5 } : null }); });
     // Puerta de la ciudad deportiva al final de la calle central
     { const g = grupos.norte; for (const s of [-1, 1]) caja(g, 1.6, 7, 1.6, c1, s * 6, 0, -104); caja(g, 13.6, 1.6, 1.6, c2 === '#ffffff' ? '#e8eef2' : c2, 0, 7, -104);
       letrero(g, T.letrero((club.ciudadDeportiva && club.ciudadDeportiva.nombre ? club.ciudadDeportiva.nombre : 'Ciudad deportiva').toUpperCase(), c1, '#ffffff', 'cdep'), 11, 1.4, 0, 7.8, -103.15, 0);
@@ -104,6 +108,35 @@
     { const g = grupos.este; edificio(g, G, T, E, r, [124, 9, 150, 22], 2, 'n', { colorBajo: '#8a6d3b', letrero: { txt: 'ESTACIÓN ' + club.ciudad.toUpperCase(), fondo: '#2a2f35', letra: '#f2d27a', clave: 'esta', ancho: 10 } });
       cil(g, 0.9, 0.12, '#f4f1e8', 137, 9.6, 8.94).rotation.x = Math.PI / 2; caja(g, 26, 0.12, 3.4, '#5d6b78', 137, 3.6, 7.2); for (const x of [126, 137, 148]) cil(g, 0.08, 3.6, '#2a2f35', x, 0, 5.8);
       salaLugar('lugar_estacion', 'Estación de ' + club.ciudad, 'estacion', [137, 4.6]); }
+    // Obras en la ciudad cuando el club crece: un hotel nuevo en el norte (reputación 60+) y oficinas junto al parque (75+)
+    if (rep >= 60) obraCiudad(ctx, grupos.norte, [120, -58, 150, -38], 'NUEVO HOTEL ' + club.siglas, H);
+    if (rep >= 75) obraCiudad(ctx, grupos.norte, [-150, -82, -120, -62], 'OFICINAS CENTRALES', H);
+    // Banderines del club cruzando la avenida en los barrios con mucha afición, y mural con el escudo si es fervorosa
+    [['oeste', -96], ['este', 96]].forEach(([k, x]) => { const a = afiDe(k); if (a >= 55) banderines(grupos[k], x - 18, x + 18, c1, c2, H); if (a >= 70) H.plano(grupos[k], 5, 5, new THREE.MeshStandardMaterial({ map: T.escudo, transparent: true }), x < 0 ? -44.9 : 44.9, 6, -15, x < 0 ? Math.PI / 2 : -Math.PI / 2); });
+    if (afiDe('norte') >= 55) banderinesZ(grupos.norte, -96, -40, c1, c2, H);
+    out.rep = rep;
+    // ---- Transporte: metro entre barrios, bicis compartidas y, desde la estación, autobús a tu pueblo ----
+    const ESTACIONES = [['centro', 'Metro ' + nomDist.centro, -8, 27, null], ['oeste', 'Metro ' + nomDist.oeste, -131, -12, grupos.oeste], ['este', 'Metro ' + nomDist.este, 116, 4.8, grupos.este], ['norte', 'Metro ' + nomDist.norte, -5.5, -46, grupos.norte]];
+    out.estaciones = {};
+    ESTACIONES.forEach(([k, nombre, x, z, g0]) => {
+      const g = g0 || W; H.caja(g, 1.8, 1.1, 0.1, H.mat('#9fc4dc', { transparent: true, opacity: 0.5 }), x, 0, z - 0.8); H.caja(g, 0.1, 1.1, 1.6, H.mat('#9fc4dc', { transparent: true, opacity: 0.5 }), x - 0.9, 0, z); H.caja(g, 0.1, 1.1, 1.6, H.mat('#9fc4dc', { transparent: true, opacity: 0.5 }), x + 0.9, 0, z);
+      H.cil(g, 0.06, 3.2, '#2a2f35', x + 1.3, 0, z - 0.6, 8); const m = H.caja(g, 0.7, 0.7, 0.08, '#c0392b', x + 1.3, 3.2, z - 0.6); m.rotation.z = Math.PI / 4;
+      H.letrero(g, T.letrero('M  ' + nombre.toUpperCase(), '#c0392b', '#fff', 'metro-' + k), 2.6, 0.5, x, 1.6, z - 0.86, 0);
+      G.bloquea(x - 1, z - 0.9, x + 1, z + 0.9);
+      const sid = 'metro_' + k; out.estaciones[k] = { x, z: z + 1.6, nombre };
+      out.salas[sid] = { id: sid, nombre, accion: '', destino: {}, acciones: s2 => ESTACIONES.filter(e => e[0] !== k).map(e => ({ id: 'a_' + e[0], t: 'Ir a ' + e[1].replace('Metro ', ''), d: 'Metro, 2 minutos' + (s2.modo === 'carrera' ? ', 2 €' : ''), disponible: true, fn: () => viajar(s2, out.estaciones[e[0]], 'Llegas en metro a ' + e[1].replace('Metro ', '')) })) };
+      out.zonas[sid] = [x, z + 1.6]; out.paseo.push([x + 2, z + 2]);
+      // bicis compartidas junto a cada estación
+      const bx = x - 3.2, bz = z + 1.2, bid = 'bici_' + k; for (let i = 0; i < 4; i++) { H.caja(g, 0.08, 0.8, 0.08, '#2a2f35', bx - 1 + i * 0.6, 0, bz - 0.6); const rueda = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 6, 14), H.mat('#1d2024')); rueda.position.set(bx - 1 + i * 0.6, 0.32, bz - 0.2); rueda.rotation.y = Math.PI / 2; g.add(rueda); }
+      out.salas[bid] = { id: bid, nombre: 'Bicis compartidas', accion: '', destino: {}, acciones: s2 => { const S = GM.sede._estado && GM.sede._estado(), en = S && S.yo && S.yo.bici; return [en ? { id: 'dejar', t: 'Dejar la bici', d: 'Vuelves a ir andando.', disponible: true, fn: () => bici(false) } : { id: 'coger', t: 'Coger una bici', d: 'Vas unas dos veces y media más rápido' + (s2.modo === 'carrera' ? ', 1 €' : '') + '.', disponible: true, fn: () => bici(true, s2) }]; } };
+      out.zonas[bid] = [bx, bz + 0.6];
+    });
+    // Autobús a tu pueblo desde la estación de tren (modo carrera) y llegada desde el pueblo
+    if (st.modo === 'carrera' && st.carrera && st.carrera.pueblo) {
+      const P = st.carrera.pueblo, carr = (P.edificios.find(b => b.tipo === 'carretera') || {}).nivel || 0;
+      out.salas.bus_pueblo = { id: 'bus_pueblo', nombre: 'Autobús a ' + P.nombre, accion: '', destino: {}, irA: 'pueblo', boton: carr >= 2 ? 'Coger la línea diaria a ' + P.nombre : 'Coger el autobús a ' + P.nombre };
+      out.zonas.bus_pueblo = [131, 4.6]; out.puertas.pueblo = { x: 131, z: 3.6, ry: Math.PI };
+    }
     // Paseo de los vecinos por los barrios nuevos
     for (let x = -146; x <= 146; x += 6) if (Math.abs(x) > 44) out.paseo.push([x, -4.8], [x, 4.8]);
     for (let x = -146; x <= 146; x += 8) out.paseo.push([x, -26], [x, -35]);
@@ -165,12 +198,56 @@
       for (const [a, b, c, dd] of [[x0, z0, x1, z0 + 0.6], [x0, z1 - 0.6, x1, z1], [x0, z0, x0 + 0.6, z1], [x1 - 0.6, z0, x1, z1]]) { H.caja(g, c - a, 1.1, dd - b, '#3f6e33', (a + c) / 2, 0, (b + dd) / 2); G.bloquea(a, b, c, dd); }
       return;
     }
-    H.edificio(g, G, T, E, r, rect, 4 + (i % 4), lado, { kit: i % 2 ? true : 'arcos', banderas: Math.round(afi / 25), c1, c2, letrero: i % 3 === 0 ? { txt: ['FARMACIA', 'PANADERÍA', 'FRUTERÍA', 'BAR CENTRAL', 'FERRETERÍA'][i % 5], fondo: ['#1f8f5f', '#f4efe3', '#2e5d3a', '#5a3b26', '#c9733f'][i % 5], letra: i % 5 === 1 ? '#5a3b26' : '#fff', clave: 'g' + i, ancho: 5 } : null });
+    const rep = ctx.rep || 50, abiertos = rep >= 72 ? 1 : rep >= 55 ? 0.66 : 0.4, k = (i * 37 % 100) / 100, sig = ctx.club.siglas;
+    const tienda = k < abiertos ? (rep >= 72 && i % 2 ? { txt: ['CAFÉ ' + sig, 'MERCHANDISING ' + sig, 'BAR LA CANASTA', 'PEÑA ' + sig][i % 4], fondo: c1, letra: c2 === c1 ? '#fff' : c2, clave: 'gc' + i, ancho: 5 } : { txt: ['FARMACIA', 'PANADERÍA', 'FRUTERÍA', 'BAR CENTRAL', 'FERRETERÍA'][i % 5], fondo: ['#1f8f5f', '#f4efe3', '#2e5d3a', '#5a3b26', '#c9733f'][i % 5], letra: i % 5 === 1 ? '#5a3b26' : '#fff', clave: 'g' + i, ancho: 5 }) : { txt: 'SE ALQUILA', fondo: '#f2efe8', letra: '#c0392b', clave: 'alq' + i, ancho: 4 };
+    H.edificio(g, G, T, E, r, rect, 4 + (i % 4), lado, { kit: i % 2 ? true : 'arcos', persiana: k >= abiertos, banderas: Math.round(afi / 25), c1, c2, letrero: tienda });
+  }
+  // Viajar en metro: un fundido, apareces en la otra estación y pagas el billete (modo carrera)
+  function viajar(st, dest, texto) {
+    const S = GM.sede._estado && GM.sede._estado(); if (!S || !S.yo || !dest) return { ok: false, motivo: 'No se puede viajar ahora.' };
+    if (st.modo === 'carrera' && st.carrera) st.carrera.dinero -= 0.002;
+    const velo = GM.h('div', { class: 'sede-velo' }); S.raiz.append(velo);
+    setTimeout(() => { S.yo.camino = null; S.yo.obj.position.set(dest.x, 0, dest.z + 0.8); S.foco.set(dest.x, 0, dest.z + 0.8); if (S.panel) S.panel.style.display = 'none'; S.zonaActual = null; velo.classList.add('fuera'); setTimeout(() => velo.remove(), 450); }, 350);
+    return { ok: true, texto };
+  }
+  // Bici: más velocidad y una bici bajo tu personaje (se deja en cualquier estación o al cambiar de escena)
+  function bici(on, st) {
+    const S = GM.sede._estado && GM.sede._estado(); if (!S || !S.yo) return { ok: false, motivo: 'No hay bicis ahora.' };
+    const yo = S.yo; if (yo.biciObj) { yo.obj.remove(yo.biciObj); yo.biciObj = null; } yo.bici = !!on;
+    if (on) { if (st && st.modo === 'carrera' && st.carrera) st.carrera.dinero -= 0.001; const g = new THREE.Group(), mt = new THREE.MeshStandardMaterial({ color: 0xd62d2d }), mn = new THREE.MeshStandardMaterial({ color: 0x1d2024 });
+      for (const z of [-0.55, 0.55]) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.045, 8, 18), mn); r.rotation.y = Math.PI / 2; r.position.set(0, 0.34, z); g.add(r); }
+      const cuadro = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 1.1), mt); cuadro.position.set(0, 0.62, 0); g.add(cuadro); const man = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 0.05), mn); man.position.set(0, 0.95, 0.5); g.add(man);
+      const k = 1 / yo.obj.scale.x; g.scale.setScalar(k); yo.obj.add(g); yo.biciObj = g; }
+    return { ok: true, texto: on ? 'Coges una bici' : 'Dejas la bici' };
+  }
+  // Obra de la ciudad: valla, cartel, estructura a medias y una grúa que gira
+  function obraCiudad(ctx, g, rect, txt, H) {
+    const { G, T } = ctx, [x0, z0, x1, z1] = rect, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
+    for (const [a, b, c, e] of [[x0, z0, x1, z0 + 0.2], [x0, z1 - 0.2, x1, z1], [x0, z0, x0 + 0.2, z1], [x1 - 0.2, z0, x1, z1]]) { H.caja(g, c - a, 2, e - b, '#e8e2d4', (a + c) / 2, 0, (b + e) / 2); G.bloquea(a, b, c, e); }
+    H.letrero(g, T.letrero(txt, '#f39c12', '#1d2024', 'obra' + txt), 6, 1.2, cx, 2.6, z1 + 0.05, 0);
+    for (let p = 0; p < 3; p++) for (const [px, pz] of [[x0 + 3, z0 + 3], [x1 - 3, z0 + 3], [x0 + 3, z1 - 3], [x1 - 3, z1 - 3]]) H.caja(g, 0.5, 3.2, 0.5, '#b8bcc0', px, p * 3.2, pz);
+    for (let p = 1; p <= 3; p++) H.caja(g, w - 5, 0.3, d - 5, '#a7adb2', cx, p * 3.2, cz);
+    H.cil(g, 0.4, 22, '#f1c40f', x0 + 2, 0, z0 + 2, 4);
+    const pluma = new THREE.Group(); pluma.position.set(x0 + 2, 22, z0 + 2); const brazo = new THREE.Mesh(new THREE.BoxGeometry(20, 0.6, 0.6), H.mat('#f1c40f')); brazo.position.x = 7; pluma.add(brazo); const contra = new THREE.Mesh(new THREE.BoxGeometry(2, 1.4, 1.4), H.mat('#7f8c8d')); contra.position.x = -3; pluma.add(contra);
+    pluma.userData = { anim: t => { pluma.rotation.y = Math.sin(t * 0.12 + x0) * 1.2; } }; g.add(pluma);
+  }
+  // Banderines del club cruzando la avenida (eje x) o la calle central (eje z)
+  function banderines(g, xa, xb, c1, c2, H) {
+    const pos = [], col = [], cc = new THREE.Color();
+    for (let k = 0; k < 3; k++) { const x = xa + (xb - xa) * (k + 0.5) / 3; for (let i = 0; i < 16; i++) { const t = (i + 0.5) / 16, z = -6 + 12 * t, y = 6.4 - Math.sin(t * Math.PI) * 1.2; pos.push(x - 0.25, y, z, x + 0.25, y, z, x, y - 0.55, z); cc.set(i % 2 ? c1 : c2); for (let q = 0; q < 3; q++) col.push(cc.r, cc.g, cc.b); } H.cil(g, 0.07, 6.4, '#2a2f35', x, 0, -6.2, 8); H.cil(g, 0.07, 6.4, '#2a2f35', x, 0, 6.2, 8); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
+    g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+  }
+  function banderinesZ(g, za, zb, c1, c2, H) {
+    const pos = [], col = [], cc = new THREE.Color();
+    for (let k = 0; k < 3; k++) { const z = za + (zb - za) * (k + 0.5) / 3; for (let i = 0; i < 12; i++) { const t = (i + 0.5) / 12, x = -5 + 10 * t, y = 6.2 - Math.sin(t * Math.PI) * 1.1; pos.push(x, y, z - 0.25, x, y, z + 0.25, x, y - 0.55, z); cc.set(i % 2 ? c1 : c2); for (let q = 0; q < 3; q++) col.push(cc.r, cc.g, cc.b); } H.cil(g, 0.07, 6.2, '#2a2f35', -5.2, 0, z, 8); H.cil(g, 0.07, 6.2, '#2a2f35', 5.2, 0, z, 8); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
+    g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
   // Los barrios lejanos no se dibujan (cada medio segundo)
   function actualizar(S, dt) {
     if (!S.distritos) return; S.tDist = (S.tDist || 0) - dt; if (S.tDist > 0) return; S.tDist = 0.5;
     const f = S.foco; S.distritos.forEach(({ g, d }) => { g.visible = Math.hypot(f.x - d.x, f.z - d.z) < d.r + 75; });
   }
-  GM.ciudadBarrios = { construir, actualizar, LOTES, CLASE, DIST_BARRIO };
+  GM.ciudadBarrios = { construir, actualizar, viajar, bici, LOTES, CLASE, DIST_BARRIO };
 })();

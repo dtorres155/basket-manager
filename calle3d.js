@@ -320,6 +320,14 @@
       Object.assign(p, { peaton: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino de ' + club.ciudad, r: rnd(U.hash(st.fecha + 'p' + k)), espera: r() * 3 });
       p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p);
     });
+    // Día de partido en casa: aficionados de pie en la acera del pabellón y a lo largo de la avenida
+    S.multitud = null;
+    if (partido && GM.kit.publico) {
+      const piel = PIEL, fans = [], r2 = rnd(U.hash(st.fecha + 'multitud'));
+      for (let i = 0; i < 160; i++) { const x = -40 + r2() * 30, z = -5.4 - r2() * 1.6; fans.push({ x, y: 0.88, z, ry: Math.PI + (r2() - 0.5) * 1.2, ropa: r2() < 0.7 ? c1 : c2, piel: piel[(r2() * 5) | 0], pelo: PELO[(r2() * 6) | 0], pantalon: '#2f3640' }); }
+      for (let i = 0; i < 80; i++) { const x = -40 + r2() * 80, z = 5.4 + r2() * 1.2; if (Math.abs(x) < 10) continue; fans.push({ x, y: 0.88, z, ry: (r2() - 0.5) * 1.2, ropa: r2() < 0.6 ? c1 : c2, piel: piel[(r2() * 5) | 0], pelo: PELO[(r2() * 6) | 0], pantalon: '#2f3640' }); }
+      const P = GM.kit.publico(fans, 1, true); S.mundo.add(P.grupo); S.multitud = P;
+    }
     // Músico callejero con su guitarra
     S.musico = null; S.perros = []; S.chavales = null;
     { const mu = await M.personaje({ modelo: 'h-punk', altura: 176, piel: PIEL[1], pelo: PELO[0] }); mu.fijo = true; mu.rol = 'Músico callejero'; mu.obj.position.set(S.musicoPos[0], 0, S.musicoPos[1]); mu.obj.rotation.y = -Math.PI / 2;
@@ -375,6 +383,7 @@
   // ---------- Tráfico, semáforos y saludos ----------
   function actualizar(S, M, dt) {
     if (GM.ciudadBarrios) GM.ciudadBarrios.actualizar(S, dt);
+    if (S.multitud) { S.tMult = (S.tMult || 0) - dt; if (S.tMult <= 0) { S.tMult = 0.12; const t = performance.now() / 1000; S.multitud.colocar(i => { const v = Math.sin(t * 4 + i * 2.3); return v > 0.6 ? { salto: (v - 0.6) * 0.6, brazos: 1 } : null; }); } }
     if (!S.coches) return;
     moverPalomas(S, dt);
     S.perros && S.perros.forEach(p => { const o = p.dueno.obj, d = p.d, f = o.rotation.y, tx = o.position.x - Math.sin(f) * 0.9 + Math.cos(f) * 0.5, tz = o.position.z - Math.cos(f) * 0.9 - Math.sin(f) * 0.5, dx = tx - d.position.x, dz = tz - d.position.z, l = Math.hypot(dx, dz);

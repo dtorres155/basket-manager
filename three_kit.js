@@ -98,7 +98,7 @@
   // Personas sentadas de verdad (torso, brazos, cabeza con pelo y piernas dobladas) con una malla instanciada por pieza: miles
   // de espectadores en 5 llamadas de dibujo. sitios: [{ x, y, z, ry, ropa, piel, pelo }] (y: altura del asiento; ry: hacia dónde mira).
   // colocar(fn): fn(i) -> { salto (m), brazos (0 abajo, 1 arriba) }; llamarlo en cada fotograma solo si algo se mueve.
-  kit.publico = function (sitios, escala) {
+  kit.publico = function (sitios, escala, dePie) {
     const T = THREE, s = escala || 1, n = sitios.length, mat = () => new T.MeshLambertMaterial();
     const caja = (w, h, d, x, y, z) => new T.BoxGeometry(w, h, d).translate(x, y, z);
     const une = gs => { const g = T.mergeGeometries ? T.mergeGeometries(gs) : (T.BufferGeometryUtils && T.BufferGeometryUtils.mergeGeometries(gs)); return g || gs[0]; };
@@ -108,7 +108,7 @@
       brazos: une([caja(0.1, 0.44, 0.11, -0.25, -0.2, 0), caja(0.1, 0.44, 0.11, 0.25, -0.2, 0)]),      // pivote en los hombros
       cabeza: new T.IcosahedronGeometry(0.12, 1).translate(0, 0.7, 0),
       pelo: new T.SphereGeometry(0.128, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55).translate(0, 0.72, -0.012),
-      piernas: une([caja(0.34, 0.14, 0.42, 0, 0.02, 0.2), caja(0.3, 0.45, 0.12, 0, -0.2, 0.4)])
+      piernas: dePie ? une([caja(0.14, 0.86, 0.16, -0.1, -0.43, 0), caja(0.14, 0.86, 0.16, 0.1, -0.43, 0)]) : une([caja(0.34, 0.14, 0.42, 0, 0.02, 0.2), caja(0.3, 0.45, 0.12, 0, -0.2, 0.4)])
     };
     const g = new T.Group(), M = {}, c = new T.Color(), m4 = new T.Matrix4(), q = new T.Quaternion(), qx = new T.Quaternion(), e = new T.Euler(), p = new T.Vector3(), sc = new T.Vector3(s, s, s), hombro = new T.Vector3();
     Object.keys(geo).forEach(k => { M[k] = new T.InstancedMesh(geo[k], mat(), n); M[k].instanceMatrix.setUsage(T.DynamicDrawUsage); M[k].castShadow = false; M[k].frustumCulled = false; g.add(M[k]); });

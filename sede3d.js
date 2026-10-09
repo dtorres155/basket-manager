@@ -235,7 +235,7 @@
   }
   function moverPaso(p, dt) {
     if (!p.camino || !p.camino.length) return;
-    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * dt;
+    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * (p.bici ? 2.5 : 1) * dt;
     if (d < v) { o.x = tx; o.z = tz; p.camino.shift(); if (!p.camino.length) { anim(p, 'idle'); const f = p.alLlegar; p.alLlegar = null; if (f) f(); } return; }
     o.x += dx / d * v; o.z += dz / d * v; girar(p, Math.atan2(dx, dz), dt);
   }
@@ -334,6 +334,7 @@
   // Cambiar entre la sede y la calle con un fundido
   async function cambiarEscena(dest) {
     if (!S || S.cambiando) return; S.cambiando = true; const de = S.escena; S.rend = null;
+    if (S.yo && S.yo.bici && GM.ciudadBarrios) GM.ciudadBarrios.bici(false);
     if (S.construccion && GM.casa) await GM.casa.activar(S, motor(), false);
     const velo = GM.h('div', { class: 'sede-velo' }); S.raiz.append(velo); await new Promise(r => setTimeout(r, 280));
     try {
@@ -947,7 +948,7 @@
     const k = S.teclas, ax = (k.d || k.arrowright ? 1 : 0) - (k.a || k.arrowleft ? 1 : 0), az = (k.s || k.arrowdown ? 1 : 0) - (k.w || k.arrowup ? 1 : 0);
     if (!ax && !az) { if (S.yo.teclado) { S.yo.teclado = false; anim(S.yo, 'idle'); } return; }
     S.yo.camino = null; S.yo.teclado = true; anim(S.yo, k.shift ? 'sprint' : 'walk');
-    const c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = ax * c + az * s, dz = -ax * s + az * c, l = Math.hypot(dx, dz), v = (k.shift ? 4.2 : 2.1) * dt, o = S.yo.obj.position;
+    const c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = ax * c + az * s, dz = -ax * s + az * c, l = Math.hypot(dx, dz), v = (k.shift ? 4.2 : 2.1) * (S.yo.bici ? 2.5 : 1) * dt, o = S.yo.obj.position;
     const nx = o.x + dx / l * v, nz = o.z + dz / l * v, G = S.G, ok = (x, z) => { const [i, j] = G.celda(x, z); return G.libre(i, j); };
     if (ok(nx, nz)) { o.x = nx; o.z = nz; } else if (ok(nx, o.z)) o.x = nx; else if (ok(o.x, nz)) o.z = nz;
     girar(S.yo, Math.atan2(dx, dz), dt);

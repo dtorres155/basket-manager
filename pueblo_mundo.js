@@ -359,6 +359,8 @@
     zonas.push([{ id: 'pueblo_mural', nombre: ed('mural').nombre, accion: '', destino: {}, acciones: s2 => accionesLote(s2, 'mural') }, IG.x - 2.9, IG.z + 8.4]);
     zonas.push([{ id: 'pueblo_alumbrado', nombre: 'Alumbrado y calles', accion: '', destino: {}, acciones: s2 => accionesLote(s2, 'alumbrado') }, 2.6, 23]);
     zonas.push([{ id: 'pueblo_carretera', nombre: 'Carretera y autobús', accion: '', destino: {}, acciones: s2 => accionesLote(s2, 'carretera') }, PS[0] + 2.5, PS[1] + 6]);
+    zonas.push([{ id: 'pueblo_bus', nombre: 'Autobús a ' + club.ciudad, accion: 'Viajar a la ciudad de tu club', destino: {}, irA: 'calle', boton: 'Coger el autobús a ' + club.ciudad }, PS[0] - 2.5, PS[1] + 9]);
+    (S.puertas = S.puertas || {}).calle = { x: PS[0] - 2.5, z: PS[1] + 7.6, ry: Math.PI };
     zonas.push([{ id: 'pueblo_salir', nombre: 'Salir del pueblo', accion: 'Volver al juego', destino: {}, acciones: () => [{ id: 'salir', t: 'Volver', d: 'Sales del pueblo.', disponible: true, fn: () => { setTimeout(() => GM.sede.cerrar(), 50); return { ok: true, texto: 'Hasta pronto' }; } }] }, PS[0] - 1, PS[1] + 26]);
     S.zonas = zonas.map(([sala, x, z]) => M.zona(W, sala, x, z, club));
     // Casas a lo largo de las calles: dentro de la muralla según el nivel; fuera, el pueblo crece con el nivel y con cada edificio que levantas.
