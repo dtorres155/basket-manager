@@ -16,7 +16,7 @@
 - ~~Pueblo 3D lento al usar el panel~~: ya solo se reconstruye si cambia algo visible (nivel, estilo, edificios o el cariño de 10 en 10). Construirlo la primera vez tarda 0,1 s en ordenador y 0,4-0,7 s con CPU x4 (`node tools/pueblo_tiempo.js --lento`).
 
 ## Mundo explorable (sede, calle, barrio, casa)
-### Notas del usuario tras probarlo en Android (oct 2026): la ciudad y el campus necesitan mucho más trabajo
+### Mejoras generales del juego que pide el usuario (oct 2026): la ciudad y el campus necesitan mucho más trabajo (en todas las plataformas)
 - **Movimiento del personaje:** a veces «se vuelve tonto» (rodeos raros, se atasca en esquinas, no llega a donde tocas). Revisar el A* (celdas bloqueadas por márgenes, destino en celda ocupada, suavizado del camino, giros bruscos) y el control táctil.
 - **Vida en la ciudad:** ahora es monótona. Peatones con rutinas (entran en tiendas y portales, terrazas llenas, niños, gente paseando al perro, repartidores, colas en el pabellón), más variedad de coches, ambiente según la hora y el día.
 - **Diseño, detalle y profundidad:** texturas de fachadas, aceras y asfalto con desgaste, mobiliario urbano variado, edificios de fondo y silueta de la ciudad en el horizonte, menos repetición de bloques.
