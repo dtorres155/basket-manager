@@ -2,7 +2,7 @@
 
 ## P0 — Ver lo que se construye
 1. ~~Hecho en la fase 0~~ (capturas en `capturas/`). Abrir el juego en un navegador real y en móvil (390×844). Hacer capturas de cada pantalla y escena 3D (campus, pabellón, ciudad, calle, pueblo, casa, directo) y corregir proporciones, solapes, colores y rendimiento. Todo lo visual se ha hecho sin ver el resultado.
-2. Medido con CPU limitada (fase 1.3, `capturas/fase1/RENDIMIENTO.md`): 60 fps en calidad normal. Falta confirmarlo en un Android real.
+2. Medido con CPU limitada (fase 1.3, `capturas/fase1/RENDIMIENTO.md`): 60 fps en calidad normal. Confirmado en un Android real (oct 2026): va bien.
 3. ~~Pruebas visuales~~: `npm run test:visual` (en local; no en GitHub Actions porque necesita navegador).
 
 ## P1 — Salto de calidad visual
@@ -16,10 +16,18 @@
 - ~~Pueblo 3D lento al usar el panel~~: ya solo se reconstruye si cambia algo visible (nivel, estilo, edificios o el cariño de 10 en 10). Construirlo la primera vez tarda 0,1 s en ordenador y 0,4-0,7 s con CPU x4 (`node tools/pueblo_tiempo.js --lento`).
 
 ## Mundo explorable (sede, calle, barrio, casa)
+### Notas del usuario tras probarlo en Android (oct 2026): la ciudad y el campus necesitan mucho más trabajo
+- **Movimiento del personaje:** a veces «se vuelve tonto» (rodeos raros, se atasca en esquinas, no llega a donde tocas). Revisar el A* (celdas bloqueadas por márgenes, destino en celda ocupada, suavizado del camino, giros bruscos) y el control táctil.
+- **Vida en la ciudad:** ahora es monótona. Peatones con rutinas (entran en tiendas y portales, terrazas llenas, niños, gente paseando al perro, repartidores, colas en el pabellón), más variedad de coches, ambiente según la hora y el día.
+- **Diseño, detalle y profundidad:** texturas de fachadas, aceras y asfalto con desgaste, mobiliario urbano variado, edificios de fondo y silueta de la ciudad en el horizonte, menos repetición de bloques.
+- **Variedad entre clubes y varias ciudades:** cada ciudad con su estilo (mediterránea, centroeuropea, griega, turca, americana), algún monumento o rasgo reconocible, y más de una ciudad en el juego (la del club al que fichas, la de los rivales al jugar fuera).
+- **Campus (ciudad deportiva):** escenario soso, monótono y poco trabajado; tiene que parecerse a una ciudad deportiva real: pistas exteriores y campos, pabellón de entrenamiento con grada, residencia de canteranos, edificio de oficinas, aparcamiento, accesos y control, vallas, arbolado, y ambiente (canteranos entrenando, cuerpo técnico, prensa en los entrenamientos abiertos, aficionados en la valla).
+- **Mejoras visuales en general:** es una línea de trabajo continua; cualquier idea de detalle, iluminación o variedad suma.
+
 - Modo construcción también en el despacho y otras salas del club; paredes interiores, color de paredes y suelos en casa.
 - ~~Más ciudad~~ (`ciudad_barrios.js`): la avenida va de -150 a 150 m con pasos de peatones, la calle central sube hasta la puerta de la ciudad deportiva y una ronda cruza el norte; barrios oeste (bloques, colegio y parque), este (chalets, mansiones y estación) y norte (torres con áticos, hospital y oficinas), con coches por toda la avenida. Los barrios lejanos no se dibujan; caminos con montículo binario (de punta a punta, ~13 ms). Falta: ciudad deportiva para pasear.
 - ~~La ciudad cambia con la reputación~~: los locales de la calle abren o se quedan en «SE ALQUILA» con la persiana bajada según la reputación (con 72 o más, cafés y tiendas del club); con 60 o más se construye un hotel en el norte y con 75 unas oficinas (valla, cartel, estructura a medias y grúa que gira); banderines del club cruzando la avenida en los barrios con afición de 55 o más y mural con el escudo con 70; el día de partido en casa, 240 aficionados de pie ante el pabellón y por la avenida, saltando. Capturas: `node tools/ciudad_reputacion.js`.
-- ~~Rendimiento en móvil~~ (en parte): calidad adaptable en el mundo 3D. Tras 3 s se mide la fluidez cada 2 s y, si no llega a 30 fps, baja un escalón (1: resolución 1x y sin sombras; 2: 0,8x, personas lejanas animadas cada 3 cuadros y las de más de 28 m sin dibujar; 3: 0,65x y a 20 m) y lo recuerda en el dispositivo. Con CPU x3 la calle queda en ~50 fps; con x6 (emulación que también dibuja por software) en 7-12. Prueba: `node tools/rendimiento_auto.js [escena] [x]`. Falta confirmarlo en un Android real.
+- ~~Rendimiento en móvil~~ (en parte): calidad adaptable en el mundo 3D. Tras 3 s se mide la fluidez cada 2 s y, si no llega a 30 fps, baja un escalón (1: resolución 1x y sin sombras; 2: 0,8x, personas lejanas animadas cada 3 cuadros y las de más de 28 m sin dibujar; 3: 0,65x y a 20 m) y lo recuerda en el dispositivo. Con CPU x3 la calle queda en ~50 fps; con x6 (emulación que también dibuja por software) en 7-12. Prueba: `node tools/rendimiento_auto.js [escena] [x]`. Confirmado en un Android real (oct 2026).
 - ~~Coches y peatones~~: los coches frenan ante cualquier peatón en su carril, también fuera de los pasos. El músico sigue con una postura por código (no hay animación de guitarra en el paquete de Quaternius).
 - ~~Adaptar el mundo explorable al móvil~~: ayuda según el dispositivo que se oculta sola, botones táctiles para girar y acercar, más margen al tocar a una persona, paneles de sala como hoja inferior (60 % de la pantalla) y barra superior que no se desborda. Capturas: `node tools/sede_capturas.js movil_despues --movil`.
 - Decisión abierta: si Three.js se queda corto, pasar a Godot 4 (APK) reutilizando modelos y diseño.
