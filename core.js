@@ -24,7 +24,7 @@ window.GM = window.GM || (function () {
   };
   const GM = {
     // Versión del formato de la partida guardada. Si cambias la forma del estado, súbela y añade una migración en guardado.js
-    VERSION_ESTADO: 4,
+    VERSION_ESTADO: 5,
     data: { equipos: {}, jugadores: {}, ligas: {} },
     mods: {},
     ui: { screens: {} },

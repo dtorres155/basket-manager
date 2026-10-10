@@ -7,8 +7,11 @@
   const U = GM.util;
   const yearOf = st => parseInt(st.temporada.slice(0, 4), 10);
   const PRIO = ['NBA', 'EUROLIGA', 'ACB', 'LEGA', 'GBL', 'BBL', 'BSL'];
+  // Escala salarial por liga respecto a la NBA (un 80 de media: ~22 M€ en la NBA, ~4 en la Euroliga, ~1,5 en la ACB) y techo por liga:
+  // en Europa ni las estrellas se acercan a lo que cobra un jugador de rotación de la NBA
   const FACT = { NBA: 1, EUROLIGA: 0.18, ACB: 0.07, LEGA: 0.06, GBL: 0.06, BBL: 0.07, BSL: 0.08 };
-  const MINSAL = { NBA: 2.2e6, EUROLIGA: 0.2e6, ACB: 0.1e6, LEGA: 0.1e6, GBL: 0.1e6, BBL: 0.1e6, BSL: 0.1e6 };
+  const MINSAL = { NBA: 2.2e6, EUROLIGA: 0.15e6, ACB: 0.1e6, LEGA: 0.1e6, GBL: 0.1e6, BBL: 0.1e6, BSL: 0.1e6 };
+  const MAXSAL = { NBA: 62e6, EUROLIGA: 6e6, ACB: 2.5e6, LEGA: 2e6, GBL: 2.5e6, BBL: 2e6, BSL: 3e6 };
   const TOPE_NBA = 140e6, TECHO_NBA = 190e6, MAXP = 15;
   const POS = ['PG', 'SG', 'SF', 'PF', 'C'];
   const F = () => GM.mods.finanzas;
@@ -23,7 +26,7 @@
   function salarioPedido(st, jugId, eqId) {
     const p = st.jugadores[jugId], l = ligaDe(st, eqId);
     const s = valorJugador(p) * FACT[l] * (0.9 + (U.hash(jugId) % 21) / 100);
-    return Math.max(MINSAL[l], Math.round(s / 10000) * 10000);
+    return Math.min(MAXSAL[l], Math.max(MINSAL[l], Math.round(s / 10000) * 10000));
   }
   const masaMax = (st, eqId) => Math.round(2e6 + Math.pow(st.equipos[eqId].reputacion / 100, 3) * 60e6);
   function masa(st, eqId) { return F() ? F().masaSalarial(st, eqId) : st.equipos[eqId].plantilla.reduce((a, i) => a + st.jugadores[i].contrato.salario, 0); }
@@ -255,7 +258,8 @@
       const h = U.hash('dr' + y + i), pos = POS[h % 5], pa = paises[h % paises.length];
       const q = 1 - i / 72;
       // Los primeros puestos pueden traer una promesa generacional (techo de 96 o 97); los demás, como mucho 94
-      const gen = i < 2 && h % 3 === 0, ovr = Math.round(51 + q * 14 + (h % 5) - 2 + (gen ? 3 : 0)), pot = Math.round(Math.min(gen ? 97 : 94, ovr + 12 + q * 16 + (h >>> 3) % 7 + (gen ? 4 : 0)));
+      // Pocos llegan arriba: los cuatro primeros pueden traer 66-70 de media y 90-95 de techo, los de mitad de lista 60 y 70-76, los últimos 52 y 56-60
+      const gen = i < 2 && h % 4 === 0, ovr = Math.round(52 + q * 17 + (h % 5) - 2 + (gen ? 2 : 0)), pot = Math.round(Math.min(gen ? 97 : 93, ovr + 2 + Math.pow(q, 6) * 20 + q * 3 + (h >>> 3) % 4 + (gen ? 5 : 0)));
       const p = GM.mkJugador('dr' + y, i + 1, GM.nombreAleatorio(pa, h), pos, 19 + (h >>> 5) % 4, GM.alturaPos(pos, h), pa === 'GEN' ? 'PL' : pa, GM.pasaporte(pa === 'GEN' ? 'PL' : pa), ovr, pot, ['T', 'P', 'D', 'R', 'E'][(h >>> 7) % 5], 0, 0);
       p.ficticio = true; pros.push(p);
     }
@@ -275,7 +279,7 @@
         pros.sort((a, b) => val(b) - val(a));   // ojeo: informe de los ojeadores sobre tu jugador (carrera.js)
         const p = pros.shift();
         p.equipoId = eqId; p.libre = false;
-        p.contrato = { salario: Math.round(ronda === 0 ? 12e6 * Math.pow(0.93, k) : 1.8e6), hasta: y + 3 };
+        p.contrato = { salario: Math.round(ronda === 0 ? 12e6 * Math.pow(0.9505, k) : 2.0e6), hasta: y + 3 };   // escala de novatos: nº 1 ~12 M€, nº 15 ~6, nº 30 ~2,8
         if (!p.esYo) p.id = 'dr' + y + '-' + String(n).padStart(2, '0');
         st.jugadores[p.id] = p; st.equipos[eqId].plantilla.push(p.id);
         picks.push({ n, equipoId: eqId, jugadorId: p.id });

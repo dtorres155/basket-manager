@@ -166,8 +166,7 @@
     p.xp = (p.xp || 0) + g * f * mod * (0.7 + 0.6 * GM.rng.next());
     const keys = FOCOS[c.entreno.foco] || FOCOS.mente;
     if (p.xp >= 1 && p.ovr < Math.max(p.pot, p.ovr)) {
-      p.xp = 0; p.ovr = Math.min(99, p.ovr + 1);
-      for (let i = 0; i < 3; i++) { const k = keys[GM.rng.int(0, keys.length - 1)]; p.att[k] = Math.min(99, p.att[k] + 1); }
+      p.xp = 0; GM.setOvr(p, p.ovr + 1, keys);
       c.hitos.unshift({ fecha: st.fecha, texto: 'Subes a ' + p.ovr + ' de nivel.' }); if (c.hitos.length > 40) c.hitos.length = 40;
       GM.noticia(st, 'Progresas: ahora eres un ' + p.ovr + ' de nivel.');
     } else if (p.xp >= 1) p.xp = 0.5;
@@ -313,6 +312,7 @@
       c.pend = c.pend.filter(x => x.id !== 'stash'); c.pend.unshift({ id: 'stash', fecha: st.fecha });
       c.hitos.unshift({ fecha: st.fecha, texto: 'Te elige ' + nba.nombre + ' con el número ' + k.n + ' del draft.' });
       GM.noticia(st, '¡Draft de la NBA! ' + p.nombre + ' es elegido en el puesto ' + k.n + ' por ' + nba.nombre + '. Puede irse ya o seguir un año en Europa.');
+      if (GM.mods.movil && GM.mods.movil.enviar) GM.mods.movil.enviar(st, 'agente', '¡' + nba.nombre + ' te ha elegido con el número ' + k.n + '! Puedes irte ya o seguir un año en ' + st.equipos[antes].nombre + ': ellos guardan tus derechos.');
       return;
     }
     if (!k && antes) {
@@ -321,16 +321,52 @@
       GM.noticia(st, p.nombre + ' no es elegido en el draft de la NBA y sigue en ' + st.equipos[antes].nombre + '.'); return;
     }
     if (k) {
-      c.fase = 'pro'; c.fichado = k.equipoId; st.clubId = k.equipoId; c.declarado = false; st.equipos[k.equipoId].tactica = null;
-      c.hitos.unshift({ fecha: st.fecha, texto: 'Te elige ' + st.equipos[k.equipoId].nombre + ' con el número ' + k.n + ' del draft de la NBA.' });
-      c.draftPick = k.n; c.fama = Math.min(100, c.fama + (k.n <= 3 ? 32 : k.n <= 14 ? 25 : k.n <= 30 ? 16 : 10));
-      GM.noticia(st, '¡Draft de la NBA! ' + p.nombre + ' es elegido en el puesto ' + k.n + ' por ' + st.equipos[k.equipoId].nombre + '.');
+      // Desde la universidad: también eliges entre firmar ya con la franquicia que te ha elegido o jugar un año en Europa con tus derechos guardados
+      const nba = st.equipos[k.equipoId]; nba.plantilla = nba.plantilla.filter(i => i !== 'yo');
+      c.stash = { equipoId: k.equipoId, n: k.n, contrato: p.contrato, temporada: st.temporada, ncaa: true };
+      p.equipoId = null; p.libre = false; c.declarado = false; c.draftPick = k.n;
+      c.fama = Math.min(100, c.fama + (k.n <= 3 ? 32 : k.n <= 14 ? 25 : k.n <= 30 ? 16 : 10));
+      c.pend = c.pend.filter(x => x.id !== 'stash'); c.pend.unshift({ id: 'stash', fecha: st.fecha });
+      c.hitos.unshift({ fecha: st.fecha, texto: 'Te elige ' + nba.nombre + ' con el número ' + k.n + ' del draft de la NBA.' });
+      GM.noticia(st, '¡Draft de la NBA! ' + p.nombre + ' es elegido en el puesto ' + k.n + ' por ' + nba.nombre + '. Puede firmar ya o jugar un año en Europa.');
+      if (GM.mods.movil && GM.mods.movil.enviar) GM.mods.movil.enviar(st, 'agente', '¡' + nba.nombre + ' te ha elegido con el número ' + k.n + '! Podemos firmar ya el contrato de novato o buscarte un año en Europa y que ellos guarden tus derechos. Tú decides.');
     } else {
       c.fase = 'libre'; c.declarado = false; p.equipoId = null; p.libre = true; p.contrato = { salario: 0, hasta: 0 };
       c.hitos.unshift({ fecha: st.fecha, texto: 'No te eligen en el draft. Tocará buscar tu camino en el mercado.' });
       GM.noticia(st, p.nombre + ' no es elegido en el draft de la NBA.');
     }
   }
+
+  // ---------- Traspasos en los que te ves envuelto ----------
+  // Ventanas: verano (8 y 22 de julio, 12 de agosto) e invierno (6 y 20 de enero). La probabilidad sube si no juegas, si tu contrato es
+  // alto para tu papel y si ya te negaste antes; baja si eres titular. El destino es otro club de tu liga con una reputación parecida.
+  function crearTraspaso(st, ventana) {
+    const c = C(st), p = YO(st), club = p.equipoId, y = yearOf(st), lg = M().ligaDe(st, club), r = rol(st);
+    const cl = c.clubes && c.clubes[club]; if (cl && U.diffDays(cl.desde, st.fecha) < 150) return;
+    let pr = r === 'Titular' ? 0.05 : r === 'Rotación' ? 0.12 : 0.22; pr += (c.tensionClub || 0) * 0.04; if (ventana === 'invierno') pr *= 0.7;
+    if (p.contrato.hasta && p.contrato.hasta <= y) pr *= 0.5;        // a punto de acabar contrato: más vale esperar
+    if (GM.rng.next() >= pr) return;
+    const eqA = st.equipos[club], cand = Object.keys(st.equipos).filter(id => id !== club && M().ligaDe(st, id) === lg).map(id => {
+      const eq = st.equipos[id], orden = eq.plantilla.map(i => st.jugadores[i]).filter(x => x && !x.esYo).sort((a, b) => b.ovr - a.ovr), quinto = orden[4] ? orden[4].ovr : 60, noveno = orden[8] ? orden[8].ovr : 55;
+      return { id, eq, rol: p.ovr >= quinto ? 'Titular' : p.ovr >= noveno ? 'Rotación' : 'Banquillo', d: Math.abs(eq.reputacion - eqA.reputacion) + GM.rng.next() * 18 };
+    }).sort((a, b) => a.d - b.d);
+    const k = cand[0]; if (!k) return;
+    const sal = Math.max(p.contrato.salario || 0, Math.round(M().salarioPedido(st, 'yo', k.id) * 0.95 / 10000) * 10000), anos = U.clamp((p.contrato.hasta || y + 1) - y, 1, 3);
+    c.traspaso = { de: club, a: k.id, rol: k.rol, salario: sal, anos, ventana, texto: eqA.nombre + ' ha cerrado tu traspaso a ' + k.eq.nombre + ' (' + NOMLIGA[lg] + ', ' + (ventana === 'verano' ? 'mercado de verano' : 'mercado de invierno') + '). Allí serías ' + k.rol.toLowerCase() + ' y cobrarías ' + U.eur(sal) + ' al año durante ' + anos + (anos === 1 ? ' año' : ' años') + '. ¿Qué quieres hacer?' };
+    c.pend = c.pend.filter(x => x.id !== 'traspaso'); c.pend.unshift({ id: 'traspaso', fecha: st.fecha });
+    GM.noticia(st, 'Se habla de un traspaso de ' + p.nombre + ' de ' + eqA.nombre + ' a ' + k.eq.nombre + '.');
+    if (GM.mods.movil && GM.mods.movil.enviar) GM.mods.movil.enviar(st, 'agente', eqA.nombre + ' tiene un acuerdo para traspasarte a ' + k.eq.nombre + '. Dime qué hacemos.');
+  }
+  function ejecutarTraspaso(st, t) {
+    const c = C(st), antes = c.ofertas; c.ofertas = [{ id: 'oT', clubId: t.a, liga: M().ligaDe(st, t.a), tipo: 'Traspaso', rol: t.rol, salario: t.salario, anos: t.anos, nota: '' }];
+    const r = aceptar(st, 'oT'); c.ofertas = antes; return r;
+  }
+  GM.bus.on('dia:avanzado', function () {
+    const st = GM.state; if (!st || st.modo !== 'carrera' || !st.carrera) return;
+    const c = C(st), p = YO(st); if (!c || c.fase !== 'pro' || !p || !p.equipoId || c.pend.some(x => x.id === 'traspaso')) return;
+    const md = st.fecha.slice(5), v = md === '07-08' || md === '07-22' || md === '08-12' ? 'verano' : md === '01-06' || md === '01-20' ? 'invierno' : null;
+    if (v) crearTraspaso(st, v);
+  });
 
   function irNBA(st, eqId, contrato) {
     const c = C(st), p = YO(st), antes = p.equipoId, nba = st.equipos[eqId];
@@ -409,6 +445,7 @@
     Object.keys(st.equipos).forEach(id => {
       if (id === club) return;
       const lg = M().ligaDe(st, id); let min = MIN[lg];
+      if (lg === 'NBA' && c.derechos) return;      // derecho de tanteo: mientras otro equipo tenga tus derechos del draft, ninguna otra franquicia puede ficharte
       if (lg === 'NBA' && p.edad <= 22 && p.pot >= 84) min -= 6;
       if (p.ovr < min - 2) return;
       if (lg === 'NBA' && c.fama < 35 && p.ovr < 76) return;
@@ -425,11 +462,11 @@
     c.ofertas = out.map(k => {
       const sal = Math.round(M().salarioPedido(st, 'yo', k.id) * (0.92 + 0.2 * GM.rng.next()) * ag.sal / 10000) * 10000, joven = p.edad <= 24;
       const tipo = k.lg === 'NBA' ? (p.ovr < 72 ? 'Contrato de dos vías' : 'Contrato NBA') : 'Contrato profesional';
-      return { id: 'o' + (++seq), clubId: k.id, liga: k.lg, tipo, rol: k.r, salario: k.lg === 'NBA' && p.ovr < 72 ? 1.2e6 : sal, anos: joven ? GM.rng.int(2, 4) : GM.rng.int(1, 3), nota: k.lg === 'NBA' ? 'Cumples el sueño de llegar a la NBA.' : k.lg === 'EUROLIGA' ? 'Competición de máximo nivel en Europa.' : 'Más minutos para crecer.', impacto: impactoDe(k.id) };
+      return { id: 'o' + (++seq), clubId: k.id, liga: k.lg, tipo, rol: k.r, salario: k.lg === 'NBA' && p.ovr < 72 ? 0.65e6 : sal, anos: joven ? GM.rng.int(2, 4) : GM.rng.int(1, 3), nota: k.lg === 'NBA' ? 'Cumples el sueño de llegar a la NBA.' : k.lg === 'EUROLIGA' ? 'Competición de máximo nivel en Europa.' : 'Más minutos para crecer.', impacto: impactoDe(k.id) };
     });
     // el equipo NBA que tiene tus derechos del draft te llama al verano siguiente
     if (c.derechos && c.derechos.temporada !== st.temporada && st.equipos[c.derechos.equipoId]) {
-      const d = c.derechos, sal = d.n <= 30 ? Math.round(12e6 * Math.pow(0.93, d.n - 1) / 1e4) * 1e4 : 1.8e6;
+      const d = c.derechos, sal = d.n <= 30 ? Math.round(12e6 * Math.pow(0.9505, d.n - 1) / 1e4) * 1e4 : 2.0e6;
       c.ofertas.unshift({ id: 'o' + (++seq), clubId: d.equipoId, liga: 'NBA', tipo: 'Contrato NBA (tus derechos del draft)', rol: p.ovr >= 76 ? 'Rotación' : 'Banquillo', salario: sal, anos: 3, nota: 'El equipo que te eligió en el draft te quiere ya en la NBA.' });
     }
     // renovación con el club actual
@@ -437,7 +474,7 @@
       const eq = st.equipos[club], lg = M().ligaDe(st, club), r = rol(st);
       c.ofertas.unshift({ id: 'o' + (++seq), clubId: club, liga: lg, tipo: 'Renovación', rol: r, salario: Math.round(M().salarioPedido(st, 'yo', club) * 1.05 * (ag.ren || 1) / 10000) * 10000, anos: p.edad <= 24 ? 3 : 2, nota: 'Sigues en ' + eq.nombre + '.' });
     }
-    c.ofertas.forEach(o => { o.salario = Math.max(o.liga === 'NBA' ? 1.2e6 : 6e4, o.salario); });
+    c.ofertas.forEach(o => { o.salario = Math.max(o.liga === 'NBA' ? (o.tipo === 'Contrato de dos vías' ? 0.65e6 : 2.2e6) : 6e4, o.salario); });
     if (c.ofertas.length) GM.noticia(st, 'Tu representante ' + c.agente.nombre + ' tiene ' + c.ofertas.length + ' ofertas sobre la mesa.');
     return c.ofertas;
   }
@@ -475,6 +512,7 @@
   function cerrar(st) {
     const c = C(st), p = YO(st); if (!c || c.fase === 'retirado') return;
     if (c.fase === 'ncaa' && c.etapa === 'cantera') { if (c.ofertas.length) { const m = c.ofertas.find(o => /^Primer equipo/.test(o.tipo)) || c.ofertas.find(o => o.tipo === 'Seguir en el filial') || c.ofertas[0]; aceptar(st, m.id); GM.noticia(st, 'Tu representante decide por ti.'); } return; }
+    if (c.stash && c.stash.ncaa) { const s0 = c.stash; c.pend = c.pend.filter(x => x.id !== 'stash'); irNBA(st, s0.equipoId, s0.contrato); GM.noticia(st, 'Tu representante firma por ti el contrato de novato con ' + st.equipos[s0.equipoId].nombre + '.'); return; }
     if (c.fase === 'ncaa') return;
     const caduca = !p.equipoId || (p.contrato.hasta && p.contrato.hasta <= yearOf(st) + 1);
     if (!caduca) { c.ofertas = []; return; }
@@ -596,7 +634,11 @@
       { t: 'Muy seguro de ti mismo', d: 'Si tu nivel lo respalda, encantas; si no, suena a arrogancia.', ef: { entrevista: 'seguro' } },
       { t: 'Decir que solo quieres un equipo concreto', d: 'Ese equipo hará lo posible por elegirte; los demás te miran peor.', ef: { entrevista: 'equipo' } }] },
     { id: 'stash', t: 'Te han elegido en el draft', q: 'Tu representante', d: 'Un equipo de la NBA tiene tus derechos.', ops: [
-      { t: 'Irme ya a la NBA', d: 'Contrato de novato. Si no tienes nivel, te costará jugar.', ef: { stash: 'ir' } }, { t: 'Un año más en Europa', d: 'Sigues con minutos en tu club; el equipo NBA conserva tus derechos y te llamará el próximo verano.', ef: { stash: 'quedar' } }] },
+      { t: 'Irme ya a la NBA', d: 'Contrato de novato. Si no tienes nivel, te costará jugar.', ef: { stash: 'ir' } }, { t: 'Un año más en Europa', d: 'Juegas con minutos en Europa; el equipo NBA conserva tus derechos y te llamará el próximo verano. Mientras tanto ninguna otra franquicia puede ficharte (derecho de tanteo).', ef: { stash: 'quedar' } }] },
+    { id: 'traspaso', t: 'Te quieren traspasar', q: 'Tu representante', d: 'Tu club ha encontrado comprador.', ops: [
+      { t: 'Aceptar el traspaso', d: 'Te marchas con las mismas condiciones. Tu afición de ahora te despedirá.', ef: { traspaso: 'aceptar' } },
+      { t: 'Pedir a tu representante que lo frene', d: 'Hará lo posible por que te quedes. Si el club insiste, te vas igualmente. Cuenta más si eres titular.', ef: { traspaso: 'frenar' } },
+      { t: 'Negarte a ir', d: 'Te quedas, pero el club se enfada: menos ánimo y menos minutos, y es más probable que lo intente otra vez.', ef: { traspaso: 'negar' } }] },
     { id: 'draft', t: 'El draft de la NBA', q: 'Tu representante', d: 'Se abre el plazo para presentarse al draft.', ops: [
       { t: 'Presentarme al draft', d: 'Si te eligen, das el salto a la NBA. Si no, sigues donde estás.', ef: { draft: true } }, { t: 'Esperar un año', d: 'Sigues creciendo y lo intentas más adelante.', ef: { draft: false } }] },
     { id: 'zapatillas', t: 'Contrato de zapatillas', q: 'Tu representante', d: 'Tres marcas quieren que lleves sus zapatillas esta temporada.', ops: [
@@ -619,12 +661,12 @@
       { t: 'Comprarlo', d: 'Una inversión grande.', ef: { dinero: -120, moral: 6 } }, { t: 'Alquilar', d: 'Más flexible.', ef: { dinero: -20, moral: 2 } }] }
   ];
   function nuevoEvento(st) {
-    const c = C(st), usados = new Set(c.res.slice(-4).map(r => r.id)), lista = EVENTOS.filter(e => ['draft', 'stash', 'combine', 'entrevistas'].indexOf(e.id) < 0 && !usados.has(e.id) && !c.pend.some(p => p.id === e.id));
+    const c = C(st), usados = new Set(c.res.slice(-4).map(r => r.id)), lista = EVENTOS.filter(e => ['draft', 'stash', 'combine', 'entrevistas', 'traspaso'].indexOf(e.id) < 0 && !usados.has(e.id) && !c.pend.some(p => p.id === e.id));
     if (!lista.length) return;
     const e = GM.rng.pick(lista); c.pend.push({ id: e.id, fecha: st.fecha }); c.ultimoEvento = st.fecha;
     GM.noticia(st, 'Tienes una decisión personal: ' + e.t + '.');
   }
-  function eventos(st) { return C(st).pend.map(p => { const e = EVENTOS.find(x => x.id === p.id), mk = e.id === 'draft' ? mock(st) : null, sh = e.id === 'stash' && C(st).stash; return { id: e.id, titulo: e.t, quien: e.q, texto: sh ? st.equipos[sh.equipoId].nombre + ' te ha elegido con el número ' + sh.n + '. Puedes irte ya o seguir un año más en ' + st.equipos[YO(st).equipoId].nombre + ': ellos conservan tus derechos.' : mk ? 'Se abre el plazo del draft. Las previsiones te sitúan en: ' + mk.proyeccion.toLowerCase() + (mk.pick <= 60 ? ' (puesto ' + mk.pick + ' de 60)' : '') + '. Tienes ' + YO(st).ovr + ' de nivel y ' + YO(st).pot + ' de potencial.' : e.d, opciones: e.ops.map((o, i) => ({ i, t: o.t, d: o.d })) }; }); }
+  function eventos(st) { return C(st).pend.map(p => { const e = EVENTOS.find(x => x.id === p.id), mk = e.id === 'draft' ? mock(st) : null, sh = e.id === 'stash' && C(st).stash; return { id: e.id, titulo: e.t, quien: e.q, texto: e.id === 'traspaso' && C(st).traspaso ? C(st).traspaso.texto : sh ? st.equipos[sh.equipoId].nombre + ' te ha elegido con el número ' + sh.n + (sh.ncaa ? '. Puedes firmar ya tu contrato de novato o jugar un año en Europa.' : '. Puedes irte ya o seguir un año más en ' + st.equipos[YO(st).equipoId].nombre + '.') + ' Si esperas, ellos conservan tus derechos: serán los únicos que puedan ficharte en la NBA y te llamarán el próximo verano.' : mk ? 'Se abre el plazo del draft. Las previsiones te sitúan en: ' + mk.proyeccion.toLowerCase() + (mk.pick <= 60 ? ' (puesto ' + mk.pick + ' de 60)' : '') + '. Tienes ' + YO(st).ovr + ' de nivel y ' + YO(st).pot + ' de potencial.' : e.d, opciones: e.ops.map((o, i) => ({ i, t: o.t, d: o.d })) }; }); }
   function elegirEvento(st, id, i) {
     const c = C(st), p = YO(st), idx = c.pend.findIndex(x => x.id === id), e = EVENTOS.find(x => x.id === id);
     if (idx < 0 || !e || !e.ops[i]) return { ok: false, motivo: 'Decisión no disponible.' };
@@ -657,9 +699,19 @@
       }
       const d = Math.round((c.ojeoExtra - extra0) * 10) / 10; out.push('valoración ' + (d >= 0 ? '+' : '') + d);
     }
+    if (ef.traspaso && c.traspaso) {
+      const t = c.traspaso, ag = AGENTES[c.agente.perfil]; c.traspaso = null;
+      const forzado = ef.traspaso === 'frenar' && GM.rng.next() >= 0.35 + (ag.nivel ? 0.12 : 0) + (ag.ren ? 0.15 : 0) + (rol(st) === 'Titular' ? 0.2 : 0);
+      if (ef.traspaso === 'aceptar' || forzado) { const r = ejecutarTraspaso(st, t); out.push(forzado ? 'el club insiste y te vas a ' + st.equipos[t.a].nombre : 'te traspasan a ' + st.equipos[t.a].nombre); if (!r.ok) out.push(r.motivo); }
+      else if (ef.traspaso === 'frenar') { c.hitos.unshift({ fecha: st.fecha, texto: 'Tu representante frena el traspaso a ' + st.equipos[t.a].nombre + '.' }); out.push('te quedas en ' + st.equipos[t.de].nombre); }
+      else { c.moral = U.clamp(c.moral - 10, 0, 100); c.fama = U.clamp(c.fama - 1.5, 0, 100); c.tensionClub = (c.tensionClub || 0) + 1; c.hitos.unshift({ fecha: st.fecha, texto: 'Te niegas a que te traspasen a ' + st.equipos[t.a].nombre + ': el club no lo olvidará.' }); out.push('te quedas, pero la relación con el club se resiente'); }
+    }
     if (ef.stash && c.stash) {
       if (ef.stash === 'ir') { irNBA(st, c.stash.equipoId, c.stash.contrato); out.push('te vas a la NBA'); }
-      else { c.derechos = { equipoId: c.stash.equipoId, n: c.stash.n, temporada: c.stash.temporada }; c.hitos.unshift({ fecha: st.fecha, texto: 'Decides seguir un año más en Europa; ' + st.equipos[c.stash.equipoId].nombre + ' guarda tus derechos.' }); c.stash = null; out.push('un año más en Europa'); }
+      else {
+        const ncaa = c.stash.ncaa; c.derechos = { equipoId: c.stash.equipoId, n: c.stash.n, temporada: c.stash.temporada }; c.hitos.unshift({ fecha: st.fecha, texto: 'Decides jugar un año en Europa; ' + st.equipos[c.stash.equipoId].nombre + ' guarda tus derechos.' }); c.stash = null; out.push('un año más en Europa');
+        if (ncaa) { c.fase = 'libre'; p.equipoId = null; p.libre = true; p.contrato = { salario: 0, hasta: 0 }; c.ofertas = []; generarOfertas(st); }
+      }
     }
     if (ef.draft !== undefined) { c.declarado = ef.draft; c.hitos.unshift({ fecha: st.fecha, texto: ef.draft ? 'Te presentas al draft de la NBA.' : 'Decides esperar un año para el draft.' }); out.push(ef.draft ? 'te presentas al draft' : 'esperas un año'); }
     c.pend.splice(idx, 1); c.res.push({ id, i, fecha: st.fecha }); if (c.res.length > 40) c.res.shift();
@@ -671,5 +723,5 @@
     return a && FOCOS.tiro.length === 3 && TIPOS_VIV.atico.base > TIPOS_VIV.piso.base;
   }
   GM.bus.on('partida:cargada', function () { const st = GM.state; if (st && st.modo === 'carrera' && st.carrera) { instalaFama(st.carrera); if (!st.carrera.clubes) st.carrera.clubes = {}; actualizaTier(st); } });
-  GM.register('carrera', { resumenJuvenil, jugarJuvenil, EVENTOS_IDS: () => EVENTOS.map(e => e.id), informeOjeadores, legado, progresoAnual, elegibleDraft, avisoDraft, ajustarPot, potEstado, POT_MAX, gradoFama, estatusClub, impacto, GRADOS, ESTATUS, instalaFama, invitarEquipo, TIPOS_VIV, COCHES, barriosVivienda, precioVivienda, comprarVivienda, gestionarPropiedad, comprarCoche, crearFundacion, fijarAporte, estado, stats, rol, liga, retrato, entrenar, declararse, mock, preDraft, postDraft, preCierre, generarOfertas, aceptar, cerrar, retirarse, eventos, elegirEvento, nuevaPartida, selfTest, AGENTES, ORIGENES, NOMLIGA, NIVEL, MIN, FOCOS, INTENS });
+  GM.register('carrera', { crearTraspaso, ejecutarTraspaso, resumenJuvenil, jugarJuvenil, EVENTOS_IDS: () => EVENTOS.map(e => e.id), informeOjeadores, legado, progresoAnual, elegibleDraft, avisoDraft, ajustarPot, potEstado, POT_MAX, gradoFama, estatusClub, impacto, GRADOS, ESTATUS, instalaFama, invitarEquipo, TIPOS_VIV, COCHES, barriosVivienda, precioVivienda, comprarVivienda, gestionarPropiedad, comprarCoche, crearFundacion, fijarAporte, estado, stats, rol, liga, retrato, entrenar, declararse, mock, preDraft, postDraft, preCierre, generarOfertas, aceptar, cerrar, retirarse, eventos, elegirEvento, nuevaPartida, selfTest, AGENTES, ORIGENES, NOMLIGA, NIVEL, MIN, FOCOS, INTENS });
 })();

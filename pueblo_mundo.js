@@ -26,14 +26,24 @@
     const h = pisos * 3.1;
     caja(G, w, h, d, muro, 0, 0, 0);
     if (E.zocalo) caja(G, w + 0.05, 0.7, d + 0.05, E.zocalo, 0, 0, 0);
-    const post = E.postigos[(r() * E.postigos.length) | 0];
+    const post = E.postigos[(r() * E.postigos.length) | 0], vidrio = mat('#33444f', { roughness: 0.12, metalness: 0.6 }), marco = mat(E.clave === 'andaluz' ? '#f4f1ea' : '#e9e1d0'), piedra = mat('#b9ad98'), persiana = r() < 0.5;
     for (let p = 0; p < pisos; p++) for (let i = 0; i < Math.max(1, Math.floor(w / 2.4)); i++) {
       const x = -w / 2 + (i + 0.5) * w / Math.max(1, Math.floor(w / 2.4)); if (p === 0 && Math.abs(x) < 1) continue;
-      caja(G, 0.9, 1.2, 0.08, '#2a3440', x, p * 3.1 + 1.1, d / 2 + 0.02); caja(G, 0.35, 1.2, 0.06, post, x - 0.65, p * 3.1 + 1.1, d / 2 + 0.04); caja(G, 0.35, 1.2, 0.06, post, x + 0.65, p * 3.1 + 1.1, d / 2 + 0.04);
+      const yv = p * 3.1 + 1.1;
+      caja(G, 0.9, 1.2, 0.06, vidrio, x, yv, d / 2 + 0.02);                                   // cristal
+      caja(G, 1.1, 0.1, 0.12, marco, x, yv + 1.2, d / 2 + 0.05); caja(G, 1.2, 0.09, 0.26, piedra, x, yv - 0.1, d / 2 + 0.1);   // dintel y alféizar
+      caja(G, 0.05, 1.2, 0.1, marco, x, yv, d / 2 + 0.06); caja(G, 0.9, 0.05, 0.1, marco, x, yv + 0.6, d / 2 + 0.06);        // cruceta
+      caja(G, 0.34, 1.2, 0.07, post, x - 0.66, yv, d / 2 + 0.05); caja(G, 0.34, 1.2, 0.07, post, x + 0.66, yv, d / 2 + 0.05);
+      for (const s of [-1, 1]) for (let k = 0; k < 4; k++) caja(G, 0.3, 0.025, 0.02, '#2a2018', x + s * 0.66, yv + 0.2 + k * 0.28, d / 2 + 0.09);   // lamas
+      if (persiana && p === 0) caja(G, 0.95, 0.12, 0.1, '#6b5a48', x, yv + 1.3, d / 2 + 0.06);
       if (p > 0 && E.clave !== 'castellano' && r() < 0.5) caja(G, 1.3, 0.12, 0.5, '#3b3b3b', x, p * 3.1 + 0.9, d / 2 + 0.25);
     }
-    caja(G, 1.4, 2.3, 0.1, '#5a3c26', 0, 0, d / 2 + 0.03);
+    caja(G, 1.4, 2.3, 0.1, '#5a3c26', 0, 0, d / 2 + 0.03); caja(G, 1.7, 0.14, 0.16, marco, 0, 2.3, d / 2 + 0.06); caja(G, 0.14, 2.3, 0.16, marco, -0.78, 0, d / 2 + 0.06); caja(G, 0.14, 2.3, 0.16, marco, 0.78, 0, d / 2 + 0.06); caja(G, 1.9, 0.18, 0.7, piedra, 0, 0, d / 2 + 0.35);   // puerta con marco y escalón
+    { const fa = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.26, 0.14), new THREE.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffd27a, emissiveIntensity: 0.6 })); fa.position.set(1.1, 2.0, d / 2 + 0.1); G.add(fa); }
+    if (r() < 0.6) cil(G, 0.045, h - 0.2, '#6b6f73', w / 2 - 0.08, 0, d / 2 + 0.07, 6);   // bajante
+    if (r() < 0.45) { const hiedra = new THREE.Mesh(new THREE.PlaneGeometry(1.6 + r(), 2 + r() * 1.5), mat('#3f6f2f', { side: THREE.DoubleSide })); hiedra.position.set(-w / 2 + 1.6 + r() * (w - 3.2), 1.6 + r() * 1.2, d / 2 + 0.03); G.add(hiedra); }
     if (acento) { const tl = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w - 0.6, 4.5), 0.15, 1.1), mat(acento)); tl.position.set(0, 2.7, d / 2 + 0.5); tl.rotation.x = 0.25; G.add(tl); }
+    caja(G, w + 0.5, 0.2, d + 0.5, E.teja, 0, h - 0.12, 0);   // alero
     tejado(G, w, d, 1.6 + w * 0.06, E.teja, h);
     if (txt) { const s = rotulo(M, txt, acento || '#3a4a5a'); s.position.set(0, Math.min(h - 0.7, 3.6), d / 2 + 0.08); G.add(s); }
     return h;
@@ -57,9 +67,39 @@
       if (nv >= 2) { const lago = new THREE.Mesh(new THREE.CircleGeometry(1.4, 20).rotateX(-Math.PI / 2), mat('#4f9fd1')); lago.position.set(1.6, 0.06, -0.6); G.add(lago); }
       return;
     }
+    if (tipo === 'cine') {   // cine de pueblo: marquesina luminosa, carteles y, con la mejora, multicines
+      const w0 = 8, d0 = 7, h0 = 5.4 + nv * 0.6; caja(G, w0, h0, d0, muro, 0, 0, 0);
+      caja(G, w0 + 0.4, 0.4, d0 + 0.4, '#3a2a30', 0, h0, 0); caja(G, 6.4, 1.0, 1.6, '#7a1a22', 0, 3.6, d0 / 2 + 0.7); caja(G, 6.8, 0.12, 1.8, '#f4f1e8', 0, 4.6, d0 / 2 + 0.7);
+      for (let i = 0; i < 9; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), new THREE.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffd27a, emissiveIntensity: 1 })); l.position.set(-3 + i * 0.75, 3.62, d0 / 2 + 1.52); G.add(l); }
+      const s = rotulo(M, 'CINE', '#7a1a22'); s.scale.setScalar(2); s.position.set(0, h0 - 1.1, d0 / 2 + 0.08); G.add(s); caja(G, 0.4, 3, 0.4, '#7a1a22', w0 / 2 + 0.6, 2, d0 / 2 + 0.3);
+      caja(G, 2.2, 2.4, 0.1, '#1d2024', 0, 0, d0 / 2 + 0.05); [-3.3, -2.2, 2.2, 3.3].forEach((px, i) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.4), mat(['#c0392b', '#2f6f9e', '#f1bf00', '#2e7d32'][i], { side: THREE.DoubleSide })); p.position.set(px, 1.5, d0 / 2 + 0.07); G.add(p); });
+      if (nv >= 2) { caja(G, 6, h0 + 1.6, 6, muro, -w0 / 2 - 2.6, 0, -1.2); caja(G, 6.4, 0.4, 6.4, '#3a2a30', -w0 / 2 - 2.6, h0 + 1.6, -1.2); for (let i = 0; i < 3; i++) { const p = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), mat(['#2f6f9e', '#2e7d32', '#8e44ad'][i], { emissive: 0x111111 })); p.position.set(-w0 / 2 - 2.6, 1.4 + i * 1.5, 1.82); G.add(p); } }
+      return;
+    }
+    if (tipo === 'taller') {   // taller mecánico: nave con dos puertas de garaje, coche y neumáticos
+      caja(G, 8, 4, 6, '#b9bec2', 0, 0, 0); caja(G, 8.4, 0.3, 6.4, '#4a5560', 0, 4, 0); tejado(G, 8, 6, 1.2, '#6b7176', 4.3);
+      for (const x of [-2, 2]) { caja(G, 2.6, 2.7, 0.12, '#d9dde0', x, 0, 3.03); for (let k = 0; k < 6; k++) caja(G, 2.5, 0.04, 0.05, '#8a9096', x, 0.4 + k * 0.42, 3.1); }
+      const sg = rotulo(M, 'TALLER', '#c0392b'); sg.position.set(0, 3.3, 3.1); G.add(sg);
+      for (let i = 0; i < 4; i++) cil(G, 0.4, 0.28, '#1d2024', 3.4, i * 0.28, 4.4, 12); for (let i = 0; i < 2; i++) cil(G, 0.35, 0.9, '#2f6f9e', -3.6 + i * 0.8, 0, 4.4, 10);
+      if (GM.kit && GM.kit.coche) { const c = GM.kit.coche('#c0392b', 'turismo'); c.position.set(-1, 0, 5.6); c.rotation.y = 0.3; G.add(c); } else caja(G, 1.8, 1.0, 4, '#c0392b', -1, 0, 5.6);
+      if (nv >= 2) { caja(G, 4, 3, 0.1, mat('#8fb3c4', { transparent: true, opacity: 0.5 }), -2.6, 0, -3.05); caja(G, 4, 3, 5, '#d9dde0', -6.4, 0, 0); const sg2 = rotulo(M, 'Concesionario', '#2f6f9e'); sg2.position.set(-6.4, 3.4, 2.55); G.add(sg2); }
+      return;
+    }
+    if (tipo === 'industrial') {   // polígono: nave con cubierta en dientes de sierra, chimeneas, silos y muelle de carga
+      caja(G, 14, 6, 9, '#c9ced2', 0, 0, 0);
+      for (let i = 0; i < 4; i++) { const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(3.5, 0); sh.lineTo(3.5, 1.8); sh.lineTo(0, 0); const g2 = new THREE.ExtrudeGeometry(sh, { depth: 9.4, bevelEnabled: false }); g2.translate(-7 + i * 3.5, 6, -4.7); const m2 = new THREE.Mesh(g2, mat('#6f8793')); m2.castShadow = true; G.add(m2); }
+      for (const x of [-5.5, 5.5]) { cil(G, 0.7, 14, '#8a6a5a', x, 0, -2.8, 12); cil(G, 0.8, 0.5, '#d9d4cb', x, 14, -2.8, 12); for (let k = 0; k < 3; k++) { const hu = new THREE.Mesh(new THREE.SphereGeometry(0.9 + k * 0.4, 8, 6), mat('#b8bcc0', { transparent: true, opacity: 0.55 - k * 0.12 })); hu.position.set(x + 0.4 * k, 15.5 + k * 1.1, -2.8); G.add(hu); } }
+      for (const x of [-9, -11.4]) { cil(G, 1.4, 7, '#d9dde0', x, 0, -2, 14); const cp = new THREE.Mesh(new THREE.ConeGeometry(1.5, 1.4, 14), mat('#b9bec2')); cp.position.set(x, 7.7, -2); G.add(cp); }
+      caja(G, 5, 1.1, 3, '#7a7e82', 3, 0, 6.2); caja(G, 2.2, 2.4, 6, '#2f6f9e', 3, 1.1, 8.4); caja(G, 2.2, 2.2, 2, '#e8e2d4', 3, 1.1, 11.8);
+      for (let i = 0; i < 5; i++) caja(G, 1.8, 1.2, 1.4, ['#c0392b', '#2f6f9e', '#e1b81c'][i % 3], -6 + (i % 3) * 1.9, (i / 3 | 0) * 1.2, 7.4);
+      const sg = rotulo(M, nv >= 3 ? 'Parque ' + (club.siglas || '') : nv >= 2 ? 'Fábrica de balones' : 'Polígono', '#2f6f9e'); sg.scale.setScalar(1.7); sg.position.set(0, 5, 4.58); G.add(sg);
+      if (nv >= 3) { caja(G, 6, 7, 5, mat('#8fb3c4', { metalness: 0.6, roughness: 0.15 }), 11, 0, 5); caja(G, 6.4, 0.3, 5.4, '#4a5560', 11, 7, 5); }
+      for (let i = 0; i < 12; i++) cil(G, 0.04, 1.4, '#9aa3a8', -8 + i * 1.5, 0, 12.4, 5); caja(G, 18, 0.05, 0.05, '#9aa3a8', 0, 1.3, 12.4);
+      return;
+    }
     const DEF = {   // [ancho, fondo, plantas base, color de acento]
       bar: [6, 6, 1, c1], tienda: [6, 6, 1, c1], escuela: [7, 6, 1, '#2f6f9e'], ambulatorio: [7, 6, 1, '#c0392b'], polideportivo: [7, 7, 1, c1], hotel: [7, 6, 2, '#7a2f22'],
-      pabellon: [7, 7, 2, c1], biblioteca: [6, 6, 1, '#3c6e47'], centrodia: [7, 6, 1, '#8a6d3b'], casapadres: [6, 5, 1, null], casaamigos: [6, 5, 1, null], micasa: [7, 6, 2, null]
+      pabellon: [7, 7, 2, c1], panaderia: [6, 5, 1, '#c98d4f'], restaurantep: [7, 6, 1, '#7a2f22'], biblioteca: [6, 6, 1, '#3c6e47'], centrodia: [7, 6, 1, '#8a6d3b'], casapadres: [6, 5, 1, null], casaamigos: [6, 5, 1, null], micasa: [7, 6, 2, null]
     }[tipo] || [6, 6, 1, null];
     if (tipo === 'polideportivo' || tipo === 'pabellon') {   // nave con cubierta curva
       const h = 4 + nv * 1.2; caja(G, DEF[0], h, DEF[1], muro, 0, 0, 0);
@@ -71,6 +111,8 @@
     const pisos = DEF[2] + (nv - 1);
     bloque(G, M, E, DEF[0], DEF[1], pisos, muro, tipo === 'casapadres' || tipo === 'casaamigos' || tipo === 'micasa' ? null : nombre, DEF[3], r);
     if (tipo === 'micasa' && nv >= 2) { caja(G, 3.2, 0.04, 2, '#3ea6d6', -1.6, 0.02, -3.6); caja(G, 0.08, 2.6, 0.08, '#d0d4d8', 2.4, 0, -4.2); caja(G, 0.9, 0.6, 0.05, '#ffffff', 2.4, 2.6, -4.15); }
+    if (tipo === 'panaderia') { caja(G, 0.6, 1.4, 0.6, muro, 1.8, pisos * 3.1, -1.4); cil(G, 0.3, 0.5, '#6b6f73', 1.8, pisos * 3.1 + 1.4, -1.4, 8); for (let i = 0; i < 4; i++) caja(G, 0.3, 0.1, 0.5, ['#c98d4f', '#b87a3a'][i % 2], -1.2 + i * 0.7, 0.9, 3.1); }
+    if (tipo === 'restaurantep') for (let i = 0; i < 3; i++) { cil(G, 0.45, 0.75, '#f4f1ea', -2 + i * 2, 0, 4.2, 12); const so = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.4, 10), mat(['#7a2f22', '#c0392b', '#f39c12'][i])); so.position.set(-2 + i * 2, 2.5, 4.2); G.add(so); cil(G, 0.03, 2.4, '#555', -2 + i * 2, 0.75, 4.2, 5); }
     if (tipo === 'ambulatorio') { caja(G, 0.9, 0.25, 0.06, '#d62d2d', 2.4, pisos * 3.1 - 1, DEF[1] / 2 + 0.06); caja(G, 0.25, 0.9, 0.06, '#d62d2d', 2.4, pisos * 3.1 - 1.33, DEF[1] / 2 + 0.06); }
     if (tipo === 'casapadres' || tipo === 'casaamigos' || tipo === 'micasa') {   // valla y jardín
       [[-3.2, 0, 0.08, 6.6], [3.2, 0, 0.08, 6.6]].forEach(q => caja(G, q[2], 0.9, q[3], '#ffffff', q[0], 0, 0.6));
@@ -138,9 +180,11 @@
   const LOTES = [
     ['escuela', 13, -17, 9, 8], ['canasta', 15, -28, 10, 7], ['ambulatorio', 27, -15, 9, 8], ['tienda', 10, 17, 8, 7],
     ['parque', -19, 9, 11, 9], ['bar', -9, 14, 7, 7], ['biblioteca', -18, -13, 8, 7], ['centrodia', 28, -27, 9, 7],
-    ['casapadres', -14, 31, 9, 8], ['casaamigos', 36, -20, 8, 8], ['micasa', -30, -24, 10, 9],
+    ['casapadres', -14, 31, 9, 8], ['casaamigos', 36, -20, 8, 8], ['micasa', -33, -19, 9, 8],
     ['polideportivo'].concat(pFuera(Math.PI / 2 - 0.75, 18), [12, 10, true]), ['pabellon'].concat(pFuera(Math.PI / 2 + 0.75, 18), [12, 12, true]),
-    ['hotel'].concat(pFuera(-0.05, 17), [9, 9, true])
+    ['hotel'].concat(pFuera(-0.05, 17), [9, 9, true]),
+    ['cine', -27, 18, 10, 9], ['panaderia', 4, 25, 7, 6], ['restaurantep'].concat(pFuera(Math.PI / 2 + 0.32, 15), [8, 7, true]),
+    ['taller'].concat(pFuera(0.5, 14), [10, 8, true]), ['industrial'].concat(pFuera(-0.62, 36), [18, 13, true])   // el polígono, un poco apartado
   ];
   // Relieve: llano en la meseta y, fuera, laderas que bajan a un valle; montañas al fondo
   function hash2(x, z) { let h = (Math.imul(x | 0, 374761393) + Math.imul(z | 0, 668265263)) >>> 0; h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; return (h ^ (h >>> 16)) / 4294967296; }
@@ -362,8 +406,8 @@
       if (b.nivel || b.obra) G.bloquea(x - Math.min(w, d) / 2 + 0.3, z - Math.min(w, d) / 2 + 0.3, x + Math.min(w, d) / 2 - 0.3, z + Math.min(w, d) / 2 - 0.3);
       const zx = x + fx * (d / 2 + 0.9), zz = z + fz * (d / 2 + 0.9);
       // El bar y las casas de los tuyos, una vez construidos, tienen interior (interiores.js) y se vuelve a su puerta
-      const INT = { bar: 'bar_pueblo', casapadres: 'casa_padres', casaamigos: 'casa_amigos', micasa: 'casa_pueblo' }[tipo], dentro = INT && b.nivel > 0 && GM.interiores;
-      zonas.push([Object.assign({ id: 'pueblo_' + tipo, nombre: b.nombre, accion: '', destino: {}, acciones: s2 => accionesLote(s2, tipo) }, dentro ? { irA: 'interior:' + INT, boton: tipo === 'bar' ? 'Entrar en el bar' : 'Entrar en casa' } : {}), zx, zz]);
+      const INT = { bar: 'bar_pueblo', casapadres: 'casa_padres', casaamigos: 'casa_amigos', micasa: 'casa_pueblo', escuela: 'escuela', biblioteca: 'biblioteca', tienda: 'tienda_pueblo', ambulatorio: 'ambulatorio', polideportivo: 'polideportivo', hotel: 'hotel', cine: 'cine', centrodia: 'centrodia', panaderia: 'panaderia', taller: 'taller', restaurantep: 'restaurante_pueblo', industrial: 'industrial', pabellon: 'pabellon_pueblo' }[tipo], dentro = INT && b.nivel > 0 && GM.interiores && GM.interiores.TIPOS[INT];
+      zonas.push([Object.assign({ id: 'pueblo_' + tipo, nombre: b.nombre, accion: '', destino: {}, acciones: s2 => accionesLote(s2, tipo) }, dentro ? { irA: 'interior:' + INT, boton: { bar: 'Entrar en el bar', casapadres: 'Entrar en casa', casaamigos: 'Entrar en casa', micasa: 'Entrar en casa' }[tipo] || 'Entrar en ' + b.nombre.toLowerCase() } : {}), zx, zz]);
       if (dentro) (S.puertas = S.puertas || {})['interior:' + INT] = { x: zx + fx * 1.4, z: zz + fz * 1.4, ry: Math.atan2(fx, fz) };   // un poco fuera del círculo
       S.lotes[tipo] = { x, z, zx, zz, fx, fz, w, d };
     });
@@ -374,6 +418,17 @@
     zonas.push([{ id: 'pueblo_bus', nombre: 'Autobús a ' + club.ciudad, accion: 'Viajar a la ciudad de tu club', destino: {}, irA: 'calle', boton: 'Coger el autobús a ' + club.ciudad }, PS[0] - 2.5, PS[1] + 9]);
     (S.puertas = S.puertas || {}).calle = { x: PS[0] - 2.5, z: PS[1] + 7.6, ry: Math.PI };
     zonas.push([{ id: 'pueblo_salir', nombre: 'Salir del pueblo', accion: 'Volver al juego', destino: {}, acciones: () => [{ id: 'salir', t: 'Volver', d: 'Sales del pueblo.', disponible: true, fn: () => { setTimeout(() => GM.sede.cerrar(), 50); return { ok: true, texto: 'Hasta pronto' }; } }] }, PS[0] - 1, PS[1] + 26]);
+    // Vehículos para moverse por el pueblo: bicis de siempre y, con la carretera o un pueblo grande, una vespa (junto a la plaza)
+    { const U3 = GM.urbano; let sitio = null;
+      for (const [vx, vz] of [[5, 13], [-3, 14], [9, 12], [-9, 12], [13, 8], [-14, 5], [6, -13]]) { const R = { x: vx, z: vz, w: 5, d: 3, ry: 0 }; if (O.libre(R)) { sitio = [vx, vz, R]; break; } }
+      if (U3 && sitio) { const [vx, vz, R] = sitio, g = new THREE.Group(); g.position.set(vx, 0, vz); W.add(g); O.marca(R, 2); G.bloquea(vx - 2.5, vz - 1.5, vx + 2.5, vz + 1.5);
+        caja(g, 4.6, 0.08, 0.5, '#3a4048', 0, 0, 0.9); for (let i = 0; i < 3; i++) { const b = U3.bici(i === 1 ? '#e9e5da' : '#d62d2d'); b.position.set(-1.7 + i * 0.7, 0, 0.2); b.rotation.y = 0.0; g.add(b); }
+        const mo = U3.moto('#2f8f7a'); mo.position.set(1.4, 0, 0.1); mo.rotation.y = 0.3; g.add(mo);
+        const carretera = (ed('carretera') || {}).nivel || 0, motoOk = carretera >= 1 || nivel >= 3;
+        zonas.push([{ id: 'pueblo_vehiculos', nombre: 'Bicis y vespa del pueblo', accion: '', destino: {}, acciones: s2 => { const B = GM.ciudadBarrios, S0 = GM.sede._estado && GM.sede._estado(), en = S0 && S0.yo && S0.yo.bici;
+          return en ? [{ id: 'dejar', t: 'Dejar el vehículo', d: 'Vuelves a ir andando.', disponible: true, fn: () => B.bici(false) }]
+            : [{ id: 'bici', t: 'Coger una bici', d: 'Vas unas dos veces y media más rápido.', disponible: true, fn: () => B.bici(true, s2, 'bici') },
+              { id: 'moto', t: 'Subir a la vespa', d: motoOk ? 'Cuatro veces más rápido que andando.' : 'Hace falta que arreglen la carretera o que el pueblo sea una villa.', disponible: motoOk, motivo: 'Aún no se puede: la carretera está sin arreglar y el pueblo es pequeño.', fn: () => B.bici(true, s2, 'moto') }]; } }, vx, vz + 2.6]); } }
     S.zonas = zonas.map(([sala, x, z]) => M.zona(W, sala, x, z, club));
     // Casas a lo largo de las calles: dentro de la muralla según el nivel; fuera, el pueblo crece con el nivel y con cada edificio que levantas.
     // Cada 3,6 m de calle y a cada lado se prueban tres tamaños y dos retranqueos; la primera que cabe se queda.
@@ -416,8 +471,8 @@
   function accionesPlaza(st) {
     const Pm = GM.mods.pueblo, conv = r => r.ok ? { ok: true, texto: (r.efectos || []).join(', ') || 'Hecho' } : r;
     return [{ id: 'visita', t: 'Visitar a la familia y a los vecinos', d: '0,8 mil €. Ánimo y cariño del pueblo.', disponible: true, fn: () => conv(Pm.visitar(st)) },
-      { id: 'clinic', t: 'Clínic con los niños', d: '2 mil €. Cariño del pueblo.', disponible: true, fn: () => conv(Pm.clinic(st)) },
-      { id: 'fiesta', t: 'Fiesta en tu honor', d: '15 mil €. Mucho cariño y algo de reputación.', disponible: true, fn: () => conv(Pm.fiesta(st)) }].concat(accionesLote(st, 'plaza'));
+      { id: 'clinic', t: 'Clínic con los niños', d: 2 * Pm.estado(st).nivel + ' mil €. Cariño del pueblo.', disponible: true, fn: () => conv(Pm.clinic(st)) },
+      { id: 'fiesta', t: 'Fiesta en tu honor', d: Math.round(15 * Math.pow(Pm.estado(st).nivel, 1.4)) + ' mil €. Mucho cariño y algo de reputación.', disponible: true, fn: () => conv(Pm.fiesta(st)) }].concat(accionesLote(st, 'plaza'));
   }
   // Vecinos y obreros
   const MODELOS = ['h-casual_2', 'm-casual', 'h-farmer', 'm-formal', 'h-beach', 'm-adventurer', 'h-adventurer', 'm-punk'];

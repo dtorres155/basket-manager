@@ -222,12 +222,12 @@
     return { ok: true, texto };
   }
   // Bici: más velocidad y una bici bajo tu personaje (se deja en cualquier estación o al cambiar de escena)
-  function bici(on, st) {
+  function bici(on, st, tipo) {
     const S = GM.sede._estado && GM.sede._estado(); if (!S || !S.yo) return { ok: false, motivo: 'No hay bicis ahora.' };
     const yo = S.yo; if (yo.biciObj) { yo.obj.remove(yo.biciObj); yo.biciObj = null; } yo.bici = !!on;
-    if (on) { if (st && st.modo === 'carrera' && st.carrera) st.carrera.dinero -= 0.001; const g = GM.urbano.bici('#d62d2d'); g.scale.setScalar(1 / yo.obj.scale.x); yo.obj.add(g); yo.biciObj = g; }
+    if (on) { if (st && st.modo === 'carrera' && st.carrera) st.carrera.dinero -= 0.001; const g = tipo === 'moto' ? GM.urbano.moto('#2f8f7a') : GM.urbano.bici('#d62d2d'); yo.velBici = g.userData.vel; g.scale.setScalar(1 / yo.obj.scale.x); yo.obj.add(g); yo.biciObj = g; }
     GM.sede.animar(yo, 'idle');
-    return { ok: true, texto: on ? 'Coges una bici' : 'Dejas la bici' };
+    return { ok: true, texto: on ? (tipo === 'moto' ? 'Subes a la moto' : 'Coges una bici') : 'Dejas el vehículo' };
   }
   // Obra de la ciudad: valla, cartel, estructura a medias y una grúa que gira
   function obraCiudad(ctx, g, rect, txt, H) {

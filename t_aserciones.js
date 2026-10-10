@@ -87,7 +87,7 @@ ok('draft: elegibilidad, informe de ojeadores y proyección', () => {
   p.edad = 23; assert.strictEqual(K.elegibleDraft(sc), false, 'con 23 ya no'); p.edad = 20;
   const o = K.informeOjeadores(sc); assert.ok(o >= -5 && o <= 6, 'informe acotado');
   p.ovr = 74; p.pot = 94; const alto = K.mock(sc).pick; p.ovr = 55; p.pot = 66; const bajo = K.mock(sc).pick;
-  assert.ok(alto <= 5, 'un 74/94 sale en el top 5 (' + alto + ')'); assert.ok(bajo > 50, 'un 55/66 apenas tiene sitio (' + bajo + ')');
+  assert.ok(alto <= 5, 'un 74/94 sale en el top 5 (' + alto + ')'); assert.ok(bajo > 40 && bajo > alto + 30, 'un 55/66 apenas tiene sitio (' + bajo + ')');
   // Retirada: el salón de la fama resume la carrera
   K.retirarse(sc); const lg = K.legado(sc);
   assert.ok(lg.veredicto && lg.pico >= 55 && lg.clubes !== undefined && typeof lg.salon === 'boolean');
@@ -112,12 +112,36 @@ ok('pueblo: invertir abre una obra y al terminar sube el nivel', () => {
   const fin = Pm.edificios(sc).find(b => b.tipo === 'parque'); assert.strictEqual(fin.nivel, 1, 'inaugurado'); assert.ok(!fin.obra);
   assert.ok(Pm.diasObra(5) >= 14 && Pm.diasObra(2000) <= 150);
 });
+// ---- La media sale de los atributos; potencial y salarios ----
+ok('jugadores: la media sale de los atributos y todo 80+ tiene un atributo de su nivel', () => {
+  const todos = Object.values(st.jugadores).filter(p => p.att); let mal = 0, sinPico = 0;
+  todos.forEach(p => { if (GM.ovrDe(p.att, p.pos) !== p.ovr) mal++; if (p.ovr >= 60 && p.ovr < 99 && Math.max.apply(null, Object.values(p.att)) < p.ovr) sinPico++; });
+  assert.strictEqual(mal, 0, 'media distinta de la que dicen los atributos: ' + mal); assert.strictEqual(sinPico, 0, 'jugadores sin ningún atributo a la altura de su media: ' + sinPico);
+  const q = GM.mkJugador('x', 3, 'Prueba', 'SF', 24, 200, 'ES', 'UE', 92, 94, 'E', 0, 0); assert.ok(Math.max.apply(null, Object.values(q.att)) >= 92);
+  GM.setOvr(q, 93, ['tiro3']); assert.strictEqual(GM.ovrDe(q.att, 'SF'), 93); GM.setOvr(q, 90); assert.strictEqual(GM.ovrDe(q.att, 'SF'), 90); assert.strictEqual(q.ovr, 90);
+});
+ok('potencial: pocas promesas de 90 en una clase del draft y el techo se frena con la edad', () => {
+  const clase = GM.mods.mercado.claseDraft(st); assert.ok(clase.filter(p => p.pot >= 90).length <= 5, 'demasiadas promesas de 90+'); assert.ok(clase.filter(p => p.pot >= 80).length <= 14); assert.ok(clase.every(p => p.pot <= 97));
+  const jv = GM.mkJugador('x', 4, 'Joven', 'SG', 20, 195, 'ES', 'UE', 60, 95, 'E', 0, 0); jv.esYo = false; jv.equipoId = st.clubId; st.jugadores['x-04'] = jv;
+  GM.mods.cantera.potAnual(st, jv); assert.ok(jv.pot <= jv.ovr + 17 + 2, 'el techo no puede estar tan lejos de la media a los 20 años: ' + jv.pot); delete st.jugadores['x-04'];
+});
+ok('salarios: la NBA paga mucho más que Europa y hay un tope por liga', () => {
+  const M = GM.mods.mercado, nba = st.ligas.NBA.equipos[0], eur = st.ligas.EUROLIGA.equipos[0], j = Object.values(st.jugadores).filter(p => p.ovr >= 88)[0];
+  const a = M.salarioPedido(st, j.id, nba), b = M.salarioPedido(st, j.id, eur); assert.ok(a > b * 5, 'la NBA paga ' + a + ' y la Euroliga ' + b); assert.ok(b <= 6e6 && a <= 62e6);
+});
+ok('famosos: pasan por la calle, se les puede charlar y con confianza proponerles algo', () => {
+  const sf = GM.newGame('joventut-badalona', 9, { modo: 'gestor', personaje: { nombre: 'Marc', apellido: 'Soler' } }); const Gn = GM.mods.gente;
+  let fa = null; for (let d = 0; d < 60 && !fa; d++) { sf.fecha = GM.util.addDays('2026-10-01', d * 7); fa = Gn.famososHoy(sf, 'calle')[0]; }
+  assert.ok(fa, 'algún famoso pasa por la calle'); assert.ok(Gn.personas(sf, 'calle').some(p => p.id === fa.id && p.famoso));
+  let f = Gn.ficha(sf, fa.id); assert.ok(f.acciones[0].fn().ok); assert.ok(!f.acciones[1].disponible, 'hace falta confianza');
+  sf.gente.rel[fa.id] = 60; f = Gn.ficha(sf, fa.id); assert.ok(f.acciones[1].disponible); assert.ok(f.acciones[1].fn().ok); assert.ok(!Gn.ficha(sf, fa.id).acciones[1].disponible, 'una vez al mes');
+});
 // ---- Gente de la calle: charlas y encargos ----
 ok('gente: charla semanal y encargo que se cumple con un partido', () => {
   GM.rng.seed(8); const sg = GM.newGame('joventut-badalona', 8, { modo: 'carrera', personaje: { nombre: 'Marc', apellido: 'Soler' }, carrera: { origen: 'europa', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
-  const Gn = GM.mods.gente, ps = Gn.personas(sg, 'calle');
+  const Gn = GM.mods.gente, ps = Gn.personas(sg, 'calle').filter(p => !p.famoso);
   assert.strictEqual(ps.length, 4); assert.strictEqual(ps.find(p => p.id === 'leyenda').nombre, 'Jordi Villacampa');
-  assert.strictEqual(Gn.personas(sg, 'pueblo').length, 2, 'en el pueblo: primer entrenador y alcalde');
+  assert.strictEqual(Gn.personas(sg, 'pueblo').filter(p => !p.famoso).length, 2, 'en el pueblo: primer entrenador y alcalde');
   const f = Gn.ficha(sg, 'leyenda'); assert.ok(f.acciones[0].fn().ok); assert.ok(!Gn.ficha(sg, 'leyenda').acciones[0].disponible, 'una charla por semana');
   const acepta = Gn.ficha(sg, 'leyenda').acciones.find(a => /^Aceptar encargo/.test(a.t)); assert.ok(acepta, 'ofrece un encargo'); acepta.fn();
   const e = Gn.estado(sg).encargo; assert.strictEqual(e.tipo, 'puntos'); const r0 = Gn.estado(sg).rel.leyenda;

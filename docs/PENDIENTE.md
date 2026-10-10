@@ -35,22 +35,22 @@
 - ~~Bici con animación de montarse y pedalear~~ (`ponerBici` y `pedalear` en sede3d.js): al coger una bici te sientas en el sillín con las manos en el manillar; al avanzar, las piernas suben y bajan, las ruedas giran y las bielas dan vueltas. Prueba: `node tools/bici_prueba.js`. Falta: animación de subirse.
 
 **Pueblo**
-- Exterior del pueblo muy detallado y con mejores texturas.
-- Más mejoras y construcciones: sitios en los que invertir (cine, hotel…), negocios que te gestionan vecinos o amigos, una zona industrial un poco apartada.
-- Vehículos para moverse dentro del pueblo (bici, etc.).
-- Las mejoras de los edificios también se ven por dentro.
-- Precios de las mejoras coherentes con los sueldos (ahora, al llegar a la NBA, se puede pagar todo de golpe).
+- ~~Exterior del pueblo más detallado~~ (pueblo_mundo.js, `bloque`): ventanas con cristal, marco, dintel, alféizar, cruceta y contraventanas con lamas; puertas con marco, escalón y farol; aleros, bajantes, hiedra y los edificios nuevos con su dibujo (cine con marquesina de bombillas, taller, polígono con dientes de sierra, chimeneas y silos). Las texturas reales ya estaban en muros, tejas, calles y plaza.
+- ~~Más construcciones~~ (pueblo.js): cine (2 niveles, hasta multicines), polígono industrial apartado (3 niveles, con fábrica de balones y parque empresarial) y negocios que llevan otros: panadería (la lleva una vecina o un vecino), taller y restaurante (un amigo de tu agenda; sube la relación cada mes y te dan una parte de lo que ganan). Falta el hotel en 3D con más pisos.
+- ~~Vehículos para moverse por el pueblo~~: junto a la plaza, bicis y una vespa (4 veces más rápida que andando; hace falta la carretera arreglada o un pueblo de nivel 3). `GM.urbano.moto`, `ciudadBarrios.bici(on, st, 'moto')`. Falta el estacionamiento en cada edificio.
+- ~~Las mejoras se ven por dentro~~ (`interiores_pueblo.js`): cada edificio tiene interior y añade estancias según su nivel (bar: museo de la peña; casa de tus padres: casa nueva con huerto; escuela: vestuarios y sala de vídeo; ambulatorio: quirófano y habitaciones; polideportivo: piscina y rehabilitación; cine: salas 2 y 3; hotel: suite y spa; polígono: laboratorio…).
+- ~~Precios acordes con los sueldos~~: los edificios cuestan lo que costarían (canasta 6 mil €, bar 60, escuela 350, ambulatorio 2,5 M€, polideportivo 5 M€, hotel 7 M€, pabellón 14 M€; el nivel n cuesta ×n^1,6), las obras duran más, la fiesta y el clínic cuestan más cuanto más grande es el pueblo y la renta de los negocios es proporcional a su coste.
 
 **Interiores**
-- Negocios y edificios por dentro más vivos, realistas, grandes y detallados, con varias habitaciones, personalidad y verosimilitud (instalaciones amplias y variadas según lo que dice el edificio).
+- ~~Interiores más grandes y con varias habitaciones~~ (`interiores_pueblo.js`): bar, casas, restaurante, gimnasio, barbería, tienda, peña y ayuntamiento tienen estancias anexas (cocinas, dormitorios, bodega, despachos, almacén, vestuarios…) con su gente; 13 interiores nuevos en el pueblo. Prueba: `node tools/pueblo_nuevo.js`.
 
 **Carrera y jugadores**
-- Potencial mal calibrado: con los rookies y la regeneración casi todo el mundo acaba en 94-99. Recalibrar el potencial de todas las ligas.
-- La media general debe salir de los atributos: un 92 sin ningún atributo de 92 o más no tiene sentido. Recalibrar la relación entre media y atributos.
-- Draft como evento: aviso de quién te elige; esa temporada eliges entre ir (o quedarte) en Europa o jugar con el equipo de la NBA que te eligió. Los derechos se conservan (si vuelves a la NBA, ese equipo tiene tus derechos y derecho de tanteo).
-- Traspasos en los que te ves envuelto, en verano y en el mercado de invierno.
-- Salarios más realistas entre Europa y la NBA.
-- Conocer a otra gente famosa.
+- ~~Potencial recalibrado~~: la clase del draft trae como mucho 4-5 promesas de 90+ (ovr 52-70, techo 56-95), el techo de un joven nunca está más lejos de su media de lo que permite la edad (20 puntos a los 19, 5 a los 24), se frena por encima de 86 y el talento tardío da hasta +2,6 al año. Hay retiradas a partir de los 34 y relevo generacional con jóvenes de cada país (`renovarLigas` en cantera.js). Con `node tools/sim_ligas.js 8`: 3-8 jugadores de 90+ y 0-2 techos de 95+ durante ocho temporadas (antes de 4 a 28 techos de 95+).
+- ~~La media sale de los atributos~~ (datos_util.js): ovr = media de los 10 atributos + un ajuste por posición (`GM.ovrDe`); los perfiles tienen picos (un 92 siempre tiene algo de 92 o más: `picoAtt`); cualquier subida o bajada pasa por `GM.setOvr`. Migración 4 de guardado.js ajusta las partidas viejas. La calibración del simulador no cambia (NBA 115,8 puntos).
+- ~~Draft como evento~~: al ser elegido (también desde la universidad) llega el aviso con la franquicia y el número (noticia, mensaje del representante y evento «Te han elegido»): firmas ya o juegas un año en Europa con tus derechos guardados. Derecho de tanteo: mientras otro equipo tenga tus derechos, ninguna otra franquicia de la NBA te ofrece contrato y ellos te llaman el verano siguiente.
+- ~~Traspasos en los que te ves envuelto~~ (carrera.js, `crearTraspaso`): ventanas de verano (8 y 22 de julio, 12 de agosto) e invierno (6 y 20 de enero); más probable si no juegas o si ya te negaste antes. Decides entre aceptar, pedir a tu representante que lo frene (depende de su perfil y de tu papel) o negarte (ánimo -10, tensión con el club). Falta que la tensión te quite minutos.
+- ~~Salarios más realistas~~: techo por liga (NBA 62 M€, Euroliga 6, ACB 2,5, BSL 3…), escala de novatos más realista (nº 1 ~12 M€, nº 15 ~6, nº 30 ~2,8; segunda ronda 2 M€), contrato de dos vías 0,65 M€ y mínimo NBA 2,2 M€.
+- ~~Conocer a otra gente famosa~~ (gente.js): ocho famosos inventados por partida (cantante, actor, chef, futbolista, empresaria, presentador, tenista, creadora de contenido) que pasan por la calle (y en verano por el pueblo); se les charla y, con confianza 45, se les propone algo una vez al mes (partido, cena, vídeo, entrenamiento…) con premio en reputación, ánimo, forma o dinero; con 60 te escriben al móvil.
 
 ### Ideas para un mundo más vivo y un acabado profesional (oct 2026)
 **Mundo vivo**

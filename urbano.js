@@ -210,7 +210,25 @@
     g.add(bi);
     // Guardabarros traseros y luz
     caja(g, 0.07, 0.012, 0.5, cu, 0, 0.7, -0.52, 0, false);
-    g.userData.ruedas = [rt, dl]; g.userData.bielas = bi; g.traverse(m => { if (m.isMesh) m.castShadow = true; });
+    g.userData.ruedas = [rt, dl]; g.userData.bielas = bi; g.userData.puños = [[-0.3, 1.03, 0.3], [0.3, 1.03, 0.3]]; g.userData.zRef = 0.16; g.userData.asiento = 0.98; g.userData.vel = 2.5; g.traverse(m => { if (m.isMesh) m.castShadow = true; });
+    return g;
+  }
+
+  // ---------- Ciclomotor ----------
+  // Una vespa: carrocería redondeada, escudo delantero, sillín largo, faro y dos ruedas gruesas. Mira hacia +z; userData.ruedas para girarlas.
+  function moto(color) {
+    const g = new THREE.Group(), cu = mat(color || '#2f8f7a', { roughness: 0.35, metalness: 0.4 }), neg = mat('#1d2024', { roughness: 0.8 }), cro = mat('#c9d0d6', { roughness: 0.25, metalness: 0.9 });
+    const rueda = z => { const w = new THREE.Group(); w.position.set(0, 0.2, z); const n = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.06, 8, 16), neg); n.rotation.y = Math.PI / 2; w.add(n); const b = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.12, 10), cro); b.rotation.z = Math.PI / 2; w.add(b); g.add(w); return w; };
+    const rt = rueda(-0.55), dl = rueda(0.62);
+    const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.7, 6, 12), cu); cuerpo.rotation.x = Math.PI / 2; cuerpo.position.set(0, 0.45, -0.25); cuerpo.scale.set(1.3, 1, 1.1); g.add(cuerpo);
+    { const co = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), cu); co.position.set(0, 0.42, -0.72); co.scale.set(0.9, 0.8, 1.2); g.add(co); } const esc = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.7, 0.12), cu); esc.position.set(0, 0.62, 0.38); esc.rotation.x = -0.25; g.add(esc);
+    caja(g, 0.44, 0.1, 0.9, neg, 0, 0.62, -0.28); caja(g, 0.42, 0.06, 0.55, cu, 0, 0.18, 0.2);
+    tubo(g, [0, 0.45, 0.45], [0, 0.2, 0.62], 0.03, cro, 6); tubo(g, [0, 0.62, 0.38], [0, 1.0, 0.42], 0.03, cro, 6); tubo(g, [-0.3, 1.0, 0.42], [0.3, 1.0, 0.42], 0.02, cro, 6);
+    for (const s of [-1, 1]) { const gr = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.1, 6), neg); gr.rotation.z = Math.PI / 2; gr.position.set(s * 0.32, 1.0, 0.42); g.add(gr); }
+    const faro = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), new THREE.MeshStandardMaterial({ color: 0xfff6d6, emissive: 0xffe6a0, emissiveIntensity: 0.5 })); faro.position.set(0, 0.95, 0.5); g.add(faro);
+    const esp = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), cro); esp.position.set(0.3, 1.04, 0.38); g.add(esp);
+    g.traverse(m => { if (m.isMesh) m.castShadow = true; });
+    g.userData.ruedas = [rt, dl]; g.userData.puños = [[-0.3, 1.0, 0.42], [0.3, 1.0, 0.42]]; g.userData.zRef = 0.0; g.userData.asiento = 0.72; g.userData.vel = 4;
     return g;
   }
 
@@ -257,5 +275,5 @@
     return { x, z, ry, acceso, rect: r };
   }
 
-  GM.urbano = { arbusto, parterre, parche, anillo, disco, suelo: c => SUELOS[c](), cebra, luz, posiciones, farola, bordillo, bocaMetro, bici, paradaBici, libre, deco, tubo };
+  GM.urbano = { moto, arbusto, parterre, parche, anillo, disco, suelo: c => SUELOS[c](), cebra, luz, posiciones, farola, bordillo, bocaMetro, bici, paradaBici, libre, deco, tubo };
 })();

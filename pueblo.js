@@ -8,29 +8,35 @@
   const NIVELES = ['Aldea', 'Pueblo', 'Villa', 'Ciudad pequeña', 'Ciudad del baloncesto'], UMBRAL = [0, 16, 38, 68, 105];
   const NOMBRES = { ES: ['Vilanova de Sau', 'Torrelles del Monte', 'Castellar Alto', 'Sant Martí del Vall', 'Alcudia de la Sierra', 'Pozoblanco Nuevo', 'Fuente Clara'], US: ['Maple Creek', 'Rivers Bend', 'Cedar Falls', 'Oak Ridge'], FR: ['Saint-Aubin', 'Villeneuve', 'Les Arcs'], RS: ['Zlatibor', 'Novi Slatina'], GR: ['Nea Kallithea', 'Agios Pavlos'], IT: ['Borgo Alto', 'San Lorenzo'], LT: ['Kaunas Sodai'], DE: ['Neustadt', 'Burgdorf'], TR: ['Yeni Köy'] };
   const EDI = {
-    canasta: { n: 'Canasta de la plaza', req: 1, coste: 5, max: 3, niv: ['Canasta y suelo de cemento', 'Cancha pública con vallas', 'Cancha cubierta con gradas'], ef: { cariño: 0.4, fama: 0.02 }, uso: ['Echar un uno contra uno con los chavales', { moral: 2, cariño: 1.5 }] },
-    bar: { n: 'Bar de la peña', req: 1, coste: 12, max: 2, niv: ['Bar con pantalla', 'Sede de la peña con museo'], ef: { cariño: 0.5, moral: 0.2 }, uso: ['Tomar algo con la peña', { moral: 2.5, cariño: 1 }] },
-    escuela: { n: 'Escuela de baloncesto', req: 2, coste: 45, max: 3, niv: ['Escuela con un entrenador', 'Escuela con dos pistas', 'Academia de referencia regional'], ef: { cariño: 0.4, fama: 0.05 }, uso: ['Dar una clase a los pequeños', { cariño: 2, fama: 0.2 }] },
-    mural: { n: 'Mural y estatua', req: 2, coste: 20, max: 3, niv: ['Mural en la plaza', 'Mural y placa conmemorativa', 'Estatua de bronce'], ef: { fama: 0.12, cariño: 0.3 }, uso: ['Pasear por tu mural', { moral: 1.5, fama: 0.1 }] },
-    ambulatorio: { n: 'Ambulatorio', req: 3, coste: 110, max: 2, niv: ['Centro de salud', 'Hospital comarcal con tu nombre'], ef: { cariño: 0.6, fama: 0.08, moral: 0.2 }, uso: ['Visitar a los pacientes', { cariño: 2, fama: 0.2 }] },
-    polideportivo: { n: 'Polideportivo municipal', req: 3, coste: 160, max: 3, niv: ['Polideportivo básico', 'Polideportivo con piscina', 'Complejo deportivo con ciudad deportiva'], ef: { cariño: 0.5, fama: 0.1, dinero: 1.5 }, uso: ['Entrenar en el polideportivo', { xp: 0.06, moral: 1.5 }] },
-    tienda: { n: 'Tienda de deportes', req: 3, coste: 70, max: 2, niv: ['Tienda con tu camiseta', 'Tienda oficial con tu marca'], ef: { dinero: 4, fama: 0.05 }, uso: ['Firmar camisetas en la tienda', { fama: 0.3, cariño: 1 }] },
-    hotel: { n: 'Hotel y turismo', req: 4, coste: 260, max: 2, niv: ['Hotel rural', 'Gran hotel con balcón al pabellón'], ef: { dinero: 9, fama: 0.1 }, uso: ['Recibir a invitados del hotel', { fama: 0.4, moral: 1 }] },
-    pabellon: { n: 'Pabellón con tu nombre', req: 4, coste: 420, max: 2, niv: ['Pabellón municipal', 'Pabellón de 4.000 localidades'], ef: { cariño: 0.8, fama: 0.2 }, uso: ['Jugar un partido benéfico', { moral: 3, fama: 0.5, cariño: 3 }] },
+    canasta: { n: 'Canasta de la plaza', req: 1, coste: 6, max: 3, niv: ['Canasta y suelo de cemento', 'Cancha pública con vallas', 'Cancha cubierta con gradas'], ef: { cariño: 0.4, fama: 0.02 }, uso: ['Echar un uno contra uno con los chavales', { moral: 2, cariño: 1.5 }] },
+    bar: { n: 'Bar de la peña', req: 1, coste: 60, max: 2, niv: ['Bar con pantalla', 'Sede de la peña con museo'], ef: { cariño: 0.5, moral: 0.2 }, uso: ['Tomar algo con la peña', { moral: 2.5, cariño: 1 }] },
+    escuela: { n: 'Escuela de baloncesto', req: 2, coste: 350, max: 3, niv: ['Escuela con un entrenador', 'Escuela con dos pistas', 'Academia de referencia regional'], ef: { cariño: 0.4, fama: 0.05 }, uso: ['Dar una clase a los pequeños', { cariño: 2, fama: 0.2 }] },
+    mural: { n: 'Mural y estatua', req: 2, coste: 40, max: 3, niv: ['Mural en la plaza', 'Mural y placa conmemorativa', 'Estatua de bronce'], ef: { fama: 0.12, cariño: 0.3 }, uso: ['Pasear por tu mural', { moral: 1.5, fama: 0.1 }] },
+    ambulatorio: { n: 'Ambulatorio', req: 3, coste: 2500, max: 2, niv: ['Centro de salud', 'Hospital comarcal con tu nombre'], ef: { cariño: 0.6, fama: 0.08, moral: 0.2 }, uso: ['Visitar a los pacientes', { cariño: 2, fama: 0.2 }] },
+    polideportivo: { n: 'Polideportivo municipal', req: 3, coste: 5000, max: 3, niv: ['Polideportivo básico', 'Polideportivo con piscina', 'Complejo deportivo con ciudad deportiva'], ef: { cariño: 0.5, fama: 0.1, dinero: 12 }, uso: ['Entrenar en el polideportivo', { xp: 0.06, moral: 1.5 }] },
+    tienda: { n: 'Tienda de deportes', req: 3, coste: 450, max: 2, niv: ['Tienda con tu camiseta', 'Tienda oficial con tu marca'], ef: { dinero: 3, fama: 0.05 }, uso: ['Firmar camisetas en la tienda', { fama: 0.3, cariño: 1 }] },
+    hotel: { n: 'Hotel y turismo', req: 4, coste: 7000, max: 2, niv: ['Hotel rural', 'Gran hotel con balcón al pabellón'], ef: { dinero: 28, fama: 0.1 }, uso: ['Recibir a invitados del hotel', { fama: 0.4, moral: 1 }] },
+    pabellon: { n: 'Pabellón con tu nombre', req: 4, coste: 14000, max: 2, niv: ['Pabellón municipal', 'Pabellón de 4.000 localidades'], ef: { cariño: 0.8, fama: 0.2 }, uso: ['Jugar un partido benéfico', { moral: 3, fama: 0.5, cariño: 3 }] },
+    cine: { n: 'Cine', req: 3, coste: 900, max: 2, niv: ['Cine de pueblo con una sala', 'Multicines con tres salas'], ef: { cariño: 0.5, dinero: 6, fama: 0.05 }, uso: ['Ir al cine con los amigos', { moral: 3, cariño: 1, amigos: 3 }] },
+    industrial: { n: 'Polígono industrial', req: 4, coste: 3500, max: 3, niv: ['Naves y talleres a las afueras', 'Polígono con fábrica de balones', 'Parque empresarial con tu marca'], ef: { cariño: 0.7, dinero: 20, fama: 0.1 }, uso: ['Visitar la fábrica y saludar a los operarios', { fama: 0.3, cariño: 2 }] },
+    // Negocios que llevan otras personas del pueblo: tú pones el dinero y ellos lo gestionan (te dan una parte cada mes)
+    panaderia: { n: 'Panadería', req: 2, coste: 180, max: 2, gestor: 'vecino', niv: ['Panadería del pueblo', 'Panadería con obrador y cafetería'], ef: { cariño: 0.6, dinero: 1.2 }, uso: ['Tomar el pan recién hecho', { moral: 2, cariño: 1.5 }] },
+    taller: { n: 'Taller mecánico', req: 2, coste: 220, max: 2, gestor: 'amigo', niv: ['Taller de barrio', 'Taller con concesionario'], ef: { cariño: 0.3, dinero: 2 }, uso: ['Pasarte por el taller', { moral: 2, cariño: 1, amigos: 3 }] },
+    restaurantep: { n: 'Restaurante', req: 3, coste: 400, max: 2, gestor: 'amigo', niv: ['Restaurante de cocina de siempre', 'Restaurante con estrella'], ef: { cariño: 0.4, dinero: 4, fama: 0.04 }, uso: ['Comer en el restaurante de tu amigo', { moral: 3, cariño: 1, amigos: 4 }] },
     // Servicios públicos: no dan dinero, sí cariño del pueblo y calidad de vida
-    plaza: { n: 'Plaza mayor', cat: 'publico', req: 1, coste: 8, max: 2, niv: ['Plaza empedrada con bancos', 'Plaza con fuente y arcos iluminados'], ef: { cariño: 0.5 }, uso: ['Pasear por la plaza y saludar', { moral: 1.5, cariño: 1 }] },
-    parque: { n: 'Parque', cat: 'publico', req: 1, coste: 10, max: 2, niv: ['Parque con columpios', 'Parque con estanque y pista de patinaje'], ef: { cariño: 0.4, moral: 0.2 }, uso: ['Jugar con los niños en el parque', { moral: 2, cariño: 1 }] },
-    alumbrado: { n: 'Alumbrado y calles', cat: 'publico', req: 2, coste: 25, max: 2, niv: ['Farolas nuevas en el casco antiguo', 'Calles adoquinadas e iluminadas'], ef: { cariño: 0.4 }, uso: ['Pasear de noche por el casco antiguo', { moral: 1.5 }] },
-    biblioteca: { n: 'Biblioteca', cat: 'publico', req: 2, coste: 35, max: 2, niv: ['Biblioteca municipal', 'Biblioteca con aula de estudio'], ef: { cariño: 0.4, fama: 0.03 }, uso: ['Leer cuentos a los niños', { cariño: 1.5, moral: 1 }] },
-    centrodia: { n: 'Centro de día', cat: 'publico', req: 3, coste: 60, max: 2, niv: ['Centro de día para mayores', 'Residencia con jardín'], ef: { cariño: 0.6 }, uso: ['Jugar a las cartas con los abuelos', { moral: 2, cariño: 2 }] },
-    carretera: { n: 'Carretera y autobús', cat: 'publico', req: 3, coste: 90, max: 2, niv: ['Carretera arreglada hasta la ciudad', 'Línea de autobús diaria'], ef: { cariño: 0.3, dinero: 1 }, uso: ['Inaugurar la parada del autobús', { fama: 0.1, cariño: 1 }] },
+    plaza: { n: 'Plaza mayor', cat: 'publico', req: 1, coste: 150, max: 2, niv: ['Plaza empedrada con bancos', 'Plaza con fuente y arcos iluminados'], ef: { cariño: 0.5 }, uso: ['Pasear por la plaza y saludar', { moral: 1.5, cariño: 1 }] },
+    parque: { n: 'Parque', cat: 'publico', req: 1, coste: 120, max: 2, niv: ['Parque con columpios', 'Parque con estanque y pista de patinaje'], ef: { cariño: 0.4, moral: 0.2 }, uso: ['Jugar con los niños en el parque', { moral: 2, cariño: 1 }] },
+    alumbrado: { n: 'Alumbrado y calles', cat: 'publico', req: 2, coste: 320, max: 2, niv: ['Farolas nuevas en el casco antiguo', 'Calles adoquinadas e iluminadas'], ef: { cariño: 0.4 }, uso: ['Pasear de noche por el casco antiguo', { moral: 1.5 }] },
+    biblioteca: { n: 'Biblioteca', cat: 'publico', req: 2, coste: 480, max: 2, niv: ['Biblioteca municipal', 'Biblioteca con aula de estudio'], ef: { cariño: 0.4, fama: 0.03 }, uso: ['Leer cuentos a los niños', { cariño: 1.5, moral: 1 }] },
+    centrodia: { n: 'Centro de día', cat: 'publico', req: 3, coste: 900, max: 2, niv: ['Centro de día para mayores', 'Residencia con jardín'], ef: { cariño: 0.6 }, uso: ['Jugar a las cartas con los abuelos', { moral: 2, cariño: 2 }] },
+    carretera: { n: 'Carretera y autobús', cat: 'publico', req: 3, coste: 3000, max: 2, niv: ['Carretera arreglada hasta la ciudad', 'Línea de autobús diaria'], ef: { cariño: 0.3, dinero: 5 }, uso: ['Inaugurar la parada del autobús', { fama: 0.1, cariño: 1 }] },
     // Casas de los tuyos
-    casapadres: { n: 'Casa de tus padres', cat: 'casa', req: 1, coste: 30, max: 3, niv: ['Reformas en casa de tus padres', 'Casa nueva para tus padres', 'Casa con jardín y huerto'], ef: { moral: 0.4 }, uso: ['Comer en casa de tus padres', { moral: 4 }] },
-    micasa: { n: 'Tu casa en el pueblo', cat: 'casa', req: 1, coste: 55, max: 2, niv: ['Casa de piedra reformada', 'Casa con piscina y canasta en el patio'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Pasar unos días en tu casa del pueblo', { moral: 3 }] },
-    casaamigos: { n: 'Casa de tus amigos de siempre', cat: 'casa', req: 2, coste: 40, max: 2, niv: ['Ayudas a un amigo a arreglar su piso', 'Casa para tu grupo de amigos'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Cenar con los amigos de siempre', { moral: 3, amigos: 6 }] }
+    casapadres: { n: 'Casa de tus padres', cat: 'casa', req: 1, coste: 120, max: 3, niv: ['Reformas en casa de tus padres', 'Casa nueva para tus padres', 'Casa con jardín y huerto'], ef: { moral: 0.4 }, uso: ['Comer en casa de tus padres', { moral: 4 }] },
+    micasa: { n: 'Tu casa en el pueblo', cat: 'casa', req: 1, coste: 300, max: 2, niv: ['Casa de piedra reformada', 'Casa con piscina y canasta en el patio'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Pasar unos días en tu casa del pueblo', { moral: 3 }] },
+    casaamigos: { n: 'Casa de tus amigos de siempre', cat: 'casa', req: 2, coste: 160, max: 2, niv: ['Ayudas a un amigo a arreglar su piso', 'Casa para tu grupo de amigos'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Cenar con los amigos de siempre', { moral: 3, amigos: 6 }] }
   };
   // Obras: lo que inviertes no se estrena al momento. Dura de 2 semanas a 5 meses según el coste; se ve por fases en el pueblo.
-  const diasObra = coste => U.clamp(Math.round(14 + coste * 0.35), 14, 150);
+  const diasObra = coste => U.clamp(Math.round(14 + 5 * Math.sqrt(coste)), 14, 150);
   const obras = st => (P(st).obras = P(st).obras || []);
   const act = st => st.modo === 'carrera' && !!st.carrera && !!st.carrera.pueblo;
   const P = st => C(st).pueblo;
@@ -45,13 +51,20 @@
     if (!act(st)) return null; const p = P(st), n = nivel(st), pt = puntos(st), sig = UMBRAL[n] !== undefined ? UMBRAL[n] : null;
     return { nombre: p.nombre, nivel: n, etiqueta: NIVELES[n - 1], poblacion: Math.round(300 * Math.pow(2.3, n - 1) + p.cariño * 8), cariño: p.cariño, aportado: p.aportado, pts: pt, sig, frac: sig ? U.clamp((pt - UMBRAL[n - 1]) / (sig - UMBRAL[n - 1]), 0, 1) : 1 };
   }
+  // Quién lleva un negocio: un vecino del pueblo o un amigo de siempre (de tu agenda, si lo tienes)
+  const VECINOS = ['Mari Carmen', 'Paco', 'Luisa', 'Manolo', 'Pepa', 'Andrés', 'Rosa', 'Tomás', 'Conchi', 'Julián'];
+  function gestorNuevo(st, tipo, e) {
+    const p = P(st), c = C(st), h = U.hash(p.nombre + tipo) >>> 0;
+    if (e.gestor === 'amigo') { const am = c.social && c.social.contactos ? c.social.contactos.filter(k => k.tipo === 'amigo') : []; if (am.length) { const k = am[h % am.length]; return { nombre: k.nombre, rol: 'tu amigo', amigoId: k.id }; } return { nombre: VECINOS[h % VECINOS.length] + ' (amigo de la infancia)', rol: 'tu amigo' }; }
+    return { nombre: VECINOS[h % VECINOS.length], rol: 'vecino del pueblo' };
+  }
   function edificios(st) {
     const p = P(st), n = nivel(st);
     return Object.keys(EDI).map(k => {
       const e = EDI[k], b = p.edificios.find(x => x.tipo === k), nv = b ? b.nivel : 0, coste = Math.round(e.coste * Math.pow(nv + 1, 1.6));
       const ob = (p.obras || []).find(o => o.tipo === k), obra = ob ? { dest: ob.dest, inicio: ob.inicio, fin: ob.fin, progreso: U.clamp(U.diffDays(ob.inicio, st.fecha) / Math.max(1, U.diffDays(ob.inicio, ob.fin)), 0, 1), proximo: e.niv[ob.dest - 1] } : null;
       let motivo = null; if (obra) motivo = 'En obras hasta el ' + U.fechaLarga(obra.fin); else if (n < e.req) motivo = 'Requiere que el pueblo sea ' + NIVELES[e.req - 1].toLowerCase(); else if (nv >= e.max) motivo = 'Nivel máximo'; else if (GM.mods.hogar.dinero(st) < coste) motivo = 'Te faltan ' + Math.round(coste - GM.mods.hogar.dinero(st)) + ' mil €';
-      return { tipo: k, nombre: e.n, cat: e.cat || 'negocio', obra, dias: diasObra(coste), nivel: nv, max: e.max, actual: nv ? e.niv[nv - 1] : null, proximo: nv < e.max ? e.niv[nv] : null, coste, req: e.req, motivo, uso: nv ? e.uso[0] : null };
+      return { tipo: k, nombre: e.n, gestor: (p.gestores || {})[k] || null, gestorTipo: e.gestor || null, cat: e.cat || 'negocio', obra, dias: diasObra(coste), nivel: nv, max: e.max, actual: nv ? e.niv[nv - 1] : null, proximo: nv < e.max ? e.niv[nv] : null, coste, req: e.req, motivo, uso: nv ? e.uso[0] : null };
     });
   }
   function invertir(st, tipo) {
@@ -72,8 +85,9 @@
       p.cariño = U.clamp(p.cariño + (e.cat === 'publico' ? 5 : 3), 0, 100); c.fama = c.fama + 0.4;
       if (o.tipo === 'casaamigos' && c.social) c.social.contactos.filter(k => k.tipo === 'amigo').forEach(k => { k.rel = U.clamp(k.rel + 10, 0, 100); });
       if (o.tipo === 'casapadres' && c.social) c.social.contactos.filter(k => k.tipo === 'familia').forEach(k => { k.rel = U.clamp(k.rel + 10, 0, 100); });
+      if (e.gestor) { p.gestores = p.gestores || {}; if (!p.gestores[o.tipo]) p.gestores[o.tipo] = gestorNuevo(st, o.tipo, e); }
       const nom = e.niv[o.dest - 1];
-      p.hitos.unshift({ fecha: st.fecha, texto: 'Se inaugura: ' + nom.toLowerCase() + '.' }); c.hitos.unshift({ fecha: st.fecha, texto: 'En ' + p.nombre + ' se inaugura: ' + nom.toLowerCase() + '.' });
+      p.hitos.unshift({ fecha: st.fecha, texto: 'Se inaugura: ' + nom.toLowerCase() + (e.gestor && p.gestores && p.gestores[o.tipo] ? ' (lo lleva ' + p.gestores[o.tipo].nombre + ').' : '.') }); c.hitos.unshift({ fecha: st.fecha, texto: 'En ' + p.nombre + ' se inaugura: ' + nom.toLowerCase() + '.' });
       GM.noticia(st, p.nombre + ' inaugura ' + nom.toLowerCase() + ' gracias a ' + st.jugadores.yo.nombre + '.');
     });
     p.obras = lista.filter(o => o.fin > st.fecha);
@@ -89,8 +103,8 @@
   function visitar(st) {
     return accion(st, 'visita', 14, 0.8, () => { const c = C(st), p = P(st); c.moral = U.clamp(c.moral + 5, 0, 100); p.cariño = U.clamp(p.cariño + 3, 0, 100); if (GM.mods.social && c.social) c.social.contactos.filter(k => k.tipo === 'familia' || k.tipo === 'amigo').forEach(k => { k.rel = U.clamp(k.rel + 7, 0, 100); }); return { ok: true, efectos: ['ánimo +5', 'tu familia y tus amigos te echaban de menos'] }; });
   }
-  function fiesta(st) { return accion(st, 'fiesta', 45, 15, () => { const c = C(st), p = P(st); p.cariño = U.clamp(p.cariño + 9, 0, 100); c.fama = c.fama + 0.6; c.moral = U.clamp(c.moral + 3, 0, 100); p.aportado += 15; return { ok: true, efectos: ['cariño del pueblo +9', 'reputación +'] }; }); }
-  function clinic(st) { return accion(st, 'clinic', 21, 2, () => { const c = C(st), p = P(st); p.cariño = U.clamp(p.cariño + 4, 0, 100); c.fama = c.fama + 0.25; c.moral = U.clamp(c.moral + 2, 0, 100); return { ok: true, efectos: ['cariño +4', 'los niños te adoran'] }; }); }
+  function fiesta(st) { return accion(st, 'fiesta', 45, Math.round(15 * Math.pow(nivel(st), 1.4)), () => { const c = C(st), p = P(st); p.cariño = U.clamp(p.cariño + 9, 0, 100); c.fama = c.fama + 0.6; c.moral = U.clamp(c.moral + 3, 0, 100); p.aportado += 15; return { ok: true, efectos: ['cariño del pueblo +9', 'reputación +'] }; }); }
+  function clinic(st) { return accion(st, 'clinic', 21, 2 * nivel(st), () => { const c = C(st), p = P(st); p.cariño = U.clamp(p.cariño + 4, 0, 100); c.fama = c.fama + 0.25; c.moral = U.clamp(c.moral + 2, 0, 100); return { ok: true, efectos: ['cariño +4', 'los niños te adoran'] }; }); }
   function usar(st, tipo) {
     const e = edificios(st).find(x => x.tipo === tipo); if (!e || !e.nivel) return { ok: false, motivo: 'Aún no está construido.' };
     const u = EDI[tipo].uso[1], c = C(st), p = P(st);
@@ -101,6 +115,7 @@
     terminarObras(st);
     if (st.fecha.slice(8) !== '15') return;
     const c = C(st), p = P(st); if (c.fase === 'retirado' && false) return;
+    Object.keys(p.gestores || {}).forEach(k => { const g = p.gestores[k]; if (g.amigoId && c.social) { const ct = c.social.contactos.find(q => q.id === g.amigoId); if (ct) ct.rel = U.clamp(ct.rel + 0.8, 0, 100); } });
     p.edificios.forEach(b => { if (!EDI[b.tipo]) return; const e = EDI[b.tipo].ef; if (e.dinero) c.dinero += e.dinero * b.nivel; if (e.fama) c.fama = c.fama + e.fama * b.nivel; if (e.moral) c.moral = U.clamp(c.moral + e.moral * b.nivel, 0, 100); if (e.cariño) p.cariño = U.clamp(p.cariño + e.cariño * b.nivel * 0.3, 0, 100); });
     p.cariño = U.clamp(p.cariño + (30 - p.cariño) * 0.04, 0, 100);
     const n = nivel(st); if (n > p.nivel) { p.nivel = n; p.hitos.unshift({ fecha: st.fecha, texto: p.nombre + ' crece y pasa a ser ' + NIVELES[n - 1].toLowerCase() + '.' }); GM.noticia(st, p.nombre + ' crece: ahora es ' + NIVELES[n - 1].toLowerCase() + '.'); }

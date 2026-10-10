@@ -7,19 +7,50 @@
   const pas = n => n === 'US' ? 'USA' : (UE.indexOf(n) >= 0 ? 'UE' : 'NOUE');
   GM.pasaporte = pas;
 
+  // Atributos y media. La media (ovr) sale de los atributos: ovr = media de los 10 atributos + K de la posición (K = 72 menos la media del
+  // perfil base de esa posición, así un jugador de 72 es de 72 en cualquiera). Los perfiles tienen un pico al menos K por encima de su
+  // media, de modo que un jugador de media N siempre tiene algún atributo de N o más (los de 92 son especialistas con algo de 92+).
+  const KEYS = ['tiro3', 'tiro2', 'tl', 'pase', 'bote', 'reb', 'defInt', 'defPer', 'fisico', 'iq'];
+  const BASE = { PG: [70, 62, 70, 80, 82, 40, 35, 70, 55, 75], SG: [78, 64, 72, 66, 70, 42, 38, 68, 58, 68], SF: [76, 66, 68, 58, 64, 52, 48, 70, 64, 64], PF: [58, 70, 66, 52, 52, 70, 62, 58, 74, 62], C: [40, 72, 60, 45, 40, 80, 76, 50, 78, 60] };
+  const PERF = { T: [10, 0, 6, 0, 0, 0, 0, 0, 0, 0], P: [0, 0, 0, 10, 8, 0, 0, 0, 0, 8], D: [0, 0, 0, 0, 0, 0, 8, 10, 4, 0], R: [0, 0, 0, 0, 0, 10, 6, 0, 10, 0], E: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] };
+  const KPOS = {}; Object.keys(BASE).forEach(p => { KPOS[p] = 72 - BASE[p].reduce((x, y) => x + y, 0) / 10; });
+  const ovrDe = (att, pos) => Math.round(KEYS.reduce((x, k) => x + att[k], 0) / 10 + (KPOS[pos] || 9));
+  // Sube o baja atributos de uno en uno (por orden de prioridad, saltando los topados) hasta que la media sea la pedida.
+  function ajustaAtt(p, objetivo, prioridad) {
+    const orden = (prioridad && prioridad.length ? prioridad : KEYS).concat(KEYS), sube = objetivo > ovrDe(p.att, p.pos);
+    let g = 0, i = 0; while (ovrDe(p.att, p.pos) !== objetivo && g++ < 400) {
+      const cur = ovrDe(p.att, p.pos); if ((cur < objetivo) !== sube) break;
+      const k = orden[i++ % orden.length]; if (sube ? p.att[k] < 99 : p.att[k] > 20) p.att[k] += sube ? 1 : -1;
+    }
+  }
+  // Si ningún atributo llega a la media, el más alto sube hasta ella y los más bajos ceden lo que haga falta (un 92 tiene algo de 92 o más)
+  function picoAtt(p) {
+    if (p.ovr >= 99) return; const ks = KEYS.slice().sort((a, b) => p.att[b] - p.att[a]), top = ks[0]; if (p.att[top] >= p.ovr) return;
+    p.att[top] = p.ovr; const bajos = ks.slice(1).reverse(); let g = 0;
+    while (ovrDe(p.att, p.pos) > p.ovr && g++ < 400) { const k = bajos[g % bajos.length]; if (p.att[k] > 20) p.att[k]--; }
+    g = 0; while (ovrDe(p.att, p.pos) < p.ovr && g++ < 400) { const k = bajos[g % bajos.length]; if (p.att[k] < p.ovr - 1) p.att[k]++; }
+  }
+  GM.ovrDe = ovrDe; GM.ajustaAtt = ajustaAtt; GM.picoAtt = picoAtt; GM.KEYS_ATT = KEYS;
+  // Cambia la media de un jugador moviendo sus atributos (los que se pasan en prioridad, primero)
+  GM.setOvr = function (p, nuevo, prioridad) { nuevo = Math.max(30, Math.min(99, Math.round(nuevo))); p.ovr = nuevo; ajustaAtt(p, nuevo, prioridad); picoAtt(p); };
+  // Reparte un poco de ruido entre atributos sin cambiar la media
+  GM.ruidoAtt = function (p, n) { for (let i = 0; i < n; i++) { const a = KEYS[GM.rng.int(0, 9)], b = KEYS[GM.rng.int(0, 9)]; if (a !== b && p.att[a] < 99 && p.att[b] > 20) { p.att[a]++; p.att[b]--; } } };
+
   GM.mkJugador = GM.mkJugador || function (club, n, nombre, pos, edad, altura, nac, pasp, ovr, pot, perfil, salario, hasta) {
-    const B = { PG: [70, 62, 70, 80, 82, 40, 35, 70, 55, 75], SG: [78, 64, 72, 66, 70, 42, 38, 68, 58, 68], SF: [68, 66, 68, 60, 64, 55, 50, 66, 64, 64], PF: [58, 70, 66, 52, 52, 68, 62, 58, 72, 62], C: [40, 72, 60, 45, 40, 80, 76, 50, 78, 60] }[pos];
-    const P = { T: [10, 0, 6, 0, 0, 0, 0, 0, 0, 0], P: [0, 0, 0, 10, 8, 0, 0, 0, 0, 8], D: [0, 0, 0, 0, 0, 0, 8, 10, 4, 0], R: [0, 0, 0, 0, 0, 10, 6, 0, 10, 0], E: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }[perfil || 'E'];
-    const keys = ['tiro3', 'tiro2', 'tl', 'pase', 'bote', 'reb', 'defInt', 'defPer', 'fisico', 'iq'];
+    const B = BASE[pos], P = PERF[perfil || 'E'];
     const att = {};
-    keys.forEach((k, i) => {
+    KEYS.forEach((k, i) => {
       const j = ((n * 31 + i * 17 + ovr) % 9) - 4;
       att[k] = Math.max(20, Math.min(99, Math.round(B[i] + (ovr - 72) + P[i] + j)));
     });
-    return {
+    const ord = KEYS.map((k, i) => [B[i] + P[i], k]).sort((x, y) => y[0] - x[0]).map(x => x[1]);
+    const p = {
       id: club + '-' + (n < 10 ? '0' : '') + n, nombre, equipoId: club, edad, pos, altura, nac, pasaporte: pasp, ovr, pot, att,
       contrato: { salario, hasta }, estado: { forma: 80, fatiga: 0, moral: 70, lesion: null }
     };
+    ajustaAtt(p, ovr, ord);     // la media sale de los atributos: se afinan los principales hasta que coincidan
+    picoAtt(p);
+    return p;
   };
 
   // Nombres por país (para relleno y cantera)

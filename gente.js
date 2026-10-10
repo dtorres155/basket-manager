@@ -4,6 +4,9 @@
    Cada uno te reconoce según la relación (0-100) y el último resultado, da una charla a la semana con un efecto pequeño
    y te propone encargos (ganar el próximo partido, meter puntos, ir a la peña, empezar una obra) con plazo y premio.
    A los vecinos y aficionados de paso se les puede saludar, firmar un autógrafo o hacerse una foto (hasta 6 al día).
+   Famosos de otros mundos (música, cine, cocina, fútbol, empresa, televisión, tenis, redes): ocho personas inventadas por partida que pasan por
+   la calle y, en verano, por el pueblo (un par de ellos cada semana, según la fecha). Se les puede charlar, y con buena relación proponerles
+   algo (un partido, un vídeo, una cena…) una vez al mes: reputación, ánimo, afición o dinero. Cuando os hacéis amigos te escriben al móvil.
    Estado: state.gente = { rel: {id: n}, charla: {id: fecha}, encargo: {quien, tipo, n, base, hasta} | null, hechos, firmas: {fecha, n} }
    (se crea al usarse). La escena (sede3d.js) coloca a las personas junto a la zona de cada una (`zona`) y pinta la ficha.
    Expone: personas(st, escena), ficha(st, id), casual(st, n), estado(st), selfTest. Emite noticias al cumplir un encargo. */
@@ -36,14 +39,18 @@
   const esMujer = (h, k) => ((h >>> (k * 3)) & 7) < 3;   // alrededor de un 40 %
   const G = st => st.gente || (st.gente = { rel: {}, charla: {}, encargo: null, hechos: 0, firmas: { fecha: '', n: 0 } });
   const rel = (st, id) => { const g = G(st); return g.rel[id] === undefined ? 40 : g.rel[id]; };
-  const subeRel = (st, id, d) => { const g = G(st); g.rel[id] = U.clamp(rel(st, id) + d, 0, 100); };
+  const subeRel = (st, id, d) => {
+    const g = G(st), antes = rel(st, id); g.rel[id] = U.clamp(antes + d, 0, 100);
+    // Un famoso con el que ya tienes confianza (60) te escribe al móvil
+    if (id.indexOf('f_') === 0 && antes < 60 && g.rel[id] >= 60 && st.modo === 'carrera' && GM.mods.movil && GM.mods.movil.enviar) { const f = buscar(st, id) || ESPECIALES.map(e => famoso(st, e)).find(e => e.id === id); if (f) GM.mods.movil.enviar(st, 'amigos', f.nombre + ' (' + f.rol.toLowerCase() + '): «Oye, me caes genial. Si un día te pasas por mi mundo, avísame.»'); }
+  };
   const carrera = st => st.modo === 'carrera' && !!st.carrera;
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const dia = iso => +iso.slice(8) + ' de ' + MESES[+iso.slice(5, 7) - 1];
   const elige = (st, id, lista) => lista[(U.hash(st.fecha + id) >>> 0) % lista.length];
 
   // Quién hay en cada escena. zona: id de la sala junto a la que se coloca; aspecto: opciones del modelo 3D
-  function personas(st, escena) {
+  function personasBase(st, escena) {
     const club = st.equipos[st.clubId], h = U.hash(st.clubId + 'gente') >>> 0, nom = (k, m) => nombreDe(club.pais, (h + k * 977) >>> 0, m), c1 = club.colores[0], c2 = club.colores[1] || '#222222';
     const mP = esMujer(h, 1), mR = esMujer(h, 2);
     if (escena === 'calle') return [
@@ -59,6 +66,37 @@
       ]; }
     return [];
   }
+  // ---------- Famosos ----------
+  const ESPECIALES = [
+    { id: 'f_musica', rol: 'Cantante de éxito', ambito: 'música', zona: 'terraza', mujer: true, modelo: 'm-casual', altura: 168, pelo: '#7a1f3d',
+      acc: { t: 'Invitarle a un partido', d: 'Sale en las redes con la camiseta del club', carrera: [['fama', 1.2], ['moral', 3]], gestor: [['aficion', 2.5]], texto: 'Se hace una foto contigo desde el palco y la sube a sus redes.' } },
+    { id: 'f_cine', rol: 'Actor de cine', ambito: 'cine', zona: 'heladeria', mujer: false, modelo: 'h-suit', altura: 183, pelo: '#2a1d14',
+      acc: { t: 'Pedirle consejo sobre la fama', d: 'Aprendes a llevar la atención', carrera: [['moral', 4], ['fama', 0.5]], gestor: [['ambiente', 2]], texto: 'Te da un par de trucos para que la fama no te coma: «Di que no a la mitad».' } },
+    { id: 'f_cocina', rol: 'Chef con tres estrellas', ambito: 'cocina', zona: 'mercado', mujer: false, modelo: 'h-casual_2', altura: 175, pelo: '#d8d8d8',
+      acc: { t: 'Cena en su restaurante', d: 'Un menú pensado para deportistas', carrera: [['moral', 6], ['forma', 6]], gestor: [['vestuario', 4]], texto: 'Te prepara un menú de cinco platos «para competir» y te enseña a cocinar arroz como Dios manda.' } },
+    { id: 'f_futbol', rol: 'Futbolista internacional', ambito: 'fútbol', zona: 'parque', mujer: false, modelo: 'h-casual_hoodie', altura: 181, pelo: '#101010',
+      acc: { t: 'Entrenar juntos una mañana', d: 'Un día de trabajo físico distinto', carrera: [['xp', 0.15], ['moral', 2]], gestor: [['vestuario', 2]], texto: 'Sudáis juntos una mañana entera: él te enseña a repartir esfuerzos y tú le haces probar un par de tiros.' } },
+    { id: 'f_empresa', rol: 'Empresaria tecnológica', ambito: 'empresa', zona: 'tienda', mujer: true, modelo: 'm-formal', altura: 172, pelo: '#3b2617',
+      acc: { t: 'Pedirle consejo de negocios', d: 'Un buen contacto', carrera: [['dinero', 40]], gestor: [['caja', 60000]], texto: 'Te explica cómo invertir con cabeza y te presenta a un contacto que te hace ganar algo de dinero.' } },
+    { id: 'f_tele', rol: 'Presentador de televisión', ambito: 'televisión', zona: 'kiosco', mujer: false, modelo: 'h-suit', altura: 177, pelo: '#4a3a2a',
+      acc: { t: 'Salir en su programa', d: 'Una noche de audiencia', carrera: [['fama', 2], ['moral', 2]], gestor: [['aficion', 3]], texto: 'Pasas por su programa de la noche: la gente del barrio te para por la calle al día siguiente.' } },
+    { id: 'f_tenis', rol: 'Tenista del top 10', ambito: 'tenis', zona: 'parque', mujer: true, modelo: 'm-casual', altura: 176, pelo: '#c9a24b',
+      acc: { t: 'Partido de exhibición', d: 'Un rato de competición amistosa', carrera: [['fama', 1], ['moral', 3]], gestor: [['ambiente', 2]], texto: 'Jugáis una exhibición de tenis contra baloncesto, con medio pueblo mirando. Gana ella, claro.' } },
+    { id: 'f_redes', rol: 'Creadora de contenido', ambito: 'redes', zona: 'terraza', mujer: true, modelo: 'm-casual', altura: 165, pelo: '#a83a8c',
+      acc: { t: 'Hacer un vídeo juntos', d: 'Más seguidores', carrera: [['fama', 1.5], ['moral', 1]], gestor: [['ambiente', 2]], texto: 'Grabáis un reto de triples que en dos días tiene un millón de visitas.' } }
+  ];
+  const famoso = (st, e) => {
+    const h = U.hash(st.clubId + e.id + 'famoso') >>> 0, pais = (st.equipos[st.clubId] || {}).pais || 'ES', L = NOMBRES[pais] || NOMBRES.ES;
+    return Object.assign({}, e, { famoso: true, nombre: L[e.mujer ? 1 : 0][h % 6] + ' ' + L[2][(h >>> 4) % 8], aspecto: { modelo: e.modelo, altura: e.altura, piel: ['#f1c7a5', '#e0ac85', '#c68863', '#8d5a3b'][(h >>> 8) % 4], pelo: e.pelo } });
+  };
+  // Quién pasa hoy por la escena: en la calle, ~una de cada cuatro semanas cada uno (máximo dos a la vez); en el pueblo, uno en verano
+  function famososHoy(st, escena) {
+    const sem = Math.floor(U.diffDays('2026-01-01', st.fecha) / 7), mes = +st.fecha.slice(5, 7);
+    if (escena === 'calle') return ESPECIALES.filter(e => (U.hash(e.id + sem + st.clubId) >>> 0) % 4 === 0).slice(0, 2).map(e => famoso(st, e));
+    if (escena === 'pueblo' && carrera(st) && (mes === 7 || mes === 8)) { const e = ESPECIALES[(U.hash('pueblo' + sem + st.clubId) >>> 0) % ESPECIALES.length]; return [Object.assign(famoso(st, e), { zona: 'pueblo_plaza' })]; }
+    return [];
+  }
+  const personas = (st, escena) => personasBase(st, escena).concat(famososHoy(st, escena).map(f => ({ id: f.id, nombre: f.nombre, rol: f.rol, zona: f.zona, aspecto: f.aspecto, famoso: true, ambito: f.ambito })));
   const buscar = (st, id) => personas(st, 'calle').concat(personas(st, 'pueblo')).find(p => p.id === id);
 
   // Último partido del club del usuario (para comentarlo)
@@ -79,6 +117,7 @@
       mister: amigo ? ['Cuando te veo por la tele se me cae la lágrima.', 'Siempre supe que llegarías lejos.'] : ['¿Te acuerdas de cuando no llegabas al aro?', 'Sigue trabajando el tiro, como te enseñé.'],
       alcalde: amigo ? ['Eres el mejor embajador que ha tenido este pueblo.', 'El pueblo entero te sigue.'] : ['Hay proyectos para el pueblo, si quieres ayudar.', 'A ver si un día nos haces una visita oficial.']
     };
+    if (d.famoso) return frio ? (((U.hash(st.fecha + d.id) >>> 0) % 2) ? '¿Nos conocemos?' : 'Perdona, tengo prisa.') : amigo ? '¡Qué alegría verte! ¿Tomamos algo?' : u && u.gana ? '¡Enhorabuena por el partido contra el ' + riv + '!' : '¡Hombre, un deportista de la ciudad! Encantado.';
     return elige(st, d.id, T[d.id] || ['Hola.']);
   }
 
@@ -108,6 +147,7 @@
   // Efecto de una charla o de un encargo cumplido (k: 1 charla, 4 encargo)
   function premio(st, id, k) {
     const ef = [];
+    if (id.indexOf('f_') === 0) { if (carrera(st)) { st.carrera.fama = st.carrera.fama + 0.05 * k; st.carrera.moral = U.clamp(st.carrera.moral + 0.5 * k, 0, 100); ef.push('reputación'); } return ef; }
     if (carrera(st)) {
       const c = st.carrera;
       if (id === 'leyenda' || id === 'mister') { st.jugadores.yo.xp = (st.jugadores.yo.xp || 0) + 0.01 * k; c.moral = U.clamp(c.moral + k, 0, 100); ef.push('progresión', 'ánimo'); }
@@ -130,15 +170,50 @@
       fn: () => { g.charla[id] = st.fecha; subeRel(st, id, 6); const ef = premio(st, id, 1); return { ok: true, texto: charla(st, d), efectos: ef }; } }];
     if (id === 'periodista') acciones.push({ t: 'Darle una exclusiva', d: 'Más reputación, pero al vestuario no le gustan las filtraciones', disponible: puede, motivo: 'Vuelve la semana que viene',
       fn: () => { g.charla[id] = st.fecha; subeRel(st, id, 12); if (carrera(st)) { st.carrera.fama = st.carrera.fama + 0.5; st.carrera.moral = U.clamp(st.carrera.moral - 2, 0, 100); } else { const ci = st.ciudad && st.ciudad[st.clubId]; if (ci) ci.aficion = U.clamp(ci.aficion + 2, 0, 100); } subeRel(st, 'utillero', -4); return { ok: true, texto: 'Mañana sales en portada del Diario.' }; } });
-    const nuevo = !enc && encargoDe(st, id);
-    if (mio) acciones.push({ t: 'Encargo: ' + textoEnc(enc), d: 'Plazo hasta el ' + dia(enc.hasta), disponible: false, motivo: 'En marcha: plazo hasta el ' + dia(enc.hasta), fn: () => ({ ok: false }) });
-    else if (nuevo && r >= 25) acciones.push({ t: 'Aceptar encargo: ' + textoEnc(nuevo), d: 'Si lo cumples, mejora mucho la relación y hay premio', disponible: true,
-      fn: () => { g.encargo = Object.assign({ quien: id, hasta: U.addDays(st.fecha, TIPOS[nuevo.tipo].dias), base: nuevo.tipo === 'obra' ? obrasPueblo(st) : 0 }, nuevo); return { ok: true, texto: '¡Trato hecho!' }; } });
-    else if (enc && !mio) acciones.push({ t: 'Tiene algo que pedirte', d: '', disponible: false, motivo: 'Termina antes el encargo de ' + ((buscar(st, enc.quien) || {}).nombre || 'otra persona'), fn: () => ({ ok: false }) });
-    else if (nuevo) acciones.push({ t: 'Tiene algo que pedirte', d: '', disponible: false, motivo: 'Todavía no hay confianza: charlad un poco más', fn: () => ({ ok: false }) });
+    if (d.famoso) acciones.push(especial(st, d, r));
+    else {
+      const nuevo = !enc && encargoDe(st, id);
+      if (mio) acciones.push({ t: 'Encargo: ' + textoEnc(enc), d: 'Plazo hasta el ' + dia(enc.hasta), disponible: false, motivo: 'En marcha: plazo hasta el ' + dia(enc.hasta), fn: () => ({ ok: false }) });
+      else if (nuevo && r >= 25) acciones.push({ t: 'Aceptar encargo: ' + textoEnc(nuevo), d: 'Si lo cumples, mejora mucho la relación y hay premio', disponible: true,
+        fn: () => { g.encargo = Object.assign({ quien: id, hasta: U.addDays(st.fecha, TIPOS[nuevo.tipo].dias), base: nuevo.tipo === 'obra' ? obrasPueblo(st) : 0 }, nuevo); return { ok: true, texto: '¡Trato hecho!' }; } });
+      else if (enc && !mio) acciones.push({ t: 'Tiene algo que pedirte', d: '', disponible: false, motivo: 'Termina antes el encargo de ' + ((buscar(st, enc.quien) || {}).nombre || 'otra persona'), fn: () => ({ ok: false }) });
+      else if (nuevo) acciones.push({ t: 'Tiene algo que pedirte', d: '', disponible: false, motivo: 'Todavía no hay confianza: charlad un poco más', fn: () => ({ ok: false }) });
+    }
     return { nombre: d.nombre, rol: d.rol, rel: r, relTexto: r >= 80 ? 'Te adora' : r >= 60 ? 'Buena relación' : r >= 35 ? 'Cordial' : r >= 20 ? 'Distante' : 'Mosqueado', texto: saludo(st, d), acciones };
   }
+  // Acción propia de cada famoso: hace falta buena relación (45) y vale una vez al mes
+  function especial(st, d, r) {
+    const g = G(st), e = ESPECIALES.find(x => x.id === d.id), ult = (g.especial || (g.especial = {}))[d.id], libre = !ult || U.diffDays(ult, st.fecha) >= 30, a = e.acc;
+    return { t: a.t, d: a.d, disponible: r >= 45 && libre, motivo: r < 45 ? 'Todavía no hay confianza: charlad un poco más' : 'Ya lo habéis hecho este mes',
+      fn: () => {
+        g.especial[d.id] = st.fecha; subeRel(st, d.id, 10); const ef = [];
+        if (carrera(st)) {
+          const c = st.carrera, p = st.jugadores.yo;
+          a.carrera.forEach(([k, v]) => {
+            if (k === 'fama') c.fama = c.fama + v; else if (k === 'moral') c.moral = U.clamp(c.moral + v, 0, 100); else if (k === 'dinero') c.dinero += v;
+            else if (k === 'forma') p.estado.forma = Math.min(100, p.estado.forma + v); else if (k === 'xp') p.xp = (p.xp || 0) + v;
+            ef.push(k === 'fama' ? 'reputación' : k === 'moral' ? 'ánimo' : k === 'dinero' ? 'dinero' : k === 'forma' ? 'forma' : 'progresión');
+          });
+        } else {
+          const ci = st.ciudad && st.ciudad[st.clubId], eq = st.equipos[st.clubId];
+          a.gestor.forEach(([k, v]) => {
+            if (k === 'aficion' && ci) { ci.aficion = U.clamp(ci.aficion + v, 0, 100); ef.push('afición'); }
+            else if (k === 'ambiente' && ci) { ci.ambiente = U.clamp((ci.ambiente || 50) + v, 0, 100); ef.push('ambiente'); }
+            else if (k === 'vestuario') { eq.plantilla.forEach(pid => { const p = st.jugadores[pid]; if (p && p.estado) p.estado.moral = Math.min(100, p.estado.moral + v); }); ef.push('ánimo del vestuario'); }
+            else if (k === 'caja' && GM.mods.finanzas) { GM.mods.finanzas.registrar(st, st.clubId, 'Mecenazgo de ' + d.nombre, v); ef.push('caja'); }
+          });
+        }
+        return { ok: true, texto: a.texto, efectos: ef };
+      } };
+  }
+  const CHARLA_FAMOSO = {
+    música: ['Te cuenta cómo se prepara un concierto de estadio.', 'Te canta dos versos de su próximo disco.'], cine: ['Te cuenta una anécdota de un rodaje en la nieve.', 'Te pregunta cómo se aprende a tirar de tres.'],
+    cocina: ['Te explica por qué el arroz necesita reposo.', 'Te habla de la disciplina de una cocina de noche.'], fútbol: ['Compara la presión de un Mundial con la de un último tiro.', 'Te pregunta por los entrenamientos de baloncesto.'],
+    empresa: ['Te habla de cómo decidir con poca información.', 'Te cuenta cómo empezó con tres empleados.'], televisión: ['Te cuenta lo que pasa detrás de las cámaras.', 'Te ofrece venir a su programa algún día.'],
+    tenis: ['Compara el tenis y el baloncesto: «el tuyo es de equipo».', 'Te cuenta cómo lleva viajar once meses al año.'], redes: ['Te enseña cómo se cuenta una historia en quince segundos.', 'Te pide un reto de triples para su canal.']
+  };
   function charla(st, d) {
+    if (d.famoso) return elige(st, d.id + 'c', CHARLA_FAMOSO[d.ambito] || ['Charláis un rato.']);
     const L = {
       leyenda: ['Te cuenta la final que ganó en el último segundo.', 'Te enseña un truco para leer el bloqueo directo.', 'Te habla de la presión de ganar en esta ciudad.'],
       utillero: ['Te cuenta anécdotas del vestuario de hace veinte años.', 'Te enseña la camiseta firmada que guarda en el almacén.', 'Te recomienda unas plantillas para los tobillos.'],
@@ -187,7 +262,7 @@
   function selfTest() {
     const st = { modo: 'gestor', clubId: 'x', fecha: '2026-10-01', calendario: [], estadisticas: {}, jugadores: {}, equipos: { x: { siglas: 'X', ciudad: 'Villa', pais: 'ES', colores: ['#123456', '#ffffff'], plantilla: [] } }, ciudad: { x: { aficion: 50, ambiente: 50 } } };
     const ps = personas(st, 'calle'), f = ficha(st, 'pena');
-    return ps.length === 4 && f && f.acciones.length >= 2 && f.acciones[0].fn().ok && !ficha(st, 'pena').acciones[0].disponible;
+    return ps.filter(q => !q.famoso).length === 4 && f && f.acciones.length >= 2 && f.acciones[0].fn().ok && !ficha(st, 'pena').acciones[0].disponible;
   }
-  GM.register('gente', { personas, ficha, casual, estado, selfTest });
+  GM.register('gente', { personas, famososHoy, ficha, casual, estado, selfTest });
 })();

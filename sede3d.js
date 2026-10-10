@@ -211,10 +211,10 @@
   // Los pies cuelgan de Root, así que se recolocan a mano en cada cuadro (como en sentar()).
   const _q3 = new THREE.Quaternion(), _lat = new THREE.Vector3(), _fw = new THREE.Vector3();
   function ponerBici(p) {
-    const B = p.huesos, ant = p.asiento; p.asiento = 0.98; sentar(p); p.asiento = ant;
-    if (p.biciObj) { p.biciObj.position.set(0, -p.obj.position.y / p.obj.scale.x, 0.16 / p.obj.scale.x); p.obj.updateMatrixWorld(true); }
+    const B = p.huesos, ant = p.asiento, vu = p.biciObj ? p.biciObj.userData : {}; p.asiento = vu.asiento || 0.98; sentar(p); p.asiento = ant;
+    if (p.biciObj) { p.biciObj.position.set(0, -p.obj.position.y / p.obj.scale.x, (vu.zRef === undefined ? 0.16 : vu.zRef) / p.obj.scale.x); p.obj.updateMatrixWorld(true); }
     // Brazos hacia el puño más cercano del manillar (con el codo un poco caído)
-    const puños = p.biciObj ? [-0.3, 0.3].map(x => p.biciObj.localToWorld(new THREE.Vector3(x, 1.03, 0.3))) : [];
+    const puños = p.biciObj && vu.puños ? vu.puños.map(q => p.biciObj.localToWorld(new THREE.Vector3(q[0], q[1], q[2]))) : [];
     for (const l of ['L', 'R']) {
       const hombro = B['UpperArm' + l].getWorldPosition(new THREE.Vector3()); let dir;
       if (puños.length) { const q = puños.reduce((m, c) => (c.distanceTo(hombro) < m.distanceTo(hombro) ? c : m)); dir = q.clone().sub(hombro).normalize(); }
@@ -228,7 +228,7 @@
     const B = p.huesos; if (!p.biciBase || !B.UpperLegL) return;
     const o = p.obj.position, v = p.ultPos ? Math.hypot(o.x - p.ultPos[0], o.z - p.ultPos[1]) : 0; p.ultPos = [o.x, o.z];
     p.fase += v * 1.6; const g = p.biciObj;
-    if (g) { const u = g.userData; u.ruedas.forEach(r => { r.rotation.x += v / 0.335; }); u.bielas.rotation.x = p.fase; u.bielas.children.forEach(c => { if (c.userData.pedal) c.rotation.x = -p.fase; }); }
+    if (g) { const u = g.userData; u.ruedas.forEach(r => { r.rotation.x += v / 0.3; }); if (u.bielas) { u.bielas.rotation.x = p.fase; u.bielas.children.forEach(c => { if (c.userData.pedal) c.rotation.x = -p.fase; }); } else return; }
     p.obj.updateMatrixWorld(true); _lat.set(1, 0, 0).applyQuaternion(p.obj.getWorldQuaternion(_q3));
     for (const l of ['L', 'R']) {
       const ul = B['UpperLeg' + l], ll = B['LowerLeg' + l], f = B['Foot' + l], ang = 0.25 + Math.sin(p.fase + (l === 'R' ? Math.PI : 0)) * 0.42; // bajada del muslo
@@ -303,7 +303,7 @@
   }
   function moverPaso(p, dt) {
     if (!p.camino || !p.camino.length) return;
-    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * (p.bici ? 2.5 : 1) * dt;
+    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * (p.bici ? (p.velBici || 2.5) : 1) * dt;
     if (d < v) { o.x = tx; o.z = tz; p.camino.shift(); if (!p.camino.length) { anim(p, 'idle'); const f = p.alLlegar; p.alLlegar = null; if (f) f(); } return; }
     o.x += dx / d * v; o.z += dz / d * v; girar(p, Math.atan2(dx, dz), dt);
   }
@@ -1133,7 +1133,7 @@
     if (J && J.activo && Math.hypot(J.x, J.y) > 0.15) { ax = J.x; az = J.y; fuerza = Math.min(1, Math.hypot(J.x, J.y)); corre = fuerza > 0.92; }
     if (!ax && !az) { if (S.yo.teclado) { S.yo.teclado = false; anim(S.yo, 'idle'); } return; }
     S.yo.camino = null; S.yo.teclado = true; anim(S.yo, corre ? 'sprint' : 'walk');
-    const c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = ax * c + az * s, dz = -ax * s + az * c, l = Math.hypot(dx, dz), v = (corre ? 4.2 : 2.1 * Math.max(0.5, fuerza)) * (S.yo.bici ? 2.5 : 1) * dt, o = S.yo.obj.position;
+    const c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = ax * c + az * s, dz = -ax * s + az * c, l = Math.hypot(dx, dz), v = (corre ? 4.2 : 2.1 * Math.max(0.5, fuerza)) * (S.yo.bici ? (S.yo.velBici || 2.5) : 1) * dt, o = S.yo.obj.position;
     const nx = o.x + dx / l * v, nz = o.z + dz / l * v, G = S.G, ok = (x, z) => { const [i, j] = G.celda(x, z); return G.libre(i, j); };
     if (ok(nx, nz)) { o.x = nx; o.z = nz; } else if (ok(nx, o.z)) o.x = nx; else if (ok(o.x, nz)) o.z = nz;
     girar(S.yo, Math.atan2(dx, dz), dt);

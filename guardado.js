@@ -32,7 +32,9 @@
   const MIGRACIONES = {
     1: st => { st.copia = st.copia || { creada: Date.now(), ultima: null, avisada: null }; },
     2: st => { st.sede = st.sede || { charlas: {} }; },
-    3: st => { st.rua = null; st.ruaHist = (st.historial || []).length; }
+    3: st => { st.rua = null; st.ruaHist = (st.historial || []).length; },
+    // La media sale de los atributos (datos_util.js): se ajustan los de los jugadores de partidas anteriores para que coincidan
+    4: st => { Object.values(st.jugadores || {}).forEach(p => { if (p && p.att && p.pos && GM.ovrDe && GM.ovrDe(p.att, p.pos) !== p.ovr) { GM.ajustaAtt(p, p.ovr); GM.picoAtt(p); } }); }
   };
   function migrar(st) {
     if (!st.version) st.version = 1; if (!st.estadisticas) st.estadisticas = {}; if (!st.historial) st.historial = [];
