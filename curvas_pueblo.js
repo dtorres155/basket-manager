@@ -129,5 +129,5 @@
     for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; const co = new T.Mesh(new T.ConeGeometry(0.2, 0.55, 5).rotateX(Math.PI), piedra); co.position.set(x + Math.cos(a) * 2.28, alto + 1.55, z + Math.sin(a) * 2.28); W.add(co); }
     for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.4; const sl = new T.Mesh(new T.BoxGeometry(0.14, 0.9, 0.3), mat('#0d1116')); sl.position.set(x + Math.cos(a) * 2.32, alto * 0.55, z + Math.sin(a) * 2.32); sl.rotation.y = -a; W.add(sl); const a2 = new T.Mesh(new T.CircleGeometry(0.07, 8, 0, Math.PI), mat('#0d1116')); a2.position.set(x + Math.cos(a) * 2.34, alto * 0.55 + 0.45, z + Math.sin(a) * 2.34); a2.rotation.y = Math.PI / 2 - a; W.add(a2); }
   }
-  GM.curvas = { lathe, fuente, farola, pozo, iglesia, puertaMuralla, almenasTorre };
+  GM.curvas = { lampMat: LAMP_MAT, lathe, fuente, farola, pozo, iglesia, puertaMuralla, almenasTorre };
 })();

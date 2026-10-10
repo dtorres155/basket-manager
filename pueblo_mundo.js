@@ -439,10 +439,13 @@
     if (GM.curvas) GM.curvas.fuente(W, FX, FZ, nPl); else { cil(W, nPl ? 2.2 : 1.4, 0.6, '#d9d2c3', FX, 0, FZ, 20); cil(W, 0.25, 1.8, '#d9d2c3', FX, 0, FZ, 10); }
     G.bloquea(FX - 2.7, FZ - 2.7, FX + 2.7, FZ + 2.7);
     if (GM.curvas) for (const [px, pz] of [[-10, 7], [9, 8], [-9, -8]]) { const R = { x: px, z: pz, w: 3, d: 3, ry: 0 }; if (O.libre(R, [1])) { GM.curvas.pozo(W, px, pz); O.marca(R, 2); G.bloquea(px - 1.3, pz - 1.3, px + 1.3, pz + 1.3); break; } }
-    [[-7, -4, 0.3], [6, -6.5, -0.2], [-9, 4, 1.4], [8, 5, -1.2]].concat(nPl ? [[-3, 6.5, 0], [4, -2.8, 0.1]] : []).forEach(([x, z, a]) => { caja(W, 1.7, 0.45, 0.55, '#7a5230', x, 0, z, a); G.bloquea(x - 0.8, z - 0.4, x + 0.8, z + 0.4); });
+    S.bancos = [];
+    [[-7, -4, 0.3], [6, -6.5, 3.34], [-9, 4, 1.4], [8, 5, -1.2]].concat(nPl ? [[-3, 6.5, 0], [4, -2.8, 3.24]] : []).forEach(([x, z, a]) => { if (GM.puebloVida) { GM.puebloVida.banco(W, x, z, a); S.bancos.push({ x, z, ry: a }); } else caja(W, 1.7, 0.45, 0.55, '#7a5230', x, 0, z, a); G.bloquea(x - 0.8, z - 0.4, x + 0.8, z + 0.4); });
+    if (GM.puebloVida) GM.puebloVida.rosaPlaza(W, M, FX, FZ, 8.2);
     if (nPl) [[-10, -3], [9, -6], [-6, 7], [9, 3]].forEach(([x, z]) => { cil(W, 0.6, 0.6, '#b9a98c', x, 0, z, 10); arbol(W, x, z, 'frutal', r); G.bloquea(x - 0.6, z - 0.6, x + 0.6, z + 0.6); });   // árboles en alcorques
     if (nPl >= 2) PLAZA.forEach(([x, z]) => { const lx = x * 0.9, lz = z * 0.9; cil(W, 0.12, 3.4, '#3d3d3d', lx, 0, lz, 6); const l = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshStandardMaterial({ color: '#fff3c4', emissive: '#ffd27a', emissiveIntensity: 0.8 })); l.position.set(lx, 3.5, lz); W.add(l); });
-    if (nivel >= 3) [[5, 6.5, '#c0392b'], [8.5, 3.5, '#2f6f9e'], [-4.5, 6.8, '#f39c12']].forEach(([x, z, c]) => { caja(W, 2, 0.9, 1.2, '#8a6d3b', x, 0, z); const tl = caja(W, 2.3, 0.08, 1.5, c, x, 1.9, z); tl.rotation.x = 0.15; [-0.9, 0.9].forEach(dx => cil(W, 0.04, 1.9, '#555', x + dx, 0, z + 0.6, 4)); G.bloquea(x - 1.1, z - 0.7, x + 1.1, z + 0.7); });
+    S.puestos = [];
+    if (nivel >= 3) [[5, 6.5, '#c0392b'], [8.5, 3.5, '#2f6f9e'], [-4.5, 6.8, '#f39c12']].forEach(([x, z, c], i) => { if (GM.puebloVida) { GM.puebloVida.puestoMercado(W, M, x, z, 0, c, r, i); S.puestos.push({ x, z }); } else { caja(W, 2, 0.9, 1.2, '#8a6d3b', x, 0, z); const tl = caja(W, 2.3, 0.08, 1.5, c, x, 1.9, z); tl.rotation.x = 0.15; [-0.9, 0.9].forEach(dx => cil(W, 0.04, 1.9, '#555', x + dx, 0, z + 0.6, 4)); } G.bloquea(x - 1.3, z - 0.8, x + 1.3, z + 1.2); });
     if (GM.kit && GM.kit.palomas) S.palomas = GM.kit.palomas(W, [[FX + 4, FZ + 3], [FX - 4.5, FZ - 3], [6, 6], [-8, -2]], 6);
     const nMu = ed('mural').nivel;
     if (nMu) { const t = M.textura('mural-pueblo-' + st.jugadores.yo.nombre, 256, (x, n) => { x.fillStyle = club.colores[0]; x.fillRect(0, 0, n, n); x.fillStyle = club.colores[1] || '#fff'; x.font = 'bold 40px sans-serif'; x.textAlign = 'center'; x.fillText(st.jugadores.yo.nombre.split(' ').pop().toUpperCase(), n / 2, n / 2); x.font = 'bold 80px sans-serif'; x.fillText(String(st.jugadores.yo.dorsal || 7), n / 2, n / 2 + 80); });
@@ -490,7 +493,7 @@
     zonas.push([{ id: 'pueblo_salir', nombre: 'Salir del pueblo', accion: 'Volver al juego', destino: {}, acciones: () => [{ id: 'salir', t: 'Volver', d: 'Sales del pueblo.', disponible: true, fn: () => { setTimeout(() => GM.sede.cerrar(), 50); return { ok: true, texto: 'Hasta pronto' }; } }] }, PS[0] - 1, PS[1] + 26]);
     // Vehículos para moverse por el pueblo: bicis de siempre y, con la carretera o un pueblo grande, una vespa (junto a la plaza)
     { const U3 = GM.urbano; let sitio = null;
-      for (const [vx, vz] of [[5, 13], [-3, 14], [9, 12], [-9, 12], [13, 8], [-14, 5], [6, -13]]) { const R = { x: vx, z: vz, w: 5, d: 3, ry: 0 }; if (O.libre(R)) { sitio = [vx, vz, R]; break; } }
+      for (const [vx, vz] of [[5, 13], [-3, 14], [9, 12], [-9, 12], [13, 8], [-14, 5], [6, -13], [11, 4], [-12, -2], [3, -12], [-6, 10], [12, -6], [-14, 10], [14, 12], [0, 15]]) { const R = { x: vx, z: vz, w: 5, d: 3, ry: 0 }; if (O.libre(R, [1])) { sitio = [vx, vz, R]; break; } }
       if (U3 && sitio) { const [vx, vz, R] = sitio, g = new THREE.Group(); g.position.set(vx, 0, vz); W.add(g); O.marca(R, 2); G.bloquea(vx - 2.5, vz - 1.5, vx + 2.5, vz + 1.5);
         caja(g, 4.6, 0.08, 0.5, '#3a4048', 0, 0, 0.9); for (let i = 0; i < 3; i++) { const b = U3.bici(i === 1 ? '#e9e5da' : '#d62d2d'); b.position.set(-1.7 + i * 0.7, 0, 0.2); b.rotation.y = 0.0; g.add(b); }
         const mo = U3.moto('#2f8f7a'); mo.position.set(1.4, 0, 0.1); mo.rotation.y = 0.3; g.add(mo);
@@ -529,7 +532,11 @@
       for (let i = 0; i < N * 6 && k < N; i++) { const x = (r() * 2 - 1) * MES.rx * 0.62, z = MES.cz + (r() * 2 - 1) * MES.rz * 0.62; if (!O.dentro(x, z) || enPlaza(x, z) || calleCercana(x, z).d < 3.2 || !O.libre({ x, z, w: 3, d: 3 })) continue;
         e.set(0, r() * 6.28, 0); q.setFromEuler(e); s.set(0.8 + r() * 2.2, 1, 0.7 + r() * 1.7); p.set(x, 0.009, z); m4.compose(p, q, s); im.setMatrixAt(k++, m4); }
       im.count = k; im.receiveShadow = true; im.userData = { instancias: true }; W.add(im); }
-    S.paseo = []; aLoLargo(6, (x, z) => S.paseo.push([x, z])); PLAZA.forEach(([x, z]) => S.paseo.push([x * 0.6, z * 0.6]));
+    S.paseo = []; aLoLargo(6, (x, z) => S.paseo.push([x, z]));
+    if (GM.puebloVida) { const V = GM.puebloVida; V.setAltura(altura); CALLES.filter(c => !c.fuera).forEach((c, i) => { const [ax, az] = c.p[0], [bx, bz] = c.p[1], l = Math.hypot(bx - ax, bz - az) || 1, nx = -(bz - az) / l, nz = (bx - ax) / l, px = ax + (bx - ax) / l * 3 + nx * (c.w / 2 + 0.7), pz = az + (bz - az) / l * 3 + nz * (c.w / 2 + 0.7); if (O.punto(px, pz) <= 1) V.cartelCalle(W, M, px, pz, c.n, Math.atan2(bx - ax, bz - az) + Math.PI / 2); });
+      V.alcantarillas(W, M, S.paseo.filter((p, i) => i % 3 === 0 && !enPlaza(p[0], p[1])), r);
+      if (S.lotes.bar && (ed('bar') || {}).nivel) V.terraza(W, S, S.lotes.bar, r);
+      V.fauna(S, W, { altura, MES, IG, dMes, r, lotes: S.lotes }); V.nocturno(S); } PLAZA.forEach(([x, z]) => S.paseo.push([x * 0.6, z * 0.6]));
     S.spawnPueblo = { x: PS[0], z: PS[1] - 4, ry: Math.PI };
     S.calleNombre = pj.nombre; S.nCasas = nCasas; S.nCasasFuera = nFuera;
     GM.kit.fusionar(W);
@@ -574,8 +581,11 @@
       BOSQUES.forEach(B => { B.tronco.visible = B.copa.visible = false; B.lista.forEach(([x, y, z, e], i) => g[i % A.length].push({ x, y, z, ry: rr() * 6.28, alto: 3.6 + (e || 1) * 1.6 })); }); A.forEach((m, k) => S.mundo.add(GM.kit.instanciar(m, g[k], { viento: true }))); BOSQUES = []; } }
     const Pm = GM.mods.pueblo, nivel = Pm.estado(st).nivel, club = st.equipos[st.clubId], pj = st.carrera.pueblo, r = rnd(U.hash(st.fecha + 'pueblo'));
     const n = 6 + nivel * 3;
-    const vec = await Promise.all(Array.from({ length: n }, () => { const fan = r() * 100 < pj.cariño * 0.7; return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 155 + r() * 30, piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0], ropa: fan ? [club.colores[0], club.colores[1] || '#222'] : null }); }));
-    vec.forEach((p, k) => { const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0], 0, q[1]); Object.assign(p, { vecino: true, rol: 'Vecino de ' + pj.nombre, r: rnd(U.hash(st.fecha + 'v' + k)), espera: r() * 4 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); });
+    const perfiles = Array.from({ length: n }, () => { const fan = r() * 100 < pj.cariño * 0.7; return GM.puebloVida ? GM.puebloVida.perfilVecino(r, PIEL, PELO, MODELOS, club, fan) : { tipo: 'adulto', o: { modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 155 + r() * 30, piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0], ropa: fan ? [club.colores[0], club.colores[1] || '#222'] : null } }; });
+    const vec = await Promise.all(perfiles.map(pf => M.personaje(pf.o)));
+    vec.forEach((p, k) => { const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0], 0, q[1]); Object.assign(p, { vecino: true, perfil: perfiles[k].tipo, cabizbajo: perfiles[k].tipo === 'mayor', rol: (perfiles[k].tipo === 'nino' ? 'Niño' : perfiles[k].tipo === 'mayor' ? 'Vecino mayor' : 'Vecino') + ' de ' + pj.nombre, r: rnd(U.hash(st.fecha + 'v' + k)), espera: r() * 4 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); });
+    if (GM.puebloVida) { GM.puebloVida.perros(S, S.mundo, vec.filter(p => p.perfil === 'adulto').slice(0, 3), r);
+      for (const pu of (S.puestos || [])) { const v = await M.personaje({ modelo: r() < 0.5 ? 'h-farmer' : 'm-casual', altura: 165 + r() * 15, piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0] }); v.obj.position.set(pu.x, 0, pu.z - 0.95); v.obj.rotation.y = 0; Object.assign(v, { fijo: true, rol: 'Vendedor del mercado', r: rnd(U.hash(st.fecha + 'm' + pu.x)), espera: 99 }); v.obj.userData = { npc: S.gente.length }; M.anim(v, 'idle'); S.mundo.add(v.obj); S.gente.push(v); } }
     // Gente en las puertas de los edificios nuevos: cola del cine, mecánico, panadera, camareros en la terraza, operarios y niños de la escuela
     { const lug = (t, lx, lz) => { const L = S.lotes[t]; return L ? { x: L.x + lx * L.fz + lz * L.fx, z: L.z - lx * L.fx + lz * L.fz, ry: Math.atan2(L.fx, L.fz), L } : null; };
       const pon = async (t, lx, lz, modelo, rol, opc) => { const q = lug(t, lx, lz); if (!q || !(Pm.edificios(st).find(b => b.tipo === t) || {}).nivel) return; const p = await M.personaje(Object.assign({ modelo, altura: 160 + r() * 28, piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0] }, opc && opc.aspecto || {}));
@@ -595,6 +605,7 @@
     }
   }
   function siguiente(S, M, n) {
+    if (n.vecino && GM.puebloVida && !n.obrero) return GM.puebloVida.siguiente(S, M, n, { frase });
     if (n.obrero) { M.anim(n, n.r() < 0.7 ? 'interact-right' : 'idle'); n.espera = 3 + n.r() * 5; if (n.r() < 0.06 && S.yo && n.obj.position.distanceTo(S.yo.obj.position) < 8) M.bocadillo(['¡Buenos días!', 'Esto va a quedar precioso.', 'Vamos a buen ritmo.', '¡Cuidado, que pasa la grúa!'][(n.r() * 4) | 0], n.obj); return; }
     const q = S.paseo[(n.r() * S.paseo.length) | 0];
     const ok = M.irA(n, q[0] + (n.r() - 0.5) * 1.2, q[1] + (n.r() - 0.5) * 1.2, () => {
@@ -611,6 +622,6 @@
     if (pj.cariño < 35) fr.push('Te vemos poco por aquí…', 'Antes venías más.');
     return fr[(n.r() * fr.length) | 0];
   }
-  function actualizar(S, M, dt) { const t = performance.now() / 1000; (S.puebloAnim || []).forEach(f => f(t)); if (S.palomas && GM.calle && GM.calle.moverPalomas) GM.calle.moverPalomas(S, dt); }
+  function actualizar(S, M, dt) { const t = performance.now() / 1000; (S.puebloAnim || []).forEach(f => f(t)); if (GM.puebloVida) GM.puebloVida.actualizar(S, M, dt); if (S.palomas && GM.calle && GM.calle.moverPalomas) GM.calle.moverPalomas(S, dt); }
   GM.puebloMundo = { construir, poblar, siguiente, actualizar, accionesLote, fichaLote, LOTES };
 })();

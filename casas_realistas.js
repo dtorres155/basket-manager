@@ -77,6 +77,8 @@
   }
 
   // ---------- Fachada ----------
+  // Material compartido de las ventanas encendidas: su brillo lo sube pueblo_vida.js al caer la noche
+  const LUZ = new T.MeshStandardMaterial({ color: 0x2b2118, emissive: 0xffc66a, emissiveIntensity: 0, roughness: 1 });
   const CORTINAS = ['#e8dcc4', '#d6c7a8', '#b8c4b6', '#c9a79a', '#a9b6c4', '#e0d6c6'];
   function bloque(G, M, E, w, d, pisos, muro, txt, acento, r, opts) {
     const o = opts || {}, hP = 3.1, h = pisos * hP, cols = Math.max(1, Math.floor(w / 2.4)), conPuerta = o.puerta !== false;
@@ -100,7 +102,7 @@
       const x = -w / 2 + (i + 0.5) * w / cols + (r() - 0.5) * 0.14; if (p === 0 && conPuerta && Math.abs(x) < 1.1) continue;
       if (p === 1 && i === mi) { mirador(G, x, hP + 0.95, d / 2, mM, mPc, vidrio, tejaMat(envejecer(E.teja || '#b4643d', r, 1, 0.1)), blanco); continue; }
       const wy = p * hP + (p === 0 ? 1.15 : 1.0), vw = 0.9, vh = p === 0 ? 1.25 : 1.4, zf = d / 2;
-      const hueco = new T.Mesh(new T.BoxGeometry(vw, vh, 0.04), interior); hueco.position.set(x, wy + vh / 2, zf + 0.002); G.add(hueco);                       // fondo oscuro del hueco
+      const hueco = new T.Mesh(new T.BoxGeometry(vw, vh, 0.04), r() < 0.4 ? LUZ : interior); hueco.position.set(x, wy + vh / 2, zf + 0.002); G.add(hueco);                       // fondo oscuro del hueco
       if (r() < 0.72) { const cc = new T.Mesh(new T.PlaneGeometry(vw * 0.5, vh * 0.7), mat(CORTINAS[(r() * CORTINAS.length) | 0], { roughness: 1 })); cc.position.set(x + (r() < 0.5 ? -0.2 : 0.2), wy + vh * 0.62, zf + 0.03); G.add(cc); }            // cortina
       const cr = new T.Mesh(new T.PlaneGeometry(vw, vh), vidrio); cr.position.set(x, wy + vh / 2, zf + 0.045); G.add(cr);
       caja(G, 0.045, vh, 0.07, blanco, x, wy, zf + 0.05, 0, false); caja(G, vw, 0.045, 0.07, blanco, x, wy + vh * 0.56, zf + 0.05, 0, false);         // cruceta
@@ -193,5 +195,5 @@
     const g = new T.PlaneGeometry(2.3, 0.575), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 0.75 + uv.getY(i) * 0.25);
     return new T.Mesh(g, t ? new T.MeshStandardMaterial({ map: t, roughness: 0.8 }) : mat(fondo));
   }
-  GM.casasReal = { bloque, tejado, chimenea, balconCurvo, mirador, torreta, envejecer, murMat, piedraMat, tejaMat, maderaMat };
+  GM.casasReal = { luzVentana: LUZ, bloque, tejado, chimenea, balconCurvo, mirador, torreta, envejecer, murMat, piedraMat, tejaMat, maderaMat };
 })();
