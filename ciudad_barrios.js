@@ -38,28 +38,34 @@
     // ---- Suelo: asfalto bajo toda la ciudad, aceras por manzanas, avenida, calle central, ronda y pasos de peatones ----
     const asf = new THREE.Mesh(new THREE.PlaneGeometry(300, 140).rotateX(-Math.PI / 2), (GM.texturas ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { escala: 5, tinte: 0xb4b4b4 }) : new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }))); H.uvM(asf.geometry, 4, 4); asf.position.set(0, -0.125, -43); asf.receiveShadow = true; W.add(asf);
     const mAcera = GM.texturas ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9, color: 0xaea99f }), 'Concrete034', { color: false, escala: 2.4, relieve: 0.6 }) : new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9 });
-    if (GM.texturas) { GM.texturas.aplicar(mat('#6f9a4a', { roughness: 1 }), 'Grass004', { escala: 3, tinte: 0xb8d0a0 }); GM.texturas.aplicar(H.mat('#76a050', { roughness: 1 }), 'Grass004', { escala: 3, tinte: 0xc0d8a8 }); }
+    // (los céspedes van pegados al suelo: polygonOffset para que no parpadeen con la acera que cubren)
+    { const c1 = GM.urbano.deco(mat('#6f9a4a', { roughness: 1 })), c2 = GM.urbano.deco(H.mat('#76a050', { roughness: 1 })); if (GM.texturas) { GM.texturas.aplicar(c1, 'Grass004', { escala: 3, tinte: 0xb8d0a0 }); GM.texturas.aplicar(c2, 'Grass004', { escala: 3, tinte: 0xc0d8a8 }); } }
     const acera = (x0, z0, x1, z1, g) => { const geo = new THREE.BoxGeometry(x1 - x0, 0.12, z1 - z0); H.uvM(geo, 1.5, 1.5); const me = new THREE.Mesh(geo, mAcera); me.position.set((x0 + x1) / 2, -0.06, (z0 + z1) / 2); me.receiveShadow = true; (g || W).add(me); };
     acera(-150, 3, -42, 24, grupos.oeste); acera(42, 3, 150, 24, grupos.este); acera(-150, -27, -42, -3, grupos.oeste); acera(42, -27, 150, -3, grupos.este);
     acera(-42, -27, -3, -24); acera(3, -27, 42, -24); acera(-150, -110, -3, -33, grupos.norte); acera(3, -110, 150, -33, grupos.norte);
     // la calzada no se pisa salvo en los pasos; la ronda (sin coches) sí
     G.bloquea(-150, -3, -42, 3); G.bloquea(42, -3, 150, 3); G.bloquea(-3, -100, 3, -24);
     const blanco = mat('#f2f2ee');
-    const paso = (x0, z0, x1, z1, eje) => { acera(x0, z0, x1, z1); for (let i = 0; i < 6; i++) { if (eje === 'x') caja(W, 0.45, 0.01, z1 - z0, blanco, x0 + (i + 0.5) * (x1 - x0) / 6, 0, (z0 + z1) / 2, 0, false); else caja(W, x1 - x0, 0.01, 0.45, blanco, (x0 + x1) / 2, 0, z0 + (i + 0.5) * (z1 - z0) / 6, 0, false); } };
-    [-120, -66, 66, 120].forEach(x => paso(x - 1.5, -3, x + 1.5, 3, 'z'));
-    [-30, -70].forEach(z => paso(-3, z - 1.5, 3, z + 1.5, 'x'));
-    for (let x = -148; x < 148; x += 4) if (Math.abs(x) > 44 && !([-120, -66, 66, 120].some(p => Math.abs(x + 1 - p) < 3))) caja(W, 2, 0.01, 0.15, blanco, x + 1, -0.115, 0, 0, false);
-    for (let z = -98; z < -26; z += 4) caja(W, 0.15, 0.01, 2, blanco, 0, -0.115, z + 1, 0, false);
+    const U3 = GM.urbano; // pasos de peatones elevados con rampas y baldosa táctil, bordillo de granito y franja de servicio (urbano.js)
+    [-120, -66, 66, 120].forEach(x => U3.cebra(W, G, x - 1.5, -3, x + 1.5, 3, 'z'));
+    [-30, -70].forEach(z => U3.cebra(W, G, -3, z - 1.5, 3, z + 1.5, 'x'));
+    U3.bordillo(grupos.oeste, -150, 3, -42, 24, ['z0'], 1); U3.bordillo(grupos.este, 42, 3, 150, 24, ['z0'], 2); U3.bordillo(grupos.oeste, -150, -27, -42, -3, ['z1'], 0); U3.bordillo(grupos.este, 42, -27, 150, -3, ['z1'], 1);
+    U3.bordillo(grupos.norte, -150, -110, -3, -33, ['z1', 'x1'], 2); U3.bordillo(grupos.norte, 3, -110, 150, -33, ['z1', 'x0'], 0);
+    for (let x = -148; x < 148; x += 4) if (Math.abs(x) > 44 && !([-120, -66, 66, 120].some(p => Math.abs(x + 1 - p) < 5.5))) caja(W, 2, 0.01, 0.15, blanco, x + 1, -0.115, 0, 0, false);
+    for (let z = -98; z < -26; z += 4) if (![-30, -70].some(p => Math.abs(z + 1 - p) < 5.5)) caja(W, 0.15, 0.01, 2, blanco, 0, -0.115, z + 1, 0, false);
     // Placas de los barrios
     [['oeste', -46, 5.8], ['este', 46, 5.8], ['norte', 5, -36]].forEach(([k, x, z]) => { cil(W, 0.05, 2.9, '#2a2f35', x, 0, z); letrero(W, T.letrero('Barrio de ' + nomDist[k], '#1d4f91', '#fff', 'bar-' + k), 3.8, 0.7, x, 2.7, z + 0.05, 0); });
     // ---- Árboles en las aceras de la avenida y de la ronda, y farolas ----
+    // Farolas: una a cada lado de cada paso de peatones y el resto con separación regular, frente a frente en las dos aceras
+    const faros = []; U3.luz(S, M);
+    U3.posiciones(-150, -44, [-120, -66], 14, 1.5).forEach(x => faros.push([x, -3.6, 0, 'oeste'], [x, 3.6, Math.PI, 'oeste']));
+    U3.posiciones(44, 150, [66, 120], 14, 1.5).forEach(x => faros.push([x, -3.6, 0, 'este'], [x, 3.6, Math.PI, 'este']));
+    U3.posiciones(-98, -30, [-70, -30], 14, 1.5).forEach(z => faros.push([-3.6, z, Math.PI / 2, 'norte'], [3.6, z, -Math.PI / 2, 'norte']));
     const tronco = mat('#6b5136'), copas = [mat('#4f7f3a'), mat('#5d8c41'), mat('#476f34')]; copas.forEach(m => GM.kit.viento(m, 'copa'));
-    const arbol = (x, z, g, k) => { if (S.reales) { S.arbolesPos.push([x, z, k]); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); return; } cil(g, 0.14, 2.2, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), copas[((k % 3) + 3) % 3]); c.position.set(x, 3.0, z); c.scale.y = 0.9; c.castShadow = true; g.add(c); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); };
+    const arbol = (x, z, g, k) => { if (faros.some(f => Math.hypot(f[0] - x, f[1] - z) < 2.4)) return; if (S.reales) { S.arbolesPos.push([x, z, k]); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); return; } cil(g, 0.14, 2.2, tronco, x, 0, z, 6); const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), copas[((k % 3) + 3) % 3]); c.position.set(x, 3.0, z); c.scale.y = 0.9; c.castShadow = true; g.add(c); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); };
     for (let x = -146; x <= 146; x += 13) { if (Math.abs(x) < 46 || [-120, -66, 66, 120].some(p => Math.abs(x - p) < 4)) continue; const g = enG(x < 0 ? 'oeste' : 'este'); arbol(x, -4.4, g, (x / 13) | 0); arbol(x + 6, 4.4, g, 1 + (x / 13) | 0); }
     for (let x = -146; x <= 146; x += 16) { if (Math.abs(x) < 5) continue; arbol(x, -34.6, grupos.norte, (x / 16) | 0); }
-    const farola = (x, z, g) => { cil(g, 0.07, 4.6, '#2a2f35', x, 0, z, 8); const l = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.14, 0.3), S.farolas || mat('#fff6d6')); l.position.set(x, 4.5, z); g.add(l); G.bloquea(x - 0.15, z - 0.15, x + 0.15, z + 0.15); };
-    for (let x = -144; x <= 144; x += 18) { if (Math.abs(x) < 46) continue; farola(x, -3.4, enG(x < 0 ? 'oeste' : 'este')); farola(x + 9, 3.4, enG(x < 0 ? 'oeste' : 'este')); }
-    for (let z = -96; z <= -38; z += 14) { farola(-3.4, z, grupos.norte); farola(3.4, z + 7, grupos.norte); }
+    faros.forEach(([x, z, ry, k]) => U3.farola(grupos[k], G, S, x, z, ry));
     // ---- Parcelas: tus viviendas en su barrio; las demás, edificios del barrio ----
     const vivs = GM.mods.hogar && GM.mods.hogar.viviendas ? GM.mods.hogar.viviendas(st) : [], usados = new Set();
     vivs.forEach(v => {
@@ -94,7 +100,9 @@
       const pista = caja(g, 14, 0.04, 6, '#2f6f9e', -131, 0.02, 6, 0, false); void pista; salaLugar('lugar_colegio', 'Colegio ' + nomDist.oeste, 'colegio', [-131, 4.8]); }
     // Parque grande del oeste
     { const g = grupos.oeste, cesped = new THREE.Mesh(new THREE.PlaneGeometry(54, 18).rotateX(-Math.PI / 2), mat('#6f9a4a', { roughness: 1 })); cesped.position.set(-122, 0.005, -16); cesped.receiveShadow = true; g.add(cesped);
-      caja(g, 54, 0.01, 2, '#c9b89a', -122, 0.01, -16, 0, false); for (let k = 0; k < 9; k++) arbol(-146 + k * 6, k % 2 ? -10 : -22, g, k);
+      U3.parche(g, -149, -17, -95, -15, 'grava', 0.012); U3.parche(g, -123, -25, -121, -7, 'grava', 0.012); U3.anillo(g, -122, -16, 2, 3.4, 'marm', 0.014); // senda de grava en cruz y plazoleta de piedra en el cruce
+      { const rP = ((k) => { let a = k >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })(77); for (const [px, pz] of [[-141, -20], [-103, -20], [-141, -12], [-103, -12]]) U3.parterre(g, G, px, pz, rP, 0.005); for (let x = -148; x < -96; x += 2.6) if (Math.abs(x + 122) > 3) U3.arbusto(g, x, -8.2, 1, rP); }
+      for (let k = 0; k < 9; k++) arbol(-146 + k * 6, k % 2 ? -10 : -22, g, k);
       for (const x of [-136, -122, -108]) { caja(g, 1.6, 0.45, 0.45, '#7a5638', x, 0, -14.6); G.bloquea(x - 0.8, -14.9, x + 0.8, -14.3); }
       letrero(g, T.letrero('PARQUE DE ' + nomDist.oeste.toUpperCase(), '#2e5d3a', '#fff', 'parq-o'), 4.4, 0.8, -122, 2.4, -7.3, 0); cil(g, 0.05, 2.6, '#2a2f35', -124.4, 0, -7.3); cil(g, 0.05, 2.6, '#2a2f35', -119.6, 0, -7.3); }
     // Hospital (norte): bloque blanco con la cruz roja
@@ -123,17 +131,16 @@
     const ESTACIONES = [['centro', 'Metro ' + nomDist.centro, -8, 27, null], ['oeste', 'Metro ' + nomDist.oeste, -131, -12, grupos.oeste], ['este', 'Metro ' + nomDist.este, 116, 4.8, grupos.este], ['norte', 'Metro ' + nomDist.norte, -5.5, -46, grupos.norte]];
     out.estaciones = {};
     ESTACIONES.forEach(([k, nombre, x, z, g0]) => {
-      const g = g0 || W; H.caja(g, 1.8, 1.1, 0.1, H.mat('#9fc4dc', { transparent: true, opacity: 0.5 }), x, 0, z - 0.8); H.caja(g, 0.1, 1.1, 1.6, H.mat('#9fc4dc', { transparent: true, opacity: 0.5 }), x - 0.9, 0, z); H.caja(g, 0.1, 1.1, 1.6, H.mat('#9fc4dc', { transparent: true, opacity: 0.5 }), x + 0.9, 0, z);
-      H.cil(g, 0.06, 3.2, '#2a2f35', x + 1.3, 0, z - 0.6, 8); const m = H.caja(g, 0.7, 0.7, 0.08, '#c0392b', x + 1.3, 3.2, z - 0.6); m.rotation.z = Math.PI / 4;
-      H.letrero(g, T.letrero('M  ' + nombre.toUpperCase(), '#c0392b', '#fff', 'metro-' + k), 2.6, 0.5, x, 1.6, z - 0.86, 0);
-      G.bloquea(x - 1, z - 0.9, x + 1, z + 0.9);
-      const sid = 'metro_' + k; out.estaciones[k] = { x, z: z + 1.6, nombre };
+      const g = g0 || W, bm = U3.bocaMetro(g, G, M, T, x, z, nombre, k);
+      const sid = 'metro_' + k; out.estaciones[k] = { x: bm.acceso[0], z: bm.acceso[1] - 0.8, nombre };
       out.salas[sid] = { id: sid, nombre, accion: '', destino: {}, acciones: s2 => ESTACIONES.filter(e => e[0] !== k).map(e => ({ id: 'a_' + e[0], t: 'Ir a ' + e[1].replace('Metro ', ''), d: 'Metro, 2 minutos' + (s2.modo === 'carrera' ? ', 2 €' : ''), disponible: true, fn: () => viajar(s2, out.estaciones[e[0]], 'Llegas en metro a ' + e[1].replace('Metro ', '')) })) };
-      out.zonas[sid] = [x, z + 1.6]; out.paseo.push([x + 2, z + 2]);
+      out.zonas[sid] = [bm.acceso[0], bm.acceso[1]]; out.paseo.push([x + 2, z + 2.6]);
       // bicis compartidas junto a cada estación
-      const bx = x - 3.2, bz = z + 1.2, bid = 'bici_' + k; for (let i = 0; i < 4; i++) { H.caja(g, 0.08, 0.8, 0.08, '#2a2f35', bx - 1 + i * 0.6, 0, bz - 0.6); const rueda = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 6, 14), H.mat('#1d2024')); rueda.position.set(bx - 1 + i * 0.6, 0.32, bz - 0.2); rueda.rotation.y = Math.PI / 2; g.add(rueda); }
+      // (lejos de la boca de metro, en la acera o la plaza, paralelas a la calle: sitio libre más cercano a 9-21 m)
+      const REG = { centro: [-41, 25, 12, 63], oeste: [-149, -6.9, -96, -3.8], este: [43, 4.5, 149, 23.5], norte: [-149, -109.5, -4.5, -34] }, bid = 'bici_' + k;
+      const pb = U3.paradaBici(g, G, M, T, x, z, REG[k], k === 'norte' ? 'z' : 'x', k);
       out.salas[bid] = { id: bid, nombre: 'Bicis compartidas', accion: '', destino: {}, acciones: s2 => { const S = GM.sede._estado && GM.sede._estado(), en = S && S.yo && S.yo.bici; return [en ? { id: 'dejar', t: 'Dejar la bici', d: 'Vuelves a ir andando.', disponible: true, fn: () => bici(false) } : { id: 'coger', t: 'Coger una bici', d: 'Vas unas dos veces y media más rápido' + (s2.modo === 'carrera' ? ', 1 €' : '') + '.', disponible: true, fn: () => bici(true, s2) }]; } };
-      out.zonas[bid] = [bx, bz + 0.6];
+      out.zonas[bid] = pb ? pb.acceso : [x - 3.2, z + 1.8];
     });
     // Autobús a tu pueblo desde la estación de tren (modo carrera) y llegada desde el pueblo
     if (st.modo === 'carrera' && st.carrera && st.carrera.pueblo) {
@@ -218,10 +225,8 @@
   function bici(on, st) {
     const S = GM.sede._estado && GM.sede._estado(); if (!S || !S.yo) return { ok: false, motivo: 'No hay bicis ahora.' };
     const yo = S.yo; if (yo.biciObj) { yo.obj.remove(yo.biciObj); yo.biciObj = null; } yo.bici = !!on;
-    if (on) { if (st && st.modo === 'carrera' && st.carrera) st.carrera.dinero -= 0.001; const g = new THREE.Group(), mt = new THREE.MeshStandardMaterial({ color: 0xd62d2d }), mn = new THREE.MeshStandardMaterial({ color: 0x1d2024 });
-      for (const z of [-0.55, 0.55]) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.045, 8, 18), mn); r.rotation.y = Math.PI / 2; r.position.set(0, 0.34, z); g.add(r); }
-      const cuadro = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 1.1), mt); cuadro.position.set(0, 0.62, 0); g.add(cuadro); const man = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 0.05), mn); man.position.set(0, 0.95, 0.5); g.add(man);
-      const k = 1 / yo.obj.scale.x; g.scale.setScalar(k); yo.obj.add(g); yo.biciObj = g; }
+    if (on) { if (st && st.modo === 'carrera' && st.carrera) st.carrera.dinero -= 0.001; const g = GM.urbano.bici('#d62d2d'); g.scale.setScalar(1 / yo.obj.scale.x); yo.obj.add(g); yo.biciObj = g; }
+    GM.sede.animar(yo, 'idle');
     return { ok: true, texto: on ? 'Coges una bici' : 'Dejas la bici' };
   }
   // Obra de la ciudad: valla, cartel, estructura a medias y una grúa que gira

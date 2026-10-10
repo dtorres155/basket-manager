@@ -1,7 +1,7 @@
 {
   "name": "basket-manager-escritorio",
   "productName": "Basket Manager 26-27",
-  "version": "0.9.61",
+  "version": "0.9.62",
   "description": "Basket Manager 26/27 para ordenador",
   "main": "main.js",
   "private": true,

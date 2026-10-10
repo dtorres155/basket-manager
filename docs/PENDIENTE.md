@@ -27,12 +27,12 @@
 
 ### Notas del usuario tras jugar la versión de ordenador (oct 2026)
 **Ciudad y urbanismo**
-- Colocación con sentido de pasos de cebra y farolas (alineados con cruces y aceras, separación regular).
-- Aceras más realistas y con variantes; suelos distintos en plazas; parques con césped, arbustos y texturas realistas.
-- Boca del metro más trabajada (escalera que baja, barandillas, marquesina, cartel).
-- Paradas de bici con más detalle (anclajes, tótem, bicis de verdad) y no pegadas a la boca del metro: colocación con criterio urbanístico.
-- Corregir texturas que se solapan o sobresalen (parpadeo entre superficies, piezas que atraviesan fachadas y suelos).
-- Bici con animación de montarse y pedalear.
+- ~~Colocación con sentido de pasos de cebra y farolas~~ (`urbano.js`): los pasos son una losa elevada de asfalto con rampas, franjas, líneas de detención y baldosa táctil amarilla; las farolas van una a cada lado de cada paso y el resto con separación regular, frente a frente en las dos aceras (`GM.urbano.posiciones`), y los árboles se apartan de ellas.
+- ~~Aceras con variantes, suelos distintos en plazas y parques realistas~~: bordillo de granito y franja de servicio con adoquín, ladrillo u hormigón claro según la manzana; en la plaza, orla de piedra, anillos de plaster y ladrillo en torno a la fuente, losas ante el mercado y tarima en las terrazas; el parque con césped de ambientCG, senda de grava con borde, arena bajo los columpios, arbustos y parterres de flores (`GM.urbano.arbusto`, `parterre`, `parche`); parque del oeste con sendas, plazoleta, parterres y setos.
+- ~~Boca del metro más trabajada~~ (`GM.urbano.bocaMetro`): zócalo de granito, escalera que baja (peldaños pintados con borde amarillo), barandillas de acero y central amarilla, marquesina de cristal con cuatro columnas, cartel con el nombre por los dos lados, tótem con la «M» roja y plano de la red.
+- ~~Paradas de bici con más detalle~~ (`GM.urbano.paradaBici` y `bici`): raíl con ocho anclajes y luz verde, bicis de tubos con ruedas de radios, sillín, manillar, cesta y bielas, y tótem con pantalla; se colocan solas en un sitio libre a 9-21 m de la boca de metro, paralelas a la calle.
+- ~~Texturas que se solapan o parpadean~~ (en parte): los céspedes, el asfalto del centro, los pasos, las franjas de pavimento y las baldosas llevan `polygonOffset` y ya no parpadean con la superficie que cubren; las banderas de los edificios de piezas van entre dos ventanas en vez de delante de una. Si se ve otro caso, anotar dónde.
+- ~~Bici con animación de montarse y pedalear~~ (`ponerBici` y `pedalear` en sede3d.js): al coger una bici te sientas en el sillín con las manos en el manillar; al avanzar, las piernas suben y bajan, las ruedas giran y las bielas dan vueltas. Prueba: `node tools/bici_prueba.js`. Falta: animación de subirse.
 
 **Pueblo**
 - Exterior del pueblo muy detallado y con mejores texturas.

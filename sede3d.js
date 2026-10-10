@@ -207,6 +207,38 @@
     p.obj.position.y = Math.max((p.asiento || 0.48) - cad, -pie);
   }
 
+  // Ir en bici: sentado en el sillín (muslos hacia delante), brazos al manillar y, al avanzar, las piernas pedalean y las ruedas giran.
+  // Los pies cuelgan de Root, así que se recolocan a mano en cada cuadro (como en sentar()).
+  const _q3 = new THREE.Quaternion(), _lat = new THREE.Vector3(), _fw = new THREE.Vector3();
+  function ponerBici(p) {
+    const B = p.huesos, ant = p.asiento; p.asiento = 0.98; sentar(p); p.asiento = ant;
+    if (p.biciObj) { p.biciObj.position.set(0, -p.obj.position.y / p.obj.scale.x, 0.16 / p.obj.scale.x); p.obj.updateMatrixWorld(true); }
+    // Brazos hacia el puño más cercano del manillar (con el codo un poco caído)
+    const puños = p.biciObj ? [-0.3, 0.3].map(x => p.biciObj.localToWorld(new THREE.Vector3(x, 1.03, 0.3))) : [];
+    for (const l of ['L', 'R']) {
+      const hombro = B['UpperArm' + l].getWorldPosition(new THREE.Vector3()); let dir;
+      if (puños.length) { const q = puños.reduce((m, c) => (c.distanceTo(hombro) < m.distanceTo(hombro) ? c : m)); dir = q.clone().sub(hombro).normalize(); }
+      else { p.obj.updateMatrixWorld(true); _fw.set(0, 0, 1).applyQuaternion(p.obj.getWorldQuaternion(_q3)); dir = _fw.clone().multiplyScalar(0.7).add(new THREE.Vector3(0, -0.7, 0)).normalize(); }
+      brazo(p, l, dir.clone().add(new THREE.Vector3(0, -0.3, 0)).normalize(), dir.clone().add(new THREE.Vector3(0, 0.12, 0)).normalize(), 1);
+    }
+    p.biciBase = {}; for (const l of ['L', 'R']) { p.biciBase['U' + l] = B['UpperLeg' + l].quaternion.clone(); B['LowerLeg' + l].getWorldQuaternion(_q3); p.biciBase['W' + l] = _q3.clone(); }
+    p.fase = p.fase || 0; p.ultPos = null;
+  }
+  function pedalear(p, dt) {
+    const B = p.huesos; if (!p.biciBase || !B.UpperLegL) return;
+    const o = p.obj.position, v = p.ultPos ? Math.hypot(o.x - p.ultPos[0], o.z - p.ultPos[1]) : 0; p.ultPos = [o.x, o.z];
+    p.fase += v * 1.6; const g = p.biciObj;
+    if (g) { const u = g.userData; u.ruedas.forEach(r => { r.rotation.x += v / 0.335; }); u.bielas.rotation.x = p.fase; u.bielas.children.forEach(c => { if (c.userData.pedal) c.rotation.x = -p.fase; }); }
+    p.obj.updateMatrixWorld(true); _lat.set(1, 0, 0).applyQuaternion(p.obj.getWorldQuaternion(_q3));
+    for (const l of ['L', 'R']) {
+      const ul = B['UpperLeg' + l], ll = B['LowerLeg' + l], f = B['Foot' + l], ang = 0.25 + Math.sin(p.fase + (l === 'R' ? Math.PI : 0)) * 0.42; // bajada del muslo
+      ul.parent.updateMatrixWorld(true); ul.parent.getWorldQuaternion(_q); _q2.copy(_q).multiply(p.biciBase['U' + l]); _q3.setFromAxisAngle(_lat, ang).multiply(_q2);
+      ul.quaternion.copy(_q.invert().multiply(_q3)); ul.updateMatrixWorld(true);
+      ll.parent.getWorldQuaternion(_q); ll.quaternion.copy(_q.invert().multiply(p.biciBase['W' + l])); ll.updateMatrixWorld(true);
+      const fin = ll.localToWorld(_w.copy(p.pieLocal[l])); f.parent.updateMatrixWorld(true); f.position.copy(f.parent.worldToLocal(fin));
+    }
+  }
+
   // ---------- Cuadrícula y caminos (A*) ----------
   function rejilla(P) {
     const [x0, z0, x1, z1] = P.limites, c = P.CELDA, W = Math.round((x1 - x0) / c), H = Math.round((z1 - z0) / c), b = new Uint8Array(W * H);
@@ -252,12 +284,14 @@
 
   // ---------- Personajes que caminan ----------
   function anim(p, nombre) {
+    if (p.bici && p.huesos && (nombre === 'walk' || nombre === 'sprint' || nombre === 'idle')) nombre = 'bici';
     if (p.actual === nombre) return;
     if (nombre === 'sit') {
       // Postura sentada fija: primer fotograma de estar de pie, se doblan las piernas una vez y el mezclador se detiene
       p.mixer.stopAllAction(); const a = p.acc.idle; a.reset().play(); p.mixer.update(0); a.stop();
       p.obj.position.y = 0; sentar(p); p.sentado = true; p.accion = null; p.actual = nombre; return;
     }
+    if (nombre === 'bici') { p.mixer.stopAllAction(); const a0 = p.acc.idle; a0.reset().play(); p.mixer.update(0); a0.stop(); p.obj.position.y = 0; ponerBici(p); p.sentado = true; p.accion = null; p.actual = nombre; return; }
     if (p.sentado) { p.sentado = false; p.obj.position.y = 0; }
     const a = p.acc[nombre] || p.acc.idle; if (!a) return;
     a.reset().fadeIn(0.2).play(); if (p.accion) p.accion.fadeOut(0.2); p.accion = a; p.actual = nombre;
@@ -1064,7 +1098,7 @@
       if (!S || !S.vivo) return; S.raf = requestAnimationFrame(bucle); if (S.pausa) return;
       S.reloj.update(); const dt = Math.min(0.05, S.reloj.getDelta()), t = S.reloj.getElapsed();
       rendimiento();
-      if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); if (!S.construccion) S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
+      if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); else if (S.yo.bici && S.yo.actual === 'bici') pedalear(S.yo, dt); if (!S.construccion) S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
       S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente(); }
