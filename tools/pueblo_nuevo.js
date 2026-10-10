@@ -39,6 +39,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const ok = await p.evaluate(t => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'pueblo_' + t); if (!z) return false; S.zonaActual = null; S.yo.camino = null; S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z + 0.3); S.zoom = 22; S.inc = 0.7; return true; }, t);
     await sleep(2200); await p.screenshot({ path: path.join(DIR, '2b_ficha_' + t + '.png') }); if (!ok) console.log('sin zona', t);
   }
+  // Vistas de cámara libre: [nombre, x, z, mira a (x,y,z), distancia de la cámara (dx, alto, dz)]
+  const LIB = [['c_iglesia', -6.5, -16, [-6.5, 7, -10], [9, 8, 22]], ['c_iglesia_apside', -6.5, -16, [-6.5, 6, -22], [-14, 9, -34]], ['c_torre', -3, -11, [-3, 14, -11], [14, 12, 6]], ['c_fuente', 1, 0, [1, 1.5, 0], [8, 5, 9]], ['c_puerta', 0, 41, [0, 3.5, 44], [8, 4, 62]], ['c_torre_muralla', 40, 21, [40, 6, 21], [26, 9, 40]], ['c_pozo', -10, 7, [-10, 1.2, 7], [-3, 3, 14]], ['c_farola', 5, 17, [5, 2.2, 17], [10, 3, 24]]];
+  for (const [n, , , mira, cam] of LIB) { await p.evaluate(([mira, cam]) => { const S = GM.sede._estado(); S.pausa = true; if (S.panel) S.panel.style.display = 'none'; S.camera.position.set(mira[0] + cam[0], cam[1], mira[2] + cam[2] - (cam[2] > 0 ? 0 : 0)); S.camera.lookAt(mira[0], mira[1], mira[2]); S.renderer.render(S.scene, S.camera); }, [mira, cam]); await sleep(500); await p.screenshot({ path: path.join(DIR, n + '.png') }); await p.evaluate(() => { GM.sede._estado().pausa = false; }); }
   await foto('3_vehiculos', () => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'pueblo_vehiculos'); if (z) { S.yo.camino = null; S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z); } S.zoom = 12; S.inc = 0.6; S.yaw = 0.4; });
   // moto
   await p.evaluate(() => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'pueblo_vehiculos'); if (z) z.sala.acciones(GM.state)[1].fn(); });

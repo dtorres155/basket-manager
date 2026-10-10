@@ -62,11 +62,17 @@
       return;
     }
     if (tipo === 'parque') {
-      caja(G, 7, 0.05, 7, '#6ea35a', 0, 0, 0);
-      for (let i = 0; i < 4 + nv * 2; i++) { const a = r() * 6.28, d = 1.5 + r() * 2; cil(G, 0.15, 1.2, '#6b4a2b', Math.cos(a) * d, 0, Math.sin(a) * d, 6); const copa = new THREE.Mesh(new THREE.SphereGeometry(0.9 + r() * 0.4, 8, 6), mat('#3f7d3a')); copa.position.set(Math.cos(a) * d, 1.9, Math.sin(a) * d); copa.castShadow = true; G.add(copa); }
-      caja(G, 1.6, 0.45, 0.5, '#7a5230', -1.5, 0, 2.6); caja(G, 1.6, 0.45, 0.5, '#7a5230', 1.5, 0, 2.6);
-      [-0.6, 0.6].forEach(x => cil(G, 0.05, 2, '#c0392b', x, 0, -2.4, 6)); caja(G, 1.4, 0.08, 0.08, '#c0392b', 0, 2, -2.4);
-      if (nv >= 2) { const lago = new THREE.Mesh(new THREE.CircleGeometry(1.4, 20).rotateX(-Math.PI / 2), mat('#4f9fd1')); lago.position.set(1.6, 0.06, -0.6); G.add(lago); }
+      const cesp = new THREE.Mesh(new THREE.CylinderGeometry(3.7, 3.8, 0.1, 28), mat('#6ea35a', { roughness: 1 })); cesp.scale.set(1, 1, 0.95); cesp.position.y = 0.05; cesp.receiveShadow = true; G.add(cesp);
+      const rib = new THREE.Mesh(new THREE.TorusGeometry(3.78, 0.1, 6, 36).rotateX(Math.PI / 2), mat('#a39380')); rib.scale.set(1, 1, 0.95); rib.position.y = 0.08; G.add(rib);
+      { const cr = new THREE.CatmullRomCurve3([new THREE.Vector3(-3.6, 0.1, 1.4), new THREE.Vector3(-1.5, 0.1, 0.3), new THREE.Vector3(0.4, 0.1, 0.8), new THREE.Vector3(1.8, 0.1, -0.4), new THREE.Vector3(3.5, 0.1, -1.6)]), pts = cr.getPoints(24), sh = new THREE.Shape(); const ps = pts.map(p => [p.x, p.z]); for (let i = 0; i < ps.length; i++) { const [x, z] = ps[i], [x2, z2] = ps[Math.min(ps.length - 1, i + 1)], [x0, z0] = ps[Math.max(0, i - 1)], tx = x2 - x0, tz = z2 - z0, l = Math.hypot(tx, tz) || 1; ps[i].push(-tz / l * 0.35, tx / l * 0.35); }
+        const geo = new THREE.BufferGeometry(), pos = [], idx = []; ps.forEach((q, i) => { pos.push(q[0] + q[2], 0.11, q[1] + q[3], q[0] - q[2], 0.11, q[1] - q[3]); if (i) { const k = (i - 1) * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); void sh; const sen = new THREE.Mesh(geo, mat('#c9b99a', { roughness: 1, side: THREE.DoubleSide })); sen.receiveShadow = true; G.add(sen); }
+      for (let i = 0; i < 3 + nv * 2; i++) { const a = r() * 6.28, d = 1.7 + r() * 1.6; arbol(G, Math.cos(a) * d, Math.sin(a) * d * 0.9, i % 3 ? 'frutal' : 'olivo', r, 0.08); }
+      for (const [bx, bz, br] of [[-1.5, 2.5, 0], [1.6, 2.5, 0]]) { const bg = new THREE.Group(); bg.position.set(bx, 0.1, bz); bg.rotation.y = br; G.add(bg); caja(bg, 1.6, 0.08, 0.5, '#7a5230', 0, 0.42, 0); caja(bg, 1.6, 0.4, 0.06, '#7a5230', 0, 0.55, -0.22); for (const sx of [-0.7, 0.7]) { const pata = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.03, 5, 10, Math.PI), mat('#23282d')); pata.position.set(sx, 0.2, 0); pata.rotation.y = Math.PI / 2; bg.add(pata); } }
+      if (GM.curvas) { const f = new THREE.Group(); f.position.set(-0.6, 0.1, -2.2); G.add(f); const fl = GM.curvas.lathe('f-parque', [[0.0, 0], [0.5, 0], [0.55, 0.15], [0.45, 0.35], [0.22, 0.5], [0.12, 0.9], [0.2, 1.0]], 14, mat('#d8cfbb')); f.add(fl); }
+      if (nv >= 2) { const sh2 = new THREE.Shape(); sh2.moveTo(0, -0.9); sh2.bezierCurveTo(1.1, -1.2, 1.9, -0.2, 1.4, 0.5); sh2.bezierCurveTo(1.0, 1.2, -0.3, 1.1, -0.9, 0.5); sh2.bezierCurveTo(-1.5, -0.2, -0.8, -0.7, 0, -0.9);
+        const borde = new THREE.Mesh(new THREE.ExtrudeGeometry(sh2, { depth: 0.14, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.05, bevelSegments: 2 }).rotateX(Math.PI / 2), mat('#a39380')); borde.scale.set(1.12, 1, 1.12); borde.position.set(1.6, 0.2, 0.2); G.add(borde);
+        const lago = new THREE.Mesh(new THREE.ShapeGeometry(sh2, 12).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x3f86a6, roughness: 0.06, metalness: 0.2 })); lago.position.set(1.6, 0.16, 0.2); G.add(lago);
+        for (let k = 0; k < 6; k++) { const j = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.5 + r() * 0.3, 4), mat('#6f8a3a')); const a = r() * 6.28; j.position.set(1.6 + Math.cos(a) * 1.2, 0.4, 0.2 + Math.sin(a) * 0.9); G.add(j); } }
       return;
     }
     if (tipo === 'cine') {   // cine de pueblo: marquesina luminosa, carteles y, con la mejora, multicines
@@ -276,7 +282,7 @@
     if (split) { const ga = new THREE.Group(); ga.position.set(W0 / 2 - (W0 - wm) / 2, 0, -0.175); g.add(ga); bloque(ga, M, E, W0 - wm, d - 0.35, Math.max(1, pisos - 1), muroC, null, null, r, { puerta: false }); }
     const g0 = g; g = gm; void g0;
     // Balcones con losa, barandilla de forja y macetas
-    for (let p = 1; p < pisos; p++) if (r() < 0.6) { const bw = Math.min(w - 1.2, 2 + r() * 1.6), by = p * 3.1 + 0.42, bx = (r() - 0.5) * Math.max(0, w - bw - 1); caja(g, bw, 0.12, 0.8, '#b9ad98', bx, by, d / 2 + 0.4); caja(g, bw, 0.05, 0.05, '#2a2f35', bx, by + 1.0, d / 2 + 0.78); caja(g, 0.05, 1.0, 0.8, '#2a2f35', bx - bw / 2 + 0.03, by, d / 2 + 0.4); caja(g, 0.05, 1.0, 0.8, '#2a2f35', bx + bw / 2 - 0.03, by, d / 2 + 0.4); for (let k = 0; k * 0.2 < bw; k++) caja(g, 0.025, 1.0, 0.025, '#2a2f35', bx - bw / 2 + 0.1 + k * 0.2, by, d / 2 + 0.78);
+    for (let p = 1; p < pisos; p++) if (r() < 0.6) { const bw = Math.min(w - 1.2, 2 + r() * 1.6), by = p * 3.1 + 0.42, bx = (r() - 0.5) * Math.max(0, w - bw - 1); if (GM.casasReal && GM.casasReal.balconCurvo && r() < 0.5) { GM.casasReal.balconCurvo(g, bx, by, bw, d / 2, r); continue; } caja(g, bw, 0.12, 0.8, '#b9ad98', bx, by, d / 2 + 0.4); caja(g, bw, 0.05, 0.05, '#2a2f35', bx, by + 1.0, d / 2 + 0.78); caja(g, 0.05, 1.0, 0.8, '#2a2f35', bx - bw / 2 + 0.03, by, d / 2 + 0.4); caja(g, 0.05, 1.0, 0.8, '#2a2f35', bx + bw / 2 - 0.03, by, d / 2 + 0.4); for (let k = 0; k * 0.2 < bw; k++) caja(g, 0.025, 1.0, 0.025, '#2a2f35', bx - bw / 2 + 0.1 + k * 0.2, by, d / 2 + 0.78);
       for (let k = 0; k < 3; k++) { cil(g, 0.1, 0.18, '#b4643d', bx - bw / 3 + k * bw / 3, by + 0.12, d / 2 + 0.68, 7); const fl = new THREE.Mesh(new THREE.SphereGeometry(0.13, 7, 5), mat(['#c0392b', '#e84393', '#f39c12', '#f4f1ea'][(r() * 4) | 0])); fl.position.set(bx - bw / 3 + k * bw / 3, by + 0.4, d / 2 + 0.68); g.add(fl); } }
     if (GM.kit && GM.kit.gato && r() < 0.14) { const gt = GM.kit.gato(['#3b3b3b', '#c98d4f', '#f2efe8', '#7a6a5a'][(r() * 4) | 0]); gt.position.set(-w / 4 + r() * w / 2, h + (1.6 + w * 0.06) * 0.55, 0.1); gt.rotation.y = r() * 6.28; g.add(gt); }
     if (r() * 100 < (club.cariñoPueblo || 40) * 0.6) { const f = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.6), mat(r() < 0.5 ? club.colores[0] : club.colores[1] || '#fff', { side: THREE.DoubleSide })); f.position.set(-w / 4, Math.min(h - 0.8, 4.2), d / 2 + 0.35); g.add(f); }
@@ -292,12 +298,12 @@
       caja(W, l, alto, 1.4, piedra, x, 0, z, -ang); [-0.3, 0.3].forEach(k => { const al = caja(W, 0.7, 0.7, 1.4, piedra, x, alto, z, -ang); al.translateX(k * l); });
       O.marca({ x, z, w: l, d: 2.4, ry: -ang }, 4); for (let t = 0; t <= 1.001; t += 0.125) { const bx = pa[0] + (pb[0] - pa[0]) * t, bz = pa[1] + (pb[1] - pa[1]) * t; G.bloquea(bx - 0.9, bz - 0.9, bx + 0.9, bz + 0.9); }
       if (i % 9 === 4) {
-        cil(W, 2.3, alto + 2.6, piedra, x, 0, z, 12); if (E.torre !== 'almenada') { const c = new THREE.Mesh(new THREE.ConeGeometry(2.7, 2.6, 12), mat(E.teja)); c.position.set(x, alto + 3.9, z); W.add(c); }
+        cil(W, 2.3, alto + 2.6, piedra, x, 0, z, 12); if (GM.curvas) GM.curvas.almenasTorre(W, x, z, alto, piedra); if (E.torre !== 'almenada') { const c = new THREE.Mesh(new THREE.ConeGeometry(2.7, 2.6, 12), mat(E.teja)); c.position.set(x, alto + 3.9, z); W.add(c); }
         if (nivel >= 3) { const st = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 3), mat(club.colores[0], { side: THREE.DoubleSide })); const l2 = Math.hypot(x, z); st.position.set(x * (l2 + 2.35) / l2, alto - 0.5, z * (l2 + 2.35) / l2); st.lookAt(x * 2, alto - 0.5, z * 2); W.add(st); }   // estandartes del club
         O.marca({ x, z, w: 5.5, d: 5.5 }, 4); G.bloquea(x - 2.3, z - 2.3, x + 2.3, z + 2.3);
       }
     }
-    [PS, PN].forEach(([px, pz]) => { [-3.6, 3.6].forEach(dx => { cil(W, 2.1, alto + 3.2, piedra, px + dx, 0, pz, 12); O.marca({ x: px + dx, z: pz, w: 4.6, d: 4.6 }, 4); G.bloquea(px + dx - 2.1, pz - 2.1, px + dx + 2.1, pz + 2.1); }); caja(W, 5.2, 1.6, 1.6, piedra, px, alto - 0.3, pz); });
+    [PS, PN].forEach(([px, pz]) => { [-3.6, 3.6].forEach(dx => { cil(W, 2.1, alto + 3.2, piedra, px + dx, 0, pz, 12); O.marca({ x: px + dx, z: pz, w: 4.6, d: 4.6 }, 4); G.bloquea(px + dx - 2.1, pz - 2.1, px + dx + 2.1, pz + 2.1); }); if (GM.curvas) GM.curvas.puertaMuralla(W, piedra, px, pz, alto); else caja(W, 5.2, 1.6, 1.6, piedra, px, alto - 0.3, pz); });
   }
   // El entorno: ladera, campos, río con puente, carretera que baja, olivares, cipreses, masías, ermita y montañas
   function entorno(W, M, E, r, carr, anims, S) {
@@ -422,18 +428,17 @@
     muralla(W, G, O, E, nivel, club);
     // Iglesia (preside la plaza desde el norte) y ayuntamiento con soportales (este)
     const IG = { x: -6.5, z: -16, w: 10, d: 13, ry: 0 };
-    { const g = new THREE.Group(); g.position.set(IG.x, 0, IG.z); W.add(g); const m = E.clave === 'andaluz' ? '#f4f1ea' : '#bfa985'; caja(g, 10, 9.5, 13, m, 0, 0, 0); tejado(g, 10, 13, 3.8, E.teja, 9.5);
-      caja(g, 3.4, 18, 3.4, m, 3.4, 0, 4.8); const pin = new THREE.Mesh(new THREE.ConeGeometry(2.5, 3.8, 4), mat(E.teja)); pin.rotation.y = Math.PI / 4; pin.position.set(3.4, 19.9, 4.8); g.add(pin);
-      for (let i = 0; i < 2; i++) { const cam = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.12, 6, 12, Math.PI), mat('#2a2a2a')); cam.position.set(3.4, 15 + i * 0.01, 6.52); g.add(cam); }
-      caja(g, 2, 3.4, 0.12, '#4a3020', -1, 0, 6.55); const rosa = new THREE.Mesh(new THREE.CircleGeometry(1, 18), mat('#2f5f8f')); rosa.position.set(-1, 6.4, 6.57); g.add(rosa);
-      O.marca(IG, 2); G.bloquea(IG.x - 5, IG.z - 6.5, IG.x + 5.2, IG.z + 6.6); }
+    if (GM.curvas) GM.curvas.iglesia(W, M, E, r, club, IG.x, IG.z);
+    O.marca(IG, 2); G.bloquea(IG.x - 5, IG.z - 6.5, IG.x + 5.2, IG.z + 6.6);
     const AY = { x: 17, z: 6, w: 10, d: 8, ry: -Math.PI / 2 };
     { const g = new THREE.Group(); g.position.set(AY.x, 0, AY.z); g.rotation.y = AY.ry; W.add(g); bloque(g, M, E, 10, 8, 2, E.muros[1 % E.muros.length], 'Ayuntamiento', '#7a2f22', r);
       for (let i = 0; i < 6; i++) cil(g, 0.3, 3, '#e8dcc4', -4.2 + i * 1.68, 0, 5, 10); caja(g, 10.6, 0.4, 2.2, '#d8cbb0', 0, 3, 5);
       cil(g, 0.05, 4, '#ddd', 4.2, 6.2, 4.2, 5); caja(g, 1.4, 0.9, 0.04, club.colores[0], 4.9, 9.1, 4.2); O.marca({ x: AY.x - 1, z: AY.z, w: 10, d: 11, ry: AY.ry }, 2); G.bloquea(AY.x - 4, AY.z - 5, AY.x + 4, AY.z + 5); }
     // Plaza: fuente, bancos, estatua y, con la reforma, farolas; puestos de mercado desde «villa»
     const nPl = ed('plaza').nivel, FX = 1, FZ = 0;
-    cil(W, nPl ? 2.2 : 1.4, 0.6, '#d9d2c3', FX, 0, FZ, 20); const agua = new THREE.Mesh(new THREE.CircleGeometry(nPl ? 1.9 : 1.2, 20).rotateX(-Math.PI / 2), mat('#5aa9d6')); agua.position.set(FX, 0.62, FZ); W.add(agua); cil(W, 0.25, 1.8, '#d9d2c3', FX, 0, FZ, 10); G.bloquea(FX - 2.3, FZ - 2.3, FX + 2.3, FZ + 2.3);
+    if (GM.curvas) GM.curvas.fuente(W, FX, FZ, nPl); else { cil(W, nPl ? 2.2 : 1.4, 0.6, '#d9d2c3', FX, 0, FZ, 20); cil(W, 0.25, 1.8, '#d9d2c3', FX, 0, FZ, 10); }
+    G.bloquea(FX - 2.7, FZ - 2.7, FX + 2.7, FZ + 2.7);
+    if (GM.curvas) for (const [px, pz] of [[-10, 7], [9, 8], [-9, -8]]) { const R = { x: px, z: pz, w: 3, d: 3, ry: 0 }; if (O.libre(R, [1])) { GM.curvas.pozo(W, px, pz); O.marca(R, 2); G.bloquea(px - 1.3, pz - 1.3, px + 1.3, pz + 1.3); break; } }
     [[-7, -4, 0.3], [6, -6.5, -0.2], [-9, 4, 1.4], [8, 5, -1.2]].concat(nPl ? [[-3, 6.5, 0], [4, -2.8, 0.1]] : []).forEach(([x, z, a]) => { caja(W, 1.7, 0.45, 0.55, '#7a5230', x, 0, z, a); G.bloquea(x - 0.8, z - 0.4, x + 0.8, z + 0.4); });
     if (nPl) [[-10, -3], [9, -6], [-6, 7], [9, 3]].forEach(([x, z]) => { cil(W, 0.6, 0.6, '#b9a98c', x, 0, z, 10); arbol(W, x, z, 'frutal', r); G.bloquea(x - 0.6, z - 0.6, x + 0.6, z + 0.6); });   // árboles en alcorques
     if (nPl >= 2) PLAZA.forEach(([x, z]) => { const lx = x * 0.9, lz = z * 0.9; cil(W, 0.12, 3.4, '#3d3d3d', lx, 0, lz, 6); const l = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshStandardMaterial({ color: '#fff3c4', emissive: '#ffd27a', emissiveIntensity: 0.8 })); l.position.set(lx, 3.5, lz); W.add(l); });
@@ -441,7 +446,10 @@
     if (GM.kit && GM.kit.palomas) S.palomas = GM.kit.palomas(W, [[FX + 4, FZ + 3], [FX - 4.5, FZ - 3], [6, 6], [-8, -2]], 6);
     const nMu = ed('mural').nivel;
     if (nMu) { const t = M.textura('mural-pueblo-' + st.jugadores.yo.nombre, 256, (x, n) => { x.fillStyle = club.colores[0]; x.fillRect(0, 0, n, n); x.fillStyle = club.colores[1] || '#fff'; x.font = 'bold 40px sans-serif'; x.textAlign = 'center'; x.fillText(st.jugadores.yo.nombre.split(' ').pop().toUpperCase(), n / 2, n / 2); x.font = 'bold 80px sans-serif'; x.fillText(String(st.jugadores.yo.dorsal || 7), n / 2, n / 2 + 80); });
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), t ? new THREE.MeshStandardMaterial({ map: t }) : mat(club.colores[0])); m.position.set(IG.x - 2.9, 4.6, IG.z + 6.57); W.add(m);
+      const arch = new THREE.Shape(); arch.moveTo(-1.5, 0); arch.lineTo(1.5, 0); arch.lineTo(1.5, 2.2); arch.absarc(0, 2.2, 1.5, 0, Math.PI, false); arch.lineTo(-1.5, 0);
+      const ag = new THREE.ShapeGeometry(arch, 18), apos = ag.attributes.position, auv = ag.attributes.uv; for (let i = 0; i < apos.count; i++) auv.setXY(i, (apos.getX(i) + 1.5) / 3, apos.getY(i) / 3.7);
+      const m = new THREE.Mesh(ag, t ? new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }) : mat(club.colores[0])); m.position.set(IG.x - 3.4, 2.9, IG.z + 6.62); W.add(m);
+      { const fr = new THREE.Mesh(new THREE.TorusGeometry(1.58, 0.1, 6, 22, Math.PI), mat('#a39380')); fr.position.set(IG.x - 3.4, 5.1, IG.z + 6.64); W.add(fr); for (const sx of [-1.58, 1.58]) caja(W, 0.2, 2.2, 0.16, '#a39380', IG.x - 3.4 + sx, 2.9, IG.z + 6.64); caja(W, 3.4, 0.16, 0.3, '#a39380', IG.x - 3.4, 2.78, IG.z + 6.66); }
       if (nMu >= 3) { const sx = -6, sz = 4.5; cil(W, 0.7, 1.2, '#cfc6b4', sx, 0, sz, 12); const oro = mat('#c9a227', { metalness: 0.8, roughness: 0.35 }); cil(W, 0.35, 1.6, oro, sx, 1.2, sz, 10); const cab = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), oro); cab.position.set(sx, 3.1, sz); W.add(cab); G.bloquea(sx - 0.8, sz - 0.8, sx + 0.8, sz + 0.8); } }
     // Parcelas: reservan su tamaño máximo; buscan en espiral el primer hueco libre del lado que les toca (dentro o fuera de la
     // muralla) con el frente a una calle; las grandes pueden quedar más atrás con una explanada hasta la calle
@@ -512,7 +520,7 @@
     });
     // Farolas (nunca dentro de la plaza): con «alumbrado» más y encendidas
     const nAl = ed('alumbrado').nivel; let kF = 0;
-    aLoLargo(nAl ? 9 : 16, (x, z, tx, tz, c) => { const s = (kF++ % 2 ? 1 : -1), lx = x - tz * (c.w / 2 + 0.4) * s, lz = z + tx * (c.w / 2 + 0.4) * s; if (O.punto(lx, lz) > 1 || enPlaza(lx, lz)) return; cil(W, 0.08, 3.2, nAl ? '#2c3e50' : '#6b5a48', lx, 0, lz, 6); const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), new THREE.MeshStandardMaterial({ color: '#fff3c4', emissive: nAl ? '#ffd27a' : '#000', emissiveIntensity: 0.7 })); l.position.set(lx, 3.3, lz); W.add(l); O.punto(lx, lz, 5); });
+    aLoLargo(nAl ? 9 : 16, (x, z, tx, tz, c) => { const s = (kF++ % 2 ? 1 : -1), lx = x - tz * (c.w / 2 + 0.4) * s, lz = z + tx * (c.w / 2 + 0.4) * s; if (O.punto(lx, lz) > 1 || enPlaza(lx, lz)) return; if (GM.curvas) GM.curvas.farola(W, lx, lz, x, z, !!nAl); else { cil(W, 0.08, 3.2, '#6b5a48', lx, 0, lz, 6); } O.punto(lx, lz, 5); });
     // Huertos y árboles en lo que queda libre (nunca en la plaza ni pegados a una calle)
     for (let k = 0; k < 160; k++) { const x = (r() * 2 - 1) * MES.rx * 0.95, z = MES.cz + (r() * 2 - 1) * MES.rz * 0.95; if (dMes(x, z) > 0.92 || enPlaza(x, z) || !O.libre({ x, z, w: 4, d: 4 }) || calleCercana(x, z).d < 4) continue; arbol(W, x, z, r() < 0.35 ? 'ciprés' : r() < 0.6 ? 'olivo' : 'frutal', r); O.marca({ x, z, w: 3, d: 3 }, 5); G.bloquea(x - 0.5, z - 0.5, x + 0.5, z + 0.5); }
     // Manchas de hierba y matojos en la tierra apisonada del casco (donde no hay calles, plaza ni edificios)

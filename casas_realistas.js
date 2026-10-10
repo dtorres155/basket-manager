@@ -71,6 +71,7 @@
   // Chimenea de piedra con remate y dos tiros
   function chimenea(G, x, yBase, z, r) {
     const pm = piedraMat('#a89f8d'), h = 1.5 + r() * 0.5;
+    if (r() < 0.4) { const lad = piedraMat('#9c6a55'), c = new T.Mesh(new T.CylinderGeometry(0.27, 0.34, h, 12), lad); c.position.set(x, yBase + h / 2, z); c.castShadow = true; G.add(c); const an = new T.Mesh(new T.TorusGeometry(0.3, 0.06, 6, 14), pm); an.rotation.x = Math.PI / 2; an.position.set(x, yBase + h - 0.1, z); G.add(an); const rem = new T.Mesh(new T.ConeGeometry(0.4, 0.4, 12), mat('#4a3b34')); rem.position.set(x, yBase + h + 0.2, z); G.add(rem); const mush = new T.Mesh(new T.CylinderGeometry(0.1, 0.12, 0.3, 8), mat('#b4643d')); mush.position.set(x, yBase + h + 0.5, z); G.add(mush); return; }
     caja(G, 0.62, h, 0.62, pm, x, yBase, z); caja(G, 0.8, 0.1, 0.8, pm, x, yBase + h, z); caja(G, 0.68, 0.14, 0.68, pm, x, yBase + h - 0.12, z);
     for (const s of [-0.14, 0.14]) { const t = new T.Mesh(new T.CylinderGeometry(0.1, 0.12, 0.38, 8), mat('#b4643d')); t.position.set(x + s, yBase + h + 0.29, z); t.castShadow = true; G.add(t); }
   }
@@ -93,9 +94,11 @@
     { const v = (r() * 3) | 0, tf = decalFachada(M, w, h, cols, pisos, v, false), tl = decalFachada(M, d, h, 1, pisos, v, true), mf = matDecal(tf, 'f' + cols + '_' + pisos + '_' + Math.round(w) + '_' + Math.round(h) + '_' + v), ml = matDecal(tl, 'l' + Math.round(d) + '_' + Math.round(h) + '_' + v);
       if (mf) { const pf = new T.Mesh(new T.PlaneGeometry(w, h), mf); pf.position.set(0, h / 2, d / 2 + 0.013); G.add(pf); const pb = new T.Mesh(new T.PlaneGeometry(w, h), mf); pb.position.set(0, h / 2, -d / 2 - 0.013); pb.rotation.y = Math.PI; G.add(pb); }
       if (ml) for (const s of [-1, 1]) { const ps = new T.Mesh(new T.PlaneGeometry(d, h), ml); ps.position.set(s * (w / 2 + 0.013), h / 2, 0); ps.rotation.y = s * Math.PI / 2; G.add(ps); } }
-    // ventanas
+    // ventanas (algunas casas con arcos de medio punto; otras con un mirador semicircular en la primera planta)
+    const arcoV = r() < 0.32, mi = (pisos >= 2 && cols >= 2 && r() < 0.34) ? ((r() * cols) | 0) : -1;
     for (let p = 0; p < pisos; p++) for (let i = 0; i < cols; i++) {
       const x = -w / 2 + (i + 0.5) * w / cols + (r() - 0.5) * 0.14; if (p === 0 && conPuerta && Math.abs(x) < 1.1) continue;
+      if (p === 1 && i === mi) { mirador(G, x, hP + 0.95, d / 2, mM, mPc, vidrio, tejaMat(envejecer(E.teja || '#b4643d', r, 1, 0.1)), blanco); continue; }
       const wy = p * hP + (p === 0 ? 1.15 : 1.0), vw = 0.9, vh = p === 0 ? 1.25 : 1.4, zf = d / 2;
       const hueco = new T.Mesh(new T.BoxGeometry(vw, vh, 0.04), interior); hueco.position.set(x, wy + vh / 2, zf + 0.002); G.add(hueco);                       // fondo oscuro del hueco
       if (r() < 0.72) { const cc = new T.Mesh(new T.PlaneGeometry(vw * 0.5, vh * 0.7), mat(CORTINAS[(r() * CORTINAS.length) | 0], { roughness: 1 })); cc.position.set(x + (r() < 0.5 ? -0.2 : 0.2), wy + vh * 0.62, zf + 0.03); G.add(cc); }            // cortina
@@ -103,7 +106,9 @@
       caja(G, 0.045, vh, 0.07, blanco, x, wy, zf + 0.05, 0, false); caja(G, vw, 0.045, 0.07, blanco, x, wy + vh * 0.56, zf + 0.05, 0, false);         // cruceta
       for (const s of [-1, 1]) caja(G, 0.07, vh + 0.02, 0.07, blanco, x + s * (vw / 2), wy, zf + 0.05, 0, false); caja(G, vw + 0.14, 0.07, 0.07, blanco, x, wy + vh, zf + 0.05, 0, false);
       for (const s of [-1, 1]) caja(G, 0.14, vh + 0.2, 0.12, mPc, x + s * (vw / 2 + 0.14), wy - 0.04, zf + 0.04, 0, false);                                    // jambas de piedra
-      caja(G, vw + 0.5, 0.17, 0.16, mPc, x, wy + vh + 0.05, zf + 0.05, 0, false); caja(G, vw + 0.46, 0.1, 0.3, mPc, x, wy - 0.1, zf + 0.12, 0, false);    // dintel y alféizar
+      if (arcoV) { const hd = new T.Mesh(new T.CircleGeometry(vw / 2, 14, 0, Math.PI), interior); hd.position.set(x, wy + vh, zf + 0.004); G.add(hd); const gl = new T.Mesh(new T.CircleGeometry(vw / 2, 14, 0, Math.PI), vidrio); gl.position.set(x, wy + vh, zf + 0.046); G.add(gl); const ar = new T.Mesh(new T.TorusGeometry(vw / 2 + 0.1, 0.085, 6, 16, Math.PI), mPc); ar.position.set(x, wy + vh, zf + 0.07); ar.scale.z = 0.8; G.add(ar); const ar2 = new T.Mesh(new T.TorusGeometry(vw / 2, 0.025, 5, 14, Math.PI), blanco); ar2.position.set(x, wy + vh, zf + 0.055); G.add(ar2); caja(G, 0.045, vw / 2, 0.07, blanco, x, wy + vh, zf + 0.05, 0, false); }
+      else caja(G, vw + 0.5, 0.17, 0.16, mPc, x, wy + vh + 0.05, zf + 0.05, 0, false);
+      caja(G, vw + 0.46, 0.1, 0.3, mPc, x, wy - 0.1, zf + 0.12, 0, false);    // dintel y alféizar
       const modo = r(), plantaBaja = p === 0;
       if (plantaBaja && modo < 0.4) { for (let b = 0; b < 5; b++) cil(G, 0.014, vh + 0.1, hierro, x - vw / 2 + 0.1 + b * (vw - 0.2) / 4, wy - 0.02, zf + 0.15, 5); caja(G, vw, 0.025, 0.025, hierro, x, wy + vh * 0.35, zf + 0.15, 0, false); caja(G, vw, 0.025, 0.025, hierro, x, wy + vh * 0.78, zf + 0.15, 0, false); }       // reja
       else if (E.postigos && modo < 0.88) for (const s of [-1, 1]) {
@@ -133,6 +138,10 @@
       const va = new T.Mesh(new T.PlaneGeometry(aw, 0.22), mt); va.position.set(0, 2.18, d / 2 + 1.04); G.add(va);
       for (const s of [-1, 1]) { const br = new T.Mesh(new T.BoxGeometry(0.03, 0.03, 1.1), hierro); br.position.set(s * (aw / 2 - 0.05), 2.4, d / 2 + 0.55); br.rotation.x = -0.55; G.add(br); }
     }
+    // cornisa de moldura redondeada y ojo de buey en un hastial
+    for (const sz of [1, -1]) { const co = new T.Mesh(new T.CylinderGeometry(0.1, 0.1, w + 0.12, 10).rotateZ(Math.PI / 2), mPc); co.position.set(0, h - 0.08, sz * (d / 2 + 0.07)); G.add(co); caja(G, w + 0.1, 0.12, 0.2, mPc, 0, h - 0.3, sz * (d / 2 + 0.05), 0, false); }
+    if (r() < 0.55) { const s = r() < 0.5 ? 1 : -1, hy = h + Math.max(1.5, d * 0.24 + 0.4 * (E.pendiente || 0)) * 0.32, ob = new T.Group(); ob.position.set(s * (w / 2 + 0.016), hy, 0); ob.rotation.y = s * Math.PI / 2; G.add(ob); const od = new T.Mesh(new T.CircleGeometry(0.3, 16), interior); ob.add(od); const og = new T.Mesh(new T.CircleGeometry(0.27, 16), vidrio); og.position.z = 0.01; ob.add(og); const ot = new T.Mesh(new T.TorusGeometry(0.31, 0.06, 6, 18), mPc); ot.position.z = 0.02; ob.add(ot); for (const a of [0, Math.PI / 2]) { const bar = new T.Mesh(new T.BoxGeometry(0.03, 0.56, 0.03), blanco); bar.position.z = 0.02; bar.rotation.z = a; ob.add(bar); } }
+    if (conPuerta && !o.anexo && pisos >= 2 && w >= 5 && r() < 0.15) torreta(G, (r() < 0.5 ? 1 : -1) * (w / 2 - 0.35), d / 2 - 0.35, h, mM, mP, mPc, tejaMat(envejecer(E.teja || '#b4643d', r, 1, 0.1)), vidrio, interior);
     // tejado, chimeneas y antena
     const hT = Math.max(1.5, d * 0.24 + 0.4 * (E.pendiente || 0)), tej = E.teja || '#b4643d', cT = envejecer(new T.Color(tej).multiplyScalar(0.8).getStyle(), r, 1.0, 0.12);
     tejado(G, w, d, hT, cT, h, r, mM);
@@ -142,6 +151,38 @@
     return h;
   }
   // Cartel de madera pintada: usa la franja superior del lienzo (4:1), con marco y letras crema
+  // Mirador semicircular sobre una repisa cónica, con cristalera de paños, cornisa y tejadillo cónico
+  function mirador(G, x, y0, zf, mM, mPc, vidrio, mTeja, blanco) {
+    const R = 0.85, hh = 1.9, h0 = -Math.PI / 2, pi = Math.PI;
+    const cuerpo = new T.Mesh(new T.CylinderGeometry(R, R, hh, 18, 1, false, h0, pi), mM); cuerpo.position.set(x, y0 + hh / 2, zf); cuerpo.castShadow = true; G.add(cuerpo);
+    const cris = new T.Mesh(new T.CylinderGeometry(R + 0.02, R + 0.02, 1.2, 18, 1, true, h0, pi), vidrio); cris.position.set(x, y0 + 0.95, zf); G.add(cris);
+    for (let k = 0; k <= 6; k++) { const a = -pi / 2 + 0.14 + k * (pi - 0.28) / 6; caja(G, 0.05, 1.3, 0.05, blanco, x + Math.sin(a) * (R + 0.03), y0 + 0.3, zf + Math.cos(a) * (R + 0.03), 0, false); }
+    for (const yy of [0.32, 1.52]) { const ar = new T.Mesh(new T.CylinderGeometry(R + 0.08, R + 0.08, 0.1, 18, 1, false, h0, pi), mPc); ar.position.set(x, y0 + yy, zf); G.add(ar); }
+    const cor = new T.Mesh(new T.CylinderGeometry(R + 0.12, R + 0.12, 0.18, 18, 1, false, h0, pi), mPc); cor.position.set(x, y0 + hh + 0.02, zf); G.add(cor);
+    const repisa = new T.Mesh(new T.ConeGeometry(R + 0.05, 0.75, 18, 1, false, h0, pi), mPc); repisa.rotation.x = Math.PI; repisa.position.set(x, y0 - 0.37, zf); repisa.castShadow = true; G.add(repisa);
+    const tej = new T.Mesh(new T.ConeGeometry(R + 0.28, 1.0, 18, 1, false, h0, pi), mTeja); tej.position.set(x, y0 + hh + 0.58, zf); tej.castShadow = true; G.add(tej);
+    const bo = new T.Mesh(new T.SphereGeometry(0.08, 8, 6), mat('#b08a3a', { metalness: 0.7, roughness: 0.4 })); bo.position.set(x, y0 + hh + 1.12, zf); G.add(bo);
+  }
+  // Torreón cilíndrico en una esquina de la fachada: basamento, cuerpo con troneras, cornisa redonda y chapitel cónico con veleta
+  function torreta(G, cx, cz, h, mM, mP, mPc, mTeja, vidrio, interior) {
+    const R = 0.95, alto = h + 1.1, tg = new T.Group(); tg.position.set(cx, 0, cz); G.add(tg);
+    const cu = new T.Mesh(new T.CylinderGeometry(R, R, alto, 20), mM); cu.position.y = alto / 2; cu.castShadow = true; tg.add(cu);
+    const ba = new T.Mesh(new T.CylinderGeometry(R + 0.12, R + 0.16, 0.95, 20), mP); ba.position.y = 0.47; tg.add(ba); const bo = new T.Mesh(new T.TorusGeometry(R + 0.1, 0.07, 6, 20), mPc); bo.rotation.x = Math.PI / 2; bo.position.y = 0.97; tg.add(bo);
+    for (const yy of [alto - 0.1, alto * 0.5]) { const co = new T.Mesh(new T.TorusGeometry(R + 0.04, 0.09, 6, 22), mPc); co.rotation.x = Math.PI / 2; co.position.y = yy; tg.add(co); }
+    for (let p = 0; p < 2; p++) for (const a of [-0.5, 0.5]) { const ang = a + (cx > 0 ? 0.5 : -0.5), y = 1.9 + p * 3.1; const sl = new T.Mesh(new T.BoxGeometry(0.2, 0.8, 0.12), interior); sl.position.set(Math.sin(ang) * (R + 0.005), y + 0.4, Math.cos(ang) * (R + 0.005)); sl.rotation.y = ang; tg.add(sl); const hd = new T.Mesh(new T.CircleGeometry(0.1, 8, 0, Math.PI), interior); hd.position.set(Math.sin(ang) * (R + 0.006), y + 0.8, Math.cos(ang) * (R + 0.006)); hd.rotation.y = ang; tg.add(hd); }
+    const te = new T.Mesh(new T.CylinderGeometry(0.0, R + 0.35, 2.1, 20), mTeja); te.position.y = alto + 1.05; te.castShadow = true; tg.add(te);
+    const bl = new T.Mesh(new T.SphereGeometry(0.09, 8, 6), mat('#b08a3a', { metalness: 0.7, roughness: 0.4 })); bl.position.y = alto + 2.15; tg.add(bl); caja(tg, 0.02, 0.7, 0.02, '#23282d', 0, alto + 2.2, 0);
+  }
+  // Balcón con la frente curva: losa en media luna, barandilla de forja con barrotes y macetas a lo largo del arco
+  function balconCurvo(g, bx, by, bw, dz, r) {
+    const hierro = mat('#1d2024', { roughness: 0.55, metalness: 0.6 }), pie = piedraMat('#b9ad98'), A = Math.PI, h0 = -A / 2;
+    const losa = new T.Mesh(new T.CylinderGeometry(1, 1, 0.14, 24, 1, false, h0, A), pie); losa.scale.set(bw / 2, 1, 0.85); losa.position.set(bx, by + 0.07, dz); losa.castShadow = true; g.add(losa);
+    const bajo = new T.Mesh(new T.CylinderGeometry(0.95, 0.7, 0.2, 24, 1, false, h0, A), pie); bajo.scale.set(bw / 2, 1, 0.8); bajo.position.set(bx, by - 0.08, dz); g.add(bajo);
+    const pas = new T.Mesh(new T.TorusGeometry(1, 0.025, 6, 24, A), hierro); pas.rotation.x = Math.PI / 2; pas.rotation.z = -A / 2; pas.scale.set(bw / 2 - 0.05, 0.8, 1); pas.position.set(bx, by + 1.0, dz); g.add(pas);
+    const tor = pas.clone(); tor.position.y = by + 0.2; g.add(tor);
+    const nb = Math.max(7, Math.round(bw * 4.5)); for (let k = 0; k <= nb; k++) { const a = h0 + k / nb * A, bxk = bx + Math.sin(a) * (bw / 2 - 0.07), bzk = dz + Math.cos(a) * 0.85 * 0.93; const bar = new T.Mesh(new T.CylinderGeometry(0.012, 0.012, 0.82, 5), hierro); bar.position.set(bxk, by + 0.6, bzk); g.add(bar); if (k % 2 === 0) { const bola = new T.Mesh(new T.SphereGeometry(0.03, 6, 5), hierro); bola.position.set(bxk, by + 0.62, bzk); g.add(bola); } }
+    for (let k = 0; k < 3; k++) { const a = h0 + (k + 0.5) / 3 * A, mx = bx + Math.sin(a) * (bw / 2 - 0.25), mz = dz + Math.cos(a) * 0.7; const mac = new T.Mesh(new T.CylinderGeometry(0.13, 0.09, 0.2, 8), mat('#b4643d')); mac.position.set(mx, by + 0.24, mz); g.add(mac); for (let q = 0; q < 4; q++) { const fl = new T.Mesh(new T.IcosahedronGeometry(0.09, 0), mat(['#b83a30', '#d6678f', '#e8b53a', '#efeadb'][(r() * 4) | 0])); fl.position.set(mx + (r() - 0.5) * 0.16, by + 0.4 + r() * 0.08, mz + (r() - 0.5) * 0.16); g.add(fl); } }
+  }
   function rotulo2(M, txt, fondo) {
     const t = M.textura('cartel-casa-' + txt + fondo, 512, (x, n) => {
       const H = n / 4; x.fillStyle = fondo; x.fillRect(0, 0, n, H); x.strokeStyle = 'rgba(240,226,190,.8)'; x.lineWidth = 4; x.strokeRect(8, 8, n - 16, H - 16);
@@ -152,5 +193,5 @@
     const g = new T.PlaneGeometry(2.3, 0.575), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 0.75 + uv.getY(i) * 0.25);
     return new T.Mesh(g, t ? new T.MeshStandardMaterial({ map: t, roughness: 0.8 }) : mat(fondo));
   }
-  GM.casasReal = { bloque, tejado, chimenea, envejecer };
+  GM.casasReal = { bloque, tejado, chimenea, balconCurvo, mirador, torreta, envejecer, murMat, piedraMat, tejaMat, maderaMat };
 })();
