@@ -22,7 +22,8 @@
     return new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.0), t ? new THREE.MeshStandardMaterial({ map: t }) : mat(fondo));
   }
   // Edificio tipo: plantas, ventanas, puerta, tejado y rótulo. G: grupo con el frente mirando a +z.
-  function bloque(G, M, E, w, d, pisos, muro, txt, acento, r) {
+  function bloque(G, M, E, w, d, pisos, muro, txt, acento, r, opts) {
+    if (GM.casasReal) return GM.casasReal.bloque(G, M, E, w, d, pisos, muro, txt, acento, r, opts);   // fachadas realistas (casas_realistas.js)
     const h = pisos * 3.1;
     caja(G, w, h, d, muro, 0, 0, 0);
     if (E.zocalo) caja(G, w + 0.05, 0.7, d + 0.05, E.zocalo, 0, 0, 0);
@@ -269,16 +270,17 @@
   const ESCRITORIO = () => typeof location !== 'undefined' && location.protocol === 'app:' && (!GM.campus || GM.campus.config.calidad === 'alta');
   // Casa con personalidad: alturas, colores, balcones, macetas, chimeneas, esquinas de piedra y, en las calles principales, tiendas
   function casa(W, M, E, x, z, ry, w, d, pisos, r, club, comercio, y0) {
-    const g = new THREE.Group(); g.position.set(x, y0 || 0, z); g.rotation.y = ry; W.add(g);
-    const muroC = E.muros[(r() * E.muros.length) | 0], h = bloque(g, M, E, w, d, pisos, muroC, null, comercio ? [club.colores[0], '#7a2f22', '#2f6f9e', '#3c6e47', '#c0392b'][(r() * 5) | 0] : null, r);
-    if (E.piedraFrac && r() < E.piedraFrac) [-1, 1].forEach(s => caja(g, 0.5, h, 0.5, '#a39380', s * (w / 2 - 0.2), 0, d / 2 - 0.2));
+    let g = new THREE.Group(); g.position.set(x, y0 || 0, z); g.rotation.y = ry; W.add(g);
+    const muroC = E.muros[(r() * E.muros.length) | 0], W0 = w, split = !!GM.casasReal && w >= 5.8 && r() < 0.5, wm = split ? w * 0.62 : w, gm = new THREE.Group(); gm.position.x = split ? -W0 / 2 + wm / 2 : 0; g.add(gm); w = wm;
+    const h = bloque(gm, M, E, wm, d, pisos, muroC, null, comercio ? [club.colores[0], '#7a2f22', '#2f6f9e', '#3c6e47', '#c0392b'][(r() * 5) | 0] : null, r);
+    if (split) { const ga = new THREE.Group(); ga.position.set(W0 / 2 - (W0 - wm) / 2, 0, -0.175); g.add(ga); bloque(ga, M, E, W0 - wm, d - 0.35, Math.max(1, pisos - 1), muroC, null, null, r, { puerta: false }); }
+    const g0 = g; g = gm; void g0;
     // Balcones con losa, barandilla de forja y macetas
     for (let p = 1; p < pisos; p++) if (r() < 0.6) { const bw = Math.min(w - 1.2, 2 + r() * 1.6), by = p * 3.1 + 0.42, bx = (r() - 0.5) * Math.max(0, w - bw - 1); caja(g, bw, 0.12, 0.8, '#b9ad98', bx, by, d / 2 + 0.4); caja(g, bw, 0.05, 0.05, '#2a2f35', bx, by + 1.0, d / 2 + 0.78); caja(g, 0.05, 1.0, 0.8, '#2a2f35', bx - bw / 2 + 0.03, by, d / 2 + 0.4); caja(g, 0.05, 1.0, 0.8, '#2a2f35', bx + bw / 2 - 0.03, by, d / 2 + 0.4); for (let k = 0; k * 0.2 < bw; k++) caja(g, 0.025, 1.0, 0.025, '#2a2f35', bx - bw / 2 + 0.1 + k * 0.2, by, d / 2 + 0.78);
       for (let k = 0; k < 3; k++) { cil(g, 0.1, 0.18, '#b4643d', bx - bw / 3 + k * bw / 3, by + 0.12, d / 2 + 0.68, 7); const fl = new THREE.Mesh(new THREE.SphereGeometry(0.13, 7, 5), mat(['#c0392b', '#e84393', '#f39c12', '#f4f1ea'][(r() * 4) | 0])); fl.position.set(bx - bw / 3 + k * bw / 3, by + 0.4, d / 2 + 0.68); g.add(fl); } }
-    if (r() < 0.7) caja(g, 0.5, 1.2, 0.5, muroC, w / 2 - 1, h + 0.6, -d / 4);
     if (GM.kit && GM.kit.gato && r() < 0.14) { const gt = GM.kit.gato(['#3b3b3b', '#c98d4f', '#f2efe8', '#7a6a5a'][(r() * 4) | 0]); gt.position.set(-w / 4 + r() * w / 2, h + (1.6 + w * 0.06) * 0.55, 0.1); gt.rotation.y = r() * 6.28; g.add(gt); }
     if (r() * 100 < (club.cariñoPueblo || 40) * 0.6) { const f = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.6), mat(r() < 0.5 ? club.colores[0] : club.colores[1] || '#fff', { side: THREE.DoubleSide })); f.position.set(-w / 4, Math.min(h - 0.8, 4.2), d / 2 + 0.35); g.add(f); }
-    return g;
+    return g0;
   }
   function muralla(W, G, O, E, nivel, club) {
     const piedra = mat(E.clave === 'toscano' ? '#b4724a' : E.clave === 'andaluz' ? '#ece6da' : '#a99377'); if (GM.texturas) GM.texturas.aplicar(piedra, E.clave === 'andaluz' ? 'Plaster003' : 'Bricks085', E.clave === 'andaluz' ? { color: false, escala: 2, relieve: 1 } : { color: false, escala: 1.4, relieve: 1.3 });

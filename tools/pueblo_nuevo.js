@@ -28,7 +28,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await foto('1b_paisaje', () => { const S = GM.sede._estado(); S.yo.obj.position.set(0, 0, 40); S.foco.set(0, 0, 40); S.yaw = 0; S.zoom = 150; S.inc = 0.42; });
   await foto('1c_paisaje_lado', () => { const S = GM.sede._estado(); S.yo.obj.position.set(0, 0, 10); S.foco.set(0, 0, 10); S.yaw = 2.3; S.zoom = 170; S.inc = 0.35; });
   await foto('1d_suelo', () => { const S = GM.sede._estado(); S.yo.obj.position.set(52, 0, 30); S.foco.set(52, 0, 30); S.yaw = 0.6; S.zoom = 22; S.inc = 0.55; });
-  for (const t of ['cine', 'industrial', 'taller', 'panaderia', 'restaurantep', 'escuela', 'hotel', 'biblioteca', 'casapadres']) {
+  for (const t of ['casapadres', 'biblioteca', 'escuela', 'hotel', 'cine', 'panaderia', 'taller', 'restaurantep', 'industrial']) {
     const ok = await p.evaluate(t => { const S = GM.sede._estado(), L = S.lotes[t]; if (!L) return false; S.pausa = true; const d = t === 'industrial' ? 34 : 15; S.camera.position.set(L.x + L.fx * d + L.fz * d * 0.45, t === 'industrial' ? 16 : 7.5, L.z + L.fz * d - L.fx * d * 0.45); S.camera.lookAt(L.x + L.fx * 1.5, t === 'industrial' ? 5 : 2.4, L.z + L.fz * 1.5); S.renderer.render(S.scene, S.camera); return true; }, t);
     if (false) await p.evaluate(t => { const S = GM.sede._estado(), L = S.lotes[t]; S.yo.camino = null; S.yo.obj.position.set(L.x + L.fx * 3, 0, L.z + L.fz * 3); S.foco.set(L.x + L.fx * 3, 0, L.z + L.fz * 3); S.zoom = t === 'industrial' ? 52 : 22; S.inc = 0.75; S.yaw = Math.atan2(L.fx, L.fz) + Math.PI + 0.5; return true; }, t);
     if (ok) { await sleep(500); await p.screenshot({ path: path.join(DIR, '2_' + t + '.png') }); } else console.log('sin lote', t);
