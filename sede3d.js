@@ -511,6 +511,7 @@
       h('div', { class: 'ct' }, h('b', null, S.escena === 'casa' ? (S.casaNombre || 'Tu casa') : S.escena === 'interior' ? (S.interiorNombre || 'Interior') : S.escena === 'deportiva' ? (S.calleNombre || 'Ciudad deportiva') : S.escena === 'calle' || S.escena === 'pueblo' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'pueblo' ? h('span', null, 'Tu pueblo, ' + U.fechaLarga(st.fecha)) : S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('button', { class: 'sede-hora', title: 'Pasar una hora', onclick: () => { if (S.hora >= 23) return GM.ui.toast('Es tarde: avanza al día siguiente'); S.hora = Math.min(23, Math.floor(S.hora) + 1); S.tLuz = 0; GM.ui.toast('Pasa una hora: ' + Math.floor(S.hora) + ':00'); } }, '8:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn btn-sec peq', onclick: () => mapa() }, 'Mapa'),
       h('button', { class: 'btn btn-sec peq', onclick: () => modoFoto() }, 'Foto'),
+      GM.sonido ? h('button', { class: 'btn btn-sec peq', title: 'Activar o silenciar el sonido', onclick: e => { const on = GM.sonido.alternar(); e.currentTarget.textContent = on ? 'Sonido' : 'Sin sonido'; } }, GM.sonido.activo() ? 'Sonido' : 'Sin sonido') : null,
       st.modo === 'carrera' && GM.mods.movil && GM.ui.movil ? (() => { const n = GM.mods.movil.noLeidos(st); return h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil' + (n ? ' (' + n + ')' : '')); })() : null,
       h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
     S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
@@ -863,7 +864,8 @@
     { const C = S.clima || { tipo: 'sol' }, ext = exterior(), gris = ext ? (C.tipo === 'lluvia' ? 0.75 : C.tipo === 'nubes' ? 0.42 : 0) : 0;
       if (gris) { const gn = gris * (1 - noche * 0.6), gc = new THREE.Color(0x8f99a4).lerp(new THREE.Color(0x283040), noche); S.luces.sol.intensity *= 1 - gn * 0.72; S.luces.cielo.color.lerp(new THREE.Color(0xa3acb6), gn * 0.6); if (S.scene.background && S.scene.background.isColor) S.scene.background.lerp(gc, gn * 0.85); if (S.scene.fog) { S.scene.fog.color.lerp(gc, gn * 0.85); if (!S.fogBase) S.fogBase = S.scene.fog.far; S.scene.fog.far = S.fogBase * (1 - gn * 0.35); } if (S.scene.environment) S.scene.environmentIntensity *= 1 - gn * 0.3; }
       if (GM.texturas && GM.texturas.mojadoU) GM.texturas.mojadoU.value = ext ? (C.tipo === 'lluvia' ? 1 : C.ayer ? 0.35 : 0) : 0;
-      if (S.chipDia && S.dia && S.clima) S.chipDia.textContent = S.dia.texto + (ext ? '. ' + S.clima.texto : ''); }
+      if (S.chipDia && S.dia && S.clima) S.chipDia.textContent = S.dia.texto + (ext ? '. ' + S.clima.texto : '');
+      if (GM.sonido) { const pc = !!(S.dia && S.dia.tipo === 'partido' && S.dia.casa); GM.sonido.estado({ hora: h, clima: C.tipo, partido: pc && h >= 20.4 && h < 22.3, previa: pc && h >= 16 && h < 20.5 }); } }
     if (S.chipHora) { const hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15; S.chipHora.textContent = hh + ':' + String(mm).padStart(2, '0'); }
   }
 
@@ -973,7 +975,7 @@
   async function poblar(st) {
     const P = GM.sedePlano, eq = st.equipos[st.clubId], r = rnd(U.hash(st.clubId + st.fecha));
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
-    S.dia = estadoDia(st); S.clima = climaDe(st); montarClima(); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
+    S.dia = estadoDia(st); S.clima = climaDe(st); montarClima(); if (GM.sonido) GM.sonido.escena(S.escena, S.escenaArg); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
     if (S.escena === 'casa') { if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'interior') { if (GM.interiores) await GM.interiores.poblar(S, motor(), st, S.escenaArg); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'deportiva') { if (GM.deportivaMundo) await GM.deportivaMundo.poblar(S, motor(), st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
@@ -1147,10 +1149,12 @@
     window.addEventListener('keydown', S.onKey); window.addEventListener('keyup', S.onKey);
   }
   function cerrar() {
-    if (!S) return; S.vivo = false; cancelAnimationFrame(S.raf);
+    if (!S) return; S.vivo = false; cancelAnimationFrame(S.raf); if (GM.sonido) GM.sonido.escena(null);
     window.removeEventListener('resize', S.onResize); window.removeEventListener('keydown', S.onKey); window.removeEventListener('keyup', S.onKey);
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
-  GM.sede = { modeloReal: (id, ruta) => cargar(ruta || 'modelos/reales/' + id + '/' + id + '_1k.gltf').then(g => g.scene), _clima: tipo => { if (!S) return null; S.clima = Object.assign(climaDe(S.st), { tipo, ayer: false, texto: tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado' }); montarClima(); aplicarAmbiente(); return S.clima; }, pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
+  // Árboles reales (solo en la versión de escritorio, recursos/pesados): devuelve los modelos que se puedan cargar
+  async function arbolesReales(ids) { if (GM.campus && GM.campus.config.calidad !== 'alta') return []; return (await Promise.all(ids.map(id => cargar('modelos/reales/arboles/' + id + '.glb').then(g => g.scene).catch(() => null)))).filter(Boolean); }
+  GM.sede = { arbolesReales, modeloReal: (id, ruta) => cargar(ruta || 'modelos/reales/' + id + '/' + id + '_1k.gltf').then(g => g.scene), _clima: tipo => { if (!S) return null; S.clima = Object.assign(climaDe(S.st), { tipo, ayer: false, texto: tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado' }); montarClima(); aplicarAmbiente(); return S.clima; }, pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

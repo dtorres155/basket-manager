@@ -226,6 +226,7 @@
   }
   // Obra de la ciudad: valla, cartel, estructura a medias y una grúa que gira
   function obraCiudad(ctx, g, rect, txt, H) {
+    if (ctx.S && ctx.S.obrasRect) ctx.S.obrasRect.push(rect);
     const { G, T } = ctx, [x0, z0, x1, z1] = rect, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
     for (const [a, b, c, e] of [[x0, z0, x1, z0 + 0.2], [x0, z1 - 0.2, x1, z1], [x0, z0, x0 + 0.2, z1], [x1 - 0.2, z0, x1, z1]]) { H.caja(g, c - a, 2, e - b, '#e8e2d4', (a + c) / 2, 0, (b + e) / 2); G.bloquea(a, b, c, e); }
     H.letrero(g, T.letrero(txt, '#f39c12', '#1d2024', 'obra' + txt), 6, 1.2, cx, 2.6, z1 + 0.05, 0);

@@ -205,6 +205,7 @@
   }
   function arbol(W, x, z, tipo, r, y0) {
     const y = y0 || 0;
+    if (tipo !== 'ciprés' && ESCRITORIO()) { cil(W, 0.12, 0.02, '#5b4632', x, y, z, 5); SUELTOS.push([x, y, z, 1 + r() * 0.4]); return; }   // en el escritorio, árbol real al poblar
     if (tipo === 'ciprés') { cil(W, 0.15, 1, '#5b4632', x, y, z, 5); const c = new THREE.Mesh(new THREE.ConeGeometry(0.9 + r() * 0.3, 6 + r() * 3, 8), mat('#2f4a2c')); c.position.set(x, y + 4.2, z); c.castShadow = true; W.add(c); return; }
     cil(W, 0.22, 1.6, '#6e5a44', x, y, z, 6); const c = new THREE.Mesh(new THREE.SphereGeometry(1.4 + r() * 0.6, 9, 7), mat(tipo === 'olivo' ? '#7d8f62' : '#4f7d3a')); c.scale.y = 0.75; c.position.set(x, y + 2.3, z); c.castShadow = true; W.add(c);
   }
@@ -214,7 +215,10 @@
     const tronco = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.25, 1.6, 5), mat('#6e5a44'), n), copa = new THREE.InstancedMesh(tipo === 'ciprés' ? new THREE.ConeGeometry(1, 7, 7) : new THREE.SphereGeometry(1.5, 7, 5), mat(tipo === 'ciprés' ? '#2f4a2c' : '#7d8f62'), n);
     lista.forEach(([x, y, z, e], i) => { s.set(1, 1, 1); p.set(x, y + 0.8, z); m4.compose(p, q, s); tronco.setMatrixAt(i, m4); s.set(e, tipo === 'ciprés' ? e : e * 0.75, e); p.set(x, y + (tipo === 'ciprés' ? 4.2 : 2.2) * e, z); m4.compose(p, q, s); copa.setMatrixAt(i, m4); });
     tronco.userData = { instancias: true }; copa.userData = { instancias: true }; copa.castShadow = true; W.add(tronco, copa);
+    if (tipo !== 'ciprés') BOSQUES.push({ tronco, copa, lista });
   }
+  let BOSQUES = [], SUELTOS = [];
+  const ESCRITORIO = () => typeof location !== 'undefined' && location.protocol === 'app:' && (!GM.campus || GM.campus.config.calidad === 'alta');
   // Casa con personalidad: alturas, colores, balcones, macetas, chimeneas, esquinas de piedra y, en las calles principales, tiendas
   function casa(W, M, E, x, z, ry, w, d, pisos, r, club, comercio, y0) {
     const g = new THREE.Group(); g.position.set(x, y0 || 0, z); g.rotation.y = ry; W.add(g);
@@ -278,6 +282,7 @@
       caja(ge, 6, 6, 9, '#ece4d4', 0, 0, 0); tejado(ge, 6, 9, 2.5, E.teja, 6); caja(ge, 2, 9, 2, '#ece4d4', 0, 0, -4); const cr = caja(ge, 0.2, 1.4, 0.2, '#555', 0, 9, -4); void cr; for (let i = 0; i < 4; i++) arbol(ge, -4 + i * 2.6, 6.5, 'ciprés', r); }
   }
   function construir(S, M, st) {
+    BOSQUES = []; SUELTOS = [];
     const W = S.mundo, club = st.equipos[st.clubId], Pm = GM.mods.pueblo, est = Pm.estado(st), nivel = est.nivel, pj = st.carrera.pueblo, eds = Pm.edificios(st), ed = t => eds.find(b => b.tipo === t);
     const clave = GM.pueblo3d ? GM.pueblo3d.estiloDe(pj.nombre, pj.nac) : 'castellano', E = Object.assign({ clave }, GM.pueblo3d ? GM.pueblo3d.ESTILOS[clave] : { muros: ['#d6b47c'], teja: '#b4643d', postigos: ['#5a3b22'], torre: 'campanario' });
     const G = M.rejilla({ limites: LIM, CELDA: 0.5 }), O = ocupacion(); S.G = G; S.ocupacion = O; S.puebloAnim = []; S.oclusores = []; S.conflictos = []; S.lotes = {};
@@ -418,6 +423,9 @@
   const MODELOS = ['h-casual_2', 'm-casual', 'h-farmer', 'm-formal', 'h-beach', 'm-adventurer', 'h-adventurer', 'm-punk'];
   const PIEL = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142'], PELO = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#8a8a8a', '#bdbdbd'];
   async function poblar(S, M, st) {
+    if (SUELTOS.length && GM.sede.arbolesReales) { const A = await GM.sede.arbolesReales(['tree_small_02', 'island_tree_01']); if (A.length) { const g = A.map(() => []); SUELTOS.forEach(([x, y, z, e], i) => g[i % A.length].push({ x, y, z, ry: i * 2.4, alto: 4.2 + e * 1.8 })); A.forEach((m, k) => S.mundo.add(GM.kit.instanciar(m, g[k], { viento: true }))); } else SUELTOS.forEach(([x, y, z]) => { const c = new THREE.Mesh(new THREE.SphereGeometry(1.6, 9, 7), mat('#4f7d3a')); c.position.set(x, y + 2.3, z); c.scale.y = 0.75; S.mundo.add(c); }); SUELTOS = []; }
+    if (BOSQUES.length && GM.sede.arbolesReales) { const A = await GM.sede.arbolesReales(['island_tree_01', 'tree_small_02']); if (A.length) { let s = 3; const rr = () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; const g = A.map(() => []);
+      BOSQUES.forEach(B => { B.tronco.visible = B.copa.visible = false; B.lista.forEach(([x, y, z, e], i) => g[i % A.length].push({ x, y, z, ry: rr() * 6.28, alto: 3.6 + (e || 1) * 1.6 })); }); A.forEach((m, k) => S.mundo.add(GM.kit.instanciar(m, g[k], { viento: true }))); BOSQUES = []; } }
     const Pm = GM.mods.pueblo, nivel = Pm.estado(st).nivel, club = st.equipos[st.clubId], pj = st.carrera.pueblo, r = rnd(U.hash(st.fecha + 'pueblo'));
     const n = 6 + nivel * 3;
     const vec = await Promise.all(Array.from({ length: n }, () => { const fan = r() * 100 < pj.cariño * 0.7; return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 155 + r() * 30, piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0], ropa: fan ? [club.colores[0], club.colores[1] || '#222'] : null }); }));

@@ -82,7 +82,7 @@
     for (let i = 0; i < 46; i++) { const a = i / 46 * Math.PI * 2, x = Math.cos(a) * (A + 12 + (i % 3) * 6), z = Math.sin(a) * (B + 12 + (i % 3) * 6) + czm; if (Math.abs(x) < 14 && z > czm) continue; troncos.push([x, z, 1.3]); }
     if (troncos.length) { const gT = new THREE.CylinderGeometry(0.22, 0.3, 3.2, 7), gC = new THREE.IcosahedronGeometry(2.4, 1), iT = new THREE.InstancedMesh(gT, mat('#6b5136'), troncos.length), iC = new THREE.InstancedMesh(gC, GM.kit.viento(mat('#4f8a3c', { roughness: 0.95, flatShading: true }), 'copa', 0.18), troncos.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3(), cc = new THREE.Color();
       troncos.forEach(([x, z, e], i) => { s.set(e, e, e); m4.compose(v.set(x, 1.6 * e, z), q, s); iT.setMatrixAt(i, m4); s.set(e, e * 0.9, e); m4.compose(v.set(x, 4.2 * e, z), q.setFromEuler(new THREE.Euler(0, i, 0)), s); iC.setMatrixAt(i, m4); iC.setColorAt(i, cc.setHSL(0.27 + ((i * 37) % 10) * 0.006, 0.42, 0.3 + ((i * 17) % 10) * 0.012)); });
-      iT.castShadow = iC.castShadow = true; iT.receiveShadow = iC.receiveShadow = true; W.add(iT, iC); out.arboles = troncos.map(t => [t[0], t[1]]); }
+      iT.castShadow = iC.castShadow = true; iT.receiveShadow = iC.receiveShadow = true; W.add(iT, iC); out.arboles = troncos.map(t => [t[0], t[1], t[2]]); out.mallasArboles = [iT, iC]; }
     // Valla perimetral metálica con malla, abierta en la puerta
     function valla(xa, za, xb, zb, h) { const dx = xb - xa, dz = zb - za, l = Math.hypot(dx, dz), n = Math.max(1, Math.round(l / 3)); for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, x0 = xa + dx * t0, z0 = za + dz * t0, x1 = xa + dx * t1, z1 = za + dz * t1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, ll = l / n;
       const p = new THREE.Mesh(new THREE.PlaneGeometry(ll, h), mMalla); p.position.set(cx, h / 2, cz); p.rotation.y = -Math.atan2(dz, dx); W.add(p); cil(0.04, h + 0.1, '#3c5a46', x0, 0, z0, 6); } }
@@ -157,6 +157,7 @@
       p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p);
     }
     const ER = S.campusReal;
+    if (ER && ER.mallasArboles && GM.sede.arbolesReales) { const A = await GM.sede.arbolesReales(['tree_small_02', 'jacaranda_tree', 'island_tree_01']); if (A.length) { ER.mallasArboles.forEach(m => { m.visible = false; }); const g = A.map(() => []); ER.arboles.forEach(([x, z, e], i) => g[i % A.length].push({ x, z, ry: r() * 6.28, alto: 6 + (e || 1) * 2.5 })); A.forEach((m, k) => S.mundo.add(GM.kit.instanciar(m, g[k], { viento: true }))); } }
     if (ER) {
       const can = await Promise.all(Array.from({ length: 10 }, (_, i) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][i % 3], altura: 176 + r() * 22, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 4) | 0], ropa: [i < 5 ? c1 : c2, c1] })));
       can.forEach((p, i) => { const pi = ER.pistas[i < 5 ? 0 : 1] || ER.pistas[0]; if (!pi) return; p.obj.position.set(pi.x + (r() - 0.5) * 20, 0, pi.z + (r() - 0.5) * 10); Object.assign(p, { rol: 'Canterano (' + (i < 5 ? 'junior' : 'cadete') + ')', canterano: true, pistaN: i < 5 ? 0 : 1, r, espera: r() * 2 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); });

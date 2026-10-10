@@ -80,6 +80,7 @@
     }
     // Planta baja con escaparates (o persianas metálicas)
     const bajo = new THREE.BoxGeometry(w, hB, d); uvM(bajo, 3, hB); bajo.translate(0, hB / 2, 0);
+    if (o.persiana && S_.persianas) S_.persianas.push({ x: cx, z: (lado === 'n' ? z0 - 0.05 : z1 + 0.05), ry: lado === 'n' ? Math.PI : 0, w });
     const mb = new THREE.Mesh(bajo, new THREE.MeshStandardMaterial({ map: o.persiana ? T.persiana : T.tienda(o.colorBajo || '#3a3f45', o.colorBajo || 'gen'), roughness: 0.7 })); mb.position.set(cx, 0, cz); mb.receiveShadow = true; bg.add(mb);
     // Cornisa y azotea con instalaciones
     const techo = hB + pisos * hP, mTecho = new THREE.MeshStandardMaterial({ color: 0x8e8a84, roughness: 1 }), mPretil = new THREE.MeshStandardMaterial({ color: 0xd8d2c6 }), mInst = new THREE.MeshStandardMaterial({ color: 0x9aa1a6 });
@@ -116,7 +117,7 @@
   // ---------- Construcción ----------
   let S_ = null;
   function construir(S, M, st) {
-    S_ = S; S.ventanas = [];
+    S_ = S; S.ventanas = []; S.persianas = []; S.obrasRect = [];
     const W = S.mundo, club = st.equipos[st.clubId], E = Object.assign({}, ESTILO.ES, ESTILO[club.pais] || {}), T = texturas(M, E, club), r = rnd(U.hash(club.id + 'calle'));
     const c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
     const ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, rep = club.reputacion || 60, afi = ciu.aficion || 50;
@@ -331,6 +332,11 @@
     for (const id of Object.keys(PROPS)) { const m = await R(id); if (!m) continue; const plano = id === 'water_manhole_cover';
       W.add(GM.kit.instanciar(m, PROPS[id].map(([x, z, ry]) => ({ x, z, ry: ry === undefined ? rr() * 6.28 : ry, y: plano ? -0.115 : 0 })), { sombra: !plano }));
       if (!plano) PROPS[id].forEach(([x, z]) => bloquea(x, z, id === 'modular_street_seating' || id === 'wooden_picnic_table' ? 1.1 : 0.45)); }
+    // persianas metálicas de verdad en los locales cerrados (módulos de 3 m centrados en el local)
+    { const m = await R('rollershutter_door'), L = []; (S.persianas || []).forEach(p => { const n = Math.max(1, Math.round(p.w * 0.8 / 3.1)); for (let k = 0; k < n; k++) { const xc = p.x + (k - (n - 1) / 2) * 3.1; L.push({ x: xc - Math.cos(p.ry) * 1.0, z: p.z, ry: p.ry }); } }); if (m && L.length) W.add(GM.kit.instanciar(m, L)); }
+    // cámaras de seguridad en el pabellón y la sede, y barreras de hormigón delante de las obras
+    { const m = await R('security_camera_01'); if (m) W.add(GM.kit.instanciar(m, [[-25, -7.6], [-14, -7.6], [11, -6.2], [19, -6.2]].map(([x, z]) => ({ x, z, y: 3.9, ry: 0, s: 1.6 })))); }
+    { const m = await R('concrete_road_barrier'), L = []; (S.obrasRect || []).forEach(([x0, z0, x1, z1]) => { for (let x = x0 + 0.8; x < x1 - 0.6; x += 1.6) L.push({ x, z: z1 + 0.9, ry: 0 }); }); if (m && L.length) { W.add(GM.kit.instanciar(m, L)); L.forEach(b => G && G.bloquea(b.x - 0.8, b.z - 0.35, b.x + 0.8, b.z + 0.35)); } }
     // aires acondicionados en las paredes donde hay carteles y grafitis (un piso más arriba)
     { const m = await R('exterior_aircon_unit'), L = (GM.kit.calcomanias || []).filter((c, i) => i % 3 === 0 && Math.abs(c[0]) < 150).slice(0, 18); if (m && L.length) W.add(GM.kit.instanciar(m, L.map(c => ({ x: c[0] + Math.sin(c[3]) * 0.35, z: c[2] + Math.cos(c[3]) * 0.35, y: c[1] + 3.6, ry: c[3] })))); }
   }

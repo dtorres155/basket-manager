@@ -25,13 +25,40 @@
 - ~~Campus (ciudad deportiva)~~ (`entornoReal` en deportiva_mundo.js, también en la vista del menú): puerta con nombre, caseta con vigilante y barrera que se levanta, carretera de entrada con aceras y aparcamiento con coches, vial de circunvalación con árboles y farolas, explanada y camino a cada edificio, plaza central con monolito y mástiles, dos pistas exteriores con canastas y vallas, campo con pista de atletismo, arboledas y valla perimetral de malla; canteranos entrenando con su entrenador, gente corriendo por la pista y, los miércoles y sábados (entrenamiento abierto), aficionados en la valla y fotógrafos. Capturas: `node tools/campus_paseo.js` y `node tools/campus_capturas.js [nivel]`.
 - **Mejoras visuales en general:** es una línea de trabajo continua; cualquier idea de detalle, iluminación o variedad suma.
 
+### Notas del usuario tras jugar la versión de ordenador (oct 2026)
+**Ciudad y urbanismo**
+- Colocación con sentido de pasos de cebra y farolas (alineados con cruces y aceras, separación regular).
+- Aceras más realistas y con variantes; suelos distintos en plazas; parques con césped, arbustos y texturas realistas.
+- Boca del metro más trabajada (escalera que baja, barandillas, marquesina, cartel).
+- Paradas de bici con más detalle (anclajes, tótem, bicis de verdad) y no pegadas a la boca del metro: colocación con criterio urbanístico.
+- Corregir texturas que se solapan o sobresalen (parpadeo entre superficies, piezas que atraviesan fachadas y suelos).
+- Bici con animación de montarse y pedalear.
+
+**Pueblo**
+- Exterior del pueblo muy detallado y con mejores texturas.
+- Más mejoras y construcciones: sitios en los que invertir (cine, hotel…), negocios que te gestionan vecinos o amigos, una zona industrial un poco apartada.
+- Vehículos para moverse dentro del pueblo (bici, etc.).
+- Las mejoras de los edificios también se ven por dentro.
+- Precios de las mejoras coherentes con los sueldos (ahora, al llegar a la NBA, se puede pagar todo de golpe).
+
+**Interiores**
+- Negocios y edificios por dentro más vivos, realistas, grandes y detallados, con varias habitaciones, personalidad y verosimilitud (instalaciones amplias y variadas según lo que dice el edificio).
+
+**Carrera y jugadores**
+- Potencial mal calibrado: con los rookies y la regeneración casi todo el mundo acaba en 94-99. Recalibrar el potencial de todas las ligas.
+- La media general debe salir de los atributos: un 92 sin ningún atributo de 92 o más no tiene sentido. Recalibrar la relación entre media y atributos.
+- Draft como evento: aviso de quién te elige; esa temporada eliges entre ir (o quedarte) en Europa o jugar con el equipo de la NBA que te eligió. Los derechos se conservan (si vuelves a la NBA, ese equipo tiene tus derechos y derecho de tanteo).
+- Traspasos en los que te ves envuelto, en verano y en el mercado de invierno.
+- Salarios más realistas entre Europa y la NBA.
+- Conocer a otra gente famosa.
+
 ### Ideas para un mundo más vivo y un acabado profesional (oct 2026)
 **Mundo vivo**
 - ~~Rutinas por hora~~: el día empieza a las 8 y tocar el reloj adelanta una hora; cada vecino elige destino según la franja (trabajo y colegio, compras, comer y terrazas, paseo y parque, bares o casa), entra en el trabajo, el colegio o su portal y desaparece un rato, y la cantidad de gente sigue la hora; hay niños que van al colegio y luego al parque.
 - Eventos en la calle: mercadillo semanal, fiesta mayor con casetas y música, maratón, aficionados que se concentran antes de un derbi, obras que cortan una calle.
 - ~~Día de partido completo~~ (calle, partido en casa): desde las 16, previa con grupos cantando delante de la peña y la terraza y cola en las taquillas; a las 19, el autobús del equipo llega al pabellón y la plantilla entra; durante el partido los aficionados entran en el pabellón y la calle se vacía; al acabar, cientos salen y se reparten por la avenida. Prueba: `node tools/dia_partido.js`.
 - Animales: ~~palomas~~ (bandadas que picotean, salen volando al acercarte o si alguien pasa corriendo y se posan en otra zona; `GM.kit.palomas`, `node tools/palomas.js`) y ~~gatos en los tejados~~ (`GM.kit.gato`, mueven la cola y la cabeza). Faltan pájaros en los árboles.
-- Sonido ambiente: tráfico, pájaros, cánticos el día de partido, bote del balón en la sede (sonidos libres o hechos por código, sin conexión).
+- ~~Sonido ambiente~~ (`sonido.js`, Web Audio, todo por código y sin archivos): tráfico, viento, lluvia, pájaros de día, grillos y campanas a cada hora en el pueblo, grada y cánticos con palmas (previa y pabellón), murmullo y vasos en bares y restaurante, botes de balón en pistas, sede y gimnasio, y un clic suave en los botones. Botón «Sonido» o «Sin sonido» en la barra del mundo 3D. Prueba: `node tools/sonido_prueba.js`. Falta música.
 - La gente reacciona: bocadillos según el último resultado o el tiempo, te piden una foto, te pitan si perdisteis el derbi y, si eres «chico malo», te siguen fotógrafos.
 - Vehículos con comportamiento: autobuses que paran y suben pasajeros, taxis, motos, bicis, reparto y alguna ambulancia con sirena.
 - ~~Más sitios en los que entrar~~: restaurante (menú, cena con la pareja, comida con un compañero), gimnasio de barrio (entrenar, spinning) y barbería (cambiar de peinado o de barba, se ve en el personaje), con entrada desde los barrios. Faltan cine y bolera.
@@ -48,6 +75,8 @@
 - Interiores con iluminación más trabajada para que no parezcan cajas.
 
 **Modelos**
+- ~~Edificios más realistas~~ (en parte): persianas metálicas reales en los locales cerrados, cámaras de seguridad y barreras de obra (Poly Haven). Faltan fachadas completas.
+- ~~Árboles reales en la ciudad deportiva y el pueblo~~ (versión de escritorio): las arboledas y los árboles sueltos (no los cipreses) se cambian por los de Poly Haven simplificados.
 - ~~Muebles realistas~~ (ordenador, calidad alta): 34 modelos de Poly Haven sustituyen a sus equivalentes de Kenney en la casa, la sede y los interiores (sofás, butacas, sillas, mesas, estanterías, televisores, lámparas de mesa, plantas, libros, papeleras, cocina…), a tamaño real dentro de la huella del de Kenney; en el móvil siguen los de Kenney. Se descargan al usarse y quedan guardados (caché aparte del service worker). Pruebas: `node tools/muebles_reales.js` y `node tools/comparacion_estilos.js`. Faltan equivalentes para camas, armarios altos, bancos de vestuario, cocina y baño.
 - Personas más variadas: ropa y peinados intercambiables, accesorios y caras con más rasgos.
 - Más animaciones: sentarse de verdad, gesticular al hablar, aplaudir, celebrar, botar y tirar a canasta.
@@ -138,6 +167,8 @@
 - ~~Celebraciones~~ (`rua.js`): al ganar cualquier título (liga, copa o Europa), dos días de rúa: la avenida se cierra al tráfico y un autobús descapotable con los seis mejores jugadores, la pancarta «¡Campeones!» y el trofeo la recorre entre 800 aficionados que saltan al pasar, con confeti. Prueba: `node tools/rua.js`. Falta: fuegos artificiales de noche.
 
 ### Técnico
+- ~~Prueba de todas las escenas~~ (`tools/escenas_todas.js`, en `npm run test:visual`): entra en las 16 escenas e interiores y falla si alguno da error o no carga.
+- ~~Actualizaciones de la versión de escritorio~~ (electron-updater): al arrancar busca versiones nuevas en Releases de GitHub, las descarga y pregunta si reiniciar. Publicar: `cd escritorio && npm run publicar` (con `GH_TOKEN`); la versión sube sola con cada commit.
 - ~~Versión de escritorio~~ (Electron, `escritorio/`): el juego como programa de Windows con instalador y recursos pesados sin límite de tamaño; la web y el móvil quedan como versión ligera.
 - ~~Copias automáticas~~ (`copias.js`): cada autoguardado deja una copia aparte en IndexedDB (las 10 últimas, se restauran desde el menú) y, en Chrome o Edge de ordenador, se escribe en una carpeta elegida (que puede ser de Drive u OneDrive). En el móvil, la copia por archivo o compartir. Prueba: `node tools/copias_prueba.js`.
 - ~~Tutorial guiado~~ (`ui_tutorial.js`): la primera vez de cada modo, pasos que señalan cada parte de la pantalla; se puede saltar y volver a ver desde el menú. Capturas: `node tools/tutorial_capturas.js`.
