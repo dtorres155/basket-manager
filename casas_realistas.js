@@ -9,7 +9,7 @@
   const U = GM.util, T = THREE;
   const MATS = {}; const mat = (c, o) => { const k = c + JSON.stringify(o || {}); return MATS[k] || (MATS[k] = new T.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.9 }, o || {}))); };
   // Colores un poco apagados y con variación de luz: nada de colores de dibujo animado
-  function envejecer(hex, r, sat, luz) { const c = new T.Color(hex), hsl = {}; c.getHSL(hsl); c.setHSL(hsl.h, Math.max(0, hsl.s * (sat === undefined ? 0.78 : sat)), Math.max(0, Math.min(1, hsl.l + (r() - 0.5) * (luz === undefined ? 0.08 : luz)))); return '#' + c.getHexString(); }
+  function envejecer(hex, r, sat, luz) { const c = new T.Color(hex), hsl = {}; c.getHSL(hsl); const q = (v, k) => Math.round(v / k) * k; c.setHSL(q(hsl.h, 0.02), q(Math.max(0, hsl.s * (sat === undefined ? 0.78 : sat)), 0.06), q(Math.max(0, Math.min(1, hsl.l + (r() - 0.5) * (luz === undefined ? 0.08 : luz))), 0.05)); return '#' + c.getHexString(); }
   const TEXT = {};
   const tex = (M, k, n, fn) => { if (TEXT[k] !== undefined) return TEXT[k]; return (TEXT[k] = M.textura(k, n, fn) || null); };
   const rn = seed => { let a = (U.hash(String(seed)) >>> 0) || 1; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
@@ -91,13 +91,13 @@
     const interior = mat('#0d1116', { roughness: 1 }), blanco = mat('#e6dfd0', { roughness: 0.7 }), hierro = mat('#1d2024', { roughness: 0.55, metalness: 0.6 });
     const post = E.postigos ? E.postigos[(r() * E.postigos.length) | 0] : '#5a4630', postC = envejecer(post, r, 0.85, 0.05);
     const tPost = tex(M, 'postigo-' + postC, 64, (x, n) => { x.fillStyle = postC; x.fillRect(0, 0, n, n); const rr = rn('p' + postC); for (let y = 3; y < n; y += 5) { x.fillStyle = 'rgba(0,0,0,.34)'; x.fillRect(5, y, n - 10, 1.6); x.fillStyle = 'rgba(255,255,255,.12)'; x.fillRect(5, y + 1.8, n - 10, 1); } x.strokeStyle = 'rgba(0,0,0,.4)'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, n - 3, n - 3); for (let i = 0; i < 90; i++) { x.fillStyle = rr() < 0.5 ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.07)'; x.fillRect(rr() * n, rr() * n, 2, 4); } });
-    const mPost = tPost ? new T.MeshStandardMaterial({ map: tPost, roughness: 0.85 }) : mat(postC);
+    const mPost = tPost ? (MATS['po' + postC] || (MATS['po' + postC] = new T.MeshStandardMaterial({ map: tPost, roughness: 0.85 }))) : mat(postC);
     // volumen, zócalo de piedra y esquinas de sillería
     const base = new T.Mesh(new T.BoxGeometry(w, h, d), mM); base.position.y = h / 2; base.castShadow = true; base.receiveShadow = true; G.add(base);
     const zH = E.clave === 'andaluz' ? 0.85 : 0.8; caja(G, w + 0.1, zH, d + 0.1, E.clave === 'andaluz' ? mat('#cfc6b4') : mP, 0, 0, 0); caja(G, w + 0.14, 0.07, d + 0.14, mPc, 0, zH, 0);
     if (E.clave !== 'andaluz' && (E.piedraFrac === undefined || r() < Math.max(0.35, E.piedraFrac + 0.2))) for (const s of [-1, 1]) for (let k = 0; k * 0.5 < h - 0.5; k++) { const wq = k % 2 ? 0.34 : 0.56; caja(G, wq, 0.46, 0.36, mPc, s * (w / 2 - wq / 2 + 0.03), 0.9 + k * 0.5, d / 2 - 0.15, 0, false); }
     // calcomanías de desgaste (frente, lados y fondo)
-    { const v = (r() * 3) | 0, tf = decalFachada(M, w, h, cols, pisos, v, false), tl = decalFachada(M, d, h, 1, pisos, v, true), mf = matDecal(tf, 'f' + cols + '_' + pisos + '_' + Math.round(w) + '_' + Math.round(h) + '_' + v), ml = matDecal(tl, 'l' + Math.round(d) + '_' + Math.round(h) + '_' + v);
+    { const v = (r() * 2) | 0, w2 = Math.round(w / 2) * 2, d2 = Math.round(d / 2) * 2, tf = decalFachada(M, w2, h, cols, pisos, v, false), tl = decalFachada(M, d2, h, 1, pisos, v, true), mf = matDecal(tf, 'f' + cols + '_' + pisos + '_' + w2 + '_' + Math.round(h) + '_' + v), ml = matDecal(tl, 'l' + d2 + '_' + Math.round(h) + '_' + v);
       if (mf) { const pf = new T.Mesh(new T.PlaneGeometry(w, h), mf); pf.position.set(0, h / 2, d / 2 + 0.013); G.add(pf); const pb = new T.Mesh(new T.PlaneGeometry(w, h), mf); pb.position.set(0, h / 2, -d / 2 - 0.013); pb.rotation.y = Math.PI; G.add(pb); }
       if (ml) for (const s of [-1, 1]) { const ps = new T.Mesh(new T.PlaneGeometry(d, h), ml); ps.position.set(s * (w / 2 + 0.013), h / 2, 0); ps.rotation.y = s * Math.PI / 2; G.add(ps); } }
     // ventanas (algunas casas con arcos de medio punto; otras con un mirador semicircular en la primera planta)
@@ -125,7 +125,7 @@
     }
     // puerta con arco de piedra, hoja de tablones y herrajes
     if (conPuerta) {
-      const tP = tex(M, 'puerta-tablones', 128, (x, n) => { const rr = rn('puerta'); x.fillStyle = '#4a3220'; x.fillRect(0, 0, n, n); for (let k = 0; k < 6; k++) { x.fillStyle = ['#553a26', '#47301f', '#5c4129'][k % 3]; x.fillRect(k * n / 6 + 1, 0, n / 6 - 2, n); for (let g = 0; g < 14; g++) { x.fillStyle = 'rgba(0,0,0,.13)'; x.fillRect(k * n / 6 + 3 + rr() * (n / 6 - 8), rr() * n, 1.4, 6 + rr() * 22); } } x.fillStyle = '#1a1c1e'; for (const yy of [n * 0.18, n * 0.78]) { x.fillRect(0, yy, n, 7); for (let k = 0; k < 6; k++) { x.beginPath(); x.arc(k * n / 6 + n / 12, yy + 3.5, 2.2, 0, 6.3); x.fill(); } } }), mD = tP ? new T.MeshStandardMaterial({ map: tP, roughness: 0.85 }) : mat('#4a3220');
+      const tP = tex(M, 'puerta-tablones', 128, (x, n) => { const rr = rn('puerta'); x.fillStyle = '#4a3220'; x.fillRect(0, 0, n, n); for (let k = 0; k < 6; k++) { x.fillStyle = ['#553a26', '#47301f', '#5c4129'][k % 3]; x.fillRect(k * n / 6 + 1, 0, n / 6 - 2, n); for (let g = 0; g < 14; g++) { x.fillStyle = 'rgba(0,0,0,.13)'; x.fillRect(k * n / 6 + 3 + rr() * (n / 6 - 8), rr() * n, 1.4, 6 + rr() * 22); } } x.fillStyle = '#1a1c1e'; for (const yy of [n * 0.18, n * 0.78]) { x.fillRect(0, yy, n, 7); for (let k = 0; k < 6; k++) { x.beginPath(); x.arc(k * n / 6 + n / 12, yy + 3.5, 2.2, 0, 6.3); x.fill(); } } }), mD = tP ? (MATS.puertaT || (MATS.puertaT = new T.MeshStandardMaterial({ map: tP, roughness: 0.85 }))) : mat('#4a3220');
       const df = d / 2, dw = 1.15, dh = 2.15;
       caja(G, dw, dh, 0.07, mD, 0, 0.1, df + 0.025, 0, false); const ar = new T.Mesh(new T.CircleGeometry(dw / 2, 14, 0, Math.PI), mD); ar.position.set(0, 0.1 + dh, df + 0.062); G.add(ar);
       for (const s of [-1, 1]) caja(G, 0.24, dh + 0.1, 0.14, mPc, s * (dw / 2 + 0.12), 0, df + 0.05, 0, false);
@@ -142,7 +142,7 @@
     }
     if (r() < 0.42) {
       const hoja = tex(M, 'trepadora-' + EST_K, 128, (x, n) => { const rr = rn('trep' + EST_K), cols = EST_K === 'otono' ? ['#a8431f', '#c9772a', '#d9a23a'] : EST_K === 'invierno' ? ['#6b5a48'] : EST_K === 'primavera' ? ['#7fb04f', '#9bc25f', '#e8b6c8'] : ['#3f6f2f', '#4f7f3a', '#5d8c41']; x.strokeStyle = '#4a3b2c'; x.lineWidth = 3; for (let s = 0; s < 4; s++) { x.beginPath(); let px = n * (0.2 + s * 0.2), py = n; x.moveTo(px, py); for (let k = 0; k < 8; k++) { px += (rr() - 0.5) * 16; py -= n / 8; x.lineTo(px, py); } x.stroke(); } if (EST_K !== 'invierno') for (let i = 0; i < 260; i++) { const py = n * (1 - Math.pow(rr(), 1.4)), px = n * (0.1 + rr() * 0.8) + Math.sin(py * 0.06) * 8; x.fillStyle = cols[(rr() * cols.length) | 0]; x.beginPath(); x.ellipse(px, py, 5 + rr() * 5, 3 + rr() * 3, rr() * 3, 0, 6.3); x.fill(); } });
-      if (hoja) { const sx = (r() < 0.5 ? -1 : 1) * (w / 2 - 0.8 - r() * 0.6), alto = Math.min(h - 0.5, 3.2 + r() * 2.4), pl = new T.Mesh(new T.PlaneGeometry(1.5, alto), new T.MeshStandardMaterial({ map: hoja, transparent: true, alphaTest: 0.35, roughness: 1, side: T.DoubleSide })); pl.position.set(sx, alto / 2 + 0.2, d / 2 + 0.05); G.add(pl); }
+      if (hoja) { const sx = (r() < 0.5 ? -1 : 1) * (w / 2 - 0.8 - r() * 0.6), alto = Math.min(h - 0.5, 3.2 + r() * 2.4), pl = new T.Mesh(new T.PlaneGeometry(1.5, alto), MATS['tr' + EST_K] || (MATS['tr' + EST_K] = new T.MeshStandardMaterial({ map: hoja, transparent: true, alphaTest: 0.35, roughness: 1, side: T.DoubleSide }))); pl.position.set(sx, alto / 2 + 0.2, d / 2 + 0.05); G.add(pl); }
     }
     // detalles de pared: bajante, cableado, aire acondicionado, parabólica
     if (r() < 0.65) cil(G, 0.045, h - 0.1, '#6b6f73', w / 2 - 0.1, 0, d / 2 + 0.08, 6);
@@ -150,7 +150,7 @@
     if (r() < 0.35 && pisos >= 2) { const pa = new T.Mesh(new T.SphereGeometry(0.26, 10, 6, 0, 6.283, 0, 1.2), mat('#dedede')); pa.rotation.x = -1.2; pa.position.set(-w / 2 + 0.8 + r() * (w - 1.6), h - 0.9, d / 2 + 0.2); G.add(pa); }
     if (acento) {
       const aw = Math.min(w - 0.6, 4.5), ca = envejecer(acento, r, 0.85, 0.04), tL = tex(M, 'toldo-' + ca, 128, (x, n) => { x.fillStyle = '#efe8da'; x.fillRect(0, 0, n, n); x.fillStyle = ca; for (let k = 0; k < 8; k += 2) x.fillRect(k * n / 8, 0, n / 8, n); for (let i = 0; i < 400; i++) { x.fillStyle = 'rgba(0,0,0,' + (Math.random() * 0.06) + ')'; x.fillRect(Math.random() * n, Math.random() * n, 2, 2); } });
-      const mt = tL ? new T.MeshStandardMaterial({ map: tL, roughness: 1, side: T.DoubleSide }) : mat(ca), tl = new T.Mesh(new T.PlaneGeometry(aw, 1.15), mt); tl.position.set(0, 2.55, d / 2 + 0.55); tl.rotation.x = -Math.PI / 2 + 0.55; tl.castShadow = true; G.add(tl);
+      const mt = tL ? (MATS['to' + ca] || (MATS['to' + ca] = new T.MeshStandardMaterial({ map: tL, roughness: 1, side: T.DoubleSide }))) : mat(ca), tl = new T.Mesh(new T.PlaneGeometry(aw, 1.15), mt); tl.position.set(0, 2.55, d / 2 + 0.55); tl.rotation.x = -Math.PI / 2 + 0.55; tl.castShadow = true; G.add(tl);
       const va = new T.Mesh(new T.PlaneGeometry(aw, 0.22), mt); va.position.set(0, 2.18, d / 2 + 1.04); G.add(va);
       for (const s of [-1, 1]) { const br = new T.Mesh(new T.BoxGeometry(0.03, 0.03, 1.1), hierro); br.position.set(s * (aw / 2 - 0.05), 2.4, d / 2 + 0.55); br.rotation.x = -0.55; G.add(br); }
     }
