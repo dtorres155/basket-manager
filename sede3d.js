@@ -892,11 +892,11 @@
     const T0 = tonoCiudad(S.st);
     S.luces.sol.color.setHex(noche > 0 ? mezcla(0xffa060, 0x8fa6d6, noche) : mezcla(S.dia.tipo === 'derrota' ? 0xd9e2f0 : T0.sol, 0xffa060, tarde));
     S.luces.cielo.intensity = ((S.scene.environment ? 0.55 : 1.1) * (1 - noche) + 0.5 * noche) * triste;
-    S.luces.cielo.color.setHex(mezcla(T0.cielo, 0x5a6c9a, noche));
+    S.luces.cielo.color.setHex(mezcla(T0.cielo, 0x5a6c9a, noche)); if (S.escena === 'pueblo') { S.luces.sol.intensity *= 1.25; S.luces.cielo.intensity *= 0.8; }
     S.renderer.toneMappingExposure = T0.exp * (1 - noche * 0.12);
     if (S.scene.environment) S.scene.environmentIntensity = (S.envBase || 0.5) * (1 - noche * 0.75) * triste;
     if (S.bloom) { S.bloom.enabled = noche > 0.05; S.bloom.strength = noche * 0.5; S.bloom.threshold = 2.4 - noche * 1.5; }
-    if (S.escena === 'calle') { const f = noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0xa9c6dc, 0xf0a46a, tarde); S.scene.background = new THREE.Color(f); if (S.scene.fog) S.scene.fog.color.setHex(f); }
+    if (S.escena === 'calle' || S.escena === 'pueblo') { const f = noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0xb2cce2, 0xf0a46a, tarde); S.scene.background = new THREE.Color(f); if (S.scene.fog) S.scene.fog.color.setHex(f); }
     else S.scene.background = new THREE.Color(noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0x9fb8c8, 0xf0a46a, tarde));
     if (S.farolas) { S.farolas.emissiveIntensity = 0.4 + noche * 3.5; }
     if (S.charcosNoche) S.charcosNoche.opacity = noche * 0.9;

@@ -19,10 +19,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     GM.campus.config.calidad = 'alta'; GM.ui.start(document.getElementById('app')); GM.sede.abrir(st, 'pueblo');
   }, NV);
   await sleep(12000);
+  await p.evaluate(() => { GM.sede._clima('sol'); }); await sleep(1500);
   const info = await p.evaluate(() => { const S = GM.sede._estado(); return { conflictos: S.conflictos, lotes: Object.keys(S.lotes), vehiculos: !!S.zonas.find(z => z.sala.id === 'pueblo_vehiculos'), puertas: Object.keys(S.puertas || {}) }; });
   console.log(JSON.stringify(info));
   const foto = async (n, fn) => { if (fn) await p.evaluate(fn); await sleep(1600); await p.evaluate(() => { document.querySelectorAll('.sede-ayuda').forEach(e => e.remove()); const S = GM.sede._estado(); if (S.panel) S.panel.style.display = 'none'; }); await p.screenshot({ path: path.join(DIR, n + '.png') }); };
   await foto('1_general', () => { const S = GM.sede._estado(); S.yo.obj.position.set(0, 0, 0); S.zoom = 110; S.inc = 1.15; S.yaw = 0.3; });
+  if (process.env.SIN_NUBES) await p.evaluate(() => { GM.sede._estado().mundo.traverse(o => { if (o.userData && o.userData.nube) o.visible = false; }); });
+  await foto('1b_paisaje', () => { const S = GM.sede._estado(); S.yo.obj.position.set(0, 0, 40); S.foco.set(0, 0, 40); S.yaw = 0; S.zoom = 150; S.inc = 0.42; });
+  await foto('1c_paisaje_lado', () => { const S = GM.sede._estado(); S.yo.obj.position.set(0, 0, 10); S.foco.set(0, 0, 10); S.yaw = 2.3; S.zoom = 170; S.inc = 0.35; });
+  await foto('1d_suelo', () => { const S = GM.sede._estado(); S.yo.obj.position.set(52, 0, 30); S.foco.set(52, 0, 30); S.yaw = 0.6; S.zoom = 22; S.inc = 0.55; });
   for (const t of ['cine', 'industrial', 'taller', 'panaderia', 'restaurantep', 'escuela', 'hotel', 'biblioteca', 'casapadres']) {
     const ok = await p.evaluate(t => { const S = GM.sede._estado(), L = S.lotes[t]; if (!L) return false; S.pausa = true; const d = t === 'industrial' ? 34 : 15; S.camera.position.set(L.x + L.fx * d + L.fz * d * 0.45, t === 'industrial' ? 16 : 7.5, L.z + L.fz * d - L.fx * d * 0.45); S.camera.lookAt(L.x + L.fx * 1.5, t === 'industrial' ? 5 : 2.4, L.z + L.fz * 1.5); S.renderer.render(S.scene, S.camera); return true; }, t);
     if (false) await p.evaluate(t => { const S = GM.sede._estado(), L = S.lotes[t]; S.yo.camino = null; S.yo.obj.position.set(L.x + L.fx * 3, 0, L.z + L.fz * 3); S.foco.set(L.x + L.fx * 3, 0, L.z + L.fz * 3); S.zoom = t === 'industrial' ? 52 : 22; S.inc = 0.75; S.yaw = Math.atan2(L.fx, L.fz) + Math.PI + 0.5; return true; }, t);

@@ -253,7 +253,9 @@
     const y = y0 || 0;
     if (tipo !== 'ciprés' && ESCRITORIO()) { cil(W, 0.12, 0.02, '#5b4632', x, y, z, 5); SUELTOS.push([x, y, z, 1 + r() * 0.4]); return; }   // en el escritorio, árbol real al poblar
     if (tipo === 'ciprés') { cil(W, 0.15, 1, '#5b4632', x, y, z, 5); const c = new THREE.Mesh(new THREE.ConeGeometry(0.9 + r() * 0.3, 6 + r() * 3, 8), mat('#2f4a2c')); c.position.set(x, y + 4.2, z); c.castShadow = true; W.add(c); return; }
-    cil(W, 0.22, 1.6, '#6e5a44', x, y, z, 6); const c = new THREE.Mesh(new THREE.SphereGeometry(1.4 + r() * 0.6, 9, 7), mat(tipo === 'olivo' ? '#7d8f62' : '#4f7d3a')); c.scale.y = 0.75; c.position.set(x, y + 2.3, z); c.castShadow = true; W.add(c);
+    // Copa de varias masas de hojas con matices distintos (se mecen con el viento) sobre un tronco que se ensancha
+    cil(W, 0.26, 1.8, '#6e5a44', x, y, z, 6, 0.12 + r() * 0.05); const verdes = tipo === 'olivo' ? ['#7d8f62', '#8a9d6c', '#6f8355'] : ['#4f7d3a', '#5d8c41', '#456f33', '#6a9a48'];
+    for (let k = 0; k < (tipo === 'olivo' ? 5 : 4); k++) { const m2 = mat(verdes[k % verdes.length], { roughness: 1 }); if (!m2.userData.viento && GM.kit.viento) { GM.kit.viento(m2, 'copa'); m2.userData.viento = true; } const c = new THREE.Mesh(new THREE.IcosahedronGeometry((tipo === 'olivo' ? 0.85 : 1.0) + r() * 0.5, 1), m2); const ang = r() * 6.28, rad = k ? 0.7 + r() * 0.5 : 0; c.scale.y = 0.8; c.position.set(x + Math.cos(ang) * rad, y + 2.2 + (k ? 0.3 + r() * 0.9 : 0.4), z + Math.sin(ang) * rad); c.castShadow = true; W.add(c); }
   }
   // Muchos árboles del campo en dos mallas instanciadas (tronco y copa): olivos en hileras y cipreses
   function bosque(W, lista, tipo) {
@@ -296,7 +298,8 @@
     [PS, PN].forEach(([px, pz]) => { [-3.6, 3.6].forEach(dx => { cil(W, 2.1, alto + 3.2, piedra, px + dx, 0, pz, 12); O.marca({ x: px + dx, z: pz, w: 4.6, d: 4.6 }, 4); G.bloquea(px + dx - 2.1, pz - 2.1, px + dx + 2.1, pz + 2.1); }); caja(W, 5.2, 1.6, 1.6, piedra, px, alto - 0.3, pz); });
   }
   // El entorno: ladera, campos, río con puente, carretera que baja, olivares, cipreses, masías, ermita y montañas
-  function entorno(W, M, E, r, carr) {
+  function entorno(W, M, E, r, carr, anims, S) {
+    const conTextura = !!(GM.texturas && GM.texturas.listo && GM.texturas.listo()), CLARO = new THREE.Color(0xf4f6e8);
     const T = 420, N = 140, g = new THREE.PlaneGeometry(T, T, N, N).rotateX(-Math.PI / 2), pos = g.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
     const verde = new THREE.Color('#7f9a52'), seco = new THREE.Color('#c2ae6a'), oscuro = new THREE.Color('#5e7a3e'), tierra = new THREE.Color(E.tierra || '#a88f62'), agua = new THREE.Color('#6f9a6a');
     for (let i = 0; i < pos.count; i++) {
@@ -304,14 +307,17 @@
       const campo = ruido(x * 0.035 + 3, z * 0.035) , franja = Math.floor((x * 0.7 + z * 0.4) / 9) % 3;
       if (d < 1) c.copy(tierra).lerp(verde, 0.35); else if (y < -22) c.copy(agua); else c.copy(campo > 0.62 ? seco : campo > 0.42 ? verde : oscuro).lerp(franja === 0 ? seco : verde, 0.18);
       if (y > 18) c.lerp(new THREE.Color('#8c8a86'), U.clamp((y - 18) / 30, 0, 0.8));   // roca en las cumbres
+      if (conTextura) c.lerp(CLARO, 0.42);   // el color de vértice tiñe la hierba real (si no, quedaría oscura)
       col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
     }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals();
-    const suelo = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 })); suelo.receiveShadow = true; suelo.userData = { terreno: true }; W.add(suelo);
+    const suelo = new THREE.Mesh(g, (() => { const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }); if (conTextura) GM.texturas.aplicar(m, 'Grass004', { escala: 7, tinte: 0xf2f4e0, relieve: 0.9, rugMin: 0.75 }); return m; })()); suelo.receiveShadow = true; suelo.userData = { terreno: true }; W.add(suelo);
     // Río en el fondo del valle (al sur) y puente de piedra donde cruza la carretera
     const rioZ = x => MES.cz + MES.rz * 1.62 + Math.sin(x * 0.02) * 10, rio = [];
     for (let x = -210; x <= 210; x += 12) rio.push([x, rioZ(x)]);
-    cinta(W, rio, 9, mat('#4f8fb5', { roughness: 0.3 }), () => -24.4);
+    { const ond = M.textura('rio-ondas', 128, (x, n) => { x.fillStyle = '#3f86a6'; x.fillRect(0, 0, n, n); const rr = rnd(5); for (let i = 0; i < 70; i++) { x.strokeStyle = 'rgba(255,255,255,' + (0.08 + rr() * 0.22) + ')'; x.lineWidth = 1 + rr() * 2; const px = rr() * n, py = rr() * n; x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + 10 + rr() * 14, py + (rr() - 0.5) * 8, px + 26 + rr() * 22, py + (rr() - 0.5) * 6); x.stroke(); } });
+      if (ond) { ond.wrapS = ond.wrapT = THREE.RepeatWrapping; if (anims) anims.push(t => { ond.offset.set(t * 0.012, t * 0.03); }); }
+      cinta(W, rio, 9, new THREE.MeshStandardMaterial({ map: ond || null, color: ond ? 0xffffff : 0x4f8fb5, roughness: 0.12, metalness: 0.15, transparent: true, opacity: 0.92 }), () => -24.4); }
     // Carretera que baja serpenteando hasta el puente
     const ini = CALLES.find(c => c.n === 'Carretera').p, ult = ini[ini.length - 1], baja = [ult];
     for (let k = 1; k <= 36; k++) { const t = k / 36, zz = ult[1] + (rioZ(0) + 14 - ult[1]) * t, xx = ult[0] + Math.sin(t * 5.5) * 16 * (1 - t * 0.4); baja.push([xx, zz]); }
@@ -325,10 +331,57 @@
       for (let i = 0; i < 6; i++) for (let j = 0; j < 7; j++) { const x = cx + Math.cos(ang) * (i - 3) * 6 - Math.sin(ang) * (j - 3) * 6, z = cz + Math.sin(ang) * (i - 3) * 6 + Math.cos(ang) * (j - 3) * 6, y = altura(x, z); if (dMes(x, z) < 1.08 || y < -23) continue; olivos.push([x, y, z, 0.8 + r() * 0.35]); } }
     for (let k = 0; k < 90; k++) { const a = r() * 6.28, d = 1.06 + r() * 1.3, x = MES.cx + Math.cos(a) * MES.rx * d, z = MES.cz + Math.sin(a) * MES.rz * d, y = altura(x, z); if (y < -23) continue; sueltos.push([x, y, z, 0.8 + r() * 0.5]); }
     bosque(W, olivos, 'olivo'); bosque(W, sueltos, 'ciprés');
+    detallesCampo(W, M, E, r, anims);
     // Masías dispersas por las laderas y una ermita en el cerro de enfrente
     for (let k = 0; k < 9; k++) { const a = r() * 6.28, d = 1.35 + r() * 0.9, x = MES.cx + Math.cos(a) * MES.rx * d, z = MES.cz + Math.sin(a) * MES.rz * d, y = altura(x, z); if (y < -21) continue; const gm = new THREE.Group(); gm.position.set(x, y - 0.3, z); gm.rotation.y = r() * 6; W.add(gm); bloque(gm, M, E, 8, 6, 2, E.muros[(r() * E.muros.length) | 0], null, null, r); caja(gm, 5, 2.5, 4, E.muros[0], 6, 0, 1); }
     { const a = -0.9, d = 2.15, x = MES.cx + Math.cos(a) * MES.rx * d, z = MES.cz + Math.sin(a) * MES.rz * d, y = altura(x, z), ge = new THREE.Group(); ge.position.set(x, y - 0.2, z); ge.rotation.y = 2.4; W.add(ge);
       caja(ge, 6, 6, 9, '#ece4d4', 0, 0, 0); tejado(ge, 6, 9, 2.5, E.teja, 6); caja(ge, 2, 9, 2, '#ece4d4', 0, 0, -4); const cr = caja(ge, 0.2, 1.4, 0.2, '#555', 0, 9, -4); void cr; for (let i = 0; i < 4; i++) arbol(ge, -4 + i * 2.6, 6.5, 'ciprés', r); }
+  }
+  // Matas de hierba que se mecen, flores silvestres, rocas, viñedos con sus rodrigones, pacas y muretes de piedra seca por las laderas
+  function detallesCampo(W, M, E, r, anims) {
+    const T = THREE, m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), s = new T.Vector3(), p = new T.Vector3(), col = new T.Color();
+    const sitio = (dmin, dmax, fn) => { for (let k = 0; k < 60; k++) { const a = r() * 6.283, d = dmin + r() * (dmax - dmin), x = MES.cx + Math.cos(a) * MES.rx * d, z = MES.cz + Math.sin(a) * MES.rz * d, y = altura(x, z); if (y > -22.5 && y < 14) return fn(x, y, z, a); } return null; };
+    // Matas de hierba (dos planos cruzados con briznas pintadas)
+    const bl = M.textura('hierba-matas', 128, (x, n) => { const rr = rnd(9); for (let i = 0; i < 16; i++) { const bx = 8 + rr() * (n - 16), h = 40 + rr() * 80, g = x.createLinearGradient(0, n, 0, n - h); g.addColorStop(0, '#3d5a22'); g.addColorStop(1, ['#9cb85a', '#b7c96a', '#7fa046'][i % 3]); x.strokeStyle = g; x.lineWidth = 2 + rr() * 2.4; x.lineCap = 'round'; x.beginPath(); x.moveTo(bx, n); x.quadraticCurveTo(bx + (rr() - 0.5) * 16, n - h * 0.5, bx + (rr() - 0.5) * 30, n - h); x.stroke(); } });
+    if (bl) { const mm = new T.MeshStandardMaterial({ map: bl, transparent: true, alphaTest: 0.45, side: T.DoubleSide, roughness: 1 }); if (GM.kit.viento) GM.kit.viento(mm, 'copa');
+      const geo = new T.PlaneGeometry(1.1, 0.9).translate(0, 0.45, 0), N = 1700;
+      [0, Math.PI / 2].forEach(ry => { const im = new T.InstancedMesh(geo, mm, N); let k = 0; for (let i = 0; i < N * 3 && k < N; i++) { sitio(0.96, 1.9, (x, y, z) => { e.set(0, ry + r() * 0.5, 0); q.setFromEuler(e); s.setScalar(0.7 + r() * 1.0); p.set(x, y, z); m4.compose(p, q, s); im.setMatrixAt(k++, m4); }); } im.count = k; im.userData = { instancias: true }; im.receiveShadow = false; W.add(im); }); }
+    // Flores silvestres
+    { const N = 520, fg = new T.SphereGeometry(0.09, 5, 4), im = new T.InstancedMesh(fg, new T.MeshStandardMaterial({ roughness: 0.8 }), N); let k = 0; const pal = ['#f4f1e8', '#f1c40f', '#e84393', '#c0392b', '#9b59b6', '#ffffff']; for (let i = 0; i < N * 2 && k < N; i++) sitio(0.98, 1.7, (x, y, z) => { s.setScalar(0.8 + r() * 0.9); p.set(x, y + 0.28, z); q.identity(); m4.compose(p, q, s); im.setMatrixAt(k, m4); im.setColorAt(k, col.set(pal[(r() * pal.length) | 0])); k++; }); im.count = k; im.userData = { instancias: true }; W.add(im); }
+    // Rocas
+    { const N = 80, im = new T.InstancedMesh(new T.IcosahedronGeometry(0.6, 0), mat('#8d8a82', { roughness: 1 }), N); let k = 0; for (let i = 0; i < N * 2 && k < N; i++) sitio(1.02, 2.1, (x, y, z) => { e.set(r() * 3, r() * 3, r() * 3); q.setFromEuler(e); s.set(0.6 + r() * 1.6, 0.4 + r() * 0.9, 0.6 + r() * 1.4); p.set(x, y + 0.1, z); m4.compose(p, q, s); im.setMatrixAt(k++, m4); }); im.count = k; im.castShadow = true; im.userData = { instancias: true }; W.add(im); }
+    // Viñedos: filas de rodrigones con cepas
+    { const posts = [], bush = [];
+      for (let v = 0; v < 6; v++) sitio(1.12, 1.6, (cx, cy, cz, a) => { const ang = r() * 3.14, cs = Math.cos(ang), sn = Math.sin(ang); for (let i = 0; i < 9; i++) for (let j = 0; j < 16; j++) { const lx = (i - 4) * 2.4, lz = (j - 8) * 1.6, x = cx + lx * cs - lz * sn, z = cz + lx * sn + lz * cs, y = altura(x, z); if (y < -22 || dMes(x, z) < 1.06) continue; posts.push([x, y, z]); bush.push([x, y, z]); } });
+      const ps = new T.InstancedMesh(new T.CylinderGeometry(0.03, 0.04, 1.2, 4), mat('#6b4a2b'), posts.length || 1), bs = new T.InstancedMesh(new T.IcosahedronGeometry(0.42, 1), mat('#5f8f3a', { roughness: 1 }), bush.length || 1);
+      posts.forEach(([x, y, z], i) => { q.identity(); s.setScalar(1); p.set(x, y + 0.6, z); m4.compose(p, q, s); ps.setMatrixAt(i, m4); s.set(1, 0.8, 1.2); p.set(x, y + 0.5, z); m4.compose(p, q, s); bs.setMatrixAt(i, m4); });
+      ps.userData = { instancias: true }; bs.userData = { instancias: true }; bs.castShadow = false; W.add(ps, bs); }
+    // Pacas de paja y muretes de piedra seca
+    { const N = 26, im = new T.InstancedMesh(new T.CylinderGeometry(0.6, 0.6, 1.1, 12).rotateZ(Math.PI / 2), mat('#d6b45a', { roughness: 1 }), N); let k = 0; for (let i = 0; i < N * 2 && k < N; i++) sitio(1.1, 1.7, (x, y, z) => { e.set(0, r() * 3, 0); q.setFromEuler(e); s.setScalar(1); p.set(x, y + 0.6, z); m4.compose(p, q, s); im.setMatrixAt(k++, m4); }); im.count = k; im.userData = { instancias: true }; W.add(im); }
+    { const piedra = mat('#9b9285', { roughness: 1 }); if (GM.texturas) GM.texturas.aplicar(piedra, 'Bricks085', { color: false, escala: 1.2, relieve: 1 }); const N = 260, im = new T.InstancedMesh(new T.BoxGeometry(1.2, 0.7, 0.5), piedra, N); let k = 0;
+      for (let t = 0; t < 14 && k < N - 20; t++) sitio(1.08, 1.7, (x0, y0, z0) => { const ang = r() * 3.14, L = 10 + (r() * 8 | 0); for (let i = 0; i < L && k < N; i++) { const x = x0 + Math.cos(ang) * i * 1.15, z = z0 + Math.sin(ang) * i * 1.15, y = altura(x, z); if (y < -22 || dMes(x, z) < 1.05) continue; e.set(0, -ang + (r() - 0.5) * 0.12, 0); q.setFromEuler(e); s.set(1, 0.9 + r() * 0.5, 1); p.set(x, y + 0.3, z); m4.compose(p, q, s); im.setMatrixAt(k++, m4); } });
+      im.count = k; im.castShadow = true; im.userData = { instancias: true }; W.add(im); }
+  }
+  // Nubes que pasan despacio (sprites suaves) y cielo físico con el sol según la hora (la luz y la niebla las lleva aplicarAmbiente)
+  function cielo(S, M) {
+    const W = S.mundo, T = THREE;
+    // Cúpula de cielo con degradado del horizonte (el color de la niebla) al cénit, disco y halo del sol que siguen la hora
+    { const u = { zenit: { value: new T.Color(0x2c6cb4) }, horiz: { value: new T.Color(0xb2cce2) }, solDir: { value: new T.Vector3(0.5, 0.5, 0.5) }, solCol: { value: new T.Color(0xfff2d0) } };
+      const mat2 = new T.ShaderMaterial({ uniforms: u, side: T.BackSide, depthWrite: false, fog: false, vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+        fragmentShader: [
+          'uniform vec3 zenit; uniform vec3 horiz; uniform vec3 solDir; uniform vec3 solCol; varying vec3 vD;',
+          'void main(){ float h = clamp(vD.y, 0.0, 1.0); vec3 c = mix(horiz, zenit, pow(smoothstep(0.0, 0.62, h), 0.8)); float s = max(dot(normalize(vD), normalize(solDir)), 0.0);',
+          'c += solCol * (pow(s, 900.0) * 3.0 + pow(s, 14.0) * 0.28 + pow(s, 3.0) * 0.07); gl_FragColor = vec4(c, 1.0);',
+          '#include <tonemapping_fragment>', '#include <colorspace_fragment>', '}'].join(String.fromCharCode(10)) });
+      const sky = new T.Mesh(new T.SphereGeometry(1300, 32, 16), mat2); sky.userData = { cielo: true }; sky.frustumCulled = false; sky.renderOrder = -10; W.add(sky); S.cieloU = u; }
+    const tx = M.textura('nube-suave', 256, (x, n) => { const rr = rnd(21); x.clearRect(0, 0, n, n); for (let i = 0; i < 26; i++) { const cx = n * (0.18 + rr() * 0.64), cy = n * (0.4 + rr() * 0.2), rad = n * (0.1 + rr() * 0.16), g = x.createRadialGradient(cx, cy, 0, cx, cy, rad); g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, rad, 0, 6.3); x.fill(); } });
+    const nubes = []; if (tx) { const rr = rnd(77); for (let i = 0; i < 18; i++) { const sp = new T.Sprite(new T.SpriteMaterial({ map: tx, transparent: true, opacity: 0.55 + rr() * 0.3, fog: false, depthWrite: false })), a = rr() * 6.283, d = 260 + rr() * 330; sp.position.set(Math.cos(a) * d, 130 + rr() * 110, Math.sin(a) * d); sp.scale.set(170 + rr() * 170, 70 + rr() * 50, 1); sp.userData = { nube: true, v: 0.5 + rr() * 1.2 }; W.add(sp); nubes.push(sp); } }
+    let hPrev = -1;
+    S.puebloAnim.push(t => {
+      nubes.forEach(n => { n.position.x += n.userData.v * 0.016; if (n.position.x > 640) n.position.x = -640; });
+      const h = S.hora || 9; if (S.cieloU && Math.abs(h - hPrev) > 0.04) { hPrev = h; const el = Math.sin((h - 6) / 15 * Math.PI) * 72, az = 110 + (h - 6) * 9, u = S.cieloU, noche = Math.max(0, Math.min(1, (h - 19.5) / 1.5)), tarde = Math.max(0, Math.min(1, (h - 17.5) / 2.5)), mix = (a, b, k) => new T.Color(a).lerp(new T.Color(b), k);
+        u.solDir.value.setFromSphericalCoords(1, T.MathUtils.degToRad(90 - Math.max(-8, el)), T.MathUtils.degToRad(az)).setY(Math.max(-0.1, u.solDir.value.y)); u.zenit.value.copy(mix(mix(0x2c6cb4, 0x4a5f9a, tarde), 0x070d1c, noche)); u.horiz.value.copy(mix(mix(0xb2cce2, 0xf0a46a, tarde), 0x101a2e, noche)); u.solCol.value.copy(mix(0xfff2d0, 0xffa060, tarde).multiplyScalar(1 - noche)); }
+    });
   }
   function construir(S, M, st) {
     BOSQUES = []; SUELTOS = [];
@@ -336,7 +389,7 @@
     const clave = GM.pueblo3d ? GM.pueblo3d.estiloDe(pj.nombre, pj.nac) : 'castellano', E = Object.assign({ clave }, GM.pueblo3d ? GM.pueblo3d.ESTILOS[clave] : { muros: ['#d6b47c'], teja: '#b4643d', postigos: ['#5a3b22'], torre: 'campanario' });
     const G = M.rejilla({ limites: LIM, CELDA: 0.5 }), O = ocupacion(); S.G = G; S.ocupacion = O; S.puebloAnim = []; S.oclusores = []; S.conflictos = []; S.lotes = {};
     const r = rnd(U.hash(pj.nombre + 'mundo')), club2 = Object.assign({}, club, { cariñoPueblo: pj.cariño }), hechos = eds.filter(b => b.nivel).length;
-    S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xb8cfdf, 120, 360); S.camera.far = 650; S.camera.updateProjectionMatrix();
+    S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xb2cce2, 300, 820); S.camera.far = 1700; cielo(S, M); S.camera.updateProjectionMatrix();
     // Solo se camina por la meseta: lo demás queda bloqueado en la rejilla de caminos
     for (let z = LIM[1]; z < LIM[3]; z += 1) for (let x = LIM[0]; x < LIM[2]; x += 1) if (dMes(x + 0.5, z + 0.5) > 0.97) { G.bloquea(x, z, x + 1, z + 1); O.punto(x + 0.5, z + 0.5, 4); }
     const emp = M.textura('empedrado-pueblo2', 256, (x, n) => { x.fillStyle = '#6f6352'; x.fillRect(0, 0, n, n); const rr = rnd(7), f = 10, h = n / f; for (let jj = 0; jj < f; jj++) for (let ii = -1; ii <= f; ii++) { const cx = ii * h + (jj % 2) * h / 2 + (rr() - 0.5) * 3, cy = jj * h + h / 2 + (rr() - 0.5) * 3, v = 150 + rr() * 50 | 0; x.fillStyle = 'rgb(' + v + ',' + (v - 8 - rr() * 10 | 0) + ',' + (v - 25 - rr() * 15 | 0) + ')'; x.beginPath(); x.ellipse(cx, cy, h * 0.44, h * 0.38, rr() * 0.6, 0, 6.3); x.fill(); x.fillStyle = 'rgba(255,255,255,.12)'; x.beginPath(); x.ellipse(cx - h * 0.1, cy - h * 0.1, h * 0.18, h * 0.12, 0, 0, 6.3); x.fill(); } });
@@ -348,17 +401,18 @@
     const mSolar = tx('solar-pueblo', (x, n) => manchas(x, n, '#8e9a62', ['rgba(70,100,45,.45)', 'rgba(140,150,80,.4)', 'rgba(160,140,100,.35)', 'rgba(230,220,120,.5)'], 13, 3)) || mat('#8e9a62');
     const mObra = tx('obra-pueblo', (x, n) => manchas(x, n, '#b5a585', ['rgba(150,130,100,.5)', 'rgba(200,190,160,.4)', 'rgba(120,110,95,.4)'], 17, 4)) || mat('#b5a585');
     const mLosas = tx('losas-pueblo', (x, n) => { x.fillStyle = '#7d705c'; x.fillRect(0, 0, n, n); const rr = rnd(21), f = 8, h = n / f; for (let j = 0; j < f; j++) { const off = (j % 2) * h / 2; for (let i = -1; i < f; i++) { const v = 196 + rr() * 30 | 0; x.fillStyle = 'rgb(' + v + ',' + (v - 10) + ',' + (v - 28) + ')'; x.fillRect(i * h + off + 2, j * h + 2, h - 4, h - 4); x.fillStyle = 'rgba(0,0,0,.06)'; x.fillRect(i * h + off + 2 + rr() * h * 0.5, j * h + 2 + rr() * h * 0.5, h * 0.3, h * 0.2); } } }) || mat('#d8cdb5');
-    const mBordillo = mat(E.clave === 'andaluz' ? '#cfc6b4' : '#8f8170');
+    const mBordillo = mat(E.clave === 'andaluz' ? '#cfc6b4' : '#8f8170'), mAsf = mat('#4b5058'), mGrava = mat('#b49d72');
     if (GM.texturas) { const TR = GM.texturas, claro = E.clave === 'andaluz';
       TR.aplicar(mCalle, 'PavingStones070', { escala: 2.2, tinte: claro ? 0xf2e6d0 : 0xdcc6a2 }); if (mLosas.isMaterial) TR.aplicar(mLosas, 'PavingStones070', { escala: 3.4, tinte: claro ? 0xf0e8d8 : 0xd6cab4 });
-      if (mTierra.isMaterial) TR.aplicar(mTierra, 'Ground054', { escala: 4, tinte: 0xd8ccb0 }); if (mSolar.isMaterial) TR.aplicar(mSolar, 'Grass004', { escala: 3.5, tinte: 0xc8d0a0 });
+      TR.aplicar(mBordillo, 'Concrete034', { escala: 1.4, tinte: claro ? 0xf0e8d8 : 0xb8aa94, relieve: 0.8 }); TR.aplicar(mAsf, 'Asphalt010', { escala: 4, tinte: 0xb4b4b4 }); TR.aplicar(mGrava, 'Ground054', { escala: 3, tinte: 0xf0e2c0, relieve: 0.5 });
+      if (mTierra.isMaterial) TR.aplicar(mTierra, 'Ground054', { escala: 6.5, tinte: 0xe9dfc4, relieve: 0.4 }); if (mSolar.isMaterial) TR.aplicar(mSolar, 'Grass004', { escala: 3.5, tinte: 0xc8d0a0 });
       (E.muros || []).forEach(c => TR.aplicar(mat(c), 'Plaster003', { color: false, escala: 1.8, relieve: 1 })); if (E.zocalo) TR.aplicar(mat(E.zocalo), 'Concrete034', { color: false, escala: 1.5 });
       TR.aplicar(mat(E.teja), 'RoofingTiles013A', { color: false, escala: 1.4, relieve: 1.2 }); }
     const uvEsc = (g, e) => { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / e, uv.getY(i) / e); return g; };
     const carr = ed('carretera').nivel;
-    entorno(W, M, E, r, carr);
+    entorno(W, M, E, r, carr, S.puebloAnim, S);
     { const s = new THREE.Shape(); for (let i = 0; i <= 96; i++) { const [px, pz] = muro(i / 96 * Math.PI * 2); if (i) s.lineTo(px, -pz); else s.moveTo(px, -pz); } const g = uvEsc(new THREE.ShapeGeometry(s), 7).rotateX(-Math.PI / 2); const m = new THREE.Mesh(g, mTierra); m.position.y = -0.01; m.receiveShadow = true; W.add(m); }
-    CALLES.forEach(c => { cinta(W, c.p, c.w, c.n === 'Carretera' && carr ? mat('#4b5058') : c.fuera ? mat('#b49d72') : mCalle);
+    CALLES.forEach(c => { cinta(W, c.p, c.w, c.n === 'Carretera' && carr ? mAsf : c.fuera ? mGrava : mCalle);
       if (!c.fuera) bordillos(W, c.p, c.w, mBordillo, enPlaza); for (let i = 0; i < c.p.length - 1; i++) { const [ax, az] = c.p[i], [bx, bz] = c.p[i + 1], l = Math.hypot(bx - ax, bz - az); O.marca({ x: (ax + bx) / 2, z: (az + bz) / 2, w: l + c.w, d: c.w + 1, ry: -Math.atan2(bz - az, bx - ax) }, 1); } });
     { const s = new THREE.Shape(); PLAZA.forEach(([px, pz], i) => i ? s.lineTo(px, -pz) : s.moveTo(px, -pz)); const g = uvEsc(new THREE.ShapeGeometry(s), 4).rotateX(-Math.PI / 2); const pl = new THREE.Mesh(g, ed('plaza').nivel ? mLosas : mCalle); pl.position.y = 0.014; pl.receiveShadow = true; W.add(pl);
       for (let z = -11; z <= 11; z++) for (let x = -14; x <= 13; x++) if (enPlaza(x + 0.5, z + 0.5)) O.punto(x + 0.5, z + 0.5, 1); }
@@ -459,6 +513,12 @@
     aLoLargo(nAl ? 9 : 16, (x, z, tx, tz, c) => { const s = (kF++ % 2 ? 1 : -1), lx = x - tz * (c.w / 2 + 0.4) * s, lz = z + tx * (c.w / 2 + 0.4) * s; if (O.punto(lx, lz) > 1 || enPlaza(lx, lz)) return; cil(W, 0.08, 3.2, nAl ? '#2c3e50' : '#6b5a48', lx, 0, lz, 6); const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), new THREE.MeshStandardMaterial({ color: '#fff3c4', emissive: nAl ? '#ffd27a' : '#000', emissiveIntensity: 0.7 })); l.position.set(lx, 3.3, lz); W.add(l); O.punto(lx, lz, 5); });
     // Huertos y árboles en lo que queda libre (nunca en la plaza ni pegados a una calle)
     for (let k = 0; k < 160; k++) { const x = (r() * 2 - 1) * MES.rx * 0.95, z = MES.cz + (r() * 2 - 1) * MES.rz * 0.95; if (dMes(x, z) > 0.92 || enPlaza(x, z) || !O.libre({ x, z, w: 4, d: 4 }) || calleCercana(x, z).d < 4) continue; arbol(W, x, z, r() < 0.35 ? 'ciprés' : r() < 0.6 ? 'olivo' : 'frutal', r); O.marca({ x, z, w: 3, d: 3 }, 5); G.bloquea(x - 0.5, z - 0.5, x + 0.5, z + 0.5); }
+    // Manchas de hierba y matojos en la tierra apisonada del casco (donde no hay calles, plaza ni edificios)
+    { const mg = new THREE.MeshStandardMaterial({ color: '#7d9a52', roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }); if (GM.texturas) GM.texturas.aplicar(mg, 'Grass004', { escala: 2.6, tinte: 0xe4ecc6, relieve: 0.9 });
+      const N = 190, im = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 14).rotateX(-Math.PI / 2), mg, N), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), p = new THREE.Vector3(); let k = 0;
+      for (let i = 0; i < N * 6 && k < N; i++) { const x = (r() * 2 - 1) * MES.rx * 0.62, z = MES.cz + (r() * 2 - 1) * MES.rz * 0.62; if (!O.dentro(x, z) || enPlaza(x, z) || calleCercana(x, z).d < 3.2 || !O.libre({ x, z, w: 3, d: 3 })) continue;
+        e.set(0, r() * 6.28, 0); q.setFromEuler(e); s.set(0.8 + r() * 2.2, 1, 0.7 + r() * 1.7); p.set(x, 0.009, z); m4.compose(p, q, s); im.setMatrixAt(k++, m4); }
+      im.count = k; im.receiveShadow = true; im.userData = { instancias: true }; W.add(im); }
     S.paseo = []; aLoLargo(6, (x, z) => S.paseo.push([x, z])); PLAZA.forEach(([x, z]) => S.paseo.push([x * 0.6, z * 0.6]));
     S.spawnPueblo = { x: PS[0], z: PS[1] - 4, ry: Math.PI };
     S.calleNombre = pj.nombre; S.nCasas = nCasas; S.nCasasFuera = nFuera;
