@@ -69,6 +69,7 @@ node tools/sonido_prueba.js               # sonido ambiente: arranca con el prim
 node tools/escritorio_escenas.js          # versión de escritorio: árboles reales en ciudad deportiva y pueblo, y persianas en la calle
 node tools/palomas.js                     # bandadas de palomas que salen volando al acercarte
 node tools/urbano_capturas.js [carpeta]   # pasos de cebra, farolas, aceras, bocas de metro, paradas de bici, plaza y parque (VISTAS='[["nombre",x,z,yaw,zoom]]' o 'zona:<id>' para elegir vistas)
+node tools/osm_capturas.js [club] [carpeta]   # la ciudad real de OpenStreetMap alrededor de la calle (datos_osm.js sale de node tools/osm_descargar.js + node tools/osm_generar.js; recursos/osm no se sube)
 node tools/bici_prueba.js [carpeta]       # ir en bici: sentarse en el sillín, pedalear, ruedas y bajarse
 node tools/pueblo_nuevo.js [carpeta] [interior1,…]   # pueblo con todos los edificios (cine, polígono, taller…), la vespa y los interiores con varias estancias
 node tools/sim_ligas.js [temporadas] [semilla]   # niveles y potenciales de todas las ligas a lo largo de las temporadas (media/atributos, techos, relevo)

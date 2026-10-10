@@ -123,6 +123,7 @@
     const c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
     const ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, rep = club.reputacion || 60, afi = ciu.aficion || 50;
     const G = M.rejilla({ limites: LIM, CELDA: 0.5 }); S.G = G; OCL = []; S.oclusores = OCL;
+    if (GM.mods.osmCiudad) { try { const o = GM.mods.osmCiudad.construir(S, M, club, c1); if (o) W.add(o); } catch (e) { /* sin la ciudad real de fondo */ } }
     // Suelo: asfalto, aceras de panot y pasos de peatones elevados
     suelo(W, 90, 50, GM.urbano.deco(real(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { escala: 5, tinte: 0xb4b4b4 })), 0, -0.12, 0); // (con polygonOffset: el asfalto de los barrios, 5 mm más abajo, no parpadea con él)
     if (GM.kit.calcomania) { const rS = rnd(77); for (let i = 0; i < 46; i++) { const enX = rS() < 0.65, x = enX ? -88 + rS() * 176 : (rS() - 0.5) * 5, z = enX ? (rS() - 0.5) * 5 : -40 + rS() * 64; GM.kit.calcomania(W, 'suelo', x, -0.115, z, 0, rS); } }

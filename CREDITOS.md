@@ -18,3 +18,6 @@
 Los iconos de la app (`vendor/icons/`) son propios del proyecto, generados con `tools/iconos.js`.
 
 Las fuentes vienen de los paquetes de Fontsource (`@fontsource/graduate`, `@fontsource-variable/bricolage-grotesque`, `@fontsource-variable/doto`), subconjuntos latin y latin-ext.
+
+## Mapas
+Los edificios, calles, ríos y parques que rodean la calle de cada club (`datos_osm.js`) proceden de OpenStreetMap, © colaboradores de OpenStreetMap, bajo licencia ODbL (https://www.openstreetmap.org/copyright).
