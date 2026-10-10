@@ -129,5 +129,17 @@
     for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; const co = new T.Mesh(new T.ConeGeometry(0.2, 0.55, 5).rotateX(Math.PI), piedra); co.position.set(x + Math.cos(a) * 2.28, alto + 1.55, z + Math.sin(a) * 2.28); W.add(co); }
     for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.4; const sl = new T.Mesh(new T.BoxGeometry(0.14, 0.9, 0.3), mat('#0d1116')); sl.position.set(x + Math.cos(a) * 2.32, alto * 0.55, z + Math.sin(a) * 2.32); sl.rotation.y = -a; W.add(sl); const a2 = new T.Mesh(new T.CircleGeometry(0.07, 8, 0, Math.PI), mat('#0d1116')); a2.position.set(x + Math.cos(a) * 2.34, alto * 0.55 + 0.45, z + Math.sin(a) * 2.34); a2.rotation.y = Math.PI / 2 - a; W.add(a2); }
   }
-  GM.curvas = { lampMat: LAMP_MAT, lathe, fuente, farola, pozo, iglesia, puertaMuralla, almenasTorre };
+  // Arco de piedra que cruza una calle estrecha entre dos casas (el de medio punto, con su cornisa y una enredadera)
+  function arcoCalle(W, G, piedra, x, z, tx, tz, ancho) {
+    const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = Math.atan2(tx, tz); W.add(g);
+    const R = ancho / 2 + 0.2, spring = 2.9, sh = new T.Shape(); sh.moveTo(-R - 0.9, 0); sh.lineTo(-R - 0.9, 2.2); sh.lineTo(R + 0.9, 2.2); sh.lineTo(R + 0.9, 0); sh.lineTo(R, 0); sh.absarc(0, 0, R, 0, Math.PI, false); sh.lineTo(-R, 0); sh.lineTo(-R - 0.9, 0);
+    const blk = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: 1.2, bevelEnabled: false }), piedra); blk.position.set(0, spring, -0.6); blk.castShadow = true; g.add(blk);
+    for (const s of [-1, 1]) caja(g, 0.9, spring, 1.2, piedra, s * (R + 0.45), 0, 0);
+    const dov = new T.Mesh(new T.TorusGeometry(R + 0.12, 0.15, 6, 20, Math.PI), piedra); dov.position.set(0, spring, 0.62); dov.scale.z = 0.6; g.add(dov); const d2 = dov.clone(); d2.position.z = -0.62; g.add(d2);
+    caja(g, 2 * R + 2.1, 0.25, 1.5, piedra, 0, spring + 2.2, 0);
+    const tej = new T.Mesh(new T.CylinderGeometry(0.6, 0.6, 2 * R + 2.3, 3).rotateZ(Math.PI / 2), mat('#b4643d')); tej.rotation.x = Math.PI / 2 * 0; tej.position.set(0, spring + 2.75, 0); tej.scale.set(1, 0.7, 1.4); g.add(tej);
+    const farol = lathe('f-arco', [[0, 0], [0.09, 0.03], [0.13, 0.18], [0.1, 0.33], [0, 0.38]], 8, LAMP_MAT.on || mat('#fff3c4', { emissive: 0xffd27a, emissiveIntensity: 0.6 })); farol.position.set(0, spring - 0.1, 0.0); g.add(farol); const cad = new T.Mesh(new T.CylinderGeometry(0.01, 0.01, 0.5, 4), mat('#23282d')); cad.position.set(0, spring + 0.28, 0); g.add(cad);
+    return g;
+  }
+  GM.curvas = { arcoCalle, lampMat: LAMP_MAT, lathe, fuente, farola, pozo, iglesia, puertaMuralla, almenasTorre };
 })();

@@ -256,9 +256,11 @@
     PLAZA.forEach(([px, pz]) => { const d = Math.hypot(x - px, z - pz); if (d < best.d) best = { d, px, pz, w: 0 }; });
     return best;
   }
+  let EST = 'verano';
   function arbol(W, x, z, tipo, r, y0) {
     const y = y0 || 0;
     if (tipo !== 'ciprés' && ESCRITORIO()) { cil(W, 0.12, 0.02, '#5b4632', x, y, z, 5); SUELTOS.push([x, y, z, 1 + r() * 0.4]); return; }   // en el escritorio, árbol real al poblar
+    if (GM.arboles) { const m = GM.arboles.mesh(tipo === 'ciprés' ? 'ciprés' : tipo === 'olivo' ? 'olivo' : r() < 0.2 ? 'pino' : 'frutal', EST, (r() * 4) | 0, 0.85 + r() * 0.4); m.position.set(x, y, z); m.rotation.y = r() * 6.28; W.add(m); return; }
     if (tipo === 'ciprés') { cil(W, 0.15, 1, '#5b4632', x, y, z, 5); const c = new THREE.Mesh(new THREE.ConeGeometry(0.9 + r() * 0.3, 6 + r() * 3, 8), mat('#2f4a2c')); c.position.set(x, y + 4.2, z); c.castShadow = true; W.add(c); return; }
     // Copa de varias masas de hojas con matices distintos (se mecen con el viento) sobre un tronco que se ensancha
     cil(W, 0.26, 1.8, '#6e5a44', x, y, z, 6, 0.12 + r() * 0.05); const verdes = tipo === 'olivo' ? ['#7d8f62', '#8a9d6c', '#6f8355'] : ['#4f7d3a', '#5d8c41', '#456f33', '#6a9a48'];
@@ -266,7 +268,8 @@
   }
   // Muchos árboles del campo en dos mallas instanciadas (tronco y copa): olivos en hileras y cipreses
   function bosque(W, lista, tipo) {
-    if (!lista.length) return; const n = lista.length, m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
+    if (!lista.length) return;
+    if (GM.arboles) { const geo = GM.arboles.geo(tipo === 'ciprés' ? 'ciprés' : 'olivo', EST, tipo === 'ciprés' ? 1 : 0, true), im = new THREE.InstancedMesh(geo, GM.arboles.mat(), lista.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), e = new THREE.Euler(); lista.forEach(([x, y, z, k], i) => { e.set(0, (i * 2.399) % 6.283, 0); q.setFromEuler(e); s.setScalar(k * (tipo === 'ciprés' ? 1 : 0.95)); p.set(x, y, z); m4.compose(p, q, s); im.setMatrixAt(i, m4); }); im.castShadow = true; im.userData = { instancias: true }; W.add(im); if (tipo !== 'ciprés') BOSQUES.push({ tronco: im, copa: im, lista }); return; } const n = lista.length, m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
     const tronco = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.25, 1.6, 5), mat('#6e5a44'), n), copa = new THREE.InstancedMesh(tipo === 'ciprés' ? new THREE.ConeGeometry(1, 7, 7) : new THREE.SphereGeometry(1.5, 7, 5), mat(tipo === 'ciprés' ? '#2f4a2c' : '#7d8f62'), n);
     lista.forEach(([x, y, z, e], i) => { s.set(1, 1, 1); p.set(x, y + 0.8, z); m4.compose(p, q, s); tronco.setMatrixAt(i, m4); s.set(e, tipo === 'ciprés' ? e : e * 0.75, e); p.set(x, y + (tipo === 'ciprés' ? 4.2 : 2.2) * e, z); m4.compose(p, q, s); copa.setMatrixAt(i, m4); });
     tronco.userData = { instancias: true }; copa.userData = { instancias: true }; copa.castShadow = true; W.add(tronco, copa);
@@ -314,12 +317,13 @@
       const x = pos.getX(i), z = pos.getZ(i), y = altura(x, z), d = dMes(x, z); pos.setY(i, d < 1 ? -0.04 : y);
       const campo = ruido(x * 0.035 + 3, z * 0.035) , franja = Math.floor((x * 0.7 + z * 0.4) / 9) % 3;
       if (d < 1) c.copy(tierra).lerp(verde, 0.35); else if (y < -22) c.copy(agua); else c.copy(campo > 0.62 ? seco : campo > 0.42 ? verde : oscuro).lerp(franja === 0 ? seco : verde, 0.18);
+      if (EST === 'otono' && y >= -22) c.lerp(new THREE.Color(campo > 0.5 ? '#c08a30' : '#9a7a30'), 0.9); else if (EST === 'primavera' && y >= -22) c.lerp(new THREE.Color('#79b45a'), 0.35); else if (EST === 'invierno' && y >= -22) c.lerp(new THREE.Color('#eef2f5'), 0.82 - (y > 18 ? 0 : 0));
       if (y > 18) c.lerp(new THREE.Color('#8c8a86'), U.clamp((y - 18) / 30, 0, 0.8));   // roca en las cumbres
       if (conTextura) c.lerp(CLARO, 0.42);   // el color de vértice tiñe la hierba real (si no, quedaría oscura)
       col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
     }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals();
-    const suelo = new THREE.Mesh(g, (() => { const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }); if (conTextura) GM.texturas.aplicar(m, 'Grass004', { escala: 7, tinte: 0xf2f4e0, relieve: 0.9, rugMin: 0.75 }); return m; })()); suelo.receiveShadow = true; suelo.userData = { terreno: true }; W.add(suelo);
+    const suelo = new THREE.Mesh(g, (() => { const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }); if (conTextura) GM.texturas.aplicar(m, 'Grass004', { escala: 7, tinte: EST === 'otono' ? 0xf0d9a0 : 0xf2f4e0, relieve: 0.9, rugMin: 0.75, color: EST !== 'invierno' }); return m; })()); suelo.receiveShadow = true; suelo.userData = { terreno: true }; W.add(suelo);
     // Río en el fondo del valle (al sur) y puente de piedra donde cruza la carretera
     const rioZ = x => MES.cz + MES.rz * 1.62 + Math.sin(x * 0.02) * 10, rio = [];
     for (let x = -210; x <= 210; x += 12) rio.push([x, rioZ(x)]);
@@ -339,7 +343,7 @@
       for (let i = 0; i < 6; i++) for (let j = 0; j < 7; j++) { const x = cx + Math.cos(ang) * (i - 3) * 6 - Math.sin(ang) * (j - 3) * 6, z = cz + Math.sin(ang) * (i - 3) * 6 + Math.cos(ang) * (j - 3) * 6, y = altura(x, z); if (dMes(x, z) < 1.08 || y < -23) continue; olivos.push([x, y, z, 0.8 + r() * 0.35]); } }
     for (let k = 0; k < 90; k++) { const a = r() * 6.28, d = 1.06 + r() * 1.3, x = MES.cx + Math.cos(a) * MES.rx * d, z = MES.cz + Math.sin(a) * MES.rz * d, y = altura(x, z); if (y < -23) continue; sueltos.push([x, y, z, 0.8 + r() * 0.5]); }
     bosque(W, olivos, 'olivo'); bosque(W, sueltos, 'ciprés');
-    detallesCampo(W, M, E, r, anims);
+    if (EST !== 'invierno') detallesCampo(W, M, E, r, anims);
     // Masías dispersas por las laderas y una ermita en el cerro de enfrente
     for (let k = 0; k < 9; k++) { const a = r() * 6.28, d = 1.35 + r() * 0.9, x = MES.cx + Math.cos(a) * MES.rx * d, z = MES.cz + Math.sin(a) * MES.rz * d, y = altura(x, z); if (y < -21) continue; const gm = new THREE.Group(); gm.position.set(x, y - 0.3, z); gm.rotation.y = r() * 6; W.add(gm); bloque(gm, M, E, 8, 6, 2, E.muros[(r() * E.muros.length) | 0], null, null, r); caja(gm, 5, 2.5, 4, E.muros[0], 6, 0, 1); }
     { const a = -0.9, d = 2.15, x = MES.cx + Math.cos(a) * MES.rx * d, z = MES.cz + Math.sin(a) * MES.rz * d, y = altura(x, z), ge = new THREE.Group(); ge.position.set(x, y - 0.2, z); ge.rotation.y = 2.4; W.add(ge);
@@ -393,6 +397,7 @@
   }
   function construir(S, M, st) {
     BOSQUES = []; SUELTOS = [];
+    EST = GM.arboles ? GM.arboles.estacion(st) : 'verano'; S.estacion = EST; if (GM.casasReal && GM.casasReal.setEstacion) GM.casasReal.setEstacion(EST);
     const W = S.mundo, club = st.equipos[st.clubId], Pm = GM.mods.pueblo, est = Pm.estado(st), nivel = est.nivel, pj = st.carrera.pueblo, eds = Pm.edificios(st), ed = t => eds.find(b => b.tipo === t);
     const clave = GM.pueblo3d ? GM.pueblo3d.estiloDe(pj.nombre, pj.nac) : 'castellano', E = Object.assign({ clave }, GM.pueblo3d ? GM.pueblo3d.ESTILOS[clave] : { muros: ['#d6b47c'], teja: '#b4643d', postigos: ['#5a3b22'], torre: 'campanario' });
     const G = M.rejilla({ limites: LIM, CELDA: 0.5 }), O = ocupacion(); S.G = G; S.ocupacion = O; S.puebloAnim = []; S.oclusores = []; S.conflictos = []; S.lotes = {};
@@ -420,6 +425,7 @@
     const carr = ed('carretera').nivel;
     entorno(W, M, E, r, carr, S.puebloAnim, S);
     { const s = new THREE.Shape(); for (let i = 0; i <= 96; i++) { const [px, pz] = muro(i / 96 * Math.PI * 2); if (i) s.lineTo(px, -pz); else s.moveTo(px, -pz); } const g = uvEsc(new THREE.ShapeGeometry(s), 7).rotateX(-Math.PI / 2); const m = new THREE.Mesh(g, mTierra); m.position.y = -0.01; m.receiveShadow = true; W.add(m); }
+    if (GM.casasReal && GM.casasReal.humos) GM.casasReal.humos.length = 0;
     CALLES.forEach(c => { cinta(W, c.p, c.w, c.n === 'Carretera' && carr ? mAsf : c.fuera ? mGrava : mCalle);
       if (!c.fuera) bordillos(W, c.p, c.w, mBordillo, enPlaza); for (let i = 0; i < c.p.length - 1; i++) { const [ax, az] = c.p[i], [bx, bz] = c.p[i + 1], l = Math.hypot(bx - ax, bz - az); O.marca({ x: (ax + bx) / 2, z: (az + bz) / 2, w: l + c.w, d: c.w + 1, ry: -Math.atan2(bz - az, bx - ax) }, 1); } });
     { const s = new THREE.Shape(); PLAZA.forEach(([px, pz], i) => i ? s.lineTo(px, -pz) : s.moveTo(px, -pz)); const g = uvEsc(new THREE.ShapeGeometry(s), 4).rotateX(-Math.PI / 2); const pl = new THREE.Mesh(g, ed('plaza').nivel ? mLosas : mCalle); pl.position.y = 0.014; pl.receiveShadow = true; W.add(pl);
@@ -533,6 +539,10 @@
         e.set(0, r() * 6.28, 0); q.setFromEuler(e); s.set(0.8 + r() * 2.2, 1, 0.7 + r() * 1.7); p.set(x, 0.009, z); m4.compose(p, q, s); im.setMatrixAt(k++, m4); }
       im.count = k; im.receiveShadow = true; im.userData = { instancias: true }; W.add(im); }
     S.paseo = []; aLoLargo(6, (x, z) => S.paseo.push([x, z]));
+    if (GM.arboles) GM.arboles.particulas(S, W, EST);
+    if (GM.puebloJuego) { GM.puebloJuego.marcas(S, W, st); GM.puebloJuego.fiesta(S, W, st, club, CALLES.filter(c => !c.fuera), r); }
+    if (GM.curvas && GM.curvas.arcoCalle) { const pie = GM.casasReal ? GM.casasReal.piedraMat('#a89f8d') : mat('#a89f8d'); for (const [nom, k] of [['Callejón del Horno', 2], ['Carrer de Llevant', 1], ['Carrer de Ponent', 2]]) { const c = CALLES.find(q => q.n === nom); if (!c) continue; const [ax, az] = c.p[k], [bx, bz] = c.p[k + 1], l = Math.hypot(bx - ax, bz - az) || 1, tx = (bx - ax) / l, tz = (bz - az) / l, px = ax + tx * l * 0.5, pz = az + tz * l * 0.5; GM.curvas.arcoCalle(W, G, pie, px, pz, tx, tz, c.w); } }
+    if (EST === 'invierno') { const nv = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xf2f6f8, transparent: true, opacity: 0.62, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 })); nv.scale.set(RX * 1.15, 1, RZ * 1.15); nv.position.set(0, 0.03, 0); nv.receiveShadow = true; W.add(nv); }
     if (GM.puebloVida) { const V = GM.puebloVida; V.setAltura(altura); CALLES.filter(c => !c.fuera).forEach((c, i) => { const [ax, az] = c.p[0], [bx, bz] = c.p[1], l = Math.hypot(bx - ax, bz - az) || 1, nx = -(bz - az) / l, nz = (bx - ax) / l, px = ax + (bx - ax) / l * 3 + nx * (c.w / 2 + 0.7), pz = az + (bz - az) / l * 3 + nz * (c.w / 2 + 0.7); if (O.punto(px, pz) <= 1) V.cartelCalle(W, M, px, pz, c.n, Math.atan2(bx - ax, bz - az) + Math.PI / 2); });
       V.alcantarillas(W, M, S.paseo.filter((p, i) => i % 3 === 0 && !enPlaza(p[0], p[1])), r);
       if (S.lotes.bar && (ed('bar') || {}).nivel) V.terraza(W, S, S.lotes.bar, r);
@@ -563,14 +573,16 @@
     else if (b.proximo) out.mejora = { titulo: (b.nivel ? 'Mejorar a ' : 'Construir: ') + b.proximo, coste: b.coste, costeTxt: f(b.coste), dias: b.dias, disponible: !b.motivo, motivo: b.motivo, falta: dinero < b.coste ? { tienes: dinero, necesitas: b.coste } : null, fn: () => { const r = Pm.invertir(st, tipo); return r.ok ? { ok: true, texto: b.nivel ? 'Empiezan las obras de mejora' : 'Empieza la obra', reconstruir: true } : r; } };
     const acc = [];
     if (b.uso) acc.push({ ico: ic, t: b.uso, d: 'Sube ' + ((EDIUSO(tipo) || []).join(', ') || 'el ánimo'), disponible: true, fn: () => { const r = Pm.usar(st, tipo); return r.ok ? { ok: true, texto: r.texto + (r.efectos && r.efectos.length ? ': ' + r.efectos.join(', ') : '') } : r; } });
+    if (GM.puebloJuego) acc.push(...GM.puebloJuego.acciones(st, tipo));
     out.acciones = acc; out.entrar = null; return out;
   }
   const EDIUSO = tipo => { const e = GM.mods.pueblo.EDI[tipo], u = e && e.uso && e.uso[1]; if (!u) return null; const l = []; if (u.moral) l.push('ánimo'); if (u.cariño) l.push('cariño del pueblo'); if (u.fama) l.push('reputación'); if (u.xp) l.push('progresión'); if (u.amigos) l.push('amigos'); return l; };
   function accionesPlaza(st) {
     const Pm = GM.mods.pueblo, conv = r => r.ok ? { ok: true, texto: (r.efectos || []).join(', ') || 'Hecho' } : r;
-    return [{ id: 'visita', t: 'Visitar a la familia y a los vecinos', d: '0,8 mil €. Ánimo y cariño del pueblo.', disponible: true, fn: () => conv(Pm.visitar(st)) },
+    const juego = GM.puebloJuego ? GM.puebloJuego.acciones(st, 'plaza').map((a, i) => ({ id: 'jg' + i, t: a.t, d: a.d, disponible: true, fn: a.fn })) : [];
+    return juego.concat([{ id: 'visita', t: 'Visitar a la familia y a los vecinos', d: '0,8 mil €. Ánimo y cariño del pueblo.', disponible: true, fn: () => conv(Pm.visitar(st)) },
       { id: 'clinic', t: 'Clínic con los niños', d: 2 * Pm.estado(st).nivel + ' mil €. Cariño del pueblo.', disponible: true, fn: () => conv(Pm.clinic(st)) },
-      { id: 'fiesta', t: 'Fiesta en tu honor', d: Math.round(15 * Math.pow(Pm.estado(st).nivel, 1.4)) + ' mil €. Mucho cariño y algo de reputación.', disponible: true, fn: () => conv(Pm.fiesta(st)) }].concat(accionesLote(st, 'plaza'));
+      { id: 'fiesta', t: 'Fiesta en tu honor', d: Math.round(15 * Math.pow(Pm.estado(st).nivel, 1.4)) + ' mil €. Mucho cariño y algo de reputación.', disponible: true, fn: () => conv(Pm.fiesta(st)) }]).concat(accionesLote(st, 'plaza'));
   }
   // Vecinos y obreros
   const MODELOS = ['h-casual_2', 'm-casual', 'h-farmer', 'm-formal', 'h-beach', 'm-adventurer', 'h-adventurer', 'm-punk'];

@@ -535,3 +535,13 @@ body{background:var(--bg)}
 .pb-edi .pie{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:6px}
 .pb-edi .pips{display:flex;gap:3px}.pb-edi .pips i{width:14px;height:5px;border-radius:3px;background:rgba(127,127,127,.35)}.pb-edi .pips i.on{background:var(--club)}
 .pb-edi.bloq{opacity:.6}
+
+/* Minijuegos del pueblo (pueblo_juego.js): cursor de precisión */
+.jg{display:flex;flex-direction:column;gap:12px;min-width:min(420px,86vw)}
+.jg-cab b{font:400 20px var(--fd)}
+.jg-marc{display:flex;justify-content:space-between;align-items:baseline;padding:8px 12px;border-radius:10px;background:rgba(127,127,127,.15);font-size:14px}.jg-marc b{font-size:18px}
+.jg-msg{min-height:22px;font-size:13.5px;opacity:.85}
+.jg-zonaBtn{display:flex;flex-direction:column;gap:10px}
+.jg-barra{position:relative;height:34px;border-radius:17px;background:linear-gradient(90deg,#3a4350,#2a313b);box-shadow:inset 0 0 0 2px rgba(255,255,255,.15);overflow:hidden}
+.jg-zona{position:absolute;top:0;bottom:0;border-radius:17px;background:linear-gradient(90deg,#2e9d5b,#52d68c,#2e9d5b);box-shadow:0 0 14px rgba(82,214,140,.7)}
+.jg-aguja{position:absolute;top:2px;bottom:2px;width:6px;margin-left:-3px;border-radius:3px;background:#fff;box-shadow:0 0 8px #fff}

@@ -18,7 +18,8 @@
   const REAL = {};
   function murMat(hex) { const k = 'mur' + hex; if (REAL[k]) return REAL[k]; const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.96 }); if (GM.texturas) GM.texturas.aplicar(m, 'Plaster003', { color: false, escala: 2.4, relieve: 1.3 }); return (REAL[k] = m); }
   function piedraMat(hex) { const k = 'pie' + hex; if (REAL[k]) return REAL[k]; const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.95 }); if (GM.texturas) GM.texturas.aplicar(m, 'Bricks085', { color: false, escala: 1.0, relieve: 1.5 }); return (REAL[k] = m); }
-  function tejaMat(hex) { const k = 'tej' + hex; if (REAL[k]) return REAL[k]; const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.9 }); if (GM.texturas) GM.texturas.aplicar(m, 'RoofingTiles013A', { color: false, escala: 0.8, relieve: 1.6 }); return (REAL[k] = m); }
+  let EST = 'verano', EST_K = 'verano'; function setEstacion(e) { EST = e || 'verano'; EST_K = EST; }
+  function tejaMat(hex) { if (EST === 'invierno') hex = '#' + new T.Color(hex).lerp(new T.Color('#eef2f5'), 0.8).getHexString(); const k = 'tej' + hex; if (REAL[k]) return REAL[k]; const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.9 }); if (GM.texturas) GM.texturas.aplicar(m, 'RoofingTiles013A', { color: false, escala: 0.8, relieve: 1.6 }); return (REAL[k] = m); }
   function maderaMat(hex) { const k = 'mad' + hex; if (REAL[k]) return REAL[k]; const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.8 }); if (GM.texturas) GM.texturas.aplicar(m, 'WoodFloor051', { color: false, escala: 0.9, relieve: 1 }); return (REAL[k] = m); }
 
   // ---------- Calcomanías de desgaste ----------
@@ -69,8 +70,11 @@
   }
 
   // Chimenea de piedra con remate y dos tiros
+  const HUMOS = []; let HUMO_MAT = null;
+  function humo(G, x, y, z, r) { if (r() > 0.7) return; HUMO_MAT = HUMO_MAT || new T.MeshStandardMaterial({ color: 0xd4d7da, transparent: true, opacity: 0.42, roughness: 1, depthWrite: false }); const f = r() * 3; for (let k = 0; k < 3; k++) { const p = new T.Mesh(new T.IcosahedronGeometry(0.35, 1), HUMO_MAT); p.position.set(x, y, z); p.userData = { humo: { x, y, z, f: f + k / 3 } }; G.add(p); HUMOS.push(p); } }
   function chimenea(G, x, yBase, z, r) {
     const pm = piedraMat('#a89f8d'), h = 1.5 + r() * 0.5;
+    humo(G, x, yBase + h + 0.8, z, r);
     if (r() < 0.4) { const lad = piedraMat('#9c6a55'), c = new T.Mesh(new T.CylinderGeometry(0.27, 0.34, h, 12), lad); c.position.set(x, yBase + h / 2, z); c.castShadow = true; G.add(c); const an = new T.Mesh(new T.TorusGeometry(0.3, 0.06, 6, 14), pm); an.rotation.x = Math.PI / 2; an.position.set(x, yBase + h - 0.1, z); G.add(an); const rem = new T.Mesh(new T.ConeGeometry(0.4, 0.4, 12), mat('#4a3b34')); rem.position.set(x, yBase + h + 0.2, z); G.add(rem); const mush = new T.Mesh(new T.CylinderGeometry(0.1, 0.12, 0.3, 8), mat('#b4643d')); mush.position.set(x, yBase + h + 0.5, z); G.add(mush); return; }
     caja(G, 0.62, h, 0.62, pm, x, yBase, z); caja(G, 0.8, 0.1, 0.8, pm, x, yBase + h, z); caja(G, 0.68, 0.14, 0.68, pm, x, yBase + h - 0.12, z);
     for (const s of [-0.14, 0.14]) { const t = new T.Mesh(new T.CylinderGeometry(0.1, 0.12, 0.38, 8), mat('#b4643d')); t.position.set(x + s, yBase + h + 0.29, z); t.castShadow = true; G.add(t); }
@@ -129,6 +133,16 @@
       caja(G, 2.0, 0.2, 0.7, mP, 0, 0, df + 0.34); caja(G, 1.7, 0.1, 0.3, mPc, 0, 0.2, df + 0.15);
       const kn = new T.Mesh(new T.TorusGeometry(0.07, 0.015, 6, 12), hierro); kn.position.set(0.28, 1.1, df + 0.08); G.add(kn);
       const fa = new T.Group(); fa.position.set(dw / 2 + 0.55, 2.3, df + 0.1); G.add(fa); caja(fa, 0.04, 0.3, 0.04, hierro, 0, -0.15, 0.04); caja(fa, 0.2, 0.26, 0.2, new T.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffd27a, emissiveIntensity: 0.7, transparent: true, opacity: 0.9 }), 0, 0, 0.12); caja(fa, 0.26, 0.04, 0.26, hierro, 0, 0.26, 0.12);
+    }
+    // tendedero con ropa y planta trepadora en la fachada
+    if (pisos >= 2 && cols >= 2 && r() < 0.24) {
+      const y0 = hP + 0.5, xa = -w / 2 + 0.5, xb = w / 2 - 0.5, zl = d / 2 + 0.5; for (const sx of [xa, xb]) { caja(G, 0.04, 0.04, 0.5, hierro, sx, y0 + 0.9, d / 2 + 0.25, 0, false); }
+      const pts = []; for (let k = 0; k <= 12; k++) { const t = k / 12; pts.push(new T.Vector3(xa + (xb - xa) * t, y0 + 0.9 - Math.sin(t * Math.PI) * 0.18, zl)); } G.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 16, 0.006, 4), mat('#d9d4c4')));
+      const col = ['#f4f1e8', '#d6452f', '#2f6f9e', '#e8b53a', '#efe2d0', '#7a4aa8', '#5fa86a']; const nR = Math.max(3, Math.floor((xb - xa) / 0.5)); for (let k = 0; k < nR; k++) { const t = (k + 0.7) / (nR + 0.4), px = xa + (xb - xa) * t, py = y0 + 0.9 - Math.sin(t * Math.PI) * 0.18, ancho = 0.32 + r() * 0.2, alto = 0.4 + r() * 0.45, pr = new T.Mesh(new T.PlaneGeometry(ancho, alto), mat(col[(r() * col.length) | 0], { side: T.DoubleSide, roughness: 1 })); pr.position.set(px, py - alto / 2 - 0.02, zl); pr.rotation.y = (r() - 0.5) * 0.25; pr.userData = { ropa: true, f: r() * 6 }; G.add(pr); }
+    }
+    if (r() < 0.42) {
+      const hoja = tex(M, 'trepadora-' + EST_K, 128, (x, n) => { const rr = rn('trep' + EST_K), cols = EST_K === 'otono' ? ['#a8431f', '#c9772a', '#d9a23a'] : EST_K === 'invierno' ? ['#6b5a48'] : EST_K === 'primavera' ? ['#7fb04f', '#9bc25f', '#e8b6c8'] : ['#3f6f2f', '#4f7f3a', '#5d8c41']; x.strokeStyle = '#4a3b2c'; x.lineWidth = 3; for (let s = 0; s < 4; s++) { x.beginPath(); let px = n * (0.2 + s * 0.2), py = n; x.moveTo(px, py); for (let k = 0; k < 8; k++) { px += (rr() - 0.5) * 16; py -= n / 8; x.lineTo(px, py); } x.stroke(); } if (EST_K !== 'invierno') for (let i = 0; i < 260; i++) { const py = n * (1 - Math.pow(rr(), 1.4)), px = n * (0.1 + rr() * 0.8) + Math.sin(py * 0.06) * 8; x.fillStyle = cols[(rr() * cols.length) | 0]; x.beginPath(); x.ellipse(px, py, 5 + rr() * 5, 3 + rr() * 3, rr() * 3, 0, 6.3); x.fill(); } });
+      if (hoja) { const sx = (r() < 0.5 ? -1 : 1) * (w / 2 - 0.8 - r() * 0.6), alto = Math.min(h - 0.5, 3.2 + r() * 2.4), pl = new T.Mesh(new T.PlaneGeometry(1.5, alto), new T.MeshStandardMaterial({ map: hoja, transparent: true, alphaTest: 0.35, roughness: 1, side: T.DoubleSide })); pl.position.set(sx, alto / 2 + 0.2, d / 2 + 0.05); G.add(pl); }
     }
     // detalles de pared: bajante, cableado, aire acondicionado, parabólica
     if (r() < 0.65) cil(G, 0.045, h - 0.1, '#6b6f73', w / 2 - 0.1, 0, d / 2 + 0.08, 6);
@@ -195,5 +209,5 @@
     const g = new T.PlaneGeometry(2.3, 0.575), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 0.75 + uv.getY(i) * 0.25);
     return new T.Mesh(g, t ? new T.MeshStandardMaterial({ map: t, roughness: 0.8 }) : mat(fondo));
   }
-  GM.casasReal = { luzVentana: LUZ, bloque, tejado, chimenea, balconCurvo, mirador, torreta, envejecer, murMat, piedraMat, tejaMat, maderaMat };
+  GM.casasReal = { humos: HUMOS, setEstacion, luzVentana: LUZ, bloque, tejado, chimenea, balconCurvo, mirador, torreta, envejecer, murMat, piedraMat, tejaMat, maderaMat };
 })();

@@ -146,8 +146,24 @@
   function perros(S, W, duenos, r) {
     PERROS.length = 0; duenos.forEach((d, i) => { const p = perro(['#8a6a45', '#2b2622', '#d6c8a8', '#a0522d'][i % 4]); p.position.set(d.obj.position.x - 0.8, 0, d.obj.position.z); W.add(p); PERROS.push({ obj: p, dueno: d, x: p.position.x, z: p.position.z, ang: 0, fase: r() * 6 }); });
   }
+  // Oficios, saludos por tu nombre según tu fama y el último resultado, y charlas entre vecinos que se cruzan
+  const OFICIOS = ['Panadero', 'Maestra', 'Tendero', 'Mecánico', 'Pastor', 'Camarera', 'Jubilado', 'Enfermera', 'Albañil', 'Agricultora', 'Cartero', 'Carnicero'];
+  const DIALOGOS = [['¿Has visto el partido?', 'Menudo tiro metió el chaval.'], ['Qué calor hace hoy.', 'Pues ya verás en agosto.'], ['¿Vas a la fiesta?', 'No me la pierdo.'], ['Dicen que arreglan la carretera.', 'Ya era hora.'], ['Hoy el pan está recién hecho.', 'Guárdame una barra.'], ['¿Cómo está tu madre?', 'Mejor, gracias.']];
+  function ultimoResultado(st) { let g = null; (st.calendario || []).forEach(x => { if (x.resultado && (x.local === st.clubId || x.visitante === st.clubId) && (!g || x.fecha > g.fecha)) g = x; }); if (!g) return null; const loc = g.local === st.clubId, nos = loc ? g.resultado.local : g.resultado.visitante, ellos = loc ? g.resultado.visitante : g.resultado.local; return { gana: nos > ellos, nos, ellos }; }
+  function saludos(S, M, t) {
+    const yo = S.yo && S.yo.obj.position; if (!yo) return; S.vgT = S.vgT || 0; if (t < S.vgT) return; S.vgT = t + 0.6;
+    const st = S.st, nom = (st.jugadores.yo && st.jugadores.yo.nombre || 'campeón').split(' ')[0], fama = st.carrera ? st.carrera.fama : 30, u = ultimoResultado(st), gente = S.gente.filter(n => n.vecino && n.obj.visible);
+    S.saludados = S.saludados || {}; const hoy = st.fecha;
+    gente.forEach(n => { const d = Math.hypot(n.obj.position.x - yo.x, n.obj.position.z - yo.z), id = n.obj.id; if (!n.oficio) n.oficio = n.perfil === 'nino' ? 'Estudiante' : n.perfil === 'mayor' ? 'Jubilado' : OFICIOS[(id * 7) % OFICIOS.length];
+      if (d < 3.2 && S.saludados[id] !== hoy && !n.sentado) { S.saludados[id] = hoy; const f = n.perfil === 'nino' ? ['¡' + nom + '! ¿Me firmas un autógrafo?', '¡Quiero ser como tú!', '¿Jugamos un rato?'] : fama >= 70 ? ['¡Mira, ' + nom + '! Qué orgullo.', '¡' + nom + ', eres el mejor!', 'Saludos, ' + nom + '. El pueblo entero te sigue.'] : fama >= 40 ? ['Buenas, ' + nom + '.', '¡Ánimo en la próxima, ' + nom + '!', u ? (u.gana ? 'Vaya partido ganasteis, ' + nom + '.' : 'Ya ganaréis, ' + nom + '.') : 'Hola, ' + nom + '.'] : ['Buenas, chaval.', '¿Tú eres el que juega al baloncesto?', 'Hola.'];
+        M.bocadillo(f[(id + hoy.length) % f.length], n.obj); n.rol = n.oficio + (n.perfil === 'nino' ? '' : ', vecino de ' + (S.calleNombre || 'tu pueblo')); } });
+    // charla entre dos vecinos que pasan cerca
+    S.dialT = S.dialT || 0; if (t > S.dialT) { S.dialT = t + 4; for (let i = 0; i < gente.length; i++) for (let j = i + 1; j < gente.length; j++) { const a = gente[i], b = gente[j]; if (Math.hypot(a.obj.position.x - b.obj.position.x, a.obj.position.z - b.obj.position.z) < 2.2 && Math.hypot(a.obj.position.x - yo.x, a.obj.position.z - yo.z) < 14 && !a.hablando && !b.hablando) { const d = DIALOGOS[(i * 3 + j) % DIALOGOS.length]; a.hablando = b.hablando = true; a.espera = b.espera = Math.max(a.espera || 0, 5); a.camino = b.camino = null; M.anim(a, 'idle'); M.anim(b, 'idle'); a.obj.lookAt(b.obj.position.x, a.obj.position.y, b.obj.position.z); b.obj.lookAt(a.obj.position.x, b.obj.position.y, a.obj.position.z); M.bocadillo(d[0], a.obj); setTimeout(() => { if (S.vivo !== false) M.bocadillo(d[1], b.obj); }, 1800); setTimeout(() => { a.hablando = b.hablando = false; }, 5000); return; } } }
+  }
   function actualizar(S, M, dt) {
     const t = performance.now() / 1000;
+    saludos(S, M, t);
+    animarDetalles(S, t);
     PERROS.forEach(P => { const o = P.dueno.obj.position, dx = o.x - P.x, dz = o.z - P.z, d = Math.hypot(dx, dz), sg = !P.dueno.sentado && !(P.dueno.camino && !P.dueno.camino.length) ? 1 : 1;
       if (d > 30) { P.x = o.x - 1; P.z = o.z; }
       const mueve = d > 1.5; if (mueve) { const v = Math.min(3.4, 1.2 + d * 0.9) * dt; P.x += dx / d * v; P.z += dz / d * v; P.ang = Math.atan2(dx, dz); }
@@ -155,6 +171,11 @@
       const u = P.obj.userData, sw = mueve ? Math.sin(t * 13 + P.fase) * 0.7 : 0; u.pat.forEach((pv, k) => { pv.rotation.x = (k % 3 === 0 ? 1 : -1) * sw; }); u.cola.rotation.z = Math.sin(t * (mueve ? 9 : 5) + P.fase) * 0.5; u.cab.rotation.x = mueve ? 0 : Math.sin(t * 1.3 + P.fase) * 0.15; void sg; });
   }
   let ctxAltura = null;
+  // Humo de las chimeneas (de otoño a primavera, y a primera y última hora) y ropa tendida que se mece
+  function animarDetalles(S, t) {
+    const H = K() && K().humos, h = S.hora || 9, frio = S.estacion && S.estacion !== 'verano' || h < 10 || h > 19.5;
+    if (H) H.forEach((p, i) => { const u = p.userData.humo; p.visible = frio && i % 4 !== 3; if (!p.visible) return; const ph = (t * 0.16 + u.f) % 1; p.position.set(u.x + ph * 1.1, u.y + ph * 2.6, u.z + Math.sin(t + u.f * 5) * 0.12); p.scale.setScalar((0.35 + ph * 1.2) * (ph > 0.8 ? (1 - ph) / 0.2 : 1)); });
+  }
 
   // ---------- Noche: ventanas encendidas y faroles ----------
   function nocturno(S) {

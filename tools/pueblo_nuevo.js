@@ -11,11 +11,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = [];
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await p.goto(process.env.URL || 'http://localhost:8080/'); await sleep(800);
+  await p.evaluate(f => { if (f) window.__FECHA = f; }, process.env.FECHA || null);
   await p.evaluate(nv => {
     const pj = Object.assign(GM.mods.personaje.crear(), { nombre: 'Marc', apellido: 'Soler' });
     GM.newGame('joventut-badalona', undefined, { modo: 'carrera', personaje: pj, carrera: { origen: 'europa', clubId: 'joventut-badalona', pos: 'SG', perfil: 'tirador', nac: 'ES', agente: 'equilibrado' } });
     const st = GM.state, P = st.carrera.pueblo, E = GM.mods.pueblo.EDI; P.nombre = 'Torrelles del Monte'; P.cariño = 90; st.carrera.fama = 80; P.aportado = 5000; st.carrera.dinero = 5e6;
-    P.edificios = Object.keys(E).map(k => ({ tipo: k, nivel: nv === 'max' ? E[k].max : +nv })); P.obras = [];
+    P.edificios = Object.keys(E).map(k => ({ tipo: k, nivel: nv === 'max' ? E[k].max : +nv })); P.obras = []; if (window.__FECHA) st.fecha = window.__FECHA;
     GM.campus.config.calidad = 'alta'; GM.ui.start(document.getElementById('app')); GM.sede.abrir(st, 'pueblo');
   }, NV);
   await sleep(12000);
