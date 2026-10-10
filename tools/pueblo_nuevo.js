@@ -23,9 +23,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   console.log(JSON.stringify(info));
   const foto = async (n, fn) => { if (fn) await p.evaluate(fn); await sleep(1600); await p.evaluate(() => { document.querySelectorAll('.sede-ayuda').forEach(e => e.remove()); const S = GM.sede._estado(); if (S.panel) S.panel.style.display = 'none'; }); await p.screenshot({ path: path.join(DIR, n + '.png') }); };
   await foto('1_general', () => { const S = GM.sede._estado(); S.yo.obj.position.set(0, 0, 0); S.zoom = 110; S.inc = 1.15; S.yaw = 0.3; });
-  for (const t of ['cine', 'industrial', 'taller', 'panaderia', 'restaurantep', 'escuela', 'hotel']) {
-    const ok = await p.evaluate(t => { const S = GM.sede._estado(), L = S.lotes[t]; if (!L) return false; S.yo.camino = null; S.yo.obj.position.set(L.zx, 0, L.zz); S.zoom = t === 'industrial' ? 50 : 26; S.inc = 0.62; S.yaw = Math.atan2(L.fx, L.fz) + 3.14; return true; }, t);
-    if (ok) await foto('2_' + t); else console.log('sin lote', t);
+  for (const t of ['cine', 'industrial', 'taller', 'panaderia', 'restaurantep', 'escuela', 'hotel', 'biblioteca', 'casapadres']) {
+    const ok = await p.evaluate(t => { const S = GM.sede._estado(), L = S.lotes[t]; if (!L) return false; S.pausa = true; const d = t === 'industrial' ? 34 : 15; S.camera.position.set(L.x + L.fx * d + L.fz * d * 0.45, t === 'industrial' ? 16 : 7.5, L.z + L.fz * d - L.fx * d * 0.45); S.camera.lookAt(L.x + L.fx * 1.5, t === 'industrial' ? 5 : 2.4, L.z + L.fz * 1.5); S.renderer.render(S.scene, S.camera); return true; }, t);
+    if (false) await p.evaluate(t => { const S = GM.sede._estado(), L = S.lotes[t]; S.yo.camino = null; S.yo.obj.position.set(L.x + L.fx * 3, 0, L.z + L.fz * 3); S.foco.set(L.x + L.fx * 3, 0, L.z + L.fz * 3); S.zoom = t === 'industrial' ? 52 : 22; S.inc = 0.75; S.yaw = Math.atan2(L.fx, L.fz) + Math.PI + 0.5; return true; }, t);
+    if (ok) { await sleep(500); await p.screenshot({ path: path.join(DIR, '2_' + t + '.png') }); } else console.log('sin lote', t);
+    await p.evaluate(() => { GM.sede._estado().pausa = false; });
+  }
+  // Fichas de edificio (panel dentro del pueblo)
+  for (const t of ['hotel', 'panaderia', 'cine', 'polideportivo']) {
+    const ok = await p.evaluate(t => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'pueblo_' + t); if (!z) return false; S.zonaActual = null; S.yo.camino = null; S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z + 0.3); S.zoom = 22; S.inc = 0.7; return true; }, t);
+    await sleep(2200); await p.screenshot({ path: path.join(DIR, '2b_ficha_' + t + '.png') }); if (!ok) console.log('sin zona', t);
   }
   await foto('3_vehiculos', () => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'pueblo_vehiculos'); if (z) { S.yo.camino = null; S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z); } S.zoom = 12; S.inc = 0.6; S.yaw = 0.4; });
   // moto
@@ -42,6 +49,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await foto('5_' + t, () => { const S = GM.sede._estado(); S.yo.camino = null; S.yo.obj.position.set(0, 0, -1.5); S.foco.set(0, 0, -3); S.zoom = 34; S.inc = 1.05; S.yaw = 0; });
     console.log(t, JSON.stringify(r), errs.length > n0 ? 'ERRORES: ' + errs.slice(n0, n0 + 2).join(' | ') : 'sin errores');
   }
+  // Menú «Mi pueblo» (pantalla de Ciudad)
+  await p.evaluate(() => { GM.sede.cerrar(); }); await sleep(1500);
+  await p.evaluate(() => { GM.ui.navegar('ciudad'); }); await sleep(1500);
+  await p.evaluate(() => { const b = [...document.querySelectorAll('.tabs .tab, .seg .tab, button')].find(x => x.textContent.trim() === 'Mi pueblo'); if (b) b.click(); }); await sleep(7000);
+  await p.screenshot({ path: path.join(DIR, '6_menu_pueblo.png') });
+  await p.evaluate(() => { const c = document.querySelector('.panel3d'); if (c) c.scrollTop = 600; const b = [...document.querySelectorAll('.pb-edi')][3]; if (b) b.click(); }); await sleep(2500);
+  await p.screenshot({ path: path.join(DIR, '6b_menu_pueblo_sel.png') });
   console.log('errores:', errs.filter(e => !/404/.test(e)).slice(0, 8));
   await b.close();
 })();

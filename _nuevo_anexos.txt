@@ -1,0 +1,104 @@
+  // ---------- Suelos, rodapiés, marcos de puerta, cuadros y butacas ----------
+  const rngS = k => { let a = (U.hash(String(k)) >>> 0) || 1; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+  // Textura de suelo repetida según el tamaño de la sala (baldosas de 1 m con junta, mármol veteado, moqueta con grano) o real (tarima, hormigón, hierba)
+  function pisoMat(c, kind, color, w, d) {
+    const TR = GM.texturas, tinte = new THREE.Color(color || '#ffffff').lerp(new THREE.Color(0xffffff), 0.35);
+    const real = (id, esc) => { const m = new THREE.MeshStandardMaterial({ color: color || '#999', roughness: 0.85 }); if (TR) TR.aplicar(m, id, { escala: esc, tinte: tinte.getHex() }); return m; };
+    if (kind === 'tabla') return real('WoodFloor051', 2.2);
+    if (kind === 'hormigon') return real('Concrete034', 2.2);
+    if (kind === 'cesped') return real('Grass004', 3);
+    const base = c.M.textura('piso-' + kind, 128, (x, n) => {
+      const r = rngS('piso' + kind);
+      if (kind === 'moqueta') { x.fillStyle = '#f2f2f2'; x.fillRect(0, 0, n, n); for (let i = 0; i < 2600; i++) { x.fillStyle = r() < 0.5 ? 'rgba(0,0,0,.09)' : 'rgba(255,255,255,.22)'; x.fillRect(r() * n, r() * n, 2, 2); } return; }
+      x.fillStyle = kind === 'baldosaAzul' ? '#dbe7ec' : kind === 'marmol' ? '#ece6dc' : '#ebe8e2'; x.fillRect(0, 0, n, n);
+      for (let i = 0; i < 700; i++) { x.fillStyle = r() < 0.5 ? 'rgba(0,0,0,.04)' : 'rgba(255,255,255,.2)'; x.fillRect(r() * n, r() * n, 2, 2); }
+      if (kind === 'marmol') for (let k = 0; k < 7; k++) { x.strokeStyle = 'rgba(110,98,86,' + (0.12 + r() * 0.16) + ')'; x.lineWidth = 1 + r() * 1.4; x.beginPath(); let px = r() * n, py = r() * n; x.moveTo(px, py); for (let s = 0; s < 6; s++) { px += (r() - 0.3) * 40; py += (r() - 0.5) * 40; x.lineTo(px, py); } x.stroke(); }
+      x.strokeStyle = kind === 'baldosaAzul' ? 'rgba(90,120,135,.45)' : 'rgba(120,114,104,.5)'; x.lineWidth = 2.5; const f = kind === 'marmol' ? 1 : 2, h = n / f; for (let i = 0; i <= f; i++) { x.beginPath(); x.moveTo(i * h, 0); x.lineTo(i * h, n); x.stroke(); x.beginPath(); x.moveTo(0, i * h); x.lineTo(n, i * h); x.stroke(); }
+    });
+    if (!base) return new THREE.MeshStandardMaterial({ color: color || '#ddd', roughness: 0.8 });
+    const t = base.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / (kind === 'marmol' ? 1.2 : 1), d / (kind === 'marmol' ? 1.2 : 1)); t.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({ map: t, color: kind === 'moqueta' ? (color || '#7a3a46') : tinte, roughness: kind === 'marmol' ? 0.28 : kind === 'moqueta' ? 1 : 0.5 });
+  }
+  const PISO = { escuela: ['tabla', '#c9a27a'], biblioteca: ['tabla', '#b88a5e'], tienda_pueblo: ['baldosa', '#ffffff'], ambulatorio: ['baldosaAzul', '#ffffff'], polideportivo: ['tabla', '#c9a27a'], hotel: ['marmol', '#f0e8da'], cine: ['moqueta', '#6a2a3a'], centrodia: ['baldosa', '#f1e6cf'], panaderia: ['baldosa', '#efe2c8'], taller: ['hormigon', '#8a8d90'], restaurante_pueblo: ['tabla', '#a5744a'], industrial: ['hormigon', '#8a8d90'], pabellon_pueblo: ['tabla', '#c9a27a'] };
+  function pisoPrincipal(c, tipo) {
+    const p = PISO[tipo]; if (!p) return; const m = pisoMat(c, p[0], p[1], c.x1 - c.x0, c.z1 - c.z0); m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -1;
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(c.x1 - c.x0, c.z1 - c.z0).rotateX(-Math.PI / 2), m); f.position.set(0, 0.006, 0); f.receiveShadow = true; c.W.add(f);
+  }
+  // Butaca de cine: asiento, respaldo inclinado y dos reposabrazos
+  function butaca(W, x, y, z, ry, color) {
+    const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; W.add(g);
+    const M1 = mat(color), B = (bw, bh, bd, px, py, pz, rx) => { const me = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), M1); me.position.set(px, py, pz); if (rx) me.rotation.x = rx; me.castShadow = true; g.add(me); };
+    B(0.5, 0.12, 0.46, 0, 0.3, 0); B(0.5, 0.5, 0.1, 0, 0.58, -0.22, -0.12); B(0.07, 0.22, 0.4, -0.27, 0.42, 0); B(0.07, 0.22, 0.4, 0.27, 0.42, 0);
+    const pie = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.26, 0.12), mat('#1d1a1c')); pie.position.set(0, 0.13, 0); g.add(pie);
+  }
+  // Cuadros con arte abstracto pintado en un lienzo (distinto en cada sitio) y marco de madera
+  function cuadro(c, x, y, z, ry, w, h, clave) {
+    const t = c.M.textura('arte-' + clave, 128, (g, n) => {
+      const r = rngS('arte' + clave), pal = [['#e8d9bd', '#c0392b', '#2f6f9e', '#f1bf00'], ['#dfe9ee', '#2e7d32', '#1d4f91', '#e67e22'], ['#2a2f35', '#e84393', '#f1bf00', '#3ea6d6'], ['#efe3cf', '#7a2f22', '#4f8f3a', '#2a2a2a']][(r() * 4) | 0];
+      g.fillStyle = pal[0]; g.fillRect(0, 0, n, n);
+      for (let i = 0; i < 6; i++) { g.fillStyle = pal[1 + ((r() * 3) | 0)]; if (r() < 0.5) { g.beginPath(); g.arc(r() * n, r() * n, 10 + r() * 34, 0, 6.3); g.fill(); } else g.fillRect(r() * n * 0.7, r() * n * 0.7, 14 + r() * 50, 10 + r() * 40); }
+      g.strokeStyle = pal[3]; g.lineWidth = 3; g.beginPath(); g.moveTo(0, r() * n); g.bezierCurveTo(n * 0.3, r() * n, n * 0.7, r() * n, n, r() * n); g.stroke();
+    });
+    const gr = new THREE.Group(); gr.position.set(x, y, z); gr.rotation.y = ry; c.W.add(gr);
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(w + 0.1, h + 0.1, 0.05), mat('#4a3322')); gr.add(fr);
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), t ? new THREE.MeshStandardMaterial({ map: t, roughness: 0.6 }) : mat('#c9b79a')); p.position.z = 0.03; gr.add(p);
+  }
+  // Rodapié a lo largo de un lado de una sala, dejando los huecos de las puertas
+  const tramosS = (a, b, gaps) => { let seg = [[a, b]]; (gaps || []).forEach(([g0, g1]) => { seg = [].concat(...seg.map(([p, q]) => (g1 <= p || g0 >= q ? [[p, q]] : [[p, Math.min(g0, q)], [Math.max(g1, p), q]].filter(s => s[1] - s[0] > 0.05)))); }); return seg; };
+  function rodapie(W, x0, z0, x1, z1, hu, color) {
+    const m = mat(color || '#efe9dc'), al = 0.14, t = 0.05, H = hu || {};
+    tramosS(x0, x1, H.n).forEach(([p, q]) => caja(W, q - p, al, t, m, (p + q) / 2, 0, z0 + 0.15)); tramosS(x0, x1, H.s).forEach(([p, q]) => caja(W, q - p, al, t, m, (p + q) / 2, 0, z1 - 0.15));
+    tramosS(z0, z1, H.o).forEach(([p, q]) => caja(W, t, al, q - p, m, x0 + 0.15, 0, (p + q) / 2)); tramosS(z0, z1, H.e).forEach(([p, q]) => caja(W, t, al, q - p, m, x1 - 0.15, 0, (p + q) / 2));
+  }
+  function marcoPuerta(W, lado, r, cx, cz, alto) {
+    const m = mat('#6b4a2b', { roughness: 0.7 });
+    if (lado === 'n') { caja(W, 0.16, alto, 0.34, m, cx - 1.1, 0, r.z1); caja(W, 0.16, alto, 0.34, m, cx + 1.1, 0, r.z1); caja(W, 2.4, 0.16, 0.34, m, cx, alto - 0.16, r.z1); }
+    else { const x = lado === 'o' ? r.x1 : r.x0; caja(W, 0.34, alto, 0.16, m, x, 0, cz - 1.1); caja(W, 0.34, alto, 0.16, m, x, 0, cz + 1.1); caja(W, 0.34, 0.16, 2.4, m, x, alto - 0.16, cz); }
+  }
+  function aplique(W, x, y, z) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.1), new THREE.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffd27a, emissiveIntensity: 0.9 })); l.position.set(x, y, z); W.add(l); }
+  // Decoración de cada estancia anexa: cuadros en la pared del fondo, apliques, plantas en las esquinas y rodapié
+  function decorarSala(c, a) {
+    const r = a.r, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2, W = c.W, alto = c.alto; if (a.tex === 'cesped' || a.tex === 'agua') return;
+    const hu = {}; if (a.lado === 'n') hu.s = [[cx - 1.1, cx + 1.1]]; else if (a.lado === 'o') hu.e = [[cz - 1.1, cz + 1.1]]; else hu.o = [[cz - 1.1, cz + 1.1]];
+    rodapie(W, r.x0, r.z0, r.x1, r.z1, hu, a.tex === 'baldosa' ? '#d9d6cf' : '#efe9dc'); marcoPuerta(W, a.lado, r, cx, cz, alto);
+    const k = a.nombre + a.lado, area = (r.x1 - r.x0) * (r.z1 - r.z0), esBano = /Baño|Vestuario|Quirófano|Cocina|Obrador|Almacén|Bodega/.test(a.nombre);
+    if (!esBano) {
+      if (a.lado === 'n') { cuadro(c, cx - (r.x1 - r.x0) / 4, 1.05, r.z0 + 0.15, 0, 0.8, 0.55, k + 'a'); cuadro(c, cx + (r.x1 - r.x0) / 4, 1.05, r.z0 + 0.15, 0, 0.6, 0.8, k + 'b'); aplique(W, cx, 1.35, r.z0 + 0.2); }
+      else if (a.lado === 'o') { cuadro(c, r.x0 + 0.15, 1.05, cz, Math.PI / 2, 0.8, 0.55, k + 'a'); aplique(W, r.x0 + 0.2, 1.35, cz + 1.4); }
+      else { cuadro(c, r.x1 - 0.15, 1.05, cz, -Math.PI / 2, 0.8, 0.55, k + 'a'); aplique(W, r.x1 - 0.2, 1.35, cz - 1.4); }
+    } else aplique(W, a.lado === 'n' ? cx : a.lado === 'o' ? r.x0 + 0.2 : r.x1 - 0.2, 1.35, a.lado === 'n' ? r.z0 + 0.2 : cz);
+    if (!esBano && area > 22) { const ex = a.lado === 'n' ? [[r.x0 + 0.55, r.z1 - 0.55], [r.x1 - 0.55, r.z1 - 0.55]] : a.lado === 'o' ? [[r.x1 - 0.55, r.z0 + 0.55], [r.x1 - 0.55, r.z1 - 0.55]] : [[r.x0 + 0.55, r.z0 + 0.55], [r.x0 + 0.55, r.z1 - 0.55]]; m(c, 'pottedPlant', ex[0][0], ex[0][1], 0); m(c, 'plantSmall2', ex[1][0], ex[1][1], 0); }
+  }
+  // Sala principal de cualquier interior: rodapié, felpudo, apliques y, en los edificios nuevos, cuadros, reloj y plantas
+  const SIN_ARTE = { pabellon: 1, pabellon_pueblo: 1, polideportivo: 1, industrial: 1, taller: 1 };
+  function decorarPrincipal(tipo, c, hu) {
+    const W = c.W, x0 = c.x0, x1 = c.x1, z0 = c.z0, z1 = c.z1, nuevo = !!TIPOS[tipo], mu = tipo === 'pabellon' ? '#d9dde0' : '#efe9dc';
+    rodapie(W, x0, z0, x1, z1, { n: hu && hu.n, o: hu && hu.o, e: hu && hu.e, s: [[-1.2, 1.2]] }, mu); m(c, 'rugDoormat', 0, z1 - 0.7, 0);
+    if (tipo === 'pabellon') return;
+    for (const s of [-1, 1]) aplique(W, s * (x1 - 0.2 - (x1 - x0) * 0.22), 1.45, z0 + 0.2);
+    if (!nuevo || SIN_ARTE[tipo]) return;
+    const w = x1 - x0, huN = (hu && hu.n) || [], libre = x => !huN.some(([g0, g1]) => x > g0 - 1.4 && x < g1 + 1.4);
+    [-0.34, 0.34].forEach((f, i) => { const x = f * w; if (libre(x) && Math.abs(x) > 1.8) cuadro(c, x, 1.05, z0 + 0.15, 0, i ? 0.7 : 1.0, i ? 0.9 : 0.6, tipo + i); });
+    if (libre(0)) { const t = c.M.textura('reloj-pared', 128, (g, n) => { g.fillStyle = '#f7f3ea'; g.beginPath(); g.arc(n / 2, n / 2, n / 2 - 3, 0, 6.3); g.fill(); g.strokeStyle = '#3a3a3a'; g.lineWidth = 5; g.stroke(); for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; g.beginPath(); g.moveTo(n / 2 + Math.sin(a) * (n / 2 - 14), n / 2 - Math.cos(a) * (n / 2 - 14)); g.lineTo(n / 2 + Math.sin(a) * (n / 2 - 8), n / 2 - Math.cos(a) * (n / 2 - 8)); g.stroke(); } g.lineWidth = 6; g.beginPath(); g.moveTo(n / 2, n / 2); g.lineTo(n / 2 - 14, n / 2 - 22); g.stroke(); g.lineWidth = 4; g.beginPath(); g.moveTo(n / 2, n / 2); g.lineTo(n / 2 + 26, n / 2 - 30); g.stroke(); }); const p = new THREE.Mesh(new THREE.CircleGeometry(0.28, 24), t ? new THREE.MeshBasicMaterial({ map: t }) : mat('#f7f3ea')); p.position.set(0, 1.55, z0 + 0.14); W.add(p); }
+    if (['hotel', 'ambulatorio', 'biblioteca', 'centrodia'].indexOf(tipo) < 0) { m(c, 'pottedPlant', x0 + 0.7, z0 + 0.7, 0); m(c, 'pottedPlant', x1 - 0.7, z0 + 0.7, 0); }
+    m(c, 'trashcan', x1 - 0.6, z1 - 1.1, 0);
+  }
+  // Suelo con textura real y muros de una estancia (el muro compartido con la sala principal lleva el hueco de la puerta)
+  const PISOANEXO = { madera: 'tabla', baldosa: 'baldosa', hormigon: 'hormigon', cesped: 'cesped', moqueta: 'moqueta' };
+  function construirAnexos(c) {
+    const { W, G, S, M } = c;
+    (c.an || []).forEach(a => {
+      const r = a.r, w = r.x1 - r.x0, d = r.z1 - r.z0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
+      const kind = a.tex === 'baldosa' && /Consulta|curas|Quirófano|Habitaciones de ingresados|Rehabilitación|Laboratorio/.test(a.nombre) ? 'baldosaAzul' : PISOANEXO[a.tex] || 'hormigon';
+      const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), pisoMat(c, kind, a.suelo, w, d)); fl.position.set(cx, 0.003, cz); fl.receiveShadow = true; W.add(fl);
+      const alto = a.tex === 'cesped' ? 0.9 : c.alto, wm = mat(a.muro), t = 0.25;
+      const pared = (xa, za, xb, zb) => { const horiz = za === zb, L = horiz ? Math.abs(xb - xa) : Math.abs(zb - za), c0 = horiz ? Math.min(xa, xb) : Math.min(za, zb), mid = c0 + L / 2; if (horiz) caja(W, L, alto, t, wm, mid, 0, za); else caja(W, t, alto, L, wm, xa, 0, mid); bloq(c, horiz ? c0 : xa - 0.2, horiz ? za - 0.2 : c0, horiz ? c0 + L : xa + 0.2, horiz ? za + 0.2 : c0 + L); };
+      if (a.lado === 'n') { pared(r.x0, r.z0, r.x1, r.z0); pared(r.x0, r.z0, r.x0, r.z1); pared(r.x1, r.z0, r.x1, r.z1); }
+      else if (a.lado === 'o') { pared(r.x0, r.z0, r.x1, r.z0); pared(r.x0, r.z1, r.x1, r.z1); pared(r.x0, r.z0, r.x0, r.z1); }
+      else { pared(r.x0, r.z0, r.x1, r.z0); pared(r.x0, r.z1, r.x1, r.z1); pared(r.x1, r.z0, r.x1, r.z1); }
+      const l = new THREE.PointLight(a.tex === 'cesped' ? 0xfff4e6 : 0xfff0dc, 3.2, Math.max(w, d) * 1.6, 1.5); l.position.set(cx, 3, cz); W.add(l);
+      if (a.nombre) { const et = M.textura('rotulo-anexo-' + a.nombre, 256, (x, n) => { x.clearRect(0, 0, n, n); x.fillStyle = 'rgba(20,24,28,.78)'; x.fillRect(0, 0, n, n / 4); x.fillStyle = '#fff'; x.font = 'bold 26px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(a.nombre, n / 2, n / 8); }); if (et) { const p = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.6), new THREE.MeshBasicMaterial({ map: et, transparent: true })); const uv = p.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 0.75 + uv.getY(i) * 0.25); p.position.set(a.lado === 'n' ? cx : a.lado === 'o' ? r.x1 - 0.2 : r.x0 + 0.2, alto + 0.35, a.lado === 'n' ? r.z1 - 0.2 : cz); p.rotation.y = a.lado === 'n' ? 0 : a.lado === 'o' ? Math.PI / 2 : -Math.PI / 2; W.add(p); } }
+      pto(c, cx, cz); decorarSala(c, a);
+      a.contenido(Object.assign({}, c, { W, G, S, M }), r);
+    });
+  }

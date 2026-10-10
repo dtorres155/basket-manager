@@ -42,6 +42,8 @@
 - ~~Precios acordes con los sueldos~~: los edificios cuestan lo que costarían (canasta 6 mil €, bar 60, escuela 350, ambulatorio 2,5 M€, polideportivo 5 M€, hotel 7 M€, pabellón 14 M€; el nivel n cuesta ×n^1,6), las obras duran más, la fiesta y el clínic cuestan más cuanto más grande es el pueblo y la renta de los negocios es proporcional a su coste.
 
 **Interiores**
+- ~~Menús del pueblo modernizados~~ (iconos.js, estilos.css `.pb-*`): fichas de edificio con icono, niveles, rentas mensuales, ruta de mejoras, obra con barra de avance y fase, gestor del negocio y acciones como tarjetas; el menú «Mi pueblo» con resumen, accesos rápidos y tarjetas de todos los edificios por categorías (la misma ficha al elegir uno). Juego propio de iconos de línea (`GM.iconos`).
+- ~~Pueblo más vivo y detallado (segunda pasada)~~: balcones con losa, barandilla y macetas, jardineras con flores, gatos en los tejados, palomas en la plaza, humo en las chimeneas del polígono, bombillas del cine que parpadean, coches aparcados, gente en las puertas (cola del cine, mecánico, panadera, terraza del restaurante, operarios, niños de la escuela). Interiores: suelos reales (mármol, tarima, baldosa con junta, moqueta, hormigón), rodapiés, marcos de puerta, cuadros pintados, apliques, felpudos, plantas, butacas de cine con forma y salas llenas de mobiliario propio de cada edificio.
 - ~~Interiores más grandes y con varias habitaciones~~ (`interiores_pueblo.js`): bar, casas, restaurante, gimnasio, barbería, tienda, peña y ayuntamiento tienen estancias anexas (cocinas, dormitorios, bodega, despachos, almacén, vestuarios…) con su gente; 13 interiores nuevos en el pueblo. Prueba: `node tools/pueblo_nuevo.js`.
 
 **Carrera y jugadores**

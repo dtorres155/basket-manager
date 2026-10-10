@@ -64,7 +64,7 @@
       const e = EDI[k], b = p.edificios.find(x => x.tipo === k), nv = b ? b.nivel : 0, coste = Math.round(e.coste * Math.pow(nv + 1, 1.6));
       const ob = (p.obras || []).find(o => o.tipo === k), obra = ob ? { dest: ob.dest, inicio: ob.inicio, fin: ob.fin, progreso: U.clamp(U.diffDays(ob.inicio, st.fecha) / Math.max(1, U.diffDays(ob.inicio, ob.fin)), 0, 1), proximo: e.niv[ob.dest - 1] } : null;
       let motivo = null; if (obra) motivo = 'En obras hasta el ' + U.fechaLarga(obra.fin); else if (n < e.req) motivo = 'Requiere que el pueblo sea ' + NIVELES[e.req - 1].toLowerCase(); else if (nv >= e.max) motivo = 'Nivel máximo'; else if (GM.mods.hogar.dinero(st) < coste) motivo = 'Te faltan ' + Math.round(coste - GM.mods.hogar.dinero(st)) + ' mil €';
-      return { tipo: k, nombre: e.n, gestor: (p.gestores || {})[k] || null, gestorTipo: e.gestor || null, cat: e.cat || 'negocio', obra, dias: diasObra(coste), nivel: nv, max: e.max, actual: nv ? e.niv[nv - 1] : null, proximo: nv < e.max ? e.niv[nv] : null, coste, req: e.req, motivo, uso: nv ? e.uso[0] : null };
+      return { tipo: k, nombre: e.n, niveles: e.niv.slice(), ef: e.ef, req: e.req, gestor: (p.gestores || {})[k] || null, gestorTipo: e.gestor || null, cat: e.cat || 'negocio', obra, dias: diasObra(coste), nivel: nv, max: e.max, actual: nv ? e.niv[nv - 1] : null, proximo: nv < e.max ? e.niv[nv] : null, coste, req: e.req, motivo, uso: nv ? e.uso[0] : null };
     });
   }
   function invertir(st, tipo) {
@@ -201,34 +201,35 @@
     CP.ambiente(v, 'dia'); v.place();
   }
   function panel(st) {
-    const h = GM.h, Pn = V.panel; Pn.innerHTML = '';
-    const e = estado(st), msg = h('div', { class: 'aviso', style: { display: 'none' } }), resp = r => { if (!r.ok) { msg.style.display = 'block'; msg.textContent = r.motivo; } else { if (GM.ui && GM.ui.toast) GM.ui.toast(r.texto ? r.texto + ': ' + r.efectos.join(', ') : r.efectos ? r.efectos.join(', ') : 'Hecho'); V.refrescar(); if (GM.ui && GM.ui.cabecera) GM.ui.cabecera(); } };
-    if (V.sel) { const b = edificios(st).find(x => x.tipo === V.sel); if (b) Pn.append(h('div', { class: 'tarjeta' }, h('div', { class: 'fila' }, h('b', null, b.nombre), h('button', { class: 'btn-ic', 'aria-label': 'Quitar selección', onclick: () => { V.sel = null; panel(st); } }, '×')),
-      h('p', { class: 'muted' }, b.obra ? 'En obras: ' + Math.round(b.obra.progreso * 100) + ' %, ' + b.obra.proximo + '.' : b.nivel ? (b.actual || 'Nivel ' + b.nivel) : (b.motivo || 'Solar: se puede construir.')),
-      h('div', { class: 'par' }, b.proximo && !b.obra ? h('button', { class: 'btn peq', disabled: !!b.motivo, onclick: () => resp(invertir(st, b.tipo)) }, (b.nivel ? 'Mejorar' : 'Construir') + ' (' + b.coste + ' k€)') : null,
-        GM.sede ? h('button', { class: 'btn btn-sec peq', onclick: () => irAndando(st, b.tipo) }, 'Ir andando') : null))); }
-    Pn.append(h('div', { class: 'fila' }, h('div', { class: 'ct' }, h('b', null, e.nombre), h('span', { class: 'muted' }, e.etiqueta + ', ' + e.poblacion.toLocaleString('es-ES') + ' habitantes')), h('b', null, Math.round(GM.mods.hogar.dinero(st)).toLocaleString('es-ES') + ' k€')));
-    Pn.append(h('div', { class: 'fila' }, h('span', { class: 'muted' }, 'Cariño del pueblo'), h('b', null, Math.round(e.cariño))), h('span', { class: 'barra ' + (e.cariño >= 60 ? 'verde' : 'ambar') }, h('i', { style: { width: e.cariño + '%' } })));
-    Pn.append(h('div', { class: 'fila' }, h('span', { class: 'muted' }, e.sig ? 'Crecimiento hacia ' + NIVELES[e.nivel] : 'Nivel máximo'), h('b', null, Math.round(e.frac * 100) + ' %')), h('span', { class: 'barra' }, h('i', { style: { width: e.frac * 100 + '%' } })));
-    Pn.append(h('div', { class: 'seg' }, [['Visitar el pueblo, 0,8 k€', () => visitar(st)], ['Fiesta en tu honor, 15 k€', () => fiesta(st)], ['Clínic con los niños, 2 k€', () => clinic(st)]].map(a => h('button', { class: 'tab', onclick: () => resp(a[1]()) }, a[0]))));
-    if (GM.sede && GM.puebloMundo) Pn.append(h('button', { class: 'btn', onclick: () => GM.sede.abrir(st, 'pueblo') }, 'Pasear por el pueblo'));
-    // Por categorías, con el avance de las obras
-    const fila = b => h('div', { class: 'item col' },
-      h('div', { class: 'fila' }, h('b', null, (b.nivel || b.obra ? '' : '🔒 ') + b.nombre), b.obra ? h('span', { class: 'chip' }, 'En obras') : b.nivel ? h('span', { class: 'chip ok' }, 'Nivel ' + b.nivel + '/' + b.max) : h('span', { class: 'muted' }, 'Sin construir')),
-      b.obra ? [h('span', { class: 'muted' }, b.obra.proximo + ': ' + Math.round(b.obra.progreso * 100) + ' %, inauguración el ' + U.fechaLarga(b.obra.fin)), h('span', { class: 'barra' }, h('i', { style: { width: Math.round(b.obra.progreso * 100) + '%' } }))]
-        : h('span', { class: 'muted' }, b.actual ? b.actual : b.motivo || 'Disponible'),
-      h('div', { class: 'par' }, b.proximo && !b.obra ? h('button', { class: 'btn peq', disabled: !!b.motivo, onclick: () => resp(invertir(st, b.tipo)) }, (b.nivel ? 'Mejorar' : 'Construir') + ', ' + b.coste + ' k€, ' + b.dias + ' días') : null, b.uso ? h('button', { class: 'btn peq btn-sec', onclick: () => resp(usar(st, b.tipo)) }, b.uso) : null));
+    const h = GM.h, Pn = V.panel, I = (n, t) => (GM.iconos ? GM.iconos.el(n, t) : null), e = estado(st), f = fmtK; Pn.innerHTML = '';
+    const msg = h('div', { class: 'aviso', style: { display: 'none' } });
+    const resp = r => { if (!r.ok) { msg.style.display = 'block'; msg.textContent = r.motivo; } else { if (GM.ui && GM.ui.toast) GM.ui.toast(r.texto ? r.texto + (r.efectos && r.efectos.length ? ': ' + r.efectos.join(', ') : '') : r.efectos ? r.efectos.join(', ') : 'Hecho'); V.refrescar(); if (GM.ui && GM.ui.cabecera) GM.ui.cabecera(); } };
+    const w = h('div', { class: 'pb' }); Pn.append(w);
+    w.append(h('div', { class: 'pb-resumen' }, h('span', { class: 'pb-dinero' }, I('moneda', 16), f(GM.mods.hogar.dinero(st))), h('h3', null, e.nombre), h('p', null, e.etiqueta + ', ' + e.poblacion.toLocaleString('es-ES') + ' habitantes'),
+      h('div', { class: 'fila' }, h('span', null, 'Cariño del pueblo'), h('b', null, Math.round(e.cariño) + ' / 100')), h('div', { class: 'barra' }, h('i', { style: { width: e.cariño + '%' } })),
+      h('div', { class: 'fila' }, h('span', null, e.sig ? 'Crecimiento hacia ' + NIVELES[e.nivel].toLowerCase() : 'Nivel máximo'), h('b', null, Math.round(e.frac * 100) + ' %')), h('div', { class: 'barra' }, h('i', { style: { width: e.frac * 100 + '%' } }))));
+    const nv = nivel(st);
+    w.append(h('div', { class: 'pb-rapidas' }, [['casa', 'Visitar al pueblo', '0,8 mil €', () => visitar(st)], ['plaza', 'Fiesta en tu honor', f(Math.round(15 * Math.pow(nv, 1.4))), () => fiesta(st)], ['balon', 'Clínic con niños', f(2 * nv), () => clinic(st)]].map(a => h('button', { class: 'pb-rapida', onclick: () => resp(a[3]()) }, I(a[0], 24), a[1], h('small', null, a[2])))));
+    if (GM.sede && GM.puebloMundo) w.append(h('button', { class: 'pb-cta', onclick: () => GM.sede.abrir(st, 'pueblo') }, I('mapa', 18), 'Pasear por el pueblo'));
+    // Edificio seleccionado: su ficha completa (la misma que ves dentro del pueblo)
+    if (V.sel && GM.iconos && GM.puebloMundo && GM.puebloMundo.fichaLote) {
+      const fl = GM.puebloMundo.fichaLote(st, V.sel);
+      if (fl) { const caja = h('div', { class: 'pb-sel' }); w.append(caja); GM.iconos.ficha(caja, fl, r => { if (r.ok) { if (GM.ui && GM.ui.toast) GM.ui.toast(r.texto || 'Hecho'); V.refrescar(); if (GM.ui && GM.ui.cabecera) GM.ui.cabecera(); } else resp(r); });
+        caja.append(h('div', { class: 'pb-rapidas', style: { gridTemplateColumns: '1fr 1fr', marginTop: '8px' } }, GM.sede ? h('button', { class: 'pb-rapida', onclick: () => irAndando(st, V.sel) }, I('puerta', 22), 'Ir andando') : null, h('button', { class: 'pb-rapida', onclick: () => { V.sel = null; panel(st); } }, I('flecha', 22), 'Ver todos'))); }
+    }
+    // Todos los edificios por categorías, como tarjetas con su nivel y su estado
     [['negocio', 'Deporte y negocios'], ['publico', 'Servicios públicos'], ['casa', 'Casas de los tuyos']].forEach(([cat, tit]) => {
       const l = edificios(st).filter(b => b.cat === cat); if (!l.length) return;
-      Pn.append(h('h4', null, tit)); Pn.append(h('div', { class: 'lista' }, l.map(fila)));
+      w.append(h('div', { class: 'pb-tit' }, tit), h('div', { class: 'pb-rejilla' }, l.map(b => {
+        const pips = h('div', { class: 'pips' }); for (let i = 0; i < b.max; i++) pips.append(h('i', { class: i < b.nivel ? 'on' : '' }));
+        return h('button', { class: 'pb-edi' + (V.sel === b.tipo ? ' sel' : '') + (!b.nivel && !b.obra && b.motivo && /Requiere/.test(b.motivo) ? ' bloq' : ''), onclick: () => { V.sel = b.tipo; panel(st); if (V.vista && V.vista.foco) V.vista.foco(b.tipo); } },
+          h('div', { class: 'cab' }, h('div', { class: 'ic' }, I(b.tipo, 18)), h('b', null, b.nombre)),
+          h('small', null, b.obra ? 'En obras, ' + Math.round(b.obra.progreso * 100) + ' %' : b.nivel ? b.actual : (b.motivo || 'Solar disponible')),
+          h('div', { class: 'pie' }, pips, b.obra ? h('span', { class: 'pb-chip' }, I('obra', 12), b.obra.proximo ? 'Obra' : '') : b.nivel ? h('span', { class: 'pb-chip ok' }, 'Nivel ' + b.nivel) : h('span', { class: 'pb-chip' }, f(b.coste))));
+      })));
     });
-    const hi = P(st).hitos.slice(0, 5); if (hi.length) { Pn.append(h('h4', null, 'Historia del pueblo')); Pn.append(h('div', { class: 'lista' }, hi.map(x => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(x.fecha)), h('span', { class: 'ct' }, x.texto))))); }
-    Pn.append(msg);
-  }
-  // Del menú al mundo: abre el pueblo paseable y lleva a tu personaje hasta la parcela
-  function irAndando(st, tipo) {
-    GM.sede.abrir(st, 'pueblo'); let n = 0;
-    const t = setInterval(() => { const S = GM.sede._estado && GM.sede._estado(); n++; if (n > 60 || !S) { clearInterval(t); return; } if (S.yo && S.lotes && S.lotes[tipo] && GM.sede._motor) { clearInterval(t); const L = S.lotes[tipo]; GM.sede._motor().irA(S.yo, L.zx, L.zz, () => {}); } }, 250);
+    const hi = P(st).hitos.slice(0, 5); if (hi.length) { w.append(h('div', { class: 'pb-tit' }, 'Historia del pueblo'), h('div', { class: 'lista' }, hi.map(x => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(x.fecha)), h('span', { class: 'ct' }, x.texto))))); }
+    w.append(msg);
   }
   function mount(el, st) {
     unmount(); const h = GM.h, raiz = h('div', { class: 'c3d' }), vistaEl = h('div', { class: 'vista3d' }), panelEl = h('div', { class: 'panel3d' });
@@ -247,5 +248,6 @@
   }
   function unmount() { if (!V) return; if (V.vista) V.vista.dispose(); if (V.raiz && V.raiz.parentNode) V.raiz.parentNode.removeChild(V.raiz); V = null; }
   function selfTest() { return Object.keys(EDI).every(k => EDI[k].niv.length === EDI[k].max) && UMBRAL.length === NIVELES.length; }
-  GM.register('pueblo', { terminarObras, diasObra, estado, nivel, edificios, invertir, visitar, fiesta, clinic, usar, mount, unmount, nuevaPartida, selfTest, EDI, NIVELES });
+  const fmtK = k => (k >= 1000 ? (Math.round(k / 100) / 10).toString().replace('.', ',') + ' M€' : Math.round(k * 10) / 10 + ' mil €').replace(/^(\d+),0 M€/, '$1 M€');
+  GM.register('pueblo', { fmtK, terminarObras, diasObra, estado, nivel, edificios, invertir, visitar, fiesta, clinic, usar, mount, unmount, nuevaPartida, selfTest, EDI, NIVELES });
 })();

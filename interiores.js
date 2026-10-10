@@ -41,7 +41,7 @@
     // Actividades del mapa de Ciudad (las mismas que en el menú)
     const C3 = GM.mods.ciudad3d, lid = C3 && C3.lugares ? (C3.lugares(st).find(l => l.tipo === LUGAR[tipo]) || {}).id : null;
     const salaLugar = { id: 'lugar_' + tipo, nombre: tipo === 'tienda' ? 'Comercios del barrio' : 'Actividades', accion: '', destino: {}, acciones: s2 => { const L = lid ? C3.acciones(s2, lid) : []; return L.length ? L.map(a => ({ id: a.id, t: a.t, d: a.coste ? (a.jugador ? a.coste + ' mil €' : U.eur(a.coste)) : 'Gratis', disponible: a.disponible, motivo: a.motivo || 'No disponible', fn: () => { const r = C3.hacer(s2, lid, a.id); return r.ok ? { ok: true, texto: a.t } : r; } })) : [{ id: 'nada', t: 'Nada que hacer ahora', d: '', disponible: false, motivo: 'Sin actividades', fn: () => ({ ok: false }) }]; } };
-    const sala = enPueblo ? { id: 'pueblo_' + TIPOS[tipo].pueblo, nombre: S.interiorNombre, accion: '', destino: { todos: 'ciudad' }, acciones: s2 => GM.puebloMundo.accionesLote(s2, TIPOS[tipo].pueblo).concat(tipo === 'casa_pueblo' && GM.mods.vida ? GM.mods.vida.accionesCasaPueblo(s2) : []) } : { id: tipo, nombre: S.interiorNombre, accion: '', destino: tipo === 'pabellon' ? { todos: 'club' } : tipo === 'ayuntamiento' ? { todos: 'ciudad' } : {} };
+    const sala = enPueblo ? { id: 'pueblo_' + TIPOS[tipo].pueblo, nombre: S.interiorNombre, accion: '', destino: { todos: 'ciudad' }, acciones: s2 => GM.puebloMundo.accionesLote(s2, TIPOS[tipo].pueblo).concat(tipo === 'casa_pueblo' && GM.mods.vida ? GM.mods.vida.accionesCasaPueblo(s2) : []), ficha: s2 => { const f = GM.puebloMundo.fichaLote(s2, TIPOS[tipo].pueblo); if (f && tipo === 'casa_pueblo' && GM.mods.vida) f.acciones = f.acciones.concat(GM.mods.vida.accionesCasaPueblo(s2).map(a => Object.assign({ ico: 'casa' }, a))); return f; } } : { id: tipo, nombre: S.interiorNombre, accion: '', destino: tipo === 'pabellon' ? { todos: 'club' } : tipo === 'ayuntamiento' ? { todos: 'ciudad' } : {} };
     const LOCAL = { restaurante: localRestaurante, gimnasio_barrio: localGimnasio, barberia: localBarberia }[tipo];
     if (LOCAL) { sala.acciones = s2 => LOCAL(s2); sala.destino = {}; }
     const luz = (x, z, i) => { const l = new THREE.PointLight(tipo === 'pena' ? 0xffd29a : 0xfff4e6, i, Math.max(w, d), 1.5); l.position.set(x, 4, z); W.add(l); };
@@ -156,6 +156,7 @@
       zonas.push([sala, -2.6, z0 + 3.4], [salaLugar, 2.6, z0 + 3.4]);
       S.puntosInt = [[-6, 2], [6, 2], [-6, -3], [6, -3], [0, 4]];
     }
+    if (IPm) IPm.decorarPrincipal(tipo, { W, G, S, M, st, club, c1, c2, x0, x1, z0, z1, w, d, alto }, hu);
     if (IPm && an.length) IPm.construirAnexos({ W, G, S, M, st, club, c1, c2, alto, an });
     S.zonas = zonas.map(([sl, x, z]) => M.zona(W, sl, x, z, club));
     S.spawnInterior = { x: 0, z: z1 - 1.2, ry: Math.PI };

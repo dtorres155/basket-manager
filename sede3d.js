@@ -626,11 +626,12 @@
     const cuerpo = h('div', { class: 'sp-cuerpo' }); P.append(cuerpo);
     if (panelId) pintarPanel(panelId, cuerpo, sala);
     else {
-      if (sala.acciones) sala.acciones(st).forEach(x => cuerpo.append(h('button', { class: 'sp-accion', disabled: !x.disponible, onclick: () => { const r = x.fn(); GM.ui.toast(r.ok ? r.texto || 'Hecho' : r.motivo || 'No disponible'); if (r.ok) { reaccion(r.texto || '', sala); if (S && S.escena === 'pueblo' && x.id === 'obra') { S.zonaActual = null; cambiarEscena('pueblo'); return; } } if (S) abrirSala(sala); } }, h('b', null, x.t), h('span', null, x.disponible ? x.d : x.motivo || x.d))));
+      if (sala.ficha && sala.ficha(st)) pintarFicha(cuerpo, sala);
+      else if (sala.acciones) sala.acciones(st).forEach(x => cuerpo.append(h('button', { class: 'sp-accion', disabled: !x.disponible, onclick: () => { const r = x.fn(); GM.ui.toast(r.ok ? r.texto || 'Hecho' : r.motivo || 'No disponible'); if (r.ok) { reaccion(r.texto || '', sala); if (S && S.escena === 'pueblo' && x.id === 'obra') { S.zonaActual = null; cambiarEscena('pueblo'); return; } } if (S) abrirSala(sala); } }, h('b', null, x.t), h('span', null, x.disponible ? x.d : x.motivo || x.d))));
       else if (!A) cuerpo.append(h('p', null, sala.accion));
       else A.acciones(st, sala.id).forEach(x => cuerpo.append(h('button', { class: 'sp-accion' + (x.panel ? ' abre' : ''), disabled: !x.disponible, onclick: () => x.panel ? abrirSala(sala, x.id) : ejecutar(x.id, sala) }, h('b', null, x.t), h('span', null, x.disponible ? x.d : x.motivo))));
     }
-    if (sala.irA && !panelId) cuerpo.prepend(h('button', { class: 'btn sp-ir', onclick: () => cambiarEscena(sala.irA) }, sala.boton || 'Ir'));
+    if (sala.irA && !panelId) cuerpo.prepend(h('button', { class: 'pb-entrar sp-ir', onclick: () => cambiarEscena(sala.irA) }, GM.iconos ? GM.iconos.el('puerta', 18) : null, sala.boton || 'Ir'));
     const d = destino(sala); if (d) P.append(h('button', { class: 'sp-link', onclick: () => entrarClasica(d) }, 'Abrir la pantalla completa'));
   }
   function refrescarSala() { if (S.zonaActual && S.panel.style.display !== 'none' && !/tema-(rueda|ordenador|pizarra|lesionados|plantilla|partido)/.test(S.panel.className)) abrirSala(S.zonaActual.sala); }
@@ -690,6 +691,11 @@
       else { const L = st.equipos[g.local], V = st.equipos[g.visitante]; c.append(h('div', { class: 'sp-ticket' }, h('span', null, U.fechaLarga(g.fecha) + (g.fecha === st.fecha ? ', hoy' : '')), h('b', null, L.siglas + '  vs  ' + V.siglas), h('span', null, L.nombre + ' contra ' + V.nombre), h('span', null, g.local === st.clubId ? 'En casa, ' + L.pabellon.nombre : 'Fuera, ' + L.pabellon.nombre))); }
       c.append(h('div', { class: 'sp-botones' }, h('button', { class: 'btn', onclick: () => { avanzar(() => GM.ui.jugarUnDia()); } }, g && g.fecha === st.fecha ? 'Jugar el partido' : 'Avanzar un día'), h('button', { class: 'btn btn-sec', onclick: () => avanzar(() => GM.ui.hastaPartido()) }, 'Hasta el partido')));
     }
+  }
+  // Ficha de edificio: cabecera con icono y niveles, rentas, ruta de mejoras, obra en curso, gestor y acciones (iconos.js)
+  function pintarFicha(c, sala) {
+    const st = S.st, hecho = r => { if (!S) return; GM.ui.toast(r.ok ? r.texto || 'Hecho' : r.motivo || 'No disponible'); if (r.ok) { reaccion(r.texto || '', sala); if (r.reconstruir && S.escena === 'pueblo') { S.zonaActual = null; cambiarEscena('pueblo'); return; } } abrirSala(sala); };
+    GM.iconos.ficha(c, sala.ficha(st), hecho);
   }
   const barra = (t, v) => GM.h('div', { class: 'sp-barra-mini' }, GM.h('span', null, t), GM.h('i', null, GM.h('u', { style: { width: Math.round(v) + '%' } })));
   function avanzar(fn) {

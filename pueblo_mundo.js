@@ -36,6 +36,7 @@
       caja(G, 0.34, 1.2, 0.07, post, x - 0.66, yv, d / 2 + 0.05); caja(G, 0.34, 1.2, 0.07, post, x + 0.66, yv, d / 2 + 0.05);
       for (const s of [-1, 1]) for (let k = 0; k < 4; k++) caja(G, 0.3, 0.025, 0.02, '#2a2018', x + s * 0.66, yv + 0.2 + k * 0.28, d / 2 + 0.09);   // lamas
       if (persiana && p === 0) caja(G, 0.95, 0.12, 0.1, '#6b5a48', x, yv + 1.3, d / 2 + 0.06);
+      if (r() < 0.4) { caja(G, 0.95, 0.16, 0.26, '#6b4a2b', x, yv - 0.3, d / 2 + 0.22); for (let k = 0; k < 4; k++) { const fl = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), mat(['#c0392b', '#e84393', '#f1bf00', '#f4f1ea'][(r() * 4) | 0])); fl.position.set(x - 0.33 + k * 0.22, yv - 0.1, d / 2 + 0.22); G.add(fl); } }
       if (p > 0 && E.clave !== 'castellano' && r() < 0.5) caja(G, 1.3, 0.12, 0.5, '#3b3b3b', x, p * 3.1 + 0.9, d / 2 + 0.25);
     }
     caja(G, 1.4, 2.3, 0.1, '#5a3c26', 0, 0, d / 2 + 0.03); caja(G, 1.7, 0.14, 0.16, marco, 0, 2.3, d / 2 + 0.06); caja(G, 0.14, 2.3, 0.16, marco, -0.78, 0, d / 2 + 0.06); caja(G, 0.14, 2.3, 0.16, marco, 0.78, 0, d / 2 + 0.06); caja(G, 1.9, 0.18, 0.7, piedra, 0, 0, d / 2 + 0.35);   // puerta con marco y escalón
@@ -49,7 +50,7 @@
     return h;
   }
   // Lo que se ve en cada parcela según tipo y nivel (edificio acabado)
-  function construido(G, M, E, tipo, nv, club, r) {
+  function construido(G, M, E, tipo, nv, club, r, anims) {
     const muro = E.muros[(r() * E.muros.length) | 0], c1 = club.colores[0] === '#000000' ? '#333333' : club.colores[0], c2 = club.colores[1] || '#ffffff';
     const nombre = (GM.mods.pueblo.EDI[tipo] || {}).n || tipo;
     if (tipo === 'canasta') {
@@ -70,7 +71,7 @@
     if (tipo === 'cine') {   // cine de pueblo: marquesina luminosa, carteles y, con la mejora, multicines
       const w0 = 8, d0 = 7, h0 = 5.4 + nv * 0.6; caja(G, w0, h0, d0, muro, 0, 0, 0);
       caja(G, w0 + 0.4, 0.4, d0 + 0.4, '#3a2a30', 0, h0, 0); caja(G, 6.4, 1.0, 1.6, '#7a1a22', 0, 3.6, d0 / 2 + 0.7); caja(G, 6.8, 0.12, 1.8, '#f4f1e8', 0, 4.6, d0 / 2 + 0.7);
-      for (let i = 0; i < 9; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), new THREE.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffd27a, emissiveIntensity: 1 })); l.position.set(-3 + i * 0.75, 3.62, d0 / 2 + 1.52); G.add(l); }
+      { const mA = new THREE.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffd27a, emissiveIntensity: 1 }), mB = mA.clone(); for (let i = 0; i < 9; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), i % 2 ? mA : mB); l.position.set(-3 + i * 0.75, 3.62, d0 / 2 + 1.52); G.add(l); } if (anims) anims.push(t => { const on = Math.sin(t * 2.6) > 0; mA.emissiveIntensity = on ? 1.4 : 0.15; mB.emissiveIntensity = on ? 0.15 : 1.4; }); }
       const s = rotulo(M, 'CINE', '#7a1a22'); s.scale.setScalar(2); s.position.set(0, h0 - 1.1, d0 / 2 + 0.08); G.add(s); caja(G, 0.4, 3, 0.4, '#7a1a22', w0 / 2 + 0.6, 2, d0 / 2 + 0.3);
       caja(G, 2.2, 2.4, 0.1, '#1d2024', 0, 0, d0 / 2 + 0.05); [-3.3, -2.2, 2.2, 3.3].forEach((px, i) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.4), mat(['#c0392b', '#2f6f9e', '#f1bf00', '#2e7d32'][i], { side: THREE.DoubleSide })); p.position.set(px, 1.5, d0 / 2 + 0.07); G.add(p); });
       if (nv >= 2) { caja(G, 6, h0 + 1.6, 6, muro, -w0 / 2 - 2.6, 0, -1.2); caja(G, 6.4, 0.4, 6.4, '#3a2a30', -w0 / 2 - 2.6, h0 + 1.6, -1.2); for (let i = 0; i < 3; i++) { const p = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), mat(['#2f6f9e', '#2e7d32', '#8e44ad'][i], { emissive: 0x111111 })); p.position.set(-w0 / 2 - 2.6, 1.4 + i * 1.5, 1.82); G.add(p); } }
@@ -88,7 +89,7 @@
     if (tipo === 'industrial') {   // polígono: nave con cubierta en dientes de sierra, chimeneas, silos y muelle de carga
       caja(G, 14, 6, 9, '#c9ced2', 0, 0, 0);
       for (let i = 0; i < 4; i++) { const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(3.5, 0); sh.lineTo(3.5, 1.8); sh.lineTo(0, 0); const g2 = new THREE.ExtrudeGeometry(sh, { depth: 9.4, bevelEnabled: false }); g2.translate(-7 + i * 3.5, 6, -4.7); const m2 = new THREE.Mesh(g2, mat('#6f8793')); m2.castShadow = true; G.add(m2); }
-      for (const x of [-5.5, 5.5]) { cil(G, 0.7, 14, '#8a6a5a', x, 0, -2.8, 12); cil(G, 0.8, 0.5, '#d9d4cb', x, 14, -2.8, 12); for (let k = 0; k < 3; k++) { const hu = new THREE.Mesh(new THREE.SphereGeometry(0.9 + k * 0.4, 8, 6), mat('#b8bcc0', { transparent: true, opacity: 0.55 - k * 0.12 })); hu.position.set(x + 0.4 * k, 15.5 + k * 1.1, -2.8); G.add(hu); } }
+      for (const x of [-5.5, 5.5]) { cil(G, 0.7, 14, '#8a6a5a', x, 0, -2.8, 12); cil(G, 0.8, 0.5, '#d9d4cb', x, 14, -2.8, 12); const hus = []; for (let k = 0; k < 4; k++) { const hu = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), new THREE.MeshStandardMaterial({ color: 0xc5c9cc, transparent: true, opacity: 0.5, depthWrite: false })); hu.userData = { humo: true }; hu.position.set(x, 15, -2.8); G.add(hu); hus.push(hu); } if (anims) anims.push(t => { hus.forEach((h, k) => { const ph = (t * 0.1 + k / 4 + x * 0.05) % 1; h.position.set(x + ph * 4.5, 14.8 + ph * 8, -2.8); h.scale.setScalar(0.5 + ph * 2.4); h.material.opacity = 0.55 * (1 - ph); }); }); }
       for (const x of [-9, -11.4]) { cil(G, 1.4, 7, '#d9dde0', x, 0, -2, 14); const cp = new THREE.Mesh(new THREE.ConeGeometry(1.5, 1.4, 14), mat('#b9bec2')); cp.position.set(x, 7.7, -2); G.add(cp); }
       caja(G, 5, 1.1, 3, '#7a7e82', 3, 0, 6.2); caja(G, 2.2, 2.4, 6, '#2f6f9e', 3, 1.1, 8.4); caja(G, 2.2, 2.2, 2, '#e8e2d4', 3, 1.1, 11.8);
       for (let i = 0; i < 5; i++) caja(G, 1.8, 1.2, 1.4, ['#c0392b', '#2f6f9e', '#e1b81c'][i % 3], -6 + (i % 3) * 1.9, (i / 3 | 0) * 1.2, 7.4);
@@ -113,6 +114,7 @@
     if (tipo === 'micasa' && nv >= 2) { caja(G, 3.2, 0.04, 2, '#3ea6d6', -1.6, 0.02, -3.6); caja(G, 0.08, 2.6, 0.08, '#d0d4d8', 2.4, 0, -4.2); caja(G, 0.9, 0.6, 0.05, '#ffffff', 2.4, 2.6, -4.15); }
     if (tipo === 'panaderia') { caja(G, 0.6, 1.4, 0.6, muro, 1.8, pisos * 3.1, -1.4); cil(G, 0.3, 0.5, '#6b6f73', 1.8, pisos * 3.1 + 1.4, -1.4, 8); for (let i = 0; i < 4; i++) caja(G, 0.3, 0.1, 0.5, ['#c98d4f', '#b87a3a'][i % 2], -1.2 + i * 0.7, 0.9, 3.1); }
     if (tipo === 'restaurantep') for (let i = 0; i < 3; i++) { cil(G, 0.45, 0.75, '#f4f1ea', -2 + i * 2, 0, 4.2, 12); const so = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.4, 10), mat(['#7a2f22', '#c0392b', '#f39c12'][i])); so.position.set(-2 + i * 2, 2.5, 4.2); G.add(so); cil(G, 0.03, 2.4, '#555', -2 + i * 2, 0.75, 4.2, 5); }
+    if (GM.kit && GM.kit.coche && ['hotel', 'polideportivo', 'ambulatorio', 'restaurantep'].indexOf(tipo) >= 0 && (!GM.campus || GM.campus.config.calidad === 'alta')) { const co = GM.kit.coche(tipo === 'hotel' ? '#e8e2d4' : tipo === 'ambulatorio' ? '#f4f6f8' : '#2f6f9e', tipo === 'hotel' ? 'taxi' : tipo === 'ambulatorio' ? 'ambulancia' : 'compacto'); co.position.set(DEF[0] / 2 + 2.6, 0, DEF[1] / 2 + 2.2); co.rotation.y = Math.PI / 2 + (r() - 0.5) * 0.15; G.add(co); }
     if (tipo === 'ambulatorio') { caja(G, 0.9, 0.25, 0.06, '#d62d2d', 2.4, pisos * 3.1 - 1, DEF[1] / 2 + 0.06); caja(G, 0.25, 0.9, 0.06, '#d62d2d', 2.4, pisos * 3.1 - 1.33, DEF[1] / 2 + 0.06); }
     if (tipo === 'casapadres' || tipo === 'casaamigos' || tipo === 'micasa') {   // valla y jardín
       [[-3.2, 0, 0.08, 6.6], [3.2, 0, 0.08, 6.6]].forEach(q => caja(G, q[2], 0.9, q[3], '#ffffff', q[0], 0, 0.6));
@@ -268,8 +270,11 @@
     const g = new THREE.Group(); g.position.set(x, y0 || 0, z); g.rotation.y = ry; W.add(g);
     const muroC = E.muros[(r() * E.muros.length) | 0], h = bloque(g, M, E, w, d, pisos, muroC, null, comercio ? [club.colores[0], '#7a2f22', '#2f6f9e', '#3c6e47', '#c0392b'][(r() * 5) | 0] : null, r);
     if (E.piedraFrac && r() < E.piedraFrac) [-1, 1].forEach(s => caja(g, 0.5, h, 0.5, '#a39380', s * (w / 2 - 0.2), 0, d / 2 - 0.2));
-    for (let p = 1; p < pisos; p++) if (r() < 0.6) for (let i = 0; i < 3; i++) caja(g, 0.25, 0.2, 0.2, ['#c0392b', '#e84393', '#f39c12'][(r() * 3) | 0], -w / 4 + i * w / 4, p * 3.1 + 0.55, d / 2 + 0.45);
+    // Balcones con losa, barandilla de forja y macetas
+    for (let p = 1; p < pisos; p++) if (r() < 0.6) { const bw = Math.min(w - 1.2, 2 + r() * 1.6), by = p * 3.1 + 0.42, bx = (r() - 0.5) * Math.max(0, w - bw - 1); caja(g, bw, 0.12, 0.8, '#b9ad98', bx, by, d / 2 + 0.4); caja(g, bw, 0.05, 0.05, '#2a2f35', bx, by + 1.0, d / 2 + 0.78); caja(g, 0.05, 1.0, 0.8, '#2a2f35', bx - bw / 2 + 0.03, by, d / 2 + 0.4); caja(g, 0.05, 1.0, 0.8, '#2a2f35', bx + bw / 2 - 0.03, by, d / 2 + 0.4); for (let k = 0; k * 0.2 < bw; k++) caja(g, 0.025, 1.0, 0.025, '#2a2f35', bx - bw / 2 + 0.1 + k * 0.2, by, d / 2 + 0.78);
+      for (let k = 0; k < 3; k++) { cil(g, 0.1, 0.18, '#b4643d', bx - bw / 3 + k * bw / 3, by + 0.12, d / 2 + 0.68, 7); const fl = new THREE.Mesh(new THREE.SphereGeometry(0.13, 7, 5), mat(['#c0392b', '#e84393', '#f39c12', '#f4f1ea'][(r() * 4) | 0])); fl.position.set(bx - bw / 3 + k * bw / 3, by + 0.4, d / 2 + 0.68); g.add(fl); } }
     if (r() < 0.7) caja(g, 0.5, 1.2, 0.5, muroC, w / 2 - 1, h + 0.6, -d / 4);
+    if (GM.kit && GM.kit.gato && r() < 0.14) { const gt = GM.kit.gato(['#3b3b3b', '#c98d4f', '#f2efe8', '#7a6a5a'][(r() * 4) | 0]); gt.position.set(-w / 4 + r() * w / 2, h + (1.6 + w * 0.06) * 0.55, 0.1); gt.rotation.y = r() * 6.28; g.add(gt); }
     if (r() * 100 < (club.cariñoPueblo || 40) * 0.6) { const f = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.6), mat(r() < 0.5 ? club.colores[0] : club.colores[1] || '#fff', { side: THREE.DoubleSide })); f.position.set(-w / 4, Math.min(h - 0.8, 4.2), d / 2 + 0.35); g.add(f); }
     return g;
   }
@@ -377,6 +382,7 @@
     if (nPl) [[-10, -3], [9, -6], [-6, 7], [9, 3]].forEach(([x, z]) => { cil(W, 0.6, 0.6, '#b9a98c', x, 0, z, 10); arbol(W, x, z, 'frutal', r); G.bloquea(x - 0.6, z - 0.6, x + 0.6, z + 0.6); });   // árboles en alcorques
     if (nPl >= 2) PLAZA.forEach(([x, z]) => { const lx = x * 0.9, lz = z * 0.9; cil(W, 0.12, 3.4, '#3d3d3d', lx, 0, lz, 6); const l = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshStandardMaterial({ color: '#fff3c4', emissive: '#ffd27a', emissiveIntensity: 0.8 })); l.position.set(lx, 3.5, lz); W.add(l); });
     if (nivel >= 3) [[5, 6.5, '#c0392b'], [8.5, 3.5, '#2f6f9e'], [-4.5, 6.8, '#f39c12']].forEach(([x, z, c]) => { caja(W, 2, 0.9, 1.2, '#8a6d3b', x, 0, z); const tl = caja(W, 2.3, 0.08, 1.5, c, x, 1.9, z); tl.rotation.x = 0.15; [-0.9, 0.9].forEach(dx => cil(W, 0.04, 1.9, '#555', x + dx, 0, z + 0.6, 4)); G.bloquea(x - 1.1, z - 0.7, x + 1.1, z + 0.7); });
+    if (GM.kit && GM.kit.palomas) S.palomas = GM.kit.palomas(W, [[FX + 4, FZ + 3], [FX - 4.5, FZ - 3], [6, 6], [-8, -2]], 6);
     const nMu = ed('mural').nivel;
     if (nMu) { const t = M.textura('mural-pueblo-' + st.jugadores.yo.nombre, 256, (x, n) => { x.fillStyle = club.colores[0]; x.fillRect(0, 0, n, n); x.fillStyle = club.colores[1] || '#fff'; x.font = 'bold 40px sans-serif'; x.textAlign = 'center'; x.fillText(st.jugadores.yo.nombre.split(' ').pop().toUpperCase(), n / 2, n / 2); x.font = 'bold 80px sans-serif'; x.fillText(String(st.jugadores.yo.dorsal || 7), n / 2, n / 2 + 80); });
       const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), t ? new THREE.MeshStandardMaterial({ map: t }) : mat(club.colores[0])); m.position.set(IG.x - 2.9, 4.6, IG.z + 6.57); W.add(m);
@@ -397,7 +403,7 @@
       const b = ed(tipo), g = new THREE.Group(), rr = rnd(U.hash(pj.nombre + tipo)); g.position.set(x, 0, z); g.rotation.y = ry; g.userData = { tipo }; W.add(g);   // tipo: se puede tocar en la vista de «Mi pueblo»
       const bajo = new THREE.Mesh(uvEsc(new THREE.PlaneGeometry(w, d), 1 / Math.max(1, w / 5)).rotateX(-Math.PI / 2), b.nivel || b.obra ? mObra : mSolar); bajo.position.y = 0.005; g.add(bajo);
       if (b.obra) obra(g, M, E, tipo, b.obra.dest, b.obra.progreso, club, rr, S.puebloAnim);
-      else if (b.nivel) construido(g, M, E, tipo, b.nivel, club, rr);
+      else if (b.nivel) construido(g, M, E, tipo, b.nivel, club, rr, S.puebloAnim);
       else {
         [[0, -d / 2 + 0.2, w, 0.4], [-w / 2 + 0.2, 0, 0.4, d], [w / 2 - 0.2, 0, 0.4, d]].forEach(q => caja(g, q[2], 0.7, q[3], '#a99377', q[0], 0, q[1]));
         for (let i = 0; i < 3; i++) arbol(g, -w / 3 + i * w / 3, -d / 6 + (i % 2) * 0.8, 'olivo', rr);
@@ -407,7 +413,7 @@
       const zx = x + fx * (d / 2 + 0.9), zz = z + fz * (d / 2 + 0.9);
       // El bar y las casas de los tuyos, una vez construidos, tienen interior (interiores.js) y se vuelve a su puerta
       const INT = { bar: 'bar_pueblo', casapadres: 'casa_padres', casaamigos: 'casa_amigos', micasa: 'casa_pueblo', escuela: 'escuela', biblioteca: 'biblioteca', tienda: 'tienda_pueblo', ambulatorio: 'ambulatorio', polideportivo: 'polideportivo', hotel: 'hotel', cine: 'cine', centrodia: 'centrodia', panaderia: 'panaderia', taller: 'taller', restaurantep: 'restaurante_pueblo', industrial: 'industrial', pabellon: 'pabellon_pueblo' }[tipo], dentro = INT && b.nivel > 0 && GM.interiores && GM.interiores.TIPOS[INT];
-      zonas.push([Object.assign({ id: 'pueblo_' + tipo, nombre: b.nombre, accion: '', destino: {}, acciones: s2 => accionesLote(s2, tipo) }, dentro ? { irA: 'interior:' + INT, boton: { bar: 'Entrar en el bar', casapadres: 'Entrar en casa', casaamigos: 'Entrar en casa', micasa: 'Entrar en casa' }[tipo] || 'Entrar en ' + b.nombre.toLowerCase() } : {}), zx, zz]);
+      zonas.push([Object.assign({ id: 'pueblo_' + tipo, nombre: b.nombre, accion: '', destino: {}, acciones: s2 => accionesLote(s2, tipo), ficha: s2 => fichaLote(s2, tipo) }, dentro ? { irA: 'interior:' + INT, boton: { bar: 'Entrar en el bar', casapadres: 'Entrar en casa', casaamigos: 'Entrar en casa', micasa: 'Entrar en casa' }[tipo] || 'Entrar en ' + b.nombre.toLowerCase() } : {}), zx, zz]);
       if (dentro) (S.puertas = S.puertas || {})['interior:' + INT] = { x: zx + fx * 1.4, z: zz + fz * 1.4, ry: Math.atan2(fx, fz) };   // un poco fuera del círculo
       S.lotes[tipo] = { x, z, zx, zz, fx, fz, w, d };
     });
@@ -463,11 +469,26 @@
   function accionesLote(st, tipo) {
     const Pm = GM.mods.pueblo, b = Pm.edificios(st).find(e => e.tipo === tipo), out = [];
     if (b.obra) out.push({ id: 'avance', t: 'Obra en marcha: ' + Math.round(b.obra.progreso * 100) + ' %', d: b.obra.proximo + '. Inauguración el ' + U.fechaLarga(b.obra.fin) + '.', disponible: false, motivo: b.obra.proximo + '. Inauguración el ' + U.fechaLarga(b.obra.fin) + '.', fn: () => ({ ok: false }) });
-    else if (b.proximo) out.push({ id: 'obra', t: (b.nivel ? 'Mejorar: ' : 'Construir: ') + b.proximo, d: b.coste + ' mil €, ' + b.dias + ' días de obra.', disponible: !b.motivo, motivo: b.motivo, fn: () => { const r = Pm.invertir(st, tipo); return r.ok ? { ok: true, texto: (b.nivel ? 'Empiezan las obras de mejora' : 'Empiezan las obras') + ': ' + b.dias + ' días' } : r; } });
+    else if (b.proximo) out.push({ id: 'obra', t: (b.nivel ? 'Mejorar: ' : 'Construir: ') + b.proximo, d: Pm.fmtK(b.coste) + ', ' + b.dias + ' días de obra.', disponible: !b.motivo, motivo: b.motivo, fn: () => { const r = Pm.invertir(st, tipo); return r.ok ? { ok: true, texto: (b.nivel ? 'Empiezan las obras de mejora' : 'Empiezan las obras') + ': ' + b.dias + ' días' } : r; } });
     if (b.uso) out.push({ id: 'usar', t: b.uso, d: b.actual, disponible: true, fn: () => { const r = Pm.usar(st, tipo); return r.ok ? { ok: true, texto: r.texto + (r.efectos && r.efectos.length ? ': ' + r.efectos.join(', ') : '') } : r; } });
     if (!out.length) out.push({ id: 'info', t: b.actual || b.nombre, d: b.motivo || '', disponible: false, motivo: b.motivo || 'Nivel máximo', fn: () => ({ ok: false }) });
     return out;
   }
+  // Ficha de un edificio (la pinta sede3d.pintarFicha): nivel, ruta de mejoras, obra, gestor, renta mensual y acciones
+  function fichaLote(st, tipo) {
+    const Pm = GM.mods.pueblo, b = Pm.edificios(st).find(e => e.tipo === tipo); if (!b) return null;
+    const ic = GM.iconos && GM.iconos.POR_EDIFICIO[tipo] || 'casa', f = Pm.fmtK, dinero = GM.mods.hogar.dinero(st), ef = b.ef || {}, n = Math.max(1, b.nivel);
+    const stats = [];
+    if (b.nivel) { if (ef.dinero) stats.push({ ico: 'moneda', val: '+' + f(ef.dinero * b.nivel) + '/mes', etq: 'Renta' }); if (ef.cariño) stats.push({ ico: 'corazon', val: '+' + (Math.round(ef.cariño * b.nivel * 0.3 * 10) / 10) + '/mes', etq: 'Cariño del pueblo' }); if (ef.fama) stats.push({ ico: 'estrella', val: '+' + Math.round(ef.fama * b.nivel * 100) / 100 + '/mes', etq: 'Reputación' }); if (ef.moral) stats.push({ ico: 'sol', val: '+' + Math.round(ef.moral * b.nivel * 10) / 10 + '/mes', etq: 'Ánimo' }); }
+    const niveles = b.niveles.map((nombre, i) => ({ n: i + 1, nombre, estado: i + 1 <= b.nivel ? 'hecho' : (i + 1 === b.nivel + 1 ? 'sig' : 'bloq') }));
+    const out = { icono: ic, titulo: b.nombre, sub: b.nivel ? b.actual : 'Solar sin construir', nivel: b.nivel, max: b.max, niveles, stats, gestor: b.gestor || null, gestorTipo: b.gestorTipo, categoria: b.cat };
+    if (b.obra) out.obra = { prog: b.obra.progreso, texto: b.obra.proximo, fin: U.fechaLarga(b.obra.fin), dias: Math.max(0, U.diffDays(st.fecha, b.obra.fin)), fase: b.obra.progreso < 0.15 ? 'Vallado y replanteo' : b.obra.progreso < 0.35 ? 'Cimientos' : b.obra.progreso < 0.65 ? 'Estructura' : b.obra.progreso < 0.95 ? 'Muros y andamios' : 'Acabados' };
+    else if (b.proximo) out.mejora = { titulo: (b.nivel ? 'Mejorar a ' : 'Construir: ') + b.proximo, coste: b.coste, costeTxt: f(b.coste), dias: b.dias, disponible: !b.motivo, motivo: b.motivo, falta: dinero < b.coste ? { tienes: dinero, necesitas: b.coste } : null, fn: () => { const r = Pm.invertir(st, tipo); return r.ok ? { ok: true, texto: b.nivel ? 'Empiezan las obras de mejora' : 'Empieza la obra', reconstruir: true } : r; } };
+    const acc = [];
+    if (b.uso) acc.push({ ico: ic, t: b.uso, d: 'Sube ' + ((EDIUSO(tipo) || []).join(', ') || 'el ánimo'), disponible: true, fn: () => { const r = Pm.usar(st, tipo); return r.ok ? { ok: true, texto: r.texto + (r.efectos && r.efectos.length ? ': ' + r.efectos.join(', ') : '') } : r; } });
+    out.acciones = acc; out.entrar = null; return out;
+  }
+  const EDIUSO = tipo => { const e = GM.mods.pueblo.EDI[tipo], u = e && e.uso && e.uso[1]; if (!u) return null; const l = []; if (u.moral) l.push('ánimo'); if (u.cariño) l.push('cariño del pueblo'); if (u.fama) l.push('reputación'); if (u.xp) l.push('progresión'); if (u.amigos) l.push('amigos'); return l; };
   function accionesPlaza(st) {
     const Pm = GM.mods.pueblo, conv = r => r.ok ? { ok: true, texto: (r.efectos || []).join(', ') || 'Hecho' } : r;
     return [{ id: 'visita', t: 'Visitar a la familia y a los vecinos', d: '0,8 mil €. Ánimo y cariño del pueblo.', disponible: true, fn: () => conv(Pm.visitar(st)) },
@@ -485,6 +506,16 @@
     const n = 6 + nivel * 3;
     const vec = await Promise.all(Array.from({ length: n }, () => { const fan = r() * 100 < pj.cariño * 0.7; return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 155 + r() * 30, piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0], ropa: fan ? [club.colores[0], club.colores[1] || '#222'] : null }); }));
     vec.forEach((p, k) => { const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0], 0, q[1]); Object.assign(p, { vecino: true, rol: 'Vecino de ' + pj.nombre, r: rnd(U.hash(st.fecha + 'v' + k)), espera: r() * 4 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); });
+    // Gente en las puertas de los edificios nuevos: cola del cine, mecánico, panadera, camareros en la terraza, operarios y niños de la escuela
+    { const lug = (t, lx, lz) => { const L = S.lotes[t]; return L ? { x: L.x + lx * L.fz + lz * L.fx, z: L.z - lx * L.fx + lz * L.fz, ry: Math.atan2(L.fx, L.fz), L } : null; };
+      const pon = async (t, lx, lz, modelo, rol, opc) => { const q = lug(t, lx, lz); if (!q || !(Pm.edificios(st).find(b => b.tipo === t) || {}).nivel) return; const p = await M.personaje(Object.assign({ modelo, altura: 160 + r() * 28, piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0] }, opc && opc.aspecto || {}));
+        p.obj.position.set(q.x, 0, q.z); p.obj.rotation.y = q.ry + (opc && opc.dg !== undefined ? opc.dg : Math.PI); Object.assign(p, { fijo: true, rol, r: rnd(U.hash(st.fecha + rol + lx)), espera: 99 }); p.obj.userData = { npc: S.gente.length }; if (opc && opc.sit) { p.asiento = 0.45; M.anim(p, 'sit'); } else M.anim(p, (opc && opc.anim) || 'idle'); S.mundo.add(p.obj); S.gente.push(p); };
+      await pon('cine', -1.4, 5.6, 'm-casual', 'Cliente del cine'); await pon('cine', -0.2, 6.6, 'h-beach', 'Cliente del cine'); await pon('cine', 1.2, 7.6, 'm-punk', 'Cliente del cine');
+      await pon('taller', -2.4, 5.6, 'h-farmer', 'Mecánico', { anim: 'interact-right' });
+      await pon('panaderia', 1.2, 3.8, 'm-casual', 'Panadera', { dg: 0.3 }); await pon('panaderia', -1.6, 4.6, 'h-casual_2', 'Cliente de la panadería');
+      await pon('restaurantep', -2, 4.8, 'm-formal', 'Cliente de la terraza', { sit: true, dg: Math.PI / 2 }); await pon('restaurantep', 0, 4.2, 'h-casual_hoodie', 'Camarero de la terraza', { dg: Math.PI });
+      await pon('industrial', 4.5, 13.5, 'h-worker', 'Operario', { anim: 'idle' }); await pon('industrial', -2.5, 9.8, 'm-worker', 'Operaria', { anim: 'interact-right' });
+      await pon('escuela', -1.5, 6.4, 'h-casual_hoodie', 'Chaval de la escuela', { anim: 'emote-yes' }); await pon('escuela', 1.4, 6.8, 'm-casual', 'Chavala de la escuela'); }
     // Obreros en cada obra (dos o tres según el tamaño)
     const obras = Pm.edificios(st).filter(b => b.obra && S.lotes[b.tipo]);
     for (const b of obras) {
@@ -510,6 +541,6 @@
     if (pj.cariño < 35) fr.push('Te vemos poco por aquí…', 'Antes venías más.');
     return fr[(n.r() * fr.length) | 0];
   }
-  function actualizar(S, M, dt) { const t = performance.now() / 1000; (S.puebloAnim || []).forEach(f => f(t)); }
-  GM.puebloMundo = { construir, poblar, siguiente, actualizar, accionesLote, LOTES };
+  function actualizar(S, M, dt) { const t = performance.now() / 1000; (S.puebloAnim || []).forEach(f => f(t)); if (S.palomas && GM.calle && GM.calle.moverPalomas) GM.calle.moverPalomas(S, dt); }
+  GM.puebloMundo = { construir, poblar, siguiente, actualizar, accionesLote, fichaLote, LOTES };
 })();

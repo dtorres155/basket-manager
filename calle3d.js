@@ -606,5 +606,5 @@
     M.bocadillo(fr[(Math.random() * fr.length) | 0], p.obj); p.obj.lookAt(S.yo.obj.position.x, 0, S.yo.obj.position.z); M.anim(p, 'emote-yes'); p.espera = Math.max(p.espera, 2);
   }
   const _ray = new THREE.Raycaster();
-  GM.calle = { partidoFase: true, construir, poblar, siguiente, actualizar, LIM };
+  GM.calle = { moverPalomas, partidoFase: true, construir, poblar, siguiente, actualizar, LIM };
 })();
