@@ -71,7 +71,7 @@
       if (GM.curvas) { const f = new THREE.Group(); f.position.set(-0.6, 0.1, -2.2); G.add(f); const fl = GM.curvas.lathe('f-parque', [[0.0, 0], [0.5, 0], [0.55, 0.15], [0.45, 0.35], [0.22, 0.5], [0.12, 0.9], [0.2, 1.0]], 14, mat('#d8cfbb')); f.add(fl); }
       if (nv >= 2) { const sh2 = new THREE.Shape(); sh2.moveTo(0, -0.9); sh2.bezierCurveTo(1.1, -1.2, 1.9, -0.2, 1.4, 0.5); sh2.bezierCurveTo(1.0, 1.2, -0.3, 1.1, -0.9, 0.5); sh2.bezierCurveTo(-1.5, -0.2, -0.8, -0.7, 0, -0.9);
         const borde = new THREE.Mesh(new THREE.ExtrudeGeometry(sh2, { depth: 0.14, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.05, bevelSegments: 2 }).rotateX(Math.PI / 2), mat('#a39380')); borde.scale.set(1.12, 1, 1.12); borde.position.set(1.6, 0.2, 0.2); G.add(borde);
-        const lago = new THREE.Mesh(new THREE.ShapeGeometry(sh2, 12).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x3f86a6, roughness: 0.06, metalness: 0.2 })); lago.position.set(1.6, 0.16, 0.2); G.add(lago);
+        const lago = new THREE.Mesh(new THREE.ShapeGeometry(sh2, 12).rotateX(-Math.PI / 2), GM.arquitectura ? GM.arquitectura.agua({ repeticion: 0.8 }) : new THREE.MeshStandardMaterial({ color: 0x3f86a6, roughness: 0.06, metalness: 0.2 })); lago.position.set(1.6, 0.16, 0.2); G.add(lago);
         for (let k = 0; k < 6; k++) { const j = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.5 + r() * 0.3, 4), mat('#6f8a3a')); const a = r() * 6.28; j.position.set(1.6 + Math.cos(a) * 1.2, 0.4, 0.2 + Math.sin(a) * 0.9); G.add(j); } }
       return;
     }
@@ -329,7 +329,8 @@
     for (let x = -210; x <= 210; x += 12) rio.push([x, rioZ(x)]);
     { const ond = M.textura('rio-ondas', 128, (x, n) => { x.fillStyle = '#3f86a6'; x.fillRect(0, 0, n, n); const rr = rnd(5); for (let i = 0; i < 70; i++) { x.strokeStyle = 'rgba(255,255,255,' + (0.08 + rr() * 0.22) + ')'; x.lineWidth = 1 + rr() * 2; const px = rr() * n, py = rr() * n; x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + 10 + rr() * 14, py + (rr() - 0.5) * 8, px + 26 + rr() * 22, py + (rr() - 0.5) * 6); x.stroke(); } });
       if (ond) { ond.wrapS = ond.wrapT = THREE.RepeatWrapping; if (anims) anims.push(t => { ond.offset.set(t * 0.012, t * 0.03); }); }
-      cinta(W, rio, 9, new THREE.MeshStandardMaterial({ map: ond || null, color: ond ? 0xffffff : 0x4f8fb5, roughness: 0.12, metalness: 0.15, transparent: true, opacity: 0.92 }), () => -24.4); }
+      const mrio = new THREE.MeshStandardMaterial({ map: ond || null, color: ond ? 0xffffff : 0x4f8fb5, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.92, envMapIntensity: 1.5 }); if (GM.arquitectura) { const ag = GM.arquitectura.agua({ repeticion: 30 }); mrio.normalMap = ag.normalMap; mrio.normalScale = ag.normalScale; mrio.userData.ondas = ag.userData.ondas; }
+      cinta(W, rio, 9, mrio, () => -24.4); }
     // Carretera que baja serpenteando hasta el puente
     const ini = CALLES.find(c => c.n === 'Carretera').p, ult = ini[ini.length - 1], baja = [ult];
     for (let k = 1; k <= 36; k++) { const t = k / 36, zz = ult[1] + (rioZ(0) + 14 - ult[1]) * t, xx = ult[0] + Math.sin(t * 5.5) * 16 * (1 - t * 0.4); baja.push([xx, zz]); }

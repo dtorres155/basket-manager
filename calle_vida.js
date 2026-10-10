@@ -39,6 +39,7 @@
       const barra = new T.Mesh(new T.SphereGeometry(0.1, 5, 4), mat('#ff6a1a')); barra.userData = { destello: true }; barra.position.set(x0 - 0.8, 1.9, z0 - 0.5); g.add(barra);
       S.puebloAnim.push(t => { barra.visible = Math.sin(t * 7) > 0; });
     }
+    if (GM.arquitectura && GM.arquitectura.monumento) GM.arquitectura.monumento(W, G, club, st);   // rasgo reconocible de la ciudad al fondo
     // Fiesta mayor: banderines con los colores del club sobre la avenida y la calle central
     if (esFiesta(st) && GM.puebloJuego) GM.puebloJuego.fiesta(S, W, st, club, [{ w: 6, p: [[-38, -0.1], [38, -0.1]] }, { w: 6, p: [[0.1, -22], [0.1, 22]] }], r);
     // Pájaros posados en las copas de los árboles (posiciones de los árboles de la avenida)
@@ -65,8 +66,11 @@
 
   // ---------- Bucle ----------
   const FRASES_G = ['¡Vaya partido ganasteis!', 'Qué gran victoria. ¡Así se juega!', 'Estamos que lo rompemos.'], FRASES_P = ['Ya ganaréis el próximo.', 'Cuánto sufrimiento... pero seguimos.', 'Hay que levantar la cabeza.'];
+  // Distrito en el que estás y su afición (0-100) según el mapa de la ciudad
+  function barrioDe(st, x, z) { const b = GM.mods.ciudad3d && GM.mods.ciudad3d.barrios ? GM.mods.ciudad3d.barrios(st) : []; const k = x < -45 ? 3 : x > 45 ? 4 : z < -33 ? 1 : 0; return b[k] ? { nombre: b[k].nombre, afi: b[k].aficion } : null; }
   function actualizar(S, M, dt) {
     const t = performance.now() / 1000, st = S.st, yo = S.yo && S.yo.obj.position; if (!yo) return;
+    if (GM.arquitectura) GM.arquitectura.aguaMover(t);
     // pájaros: huyen si te acercas o pasa alguien corriendo, y vuelven a su rama
     (S.cvPajaros || []).forEach((b, i) => { const u = b.userData, d = Math.hypot(b.position.x - yo.x, b.position.z - yo.z); let asusta = d < 5.2; if (!asusta) for (const n of S.gente) { if (n.rapido && n.camino && n.camino.length && Math.hypot(b.position.x - n.obj.position.x, b.position.z - n.obj.position.z) < 4) { asusta = true; break; } }
       if (u.estado === 'posado') { b.position.y = u.casa.y + Math.sin(t * 3 + i) * 0.01; if (asusta) { u.estado = 'vuelo'; u.t = 0; u.dir = [Math.cos(i * 2.1), Math.sin(i * 2.1)]; } }
@@ -77,7 +81,11 @@
     // reacciones de los vecinos
     S.cvT = S.cvT || 0; if (t < S.cvT) return; S.cvT = t + 0.7; S.cvSal = S.cvSal || {};
     const nom = (st.jugadores.yo && st.jugadores.yo.nombre || 'campeón').split(' ')[0], u = ultimo(st), llueve = S.clima && S.clima.tipo === 'lluvia', frio = S.clima && S.clima.tipo === 'nubes';
+    const bar = barrioDe(st, yo.x, yo.z), sg = (st.equipos[st.clubId] || {}).siglas || '';
     S.gente.forEach(n => { if (!n.obj.visible || n.fijo || n.cvHab) return; const d = Math.hypot(n.obj.position.x - yo.x, n.obj.position.z - yo.z), id = n.obj.id; if (d > 3.4 || S.cvSal[id] === st.fecha) return; S.cvSal[id] = st.fecha; const k = (id * 7 + st.fecha.length) % 6; let f;
+      if (bar && k < 2 && bar.afi < 38) f = ['En ' + bar.nombre + ' no se os quiere mucho, ' + nom + '.', 'Aquí cuesta ver gente del ' + sg + '...', 'Hace falta que vengáis más por ' + bar.nombre + '.'][(id + k) % 3];
+      else if (bar && k < 2 && bar.afi > 72) f = ['¡En ' + bar.nombre + ' somos del ' + sg + ' hasta la muerte!', '¡Aquí tienes tu barrio, ' + nom + '!', '¡Vamos ' + sg + '! ¡Este barrio va contigo!'][(id + k) % 3];
+      else
       if (u && !u.gana && u.derbi && n.hincha) f = ['¡Menuda vergüenza lo del derbi!', '¡Fuera, fuera!', 'Así no se pierde un derbi...'][k % 3];
       else if (u && n.hincha) f = (u.gana ? FRASES_G : FRASES_P)[k % 3];
       else if (llueve && k < 2) f = ['Qué asco de lluvia, ' + nom + '.', 'Cógete un paraguas, ' + nom + '.'][k];

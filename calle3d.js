@@ -99,6 +99,7 @@
     return { fz, sgn, ry, alto: hB + pisos * hP };
   }
   function pabellon(W, G, T, club, st, c1) {
+    if (GM.arquitectura) return GM.arquitectura.pabellon({ W, G, T, club, st, c1, caja, cil, plano, letrero, mat, suelo, ocluye });   // pabellón según el club (arquitectura_club.js)
     const cx = -19.5, cz = -15, rx = 10, rz = 7, alto = 9;
     const cuerpo = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, alto, 48), new THREE.MeshStandardMaterial({ color: 0xd9dde0, roughness: 0.6 })); cuerpo.scale.set(rx, 1, rz); cuerpo.position.set(cx, alto / 2, cz); cuerpo.castShadow = cuerpo.receiveShadow = true; W.add(cuerpo); ocluye(cuerpo);
     for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(1.004, 1.004, 0.5, 48, 1, true), mat(i === 1 ? (club.colores[1] || '#ffffff') : c1)); b.scale.set(rx, 1, rz); b.position.set(cx, alto - 1.2 - i * 0.55, cz); W.add(b); }
@@ -251,7 +252,7 @@
     letrero(W, T.letrero('Plaza de ' + S.plazaNombre, '#1d4f91', '#fff', 'plaza'), 3.6, 0.7, 4.2, 2.6, 24.6, 0); cil(W, 0.05, 2.9, '#2a2f35', 4.2, 0, 24.5);
     // Fuente en dos alturas
     const fx = -4, fz = 41;
-    cil(W, 3, 0.6, '#cfc6b4', fx, 0, fz, 28); cil(W, 2.75, 0.06, mat('#5aa7cf', { roughness: 0.1, metalness: 0.3 }), fx, 0.56, fz, 28); cil(W, 0.35, 1.8, '#cfc6b4', fx, 0.6, fz, 12); cil(W, 1.1, 0.3, '#cfc6b4', fx, 2.2, fz, 18); cil(W, 0.95, 0.04, mat('#5aa7cf', { roughness: 0.1 }), fx, 2.48, fz, 18);
+    cil(W, 3, 0.6, '#cfc6b4', fx, 0, fz, 28); cil(W, 2.75, 0.06, GM.arquitectura ? GM.arquitectura.agua({ repeticion: 4 }) : mat('#5aa7cf', { roughness: 0.1, metalness: 0.3 }), fx, 0.56, fz, 28); cil(W, 0.35, 1.8, '#cfc6b4', fx, 0.6, fz, 12); cil(W, 1.1, 0.3, '#cfc6b4', fx, 2.2, fz, 18); cil(W, 0.95, 0.04, mat('#5aa7cf', { roughness: 0.1 }), fx, 2.48, fz, 18);
     G.bloquea(fx - 3, fz - 3, fx + 3, fz + 3);
     // Mercado municipal: nave con bóveda y puestos delante
     edificio(W, G, T, E, r, [-34, 26, -14, 38], 1, 's', { colorBajo: '#6b4a3a', letrero: { txt: 'MERCADO MUNICIPAL', fondo: '#2e5d3a', letra: '#f2d27a', clave: 'merc', ancho: 9 }, toldo: { color: '#c9733f', ancho: 14 } });
@@ -394,6 +395,7 @@
       const gConf = new THREE.BufferGeometry(); gConf.setAttribute('position', new THREE.BufferAttribute(pos, 3)); gConf.setAttribute('color', new THREE.BufferAttribute(col, 3));
       const conf = new THREE.Points(gConf, new THREE.PointsMaterial({ size: 0.2, vertexColors: true })); conf.userData = { rua: true }; conf.frustumCulled = false; S.mundo.add(conf);
       S.rua = { x: -40, bus, gente, conf, publico: P, fans, tCol: 0 };
+      if (GM.arquitectura) GM.arquitectura.fuegos(S, S.mundo, [c1, c2, '#ffd23f', '#ffffff', '#ff6a1a'], r3, true, 0, -6);
       if (GM.ui && GM.ui.toast) GM.ui.toast('¡Rúa de campeones! El autobús con el trofeo recorre la avenida');
     }
     // Músico callejero con su guitarra

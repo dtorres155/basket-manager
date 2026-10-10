@@ -18,7 +18,7 @@
   function fuente(W, x, z, nivel) {
     const g = new T.Group(); g.position.set(x, 0, z); W.add(g); const k = nivel ? 1 : 0.62, pie = C() ? C().piedraMat('#cfc7b6') : mat('#cfc7b6');
     const pila = lathe('f-pila', [[0, 0], [2.25, 0], [2.4, 0.12], [2.46, 0.3], [2.42, 0.5], [2.52, 0.6], [2.5, 0.68], [2.3, 0.66], [2.28, 0.5], [2.2, 0.42]], 32, pie); pila.scale.set(k, 1, k); g.add(pila);
-    const agua = new T.Mesh(new T.CircleGeometry(2.2 * k, 32).rotateX(-Math.PI / 2), new T.MeshStandardMaterial({ color: 0x5aa9d6, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.88 })); agua.position.y = 0.5; g.add(agua);
+    const agua = new T.Mesh(new T.CircleGeometry(2.2 * k, 32).rotateX(-Math.PI / 2), GM.arquitectura ? GM.arquitectura.agua({ color: 0x5aa9d6, repeticion: 2 }) : new T.MeshStandardMaterial({ color: 0x5aa9d6, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.88 })); agua.position.y = 0.5; g.add(agua);
     const bal = lathe('f-balaustre', [[0, 0.4], [0.55, 0.4], [0.62, 0.55], [0.4, 0.7], [0.26, 0.95], [0.34, 1.25], [0.2, 1.55], [0.18, 1.9], [0.28, 2.0]], 20, pie); g.add(bal);
     const pila2 = lathe('f-pila2', [[0, 2.0], [0.4, 2.0], [1.0, 2.1], [1.28, 2.3], [1.34, 2.5], [1.22, 2.52], [1.15, 2.4], [0.5, 2.3]], 28, pie); g.add(pila2);
     const agua2 = new T.Mesh(new T.CircleGeometry(1.15, 28).rotateX(-Math.PI / 2), agua.material); agua2.position.y = 2.42; g.add(agua2);

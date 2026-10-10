@@ -224,6 +224,20 @@
     else { const x = lado === 'o' ? r.x1 : r.x0; caja(W, 0.34, alto, 0.16, m, x, 0, cz - 1.1); caja(W, 0.34, alto, 0.16, m, x, 0, cz + 1.1); caja(W, 0.34, 0.16, 2.4, m, x, alto - 0.16, cz); }
   }
   function aplique(W, x, y, z) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.1), new THREE.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffd27a, emissiveIntensity: 0.9 })); l.position.set(x, y, z); W.add(l); }
+  // Lámparas colgantes con su brillo en el suelo (cada una pone una mancha de luz cálida que se funde con el suelo)
+  let GLOW = null;
+  function lamparas(c) {
+    const { W, x0, x1, z0, z1, M } = c, w = x1 - x0, d = z1 - z0, nx = Math.max(1, Math.round(w / 6.5)), nz = Math.max(1, Math.round(d / 6.5)), alto = c.alto + 0.0;
+    if (!GLOW) { const t = M.textura('luz-suelo', 128, (g, n) => { const gr = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); gr.addColorStop(0, 'rgba(255,214,150,0.55)'); gr.addColorStop(0.5, 'rgba(255,214,150,0.18)'); gr.addColorStop(1, 'rgba(255,214,150,0)'); g.fillStyle = gr; g.fillRect(0, 0, n, n); }); GLOW = t ? new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }) : null; }
+    const luzM = new THREE.MeshStandardMaterial({ color: 0xfff3d6, emissive: 0xffd9a0, emissiveIntensity: 1.1, roughness: 0.6 }), hier = mat('#23282d', { roughness: 0.5, metalness: 0.6 });
+    for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+      const x = x0 + (i + 0.5) * w / nx, z = z0 + (j + 0.5) * d / nz, y = Math.min(2.55, c.alto - 0.1);
+      const cab = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, c.alto > 3 ? 2.2 : 0.6, 4), hier); cab.position.set(x, y + (c.alto > 3 ? 1.1 : 0.3) + 0.0, z); cab.position.y = c.alto > 3 ? 3.3 : y + 0.3; W.add(cab);
+      const pant = GM_CV() ? GM_CV().lathe('lamp-int', [[0.04, 0], [0.22, 0.04], [0.3, 0.2], [0.26, 0.26], [0.04, 0.3]], 14, hier) : null; if (pant) { pant.position.set(x, y, z); W.add(pant); const bom = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), luzM); bom.position.set(x, y + 0.1, z); W.add(bom); }
+      if (GLOW) { const g = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w / nx, 6.5) * 0.9, Math.min(d / nz, 6.5) * 0.9).rotateX(-Math.PI / 2), GLOW); g.position.set(x, 0.012, z); W.add(g); }
+    }
+  }
+  const GM_CV = () => GM.curvas;
   // Decoración de cada estancia anexa: cuadros en la pared del fondo, apliques, plantas en las esquinas y rodapié
   function decorarSala(c, a) {
     const r = a.r, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2, W = c.W, alto = c.alto; if (a.tex === 'cesped' || a.tex === 'agua') return;
@@ -243,6 +257,7 @@
     const W = c.W, x0 = c.x0, x1 = c.x1, z0 = c.z0, z1 = c.z1, nuevo = !!TIPOS[tipo], mu = tipo === 'pabellon' ? '#d9dde0' : '#efe9dc';
     rodapie(W, x0, z0, x1, z1, { n: hu && hu.n, o: hu && hu.o, e: hu && hu.e, s: [[-1.2, 1.2]] }, mu); m(c, 'rugDoormat', 0, z1 - 0.7, 0);
     if (tipo === 'pabellon') return;
+    lamparas(c);
     for (const s of [-1, 1]) aplique(W, s * (x1 - 0.2 - (x1 - x0) * 0.22), 1.45, z0 + 0.2);
     if (!nuevo || SIN_ARTE[tipo]) return;
     const w = x1 - x0, huN = (hu && hu.n) || [], libre = x => !huN.some(([g0, g1]) => x > g0 - 1.4 && x < g1 + 1.4);

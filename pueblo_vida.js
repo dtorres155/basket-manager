@@ -162,7 +162,7 @@
   }
   function actualizar(S, M, dt) {
     const t = performance.now() / 1000;
-    saludos(S, M, t);
+    saludos(S, M, t); if (GM.arquitectura) GM.arquitectura.aguaMover(t);
     animarDetalles(S, t);
     PERROS.forEach(P => { const o = P.dueno.obj.position, dx = o.x - P.x, dz = o.z - P.z, d = Math.hypot(dx, dz), sg = !P.dueno.sentado && !(P.dueno.camino && !P.dueno.camino.length) ? 1 : 1;
       if (d > 30) { P.x = o.x - 1; P.z = o.z; }
