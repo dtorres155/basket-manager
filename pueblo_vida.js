@@ -211,5 +211,5 @@
     const q = S.paseo[(r() * S.paseo.length) | 0], ok = M.irA(n, q[0] + (r() - 0.5) * 1.2, q[1] + (r() - 0.5) * 1.2, () => { M.anim(n, 'idle'); n.espera = 2 + r() * 6; if (S.yo && n.obj.position.distanceTo(S.yo.obj.position) < 7 && r() < 0.35) M.bocadillo(ctx.frase(S.st, n), n.obj); });
     if (!ok) n.espera = 1;
   }
-  GM.puebloVida = { banco, silla, mesa, terraza, puestoMercado, rosaPlaza, alcantarillas, cartelCalle, fauna, perros, actualizar, nocturno, perfilVecino, siguiente, perro, setAltura: f => { ctxAltura = f; } };
+  GM.puebloVida = { golondrina, mariposa, banco, silla, mesa, terraza, puestoMercado, rosaPlaza, alcantarillas, cartelCalle, fauna, perros, actualizar, nocturno, perfilVecino, siguiente, perro, setAltura: f => { ctxAltura = f; } };
 })();

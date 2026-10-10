@@ -68,6 +68,15 @@
     for (let i = 1; i <= n && vivo; i++) { v.marcador.innerHTML = '<span>Tiro ' + i + ' de ' + n + '</span><b>' + aciertos + ' dentro</b>'; const ok = await cursor(v.zona, zona, vel + i * 0.04, 'Tirar'); if (!vivo) return; if (ok) aciertos++; v.msg.textContent = ok ? '¡Dentro!' : 'Fallado.'; await new Promise(r => setTimeout(r, 420)); }
     if (vivo) onFin(aciertos);
   }
+  // Bolera de la ciudad: diez lanzamientos; cada acierto tira de 5 a 10 bolos según la fuerza (físico) y tu amigo compite si hay
+  function bolos(st, amigo) {
+    const c = C(st) || {}, v = ventana('Bolera Strike'); let tot = 0, vivo = true; v.alCerrar(() => { vivo = false; });
+    (async () => { const A = att(st, 'fisico'), zona = Math.max(0.14, Math.min(0.44, 0.12 + (A - 40) / 170 * forma(st)));
+      for (let i = 1; i <= 10 && vivo; i++) { v.marcador.innerHTML = '<span>Lanzamiento ' + i + ' de 10</span><b>' + tot + ' bolos</b>'; const ok = await cursor(v.zona, zona, 0.8 + i * 0.05, 'Lanzar'); if (!vivo) return; const q = ok ? 8 + ((Math.random() * 3) | 0) : 2 + ((Math.random() * 5) | 0); tot += Math.min(10, q); v.msg.textContent = q >= 10 ? '¡PLENO!' : q + ' bolos.'; await new Promise(r => setTimeout(r, 450)); }
+      if (!vivo) return; const rival = amigo ? Math.round(60 + Math.random() * 28) : 0; v.marcador.innerHTML = '<span>Resultado</span><b>' + tot + ' puntos' + (amigo ? ' contra ' + rival : '') + '</b>';
+      if (c) { c.moral = U.clamp((c.moral || 50) + (tot >= 70 ? 4 : 2), 0, 100); if (amigo) amigo.rel = Math.min(100, amigo.rel + (tot > rival ? 3 : 5)); }
+      v.msg.textContent = (tot >= 80 ? '¡Una partida de campeonato! ' : tot >= 55 ? 'Buena partida. ' : 'A ver si mejoras la próxima. ') + (amigo ? (tot > rival ? 'Le has ganado a ' + amigo.nombre + '.' : amigo.nombre + ' te gana esta vez.') : ''); })();
+  }
   function triples(st) {
     if (!act(st)) return { ok: false, motivo: 'No disponible.' }; const c = C(st);
     const v = ventana('Concurso de triples'); ronda(st, v, 'Concurso de triples', 10, 'tiro3', 0.9, 'Tira cuando el cursor pase por la zona verde (o pulsa la barra espaciadora).', n => {
@@ -136,5 +145,5 @@
     if (tipo === 'plaza') out.push({ ico: 'estrella', t: 'Encargos del pueblo (' + pendientes(st) + ')', d: 'Tus vecinos te piden cosas con premio.', disponible: true, fn: () => { panelEncargos(); return { ok: true, texto: 'Encargos' }; } });
     return out;
   }
-  GM.puebloJuego = { encargos: lista, generar, acciones, panelEncargos, pendientes, marcas, fiesta, esFiesta, triples, libres, unoContraUno };
+  GM.puebloJuego = { bolos, encargos: lista, generar, acciones, panelEncargos, pendientes, marcas, fiesta, esFiesta, triples, libres, unoContraUno };
 })();

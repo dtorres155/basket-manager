@@ -83,7 +83,7 @@
         out.zonas[id] = puerta; out.puertas['casa:' + v.id] = { x: puerta[0], z: puerta[1] + sgn * 0.6, ry: lado === 'n' ? Math.PI : 0 };
         if (v.actual) out.puertas.casa = out.puertas['casa:' + v.id];
       } else { generico(ctx, g, cl, rect, lado, i, H);
-        const LOC = GM.interiores && ['bloque', 'atico'].indexOf(cl) >= 0 && (ctx.nEleg = (ctx.nEleg || 0) + 1) % 2 === 1 ? [['restaurante', 'RESTAURANTE EL TAPÓN', '#5a1020', 'Entrar en el restaurante'], ['gimnasio_barrio', 'GIMNASIO', '#1d2024', 'Entrar en el gimnasio'], ['barberia', 'BARBERÍA PACO', '#1d4f91', 'Entrar en la barbería']][(ctx.nLoc = (ctx.nLoc || 0) + 1) - 1] || null : null;
+        const LOC = GM.interiores && ['bloque', 'atico'].indexOf(cl) >= 0 && (ctx.nEleg = (ctx.nEleg || 0) + 1) % 3 !== 0 ? [['restaurante', 'RESTAURANTE EL TAPÓN', '#5a1020', 'Entrar en el restaurante'], ['gimnasio_barrio', 'GIMNASIO', '#1d2024', 'Entrar en el gimnasio'], ['cine_ciudad', 'CINE', '#7a1a22', 'Entrar en el cine'], ['bolera', 'BOLERA STRIKE', '#1d4f91', 'Entrar en la bolera'], ['barberia', 'BARBERÍA PACO', '#1d4f91', 'Entrar en la barbería']][(ctx.nLoc = (ctx.nLoc || 0) + 1) - 1] || null : null;
         if (LOC) { const [tipo, txt, fondo, boton] = LOC; H.letrero(g, T.letrero(txt, fondo, '#ffffff', 'loc-' + tipo), 5, 1.0, cx, 3.6, fz + sgn * 0.06, lado === 'n' ? Math.PI : 0);
           const id = 'local_' + tipo; out.salas[id] = { id, nombre: txt.charAt(0) + txt.slice(1).toLowerCase(), accion: '', destino: {}, irA: 'interior:' + tipo, boton }; out.zonas[id] = puerta; out.puertas['interior:' + tipo] = { x: puerta[0], z: puerta[1] + sgn * 0.6, ry: lado === 'n' ? Math.PI : 0 }; out.paseo.push(puerta); } }
       out.paseo.push(puerta);

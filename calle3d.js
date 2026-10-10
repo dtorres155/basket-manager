@@ -368,6 +368,7 @@
     S.destinos = null;
     { const ninos = await Promise.all(Array.from({ length: 6 }, (_, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'm-casual'][k % 3], altura: 118 + r() * 26, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: k % 2 ? [c1, c2] : null })));
       ninos.forEach((p, k) => { const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0], 0, q[1]); Object.assign(p, { peaton: true, nino: true, rol: 'Chaval que va al colegio', r: rnd(U.hash(st.fecha + 'n' + k)), espera: r() * 3 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); }); }
+    if (GM.calleVida) await GM.calleVida.poblar(S, M, st);
     S.palomas = GM.kit.palomas ? GM.kit.palomas(S.mundo, [S.fuentePos ? [S.fuentePos[0] + 4.5, S.fuentePos[1]] : [2, 40], S.fuentePos ? [S.fuentePos[0] - 4.5, S.fuentePos[1] + 2] : [-6, 47], [24, 44], [-14, 9], [-27, -6.5], [10, 50]], 9) : null;
     // Día de partido en casa: aficionados de pie en la acera del pabellón y a lo largo de la avenida
     S.multitud = null; S.fasePartido = null; S.partidoCasa = !!partido;
@@ -419,6 +420,7 @@
     if (!S.rua) carriles.forEach(([eje, dir, c], ci) => { const [mn, mx] = RANGO[eje], largo = mx - mn, n = eje === 'x' ? 7 : 4; for (let i = 0; i < n; i++) { const obj = coche(colores[(ci * 3 + i) % colores.length]); S.mundo.add(obj); S.coches.push({ obj, eje, dir, c, pos: mn + (i + 0.3) * (largo / n) + r() * 4, vel: 6, largo, min: mn, max: mx, len: 4.1 }); } });
     // Autobús urbano con el anuncio del club: carril sur de la avenida, para en la parada
     if (!S.rua) { const obj = autobus(club); S.mundo.add(obj); S.coches.push({ obj, eje: 'x', dir: 1, c: 1.5, pos: -20, vel: 5, largo: 300, min: -150, max: 150, len: 10.5, bus: true, parada: -36, tParada: 0 }); }
+    if (GM.calleVida) GM.calleVida.construir(S, M, st, { W: S.mundo, G: S.G, r, club });
     S.tSem = 0;
   }
   // Autobús descapotable de la rúa (a lo largo del eje x): dos pisos, el de arriba abierto con barandilla, pancarta con el título y el trofeo delante
@@ -548,6 +550,7 @@
   }
   function actualizar(S, M, dt) {
     if (GM.ciudadBarrios) GM.ciudadBarrios.actualizar(S, dt);
+    if (GM.calleVida) { GM.calleVida.actualizar(S, M, dt); const tt = performance.now() / 1000; (S.puebloAnim || []).forEach(f => f(tt)); }
     if (S.partidoCasa) { S.tFase = (S.tFase || 0) - dt; if (S.tFase <= 0) { S.tFase = 1; fasePartido(S, M, S.st); busEquipo(S, M, S.st); } }
     moverPartido(S, M, dt);
     if (S.palomas && S.yo) { const am = [[S.yo.obj.position.x, S.yo.obj.position.z]]; S.gente.forEach(n => { if (n.rapido && n.camino && n.camino.length && !n.oculto) am.push([n.obj.position.x, n.obj.position.z]); }); S.palomas.actualizar(dt, am); }
