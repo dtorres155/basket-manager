@@ -69,7 +69,14 @@
       const vi = vias[i % Math.min(vias.length, 14)], uno = !!vi.v.uno, dir = uno ? 1 : (i % 2 ? 1 : -1), obj = coche(COLORES[i % COLORES.length]); S.mundo.add(obj);
       S.coches.push({ obj, vi, dir, pos: r() * vi.L, vel: 0, len: 4.2, lane: ANCHO[vi.v.k] / 4 });
     }
+    // motos que adelantan y furgoneta de reparto que se para a descargar
+    if (!S.rua && GM.urbano && GM.urbano.moto && vias.length) {
+      const cols = ['#2f8f7a', '#c0392b', '#e8e2d4', '#2f6f9e', '#f1c40f'];
+      for (let i = 0; i < (alta ? 6 : 3); i++) { const vi = vias[i % Math.min(vias.length, 8)], obj = GM.urbano.moto(cols[i % cols.length]); const pil = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color: ['#1d2024', '#3b3b3b', '#5a1020'][i % 3] })); pil.position.set(0, 1.0, -0.1); obj.add(pil); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 2.2, lane: ANCHO[vi.v.k] / 4 - 0.7, vmax: 10 }); }
+      if (GM.kit.coche && vias.length) { const vi = vias[0], obj = GM.kit.coche('#e8e8e8', 'furgoneta'); obj.userData.reparto = true; S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 5.4, lane: ANCHO[vi.v.k] / 4, vmax: 5, reparto: true, tParada: 0, tSig: 14 }); }
+    }
     S.perfilCoches = true;
+    if (GM.calleVida) { GM.calleVida.construir(S, M, st, { W: S.mundo, G: S.G, r, club }); await GM.calleVida.poblar(S, M, st); }
   }
   function punto(vi, s) {   // posición y tangente a la distancia s de la calle
     s = Math.max(0, Math.min(vi.L, s)); let i = 0; while (i + 2 < vi.acum.length && vi.acum[i + 1] < s) i++;
@@ -78,6 +85,7 @@
   }
   function actualizar(S, M, dt) {
     const t = performance.now() / 1000;
+    if (GM.calleVida) { GM.calleVida.actualizar(S, M, dt); (S.puebloAnim || []).forEach(f => f(t)); }
     if (GM.arquitectura && GM.arquitectura.aguaMover) GM.arquitectura.aguaMover(t);
     if (S.yo && S.rec) { S.rec.p.value.set(S.yo.obj.position.x, 1.1, S.yo.obj.position.z); S.rec.c.value.copy(S.camera.position); }
     // Nombre de la calle donde estás
@@ -112,7 +120,8 @@
     const gente = S.gente.concat(S.yo ? [S.yo] : []);
     S.coches.forEach(c => {
       const [x, z, ux, uz] = punto(c.vi, c.pos), tx = ux * c.dir, tz = uz * c.dir, ox = -tz * c.lane, oz = tx * c.lane;
-      let objetivo = 7;
+      let objetivo = c.vmax || 7;
+      if (c.reparto) { if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else { c.tSig -= dt; if (c.tSig <= 0) { c.tParada = 6; c.tSig = 22; } } }
       for (const p of gente) { const o = p.obj.position, ax = o.x - (x + ox), az = o.z - (z + oz), lon = ax * tx + az * tz - c.len / 2, lat = Math.abs(-ax * tz + az * tx); if (lat < 1.3 && lon > -0.3 && lon < 6.5 && !p.oculto) objetivo = Math.min(objetivo, Math.max(0, (lon - 1.4) * 1.5)); }
       for (const o of S.coches) { if (o === c || o.vi !== c.vi || o.dir !== c.dir) continue; const gap = c.dir * (o.pos - c.pos) - c.len; if (gap > 0 && gap < 6) objetivo = Math.min(objetivo, Math.max(0, gap - 1.5)); }
       c.vel += Math.max(-9 * dt, Math.min(3 * dt, objetivo - c.vel)); c.pos += c.dir * c.vel * dt;

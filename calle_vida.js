@@ -21,14 +21,15 @@
   function construir(S, M, st, ctx) {
     const { W, G, r, club } = ctx; S.puebloAnim = S.puebloAnim || []; S.cvPuestos = []; S.cvObras = null; S.cvPajaros = [];
     // Mercadillo: una hilera de puestos en el borde norte de la plaza, con toldos de colores y vendedores (los pone poblar)
-    if (esMercadillo(st) && GM.puebloVida) {
+    const A = S.real ? S.vidaAnc || {} : null;   // en la ciudad real los sitios los da calle_real.js
+    if (esMercadillo(st) && GM.puebloVida && (!A || A.puestos)) {
       const cols = ['#c0392b', '#2f6f9e', '#f39c12', '#2e7d32', '#8e44ad', '#e84393', '#16a085'];
-      for (let i = 0; i < 6; i++) { const x = -11.5 + i * 4.8, z = 28.6; if (GM.urbano && GM.urbano.libre && !GM.urbano.libre(G, x - 1.4, z - 0.9, x + 1.4, z + 1.2)) continue; GM.puebloVida.puestoMercado(W, M, x, z, 0, cols[i % cols.length], r, i); G.bloquea(x - 1.4, z - 0.8, x + 1.4, z + 1.2); S.cvPuestos.push({ x, z }); }
+      for (let i = 0; i < (A ? A.puestos.length : 6); i++) { const x = A ? A.puestos[i][0] : -11.5 + i * 4.8, z = A ? A.puestos[i][1] : 28.6; if (GM.urbano && GM.urbano.libre && !GM.urbano.libre(G, x - 1.4, z - 0.9, x + 1.4, z + 1.2)) continue; GM.puebloVida.puestoMercado(W, M, x, z, 0, cols[i % cols.length], r, i); G.bloquea(x - 1.4, z - 0.8, x + 1.4, z + 1.2); S.cvPuestos.push({ x, z }); }
       S.mercadillo = true;
     }
     // Obras: tramo de acera sur de la avenida (x de 26 a 37) con zanja, vallas, conos, montón de arena y cartel
-    if (hayObras(st)) {
-      const x0 = 24, x1 = 32.5, z0 = 4.3, z1 = 5.5, g = new T.Group(); W.add(g);
+    if (hayObras(st) && (!A || A.obra)) {
+      const x0 = A ? A.obra[0] : 24, x1 = A ? A.obra[2] : 32.5, z0 = A ? A.obra[1] : 4.3, z1 = A ? A.obra[3] : 5.5, g = new T.Group(); W.add(g);
       caja(g, x1 - x0 - 1, 0.04, z1 - z0 - 0.4, '#3a2f26', (x0 + x1) / 2, 0.0, (z0 + z1) / 2); caja(g, x1 - x0, 0.04, 0.3, '#8a7a68', (x0 + x1) / 2, 0.0, z0 - 0.15);
       for (let i = 0; i < 6; i++) { const x = x0 + i * ((x1 - x0) / 5); caja(g, 0.06, 1.0, 0.06, '#8a8f94', x, 0, z0 - 0.5); caja(g, 0.06, 1.0, 0.06, '#8a8f94', x, 0, z1 + 0.5); }
       for (let i = 0; i < 5; i++) { const x = x0 + 1 + i * ((x1 - x0 - 2) / 4); for (const z of [z0 - 0.5, z1 + 0.5]) { const v = caja(g, 1.9, 0.18, 0.04, i % 2 ? '#f4f4f0' : '#e74c3c', x, 0.8, z); void v; caja(g, 1.9, 0.18, 0.04, i % 2 ? '#e74c3c' : '#f4f4f0', x, 0.6, z); } }
@@ -39,14 +40,14 @@
       const barra = new T.Mesh(new T.SphereGeometry(0.1, 5, 4), mat('#ff6a1a')); barra.userData = { destello: true }; barra.position.set(x0 - 0.8, 1.9, z0 - 0.5); g.add(barra);
       S.puebloAnim.push(t => { barra.visible = Math.sin(t * 7) > 0; });
     }
-    if (GM.arquitectura && GM.arquitectura.monumento) GM.arquitectura.monumento(W, G, club, st);   // rasgo reconocible de la ciudad al fondo
+    if (!A && GM.arquitectura && GM.arquitectura.monumento) GM.arquitectura.monumento(W, G, club, st);   // rasgo reconocible de la ciudad al fondo
     // Fiesta mayor: banderines con los colores del club sobre la avenida y la calle central
-    if (esFiesta(st) && GM.puebloJuego) GM.puebloJuego.fiesta(S, W, st, club, [{ w: 6, p: [[-38, -0.1], [38, -0.1]] }, { w: 6, p: [[0.1, -22], [0.1, 22]] }], r);
+    if (esFiesta(st) && GM.puebloJuego) GM.puebloJuego.fiesta(S, W, st, club, A ? A.fiesta : [{ w: 6, p: [[-38, -0.1], [38, -0.1]] }, { w: 6, p: [[0.1, -22], [0.1, 22]] }], r);
     // Pájaros posados en las copas de los árboles (posiciones de los árboles de la avenida)
     const arb = S.arbolesPos && S.arbolesPos.length ? S.arbolesPos : [];
     if (arb.length && GM.puebloVida && GM.puebloVida.golondrina) arb.slice(0, 14).forEach(([x, z], i) => { if (r() < 0.55) return; const b = GM.puebloVida.golondrina(); b.scale.setScalar(1.35); b.position.set(x + (r() - 0.5) * 0.8, 3.7 + r() * 1.2, z + (r() - 0.5) * 0.8); b.rotation.y = r() * 6.28; b.userData.posado = true; b.userData.casa = b.position.clone(); b.userData.estado = 'posado'; b.userData.t = 0; b.userData.alas.forEach(([p, s]) => { p.rotation.z = s * 1.0; }); W.add(b); S.cvPajaros.push(b); });
     // Motos y furgoneta de reparto como tráfico
-    if (!S.rua && GM.urbano && GM.urbano.moto) {
+    if (!A && !S.rua && GM.urbano && GM.urbano.moto) {
       const carriles = [['x', 1, 0.75], ['x', -1, -0.75], ['z', 1, -0.75], ['z', -1, 0.75]], RANGO = { x: [-150, 150], z: [-100, 24] }, cols = ['#2f8f7a', '#c0392b', '#e8e2d4', '#2f6f9e', '#f1c40f'];
       carriles.forEach(([eje, dir, c], ci) => { for (let i = 0; i < (eje === 'x' ? 2 : 1); i++) { const [mn, mx] = RANGO[eje], largo = mx - mn, obj = GM.urbano.moto(cols[(ci + i) % cols.length]); const pil = new T.Mesh(new T.CapsuleGeometry(0.17, 0.5, 4, 8), mat(['#1d2024', '#3b3b3b', '#5a1020'][(ci + i) % 3])); pil.position.set(0, 1.0, -0.3); obj.add(pil); const cab = new T.Mesh(new T.SphereGeometry(0.16, 10, 8), mat(['#e8e2d4', '#c0392b', '#1d2024'][(ci + i) % 3], { metalness: 0.2 })); cab.position.set(0, 1.55, -0.28); obj.add(cab); S.mundo.add(obj); S.coches.push({ obj, eje, dir, c, pos: mn + (i + 0.6 + ci * 0.13) * (largo / (eje === 'x' ? 2 : 1)) * 0.5 + r() * 6, vel: 7, largo, min: mn, max: mx, len: 2.3, moto: true }); } });
       if (GM.kit.coche) { const obj = GM.kit.coche('#e8e8e8', 'furgoneta'); obj.userData.reparto = true; S.mundo.add(obj); S.coches.push({ obj, eje: 'x', dir: -1, c: -1.5, pos: 70, vel: 5, largo: 300, min: -150, max: 150, len: 5.4, bus: true, reparto: true, parada: 28, tParada: 0 }); }
@@ -67,7 +68,7 @@
   // ---------- Bucle ----------
   const FRASES_G = ['¡Vaya partido ganasteis!', 'Qué gran victoria. ¡Así se juega!', 'Estamos que lo rompemos.'], FRASES_P = ['Ya ganaréis el próximo.', 'Cuánto sufrimiento... pero seguimos.', 'Hay que levantar la cabeza.'];
   // Distrito en el que estás y su afición (0-100) según el mapa de la ciudad
-  function barrioDe(st, x, z) { const b = GM.mods.ciudad3d && GM.mods.ciudad3d.barrios ? GM.mods.ciudad3d.barrios(st) : []; const k = x < -45 ? 3 : x > 45 ? 4 : z < -33 ? 1 : 0; return b[k] ? { nombre: b[k].nombre, afi: b[k].aficion } : null; }
+  function barrioDe(st, x, z) { const b = GM.mods.ciudad3d && GM.mods.ciudad3d.barrios ? GM.mods.ciudad3d.barrios(st) : []; const R = GM.sede._estado && GM.sede._estado().real, k = R ? (x < -90 ? 3 : x > 90 ? 4 : z < -90 ? 1 : 0) : (x < -45 ? 3 : x > 45 ? 4 : z < -33 ? 1 : 0); return b[k] ? { nombre: b[k].nombre, afi: b[k].aficion } : null; }
   function actualizar(S, M, dt) {
     const t = performance.now() / 1000, st = S.st, yo = S.yo && S.yo.obj.position; if (!yo) return;
     if (GM.arquitectura) GM.arquitectura.aguaMover(t);

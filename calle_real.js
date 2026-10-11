@@ -365,12 +365,41 @@
       }
     }
     { const q = sitioAcera(30, 120, 11); if (q) { zonas.musico = [q[0], q[1]]; S.musicoPos = [q[0], q[1]]; SALAS.musico = { id: 'musico', nombre: 'Músico callejero', accion: 'Toca en la plaza', destino: {} }; } }
+    transporte(S, M, X, G, W, c, SALAS, zonas, paseo, bar);
+    anclasVida(S, X, G);
     S.zonas = Object.keys(SALAS).filter(k => zonas[k]).map(k => M.zona(W, SALAS[k], zonas[k][0], zonas[k][1], club));
     S.paseo = S.paseoBase.concat(paseo); S.portales = S.paseoBase.filter((_, i) => i % 6 === 0);
     S.calles = X.C.filter(cc => cc.nom && cc.k <= 5); S.vias = X.C.filter(cc => cc.k >= 1 && cc.k <= 4);
     S.calleNombre = nombreCalle(R.sede || R.pabellon) || ('Calle de ' + club.ciudad);
     mobiliario(S, M, X, G, W, c);
     S.cielo = true; S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xa9c6dc, 60, 170);
+  }
+  // ---------- Metro y bicis compartidas ----------
+  function transporte(S, M, X, G, W, c, SALAS, zonas, paseo, bar) {
+    const T = { letrero: (txt, fondo, letra, clave) => M.textura('letrero-' + clave + txt, 512, (x, n) => { x.fillStyle = fondo; x.fillRect(0, 0, n, n / 4); x.fillStyle = letra; let fs = 64; x.font = 'bold ' + fs + 'px sans-serif'; while (x.measureText(txt).width > n * 0.92 && fs > 20) { fs -= 4; x.font = 'bold ' + fs + 'px sans-serif'; } x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, n / 2, n / 8); }) };
+    const base = S.paseoBase || muestreoAceras(X, G), U3 = GM.urbano, nom = { oeste: bar[3] || 'Oeste', este: bar[4] || 'Este', norte: bar[1] || 'Norte', centro: bar[0] || c.club.ciudad };
+    const OBJ = [['centro', 0, 70], ['oeste', -170, 10], ['este', 170, 10], ['norte', 10, -170]], elegidas = [];
+    OBJ.forEach(([k, tx, tz]) => {
+      const L = base.map(q => [Math.hypot(q[0] - tx, q[1] - tz), q]).sort((a, b) => a[0] - b[0]);
+      for (const [d, q] of L) { if (d > 120) break; if (elegidas.some(e => Math.hypot(e[1][0] - q[0], e[1][1] - q[1]) < 60)) continue; if (!U3.libre(G, q[0] - 3.4, q[1] - 3.2, q[0] + 3.4, q[1] + 4.2)) continue; elegidas.push([k, q]); break; }
+    });
+    const est = {}; S.estacionesReal = est;
+    elegidas.forEach(([k, q]) => {
+      const nombre = 'Metro ' + nom[k], bm = U3.bocaMetro(W, G, M, T, q[0], q[1], nombre, k), sid = 'metro_' + k; est[k] = { x: bm.acceso[0], z: bm.acceso[1] - 0.8, nombre };
+      SALAS[sid] = { id: sid, nombre, accion: '', destino: {}, acciones: s2 => elegidas.filter(e => e[0] !== k).map(e => ({ id: 'a_' + e[0], t: 'Ir a ' + nom[e[0]], d: 'Metro, 2 minutos' + (s2.modo === 'carrera' ? ', 2 €' : ''), disponible: true, fn: () => GM.ciudadBarrios.viajar(s2, est[e[0]], 'Llegas en metro a ' + nom[e[0]]) })) };
+      zonas[sid] = [bm.acceso[0], bm.acceso[1]]; paseo.push([q[0] + 2, q[1] + 2.6]);
+      const bid = 'bici_' + k, pb = U3.paradaBici(W, G, M, T, q[0], q[1], [q[0] - 40, q[1] - 40, q[0] + 40, q[1] + 40], 'xz', k);
+      SALAS[bid] = { id: bid, nombre: 'Bicis compartidas', accion: '', destino: {}, acciones: s2 => { const S2 = GM.sede._estado && GM.sede._estado(), en = S2 && S2.yo && S2.yo.bici; return [en ? { id: 'dejar', t: 'Dejar la bici', d: 'Vuelves a ir andando.', disponible: true, fn: () => GM.ciudadBarrios.bici(false) } : { id: 'coger', t: 'Coger una bici', d: 'Vas unas dos veces y media más rápido' + (s2.modo === 'carrera' ? ', 1 €' : '') + '.', disponible: true, fn: () => GM.ciudadBarrios.bici(true, s2) }]; } };
+      zonas[bid] = pb ? pb.acceso : [q[0] - 3.2, q[1] + 1.8];
+    });
+  }
+  // Sitios libres para la vida de la calle (mercadillo, obras, fiesta) sobre el plano real
+  function anclasVida(S, X, G) {
+    const U3 = GM.urbano, base = S.paseoBase || [], A = S.vidaAnc = { puestos: null, obra: null, fiesta: [] };
+    const cerca = base.filter(q => { const d = Math.hypot(q[0], q[1]); return d > 30 && d < 150; });
+    for (const q of cerca) { if (U3.libre(G, q[0] - 1, q[1] - 3.2, q[0] + 19, q[1] + 3.6)) { A.puestos = [0, 1, 2, 3].map(i => [q[0] + i * 4.8, q[1] + 1]); break; } }
+    for (const q of cerca.slice().reverse()) { if (A.puestos && Math.abs(q[0] - A.puestos[0][0]) < 30 && Math.abs(q[1] - A.puestos[0][1]) < 12) continue; if (U3.libre(G, q[0] - 1, q[1] - 1.2, q[0] + 10.5, q[1] + 3.2)) { A.obra = [q[0], q[1], q[0] + 8.5, q[1] + 1.2]; break; } }
+    X.C.filter(cc => cc.k >= 1 && cc.k <= 4).map(v => ({ v, d: Math.min(...v.p.map(q => Math.hypot(q[0], q[1]))) })).filter(o => o.d < 120).sort((a, b) => a.d - b.d).slice(0, 2).forEach(o => { const p = o.v.p; let acum = 0; const rec = [p[0]]; for (let i = 1; i < p.length && acum < 80; i++) { acum += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); rec.push(p[i]); } A.fiesta.push({ w: ANCHO[o.v.k] || 7, p: rec }); });
   }
   function muestreoAceras(X, G) {
     const out = [], libre = (x, z) => { const [i, j] = G.celda(x, z); return G.libre(i, j) && G.libre(i + 1, j) && G.libre(i, j + 1) && G.libre(i - 1, j) && G.libre(i, j - 1); };
@@ -422,6 +451,7 @@
         const s = 0.8 + rr() * 0.6; m4.compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rr() * 6.28), new THREE.Vector3(s, s * (0.9 + rr() * 0.3), s));
         tr.setMatrixAt(i, m4); co.setMatrixAt(i, m4); cc.setHSL(0.25 + rr() * 0.06, 0.38 + rr() * 0.12, 0.2 + rr() * 0.08); co.setColorAt(i, cc); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3);
       });
+      S.arbolesPos = arb.slice().sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1])).map(q => [q[0], q[1], 0]);
       tr.userData = { arboles: true }; co.userData = { arboles: true }; tr.castShadow = co.castShadow = c.alta; W.add(tr); W.add(co); S.arbolesN = arb.length;
     }
     // farolas, sobre todo cerca del centro
@@ -439,5 +469,5 @@
     });
   }
 
-  GM.register('calleReal', { cargar, datos, construir, preparar });
+  GM.register('calleReal', { cargar, datos, cargado: id => id in CACHE, construir, preparar });
 })();
