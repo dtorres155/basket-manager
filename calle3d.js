@@ -117,13 +117,12 @@
 
   // ---------- Construcción ----------
   let S_ = null;
-  function construir(S, M, st) {
+  function construirAntigua(S, M, st) {
     S_ = S; S.ventanas = []; S.persianas = []; S.obrasRect = [];
     const W = S.mundo, club = st.equipos[st.clubId], E = Object.assign({}, ESTILO.ES, ESTILO[club.pais] || {}), T = texturas(M, E, club), r = rnd(U.hash(club.id + 'calle'));
     const c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
     const ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, rep = club.reputacion || 60, afi = ciu.aficion || 50;
     const G = M.rejilla({ limites: LIM, CELDA: 0.5 }); S.G = G; OCL = []; S.oclusores = OCL;
-    if (GM.mods.osmCiudad) { try { const o = GM.mods.osmCiudad.construir(S, M, club, c1); if (o) W.add(o); } catch (e) { /* sin la ciudad real de fondo */ } }
     // Suelo: asfalto, aceras de panot y pasos de peatones elevados
     suelo(W, 90, 50, GM.urbano.deco(real(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { escala: 5, tinte: 0xb4b4b4 })), 0, -0.12, 0); // (con polygonOffset: el asfalto de los barrios, 5 mm más abajo, no parpadea con él)
     if (GM.kit.calcomania) { const rS = rnd(77); for (let i = 0; i < 46; i++) { const enX = rS() < 0.65, x = enX ? -88 + rS() * 176 : (rS() - 0.5) * 5, z = enX ? (rS() - 0.5) * 5 : -40 + rS() * 64; GM.kit.calcomania(W, 'suelo', x, -0.115, z, 0, rS); } }
@@ -206,7 +205,7 @@
     // Barrios de alrededor con tus viviendas, colegio, hospital, estación y la ciudad deportiva
     const amp = GM.ciudadBarrios ? GM.ciudadBarrios.construir({ S, M, W, G, T, E, r, club, st, c1, c2, afi, h: { caja, cil, plano, letrero, edificio: (W2, G2, T2, E2, r2, rect, pisos, lado, o) => edificio(W2, G2, T2, E2, r2, rect, pisos, lado, o), ocluye, mat, uvM } }) : null;
     if (amp) Object.assign(zonas, amp.zonas);
-    S.puertas = amp ? amp.puertas : {}; S.distritos = amp ? amp.distritos : null;
+    S.puertas = amp ? amp.puertas : {}; S.distritos = amp ? amp.distritos : null; S.real = false;
     // Zonas interactivas (puertas)
     const SALAS = {
       sede: { id: 'sede_calle', nombre: 'Sede del club', accion: 'Volver a las instalaciones', destino: {}, irA: 'sede', boton: 'Entrar en la sede' },
@@ -357,6 +356,7 @@
     { const m = await R('exterior_aircon_unit'), L = (GM.kit.calcomanias || []).filter((c, i) => i % 3 === 0 && Math.abs(c[0]) < 150).slice(0, 18); if (m && L.length) W.add(GM.kit.instanciar(m, L.map(c => ({ x: c[0] + Math.sin(c[3]) * 0.35, z: c[2] + Math.cos(c[3]) * 0.35, y: c[1] + 3.6, ry: c[3] })))); }
   }
   async function poblar(S, M, st) {
+    if (S.real) return GM.mods.calleRealVida.poblar(S, M, st);
     await vestirCalle(S, M, st);
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
     const n = partido ? 40 : 32, r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222';
@@ -481,7 +481,7 @@
   function destinos(S) {
     if (S.destinos) return S.destinos; const Z = (S.zonas || []).map(z => [z.sala.id, z.obj.position.x, z.obj.position.z]), de = re => Z.filter(z => re.test(z[0])).map(z => [z[1], z[2]]);
     const portales = []; for (let x = -130; x <= 130; x += 13) { portales.push([x + 2, 5.6], [x - 3, -5.6]); }
-    return (S.destinos = { trabajo: de(/hospital|ayuntamiento|sede_calle|estacion|metro|kiosco/), colegio: de(/colegio/), compras: de(/tienda|mercado|kiosco|heladeria/), comer: de(/terraza|pena|heladeria|mercado/), bares: de(/pena|terraza/), paseo: de(/parque|musico|plaza/).concat(S.paseo.filter((_, i) => i % 7 === 0)), parque: de(/parque/), casa: portales });
+    return (S.destinos = { trabajo: de(/hospital|ayuntamiento|sede_calle|estacion|metro|kiosco/), colegio: de(/colegio/), compras: de(/tienda|mercado|kiosco|heladeria/), comer: de(/terraza|pena|heladeria|mercado/), bares: de(/pena|terraza/), paseo: de(/parque|musico|plaza/).concat(S.paseo.filter((_, i) => i % 7 === 0)), parque: de(/parque/), casa: S.portales || portales });
   }
   function elegir(n, pesos) { let x = n.r(), k; for (k in pesos) { x -= pesos[k]; if (x <= 0) return k; } return k; }
   function siguiente(S, M, n) {
@@ -493,10 +493,10 @@
     if (n.dentro) { if (h >= n.hasta) { n.dentro = false; n.oculto = false; } else { n.espera = 4; return; } }
     if (!activo && !n.hincha) { const q = D.casa[(n.r() * D.casa.length) | 0]; if (M.irA(n, q[0], q[1], () => { n.oculto = true; n.enCasa = true; n.espera = 8; })) return; }
     if (S.dia && S.dia.tipo === 'partido' && S.dia.casa && (n.hincha || n.r() < 0.25) && h >= 16 && h < 20.5 && GM.calle.partidoFase) {   // a la previa
-      const q = n.r() < 0.5 ? [19 + (n.r() - 0.5) * 6, 6.2] : [-19.5 + (n.r() - 0.5) * 10, -5.6]; if (M.irA(n, q[0], q[1], () => { M.anim(n, 'emote-yes'); n.espera = 6 + n.r() * 8; })) return;
+      const q = S.ptoPab ? (n.r() < 0.5 && S.ptoPena ? [S.ptoPena[0] + (n.r() - 0.5) * 5, S.ptoPena[1] + (n.r() - 0.5) * 3] : [S.ptoPab[0] + (n.r() - 0.5) * 8, S.ptoPab[1] + (n.r() - 0.5) * 3]) : n.r() < 0.5 ? [19 + (n.r() - 0.5) * 6, 6.2] : [-19.5 + (n.r() - 0.5) * 10, -5.6]; if (M.irA(n, q[0], q[1], () => { M.anim(n, 'emote-yes'); n.espera = 6 + n.r() * 8; })) return;
     }
     if (S.dia && S.dia.tipo === 'partido' && S.dia.casa && h >= 20.4 && h < 22.25 && (n.hincha || n.r() < 0.4)) {   // el partido: los aficionados entran en el pabellón (vuelven a salir al acabar)
-      if (M.irA(n, -19.5 + (n.r() - 0.5) * 3, -6.2, () => { n.oculto = true; n.dentro = true; n.hasta = 22.3 + n.r() * 0.3; n.espera = 4; })) return;
+      if (M.irA(n, S.ptoPab ? S.ptoPab[0] + (n.r() - 0.5) * 3 : -19.5 + (n.r() - 0.5) * 3, S.ptoPab ? S.ptoPab[1] : -6.2, () => { n.oculto = true; n.dentro = true; n.hasta = 22.3 + n.r() * 0.3; n.espera = 4; })) return;
     }
     let cat;
     if (n.nino) cat = h < 9 ? 'colegio' : h < 14 ? 'colegio' : h < 20 ? 'parque' : 'casa';
@@ -552,6 +552,7 @@
       else if (B.fase === 'se_va') { o.x -= dt * 7; if (o.x < -160) { S.mundo.remove(B.obj); B.fase = 'fuera'; } } }
   }
   function actualizar(S, M, dt) {
+    if (S.real) return GM.mods.calleRealVida.actualizar(S, M, dt);
     if (GM.ciudadBarrios) GM.ciudadBarrios.actualizar(S, dt);
     if (GM.calleVida) { GM.calleVida.actualizar(S, M, dt); const tt = performance.now() / 1000; (S.puebloAnim || []).forEach(f => f(tt)); }
     if (S.partidoCasa) { S.tFase = (S.tFase || 0) - dt; if (S.tFase <= 0) { S.tFase = 1; fasePartido(S, M, S.st); busEquipo(S, M, S.st); } }
@@ -612,5 +613,9 @@
     M.bocadillo(fr[(Math.random() * fr.length) | 0], p.obj); p.obj.lookAt(S.yo.obj.position.x, 0, S.yo.obj.position.z); M.anim(p, 'emote-yes'); p.espera = Math.max(p.espera, 2);
   }
   const _ray = new THREE.Raycaster();
-  GM.calle = { moverPalomas, partidoFase: true, construir, poblar, siguiente, actualizar, LIM };
+  // La ciudad real (calle_real.js) sustituye a la calle inventada en los clubes con datos de OpenStreetMap
+  const esReal = st => !!(GM.mods.calleReal && GM.mods.calleReal.datos(st.clubId));
+  function construir(S, M, st) { return esReal(st) ? GM.mods.calleReal.construir(S, M, st) : construirAntigua(S, M, st); }
+  const preparar = st => GM.mods.calleReal ? GM.mods.calleReal.cargar(st.clubId) : Promise.resolve(null);
+  GM.calle = { moverPalomas, partidoFase: true, construir, construirAntigua, poblar, siguiente, actualizar, LIM, real: esReal, preparar, util: { MODELOS, PIEL, PELO, coche, perro, autobusRua } };
 })();

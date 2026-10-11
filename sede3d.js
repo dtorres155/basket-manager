@@ -350,7 +350,7 @@
   function tonoCiudad(st) { const p = (st.equipos[st.clubId] || {}).pais; return TONOS[p === 'US' ? 'us' : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? 'centro' : 'med']; }
   async function construir(st) {
     entorno();
-    if (S.escena === 'calle') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.calle.construir(S, motor(), st); }
+    if (S.escena === 'calle') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); if (GM.calle.preparar) await GM.calle.preparar(st); return GM.calle.construir(S, motor(), st); }
     if (S.escena === 'casa') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.casa.construir(S, motor(), st, S.escenaArg); }
     if (S.escena === 'interior' && GM.interiores) { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.interiores.construir(S, motor(), st, S.escenaArg); }
     if (S.escena === 'deportiva' && GM.deportivaMundo) { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); return GM.deportivaMundo.construir(S, motor(), st); }

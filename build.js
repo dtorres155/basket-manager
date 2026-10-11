@@ -1,6 +1,6 @@
 // Ensambla el juego en dist/ (autocontenido, funciona sin conexión): index.html + three.min.js + fuentes locales.
 const fs = require('fs'), path = require('path');
-const mods = ['core','datos_util','datos_valoraciones','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','texturas','urbano','iconos','sonido','finanzas','ciudad','campus','contratos','ciudad3d','ciudad_deportiva','estadio','legado','directiva_ia','guardado','copias','partidos','competiciones','mercado','cantera','personaje','carrera','estilo','movil','fans','copas','continental','rivalidades','directo','rua','entrenador','social','sponsor','pueblo','vida','gente','pueblo3d','hogar','hogar3d','sede_plano','sede_acciones','sede3d','edificio_kit','calle_vida','calle3d','ciudad_barrios','interiores_pueblo','casas_realistas','arboles','curvas_pueblo','arquitectura_club','datos_osm','osm_ciudad','pueblo_vida','pueblo_juego','interiores','deportiva_mundo','pueblo_mundo','casa3d','portada3d','ui','ui_gestion','ui_ciudad','ui_presidente','ui_carrera','ui_entrenador','ui_tutorial'];
+const mods = ['core','datos_util','datos_valoraciones','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','three_kit','texturas','urbano','iconos','sonido','finanzas','ciudad','campus','contratos','ciudad3d','ciudad_deportiva','estadio','legado','directiva_ia','guardado','copias','partidos','competiciones','mercado','cantera','personaje','carrera','estilo','movil','fans','copas','continental','rivalidades','directo','rua','entrenador','social','sponsor','pueblo','vida','gente','pueblo3d','hogar','hogar3d','sede_plano','sede_acciones','sede3d','edificio_kit','calle_vida','calle3d','ciudad_barrios','interiores_pueblo','casas_realistas','arboles','curvas_pueblo','arquitectura_club','calle_real','calle_real_vida','pueblo_vida','pueblo_juego','interiores','deportiva_mundo','pueblo_mundo','casa3d','portada3d','ui','ui_gestion','ui_ciudad','ui_presidente','ui_carrera','ui_entrenador','ui_tutorial'];
 const DIST = path.join(__dirname, 'dist'), VENDOR = path.join(__dirname, 'vendor');
 const LAT = 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD';
 const EXT = 'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF';
@@ -93,11 +93,14 @@ const MODELOS = [];
 // Texturas reales (CC0, ambientCG): vendor/texturas -> dist/texturas
 const TEXTURAS = []; fs.mkdirSync(path.join(DIST, 'texturas'), { recursive: true });
 fs.readdirSync(path.join(VENDOR, 'texturas')).filter(f => /\.jpg$/.test(f)).forEach(f => { fs.copyFileSync(path.join(VENDOR, 'texturas', f), path.join(DIST, 'texturas', f)); TEXTURAS.push('texturas/' + f); });
+// Ciudades reales (OpenStreetMap, ODbL): vendor/osm -> dist/osm (calle_real.js las pide por fetch)
+const OSM = []; fs.mkdirSync(path.join(DIST, 'osm'), { recursive: true });
+if (fs.existsSync(path.join(VENDOR, 'osm'))) fs.readdirSync(path.join(VENDOR, 'osm')).filter(f => /.json$/.test(f)).forEach(f => { fs.copyFileSync(path.join(VENDOR, 'osm', f), path.join(DIST, 'osm', f)); OSM.push('osm/' + f); });
 fs.writeFileSync(path.join(DIST, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2));
 
 // Service worker: precarga todo dist/. La versión es un hash del contenido, así que cada cambio crea una caché nueva
 // y el juego ofrece actualizar (ver registroSW). Estrategia: primero caché, red como respaldo.
-const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].concat(FUENTES.map(x => 'fonts/' + x[2]), ICONOS.map(f => 'icons/' + f), MODELOS, TEXTURAS);
+const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].concat(FUENTES.map(x => 'fonts/' + x[2]), ICONOS.map(f => 'icons/' + f), MODELOS, TEXTURAS, OSM);
 const hash = require('crypto').createHash('sha1');
 archivos.filter(f => f !== './').forEach(f => hash.update(fs.readFileSync(path.join(DIST, f))));
 const VERSION = hash.digest('hex').slice(0, 10);

@@ -371,7 +371,7 @@
     if (V.claveMapa === clave && V.posLugar) { marcarSeleccion(); return; }
     V.claveMapa = clave; v.limpiar(W); V.lugares = []; V.suelos = []; V.posLugar = {};
     const Sx = { mundo: W, scene: v.scene, camera: v.camera, st, dia: { tipo: 'normal', texto: '' } };
-    GM.calle.construir(Sx, GM.sede.motor(), st);
+    (GM.calle.construirAntigua || GM.calle.construir)(Sx, GM.sede.motor(), st);
     W.traverse(o => { if (o.userData && (o.userData.sala || o.userData.etiqueta)) o.visible = false; });
     v.scene.fog = null; v.camera.far = 1000; v.camera.updateProjectionMatrix();
     RECT_BARRIO.forEach((r, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(r[2] - r[0], r[3] - r[1]).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: V.calor ? heat(bar[i].aficion) : 0xffd54a, transparent: true, opacity: V.calor ? 0.38 : 0, depthWrite: false })); m.position.set((r[0] + r[2]) / 2, 0.3, (r[1] + r[3]) / 2); m.userData = { barrio: i }; m.renderOrder = 2; W.add(m); V.suelos.push(m); });

@@ -17,9 +17,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms)), club = process.argv[2] 
     return 'rúa: ' + JSON.stringify(st.rua) + ', activa ' + GM.mods.rua.activa(st) + ', selfTest ' + GM.mods.rua.selfTest() + '\nnoticia: ' + st.noticias[0].texto;
   }, club));
   await sleep(14000);
-  console.log(await p.evaluate(() => { const S = GM.sede._estado(); return 'en escena: ' + (S.rua ? 'autobús en x=' + S.rua.x.toFixed(1) + ', ' + S.rua.gente.length + ' jugadores, ' + S.rua.fans.length + ' aficionados' : 'no') + ', coches ' + S.coches.length; }));
+  console.log(await p.evaluate(() => { const S = GM.sede._estado(); return 'en escena: ' + (S.rua ? 'autobús en x=' + S.rua.bus.position.x.toFixed(1) + ', ' + S.rua.gente.length + ' jugadores, ' + S.rua.fans.length + ' aficionados' : 'no') + ', coches ' + S.coches.length; }));
   for (const [n, yaw, zoom, inc] of [['rua_cerca', 0.7, 16, 0.45], ['rua_lejos', 0.3, 42, 0.7], ['rua_planta', 0.01, 60, 1.45]]) {
-    await p.evaluate(([yaw, zoom, inc]) => { const S = GM.sede._estado(), x = S.rua.x; S.yo.obj.position.set(x + 2, 0, 4.6); S.yo.camino = null; S.foco.set(x + 2, 0, 4.6); S.yaw = S.yawObj = yaw; S.zoom = zoom; S.inc = inc; document.querySelectorAll('.sede-ayuda,.toast').forEach(e => e.remove()); }, [yaw, zoom, inc]);
+    await p.evaluate(([yaw, zoom, inc]) => { const S = GM.sede._estado(), x = S.rua.bus.position.x, z = S.rua.bus.position.z + 4.6; S.yo.obj.position.set(x + 2, 0, z); S.yo.camino = null; S.foco.set(x + 2, 0, z); S.yaw = S.yawObj = yaw; S.zoom = zoom; S.inc = inc; document.querySelectorAll('.sede-ayuda,.toast').forEach(e => e.remove()); }, [yaw, zoom, inc]);
     await sleep(1500); await p.screenshot({ path: path.join(DIR, n + '.png') });
   }
   console.log('errores:', errs.length ? errs.slice(0, 6) : 'ninguno');
