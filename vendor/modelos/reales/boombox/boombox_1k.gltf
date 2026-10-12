@@ -1,44 +1,192 @@
 {
   "asset": {
-    "generator": "Khronos glTF Blender I/O v3.6.27",
+    "generator": "glTF-Transform v4.5.1",
     "version": "2.0"
   },
-  "scene": 0,
-  "scenes": [
+  "accessors": [
     {
-      "name": "Scene",
-      "nodes": [
-        0
-      ]
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 17514,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 480,
+      "bufferView": 0,
+      "byteOffset": 35028
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 5213,
+      "max": [
+        0.3618898093700409,
+        0.4700327515602112,
+        0.11312616616487503
+      ],
+      "min": [
+        -0.3618898093700409,
+        0,
+        -0.07333849370479584
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 5213,
+      "bufferView": 1,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 5213,
+      "bufferView": 1,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 161,
+      "max": [
+        0.34841668605804443,
+        0.247953861951828,
+        0.11216888576745987
+      ],
+      "min": [
+        -0.34841668605804443,
+        0.017776168882846832,
+        0.08360657840967178
+      ],
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 161,
+      "bufferView": 2,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 161,
+      "bufferView": 2,
+      "byteOffset": 24
     }
   ],
-  "nodes": [
+  "bufferViews": [
     {
-      "mesh": 0,
-      "name": "boombox"
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 35988,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 35988,
+      "byteLength": 166816,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 202804,
+      "byteLength": 5152,
+      "byteStride": 32,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 2,
+      "sampler": 0
+    },
+    {
+      "source": 3,
+      "sampler": 0
+    },
+    {
+      "source": 4,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "boombox_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/boombox_nor_gl_1k.jpg"
+    },
+    {
+      "name": "boombox_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/boombox_diff_1k.jpg"
+    },
+    {
+      "name": "boombox_metal-boombox_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/boombox_arm_1k.jpg"
+    },
+    {
+      "name": "boombox_speakers_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/boombox_speakers_diff_1k.jpg"
+    },
+    {
+      "name": "boombox_speakers_metal-boombox_speakers_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/boombox_speakers_arm_1k.jpg"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "boombox.bin",
+      "byteLength": 207956
     }
   ],
   "materials": [
     {
-      "doubleSided": true,
       "name": "boombox",
-      "normalTexture": {
-        "index": 0
-      },
+      "doubleSided": true,
       "pbrMetallicRoughness": {
         "baseColorTexture": {
-          "index": 1
+          "index": 0
         },
         "metallicRoughnessTexture": {
           "index": 2
         }
+      },
+      "normalTexture": {
+        "index": 1
       }
     },
     {
-      "alphaCutoff": 0.5,
-      "alphaMode": "MASK",
-      "doubleSided": true,
       "name": "boombox_speakers",
+      "alphaMode": "MASK",
+      "alphaCutoff": 0.5,
+      "doubleSided": true,
       "pbrMetallicRoughness": {
         "baseColorTexture": {
           "index": 3
@@ -55,204 +203,40 @@
       "primitives": [
         {
           "attributes": {
-            "POSITION": 0,
-            "NORMAL": 1,
-            "TEXCOORD_0": 2
+            "POSITION": 2,
+            "NORMAL": 3,
+            "TEXCOORD_0": 4
           },
-          "indices": 3,
-          "material": 0
+          "mode": 4,
+          "material": 0,
+          "indices": 0
         },
         {
           "attributes": {
-            "POSITION": 4,
-            "NORMAL": 5,
-            "TEXCOORD_0": 6
+            "POSITION": 5,
+            "NORMAL": 6,
+            "TEXCOORD_0": 7
           },
-          "indices": 7,
-          "material": 1
+          "mode": 4,
+          "material": 1,
+          "indices": 1
         }
       ]
     }
   ],
-  "textures": [
+  "nodes": [
     {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
-    },
-    {
-      "sampler": 0,
-      "source": 3
-    },
-    {
-      "sampler": 0,
-      "source": 4
+      "name": "boombox",
+      "mesh": 0
     }
   ],
-  "images": [
+  "scenes": [
     {
-      "mimeType": "image/jpeg",
-      "name": "boombox_nor_gl",
-      "uri": "textures/boombox_nor_gl_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "boombox_diff",
-      "uri": "textures/boombox_diff_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "boombox_metal-boombox_rough",
-      "uri": "textures/boombox_arm_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "boombox_speakers_diff",
-      "uri": "textures/boombox_speakers_diff_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "boombox_speakers_metal-boombox_speakers_rough",
-      "uri": "textures/boombox_speakers_arm_1k.jpg"
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
     }
   ],
-  "accessors": [
-    {
-      "bufferView": 0,
-      "componentType": 5126,
-      "count": 8122,
-      "max": [
-        0.3618898093700409,
-        0.47010064125061035,
-        0.11312616616487503
-      ],
-      "min": [
-        -0.3618898093700409,
-        0,
-        -0.07333849370479584
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 1,
-      "componentType": 5126,
-      "count": 8122,
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 2,
-      "componentType": 5126,
-      "count": 8122,
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 3,
-      "componentType": 5123,
-      "count": 29688,
-      "type": "SCALAR"
-    },
-    {
-      "bufferView": 4,
-      "componentType": 5126,
-      "count": 245,
-      "max": [
-        0.3500259220600128,
-        0.247953861951828,
-        0.11302733421325684
-      ],
-      "min": [
-        -0.3500259220600128,
-        0.016166947782039642,
-        0.08360657840967178
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 5,
-      "componentType": 5126,
-      "count": 245,
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 6,
-      "componentType": 5126,
-      "count": 245,
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 7,
-      "componentType": 5123,
-      "count": 816,
-      "type": "SCALAR"
-    }
-  ],
-  "bufferViews": [
-    {
-      "buffer": 0,
-      "byteLength": 97464,
-      "byteOffset": 0,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 97464,
-      "byteOffset": 97464,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 64976,
-      "byteOffset": 194928,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 59376,
-      "byteOffset": 259904,
-      "target": 34963
-    },
-    {
-      "buffer": 0,
-      "byteLength": 2940,
-      "byteOffset": 319280,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 2940,
-      "byteOffset": 322220,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 1960,
-      "byteOffset": 325160,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 1632,
-      "byteOffset": 327120,
-      "target": 34963
-    }
-  ],
-  "samplers": [
-    {
-      "magFilter": 9729,
-      "minFilter": 9987
-    }
-  ],
-  "buffers": [
-    {
-      "byteLength": 328752,
-      "uri": "boombox.bin"
-    }
-  ]
+  "scene": 0
 }

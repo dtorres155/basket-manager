@@ -44,7 +44,7 @@
     function cambiarCielo() {
       const S = ctx.S(), p = S && S.hdriPend; if (!p) return; S.hdriPend = null;
       S.hdriK = p.nombre; S.scene.environment = p.t; S.envBase = { dia: 0.9, nublado: 0.85, tarde: 1.1, noche: 0.5 }[p.nombre] * 0.45;
-      const h = SOLHDRI[p.nombre]; if (S.scene.environmentRotation && h && h.fuerte && S.solAzim != null) { const az = Math.atan2(Math.cos(S.solAzim), -Math.sin(S.solAzim)); S.scene.environmentRotation.y = az - h.az; } else if (S.scene.environmentRotation) S.scene.environmentRotation.y = 0;
+      const h = SOLHDRI[p.nombre]; if (S.scene.environmentRotation && h && h.fuerte && S.solAzim != null) { const az = Math.atan2(Math.cos(S.solAzim), -Math.sin(S.solAzim)); S.scene.environmentRotation.y = h.az - az; /* signo comprobado con una esfera espejo: tools/esfera_hdri.js */ } else if (S.scene.environmentRotation) S.scene.environmentRotation.y = 0;
     }
     function tonoCiudad(st) { const p = (st.equipos[st.clubId] || {}).pais; return TONOS[p === 'US' ? 'us' : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? 'centro' : 'med']; }
 

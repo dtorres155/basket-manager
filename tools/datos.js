@@ -3,7 +3,7 @@
 //   poi [ids]        comercios, árboles, paradas, mobiliario y uso del suelo -> .poi.json
 //   anillo [ids]     anillo lejano de 300 a 480 m -> .ring.json
 //   generar          compacta todo en vendor/osm/<id>.json (con latitud y longitud, clave g)
-//   validar          lista los clubes con datos insuficientes (menos de 10 edificios o 20 tramos de calle) y los que no tienen .poi o .ring
+//   validar          lista los clubes con datos insuficientes (ni 10 edificios con 6 tramos de calle ni 30 tramos de calle) y los que no tienen .poi o .ring
 //   creditos         regenera la tabla de CREDITOS.md desde docs/licencias.json
 //   todo             descargar + poi + anillo + generar + validar (solo los clubes que falten, o los indicados)
 const { spawnSync } = require('child_process'), fs = require('fs'), path = require('path');
@@ -13,7 +13,7 @@ function validar() {
   const dir = path.join(raiz, 'vendor', 'osm'), mal = [], sinExtra = [];
   for (const f of fs.readdirSync(dir).filter(n => n.endsWith('.json'))) {
     const id = f.replace('.json', ''), d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-    if (!d.g) mal.push(id + ': sin latitud (regenera)'); else if (d.e.length < 10 || d.c.length < 20) mal.push(id + ': ' + d.e.length + ' edificios, ' + d.c.length + ' tramos de calle (usará la calle inventada)');
+    if (!d.g) mal.push(id + ': sin latitud (regenera)'); else if (!((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30)) mal.push(id + ': ' + d.e.length + ' edificios, ' + d.c.length + ' tramos de calle (usará la calle inventada)');
     for (const x of ['.poi.json', '.ring.json']) if (!fs.existsSync(path.join(raiz, 'recursos', 'osm', id + x))) sinExtra.push(id + x);
   }
   console.log(mal.length ? 'Datos insuficientes:\n  ' + mal.join('\n  ') : 'Todos los clubes tienen datos suficientes'); if (sinExtra.length) console.log('Faltan archivos:', sinExtra.join(', '));

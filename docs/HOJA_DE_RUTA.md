@@ -199,3 +199,9 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 - **10c hecho:** se decide no usar LUT: la gradación del último pase (calidez, contraste, dithering) basta.
 - **2d hecho:** pantalla «Ajustes gráficos y de sonido» (menú principal y menú de partida) con los cuatro niveles, y Bajo reduce las texturas a 512.
 - **5c hecho a medias:** `sede_mapa.js` sale de `sede3d.js` (de 1.215 a 1.156 líneas). Pendiente 5d: seguir con `decorar`, `construir` y `personaje` (en este orden).
+
+### Estado (12 oct 2026, quinta tanda: 7d, 9d, 5d y calles inventadas)
+- **7d hecho:** la sede tenía 1,5 M de triángulos por modelos de Poly Haven de 60 a 176 mil triángulos (macetas, libros, sillas). `tools/modelos_optimizar.js` los reduce (aplicado con tope de 6.000: de 849 mil a 267 mil triángulos en total); la sede baja a 0,4 M y a 13 a 15 ms en Alto. Pendiente 7e: unos pocos modelos (bar_chair_round_01, modern_coffee_table_02, modern_wooden_cabinet, enciclopedia) no bajan de 10 a 20 mil triángulos sin deformarse; revisarlos a mano.
+- **9d hecho:** con una esfera espejo (`tools/esfera_hdri.js`) se comprobó que el signo del giro estaba al revés; corregido en `sede_luz.js`. La comprobación es aproximada (error de unos 0,15 rad).
+- **5d hecho:** `sede3d.js` baja de 1.224 a 966 líneas (se sacan `decorar`, `construir` y `personaje`). Pendiente 5e: lo que queda (controles, paneles, tiro, grupos) se puede partir en otra tanda; el resto de archivos no pasan de 520 líneas.
+- **Ciudades:** las 120 usan ya el plano real (umbral relajado a 6 tramos de calle con 10 edificios, o 30 tramos en total). Pendiente 4b: las ciudades de pabellón aislado (mucho aparcamiento y pocas casas) se pueden enriquecer con relleno sintético.

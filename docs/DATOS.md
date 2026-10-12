@@ -16,4 +16,4 @@ Notas: `recursos/` no se sube a git; `vendor/osm` sí. Si Overpass responde «SI
 
 Licencias: `docs/licencias.json` es la fuente única; al añadir un recurso se añade ahí y se ejecuta `creditos`.
 
-Estado: 117 de 120 ciudades con plano real. Con la calle inventada: Kolossos (Overpass sin respuesta), Manresa, Treviso, Philadelphia y Zalgiris (pabellón en zona poco edificada).
+Estado: las 120 ciudades usan plano real (los pabellones aislados de Manresa, Treviso, Philadelphia y Zalgiris salen con pocas casas y mucho aparcamiento, que es lo que hay en OpenStreetMap). Condición: 10 edificios y 6 tramos de calle, o 30 tramos (los edificios que faltan se sintetizan).

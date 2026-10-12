@@ -1,37 +1,122 @@
 {
   "asset": {
-    "generator": "Khronos glTF Blender I/O v1.6.16",
+    "generator": "glTF-Transform v4.5.1",
     "version": "2.0"
   },
-  "scene": 0,
-  "scenes": [
+  "accessors": [
     {
-      "name": "Scene",
-      "nodes": [
-        0
-      ]
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 17997,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 3895,
+      "max": [
+        0.21678538620471954,
+        0.9745842814445496,
+        0.2453785389661789
+      ],
+      "min": [
+        -0.21678538620471954,
+        0.0018271952867507935,
+        -0.33102381229400635
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 3895,
+      "bufferView": 1,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 3895,
+      "bufferView": 1,
+      "byteOffset": 24
     }
   ],
-  "nodes": [
+  "bufferViews": [
     {
-      "mesh": 0,
-      "name": "dining_chair_02"
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 35996,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 35996,
+      "byteLength": 124640,
+      "byteStride": 32,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 2,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "dining_chair_02_nor_gl.png",
+      "mimeType": "image/jpeg",
+      "uri": "textures/dining_chair_02_nor_gl_1k.jpg"
+    },
+    {
+      "name": "dining_chair_02_diff.png",
+      "mimeType": "image/jpeg",
+      "uri": "textures/dining_chair_02_diff_1k.jpg"
+    },
+    {
+      "name": "dining_chair_02_metal-dining_chair_02_rough.png",
+      "mimeType": "image/jpeg",
+      "uri": "textures/dining_chair_02_arm_1k.jpg"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "dining_chair_02.bin",
+      "byteLength": 160636
     }
   ],
   "materials": [
     {
-      "doubleSided": true,
       "name": "dining_chair_02",
-      "normalTexture": {
-        "index": 0
-      },
+      "doubleSided": true,
       "pbrMetallicRoughness": {
         "baseColorTexture": {
-          "index": 1
+          "index": 0
         },
         "metallicRoughnessTexture": {
           "index": 2
         }
+      },
+      "normalTexture": {
+        "index": 1
       }
     }
   ],
@@ -41,115 +126,30 @@
       "primitives": [
         {
           "attributes": {
-            "POSITION": 0,
-            "NORMAL": 1,
-            "TEXCOORD_0": 2
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
           },
-          "indices": 3,
-          "material": 0
+          "mode": 4,
+          "material": 0,
+          "indices": 0
         }
       ]
     }
   ],
-  "textures": [
+  "nodes": [
     {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
+      "name": "dining_chair_02",
+      "mesh": 0
     }
   ],
-  "images": [
+  "scenes": [
     {
-      "mimeType": "image/jpeg",
-      "name": "dining_chair_02_nor_gl.png",
-      "uri": "textures/dining_chair_02_nor_gl_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "dining_chair_02_diff.png",
-      "uri": "textures/dining_chair_02_diff_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "dining_chair_02_metal-dining_chair_02_rough.png",
-      "uri": "textures/dining_chair_02_arm_1k.jpg"
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
     }
   ],
-  "accessors": [
-    {
-      "bufferView": 0,
-      "componentType": 5126,
-      "count": 12891,
-      "max": [
-        0.21678538620471954,
-        0.9746627807617188,
-        0.24539630115032196
-      ],
-      "min": [
-        -0.21678538620471954,
-        0.0012850910425186157,
-        -0.33102381229400635
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 1,
-      "componentType": 5126,
-      "count": 12891,
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 2,
-      "componentType": 5126,
-      "count": 12891,
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 3,
-      "componentType": 5123,
-      "count": 66039,
-      "type": "SCALAR"
-    }
-  ],
-  "bufferViews": [
-    {
-      "buffer": 0,
-      "byteLength": 154692,
-      "byteOffset": 0
-    },
-    {
-      "buffer": 0,
-      "byteLength": 154692,
-      "byteOffset": 154692
-    },
-    {
-      "buffer": 0,
-      "byteLength": 103128,
-      "byteOffset": 309384
-    },
-    {
-      "buffer": 0,
-      "byteLength": 132078,
-      "byteOffset": 412512
-    }
-  ],
-  "samplers": [
-    {
-      "magFilter": 9729,
-      "minFilter": 9987
-    }
-  ],
-  "buffers": [
-    {
-      "byteLength": 544592,
-      "uri": "dining_chair_02.bin"
-    }
-  ]
+  "scene": 0
 }

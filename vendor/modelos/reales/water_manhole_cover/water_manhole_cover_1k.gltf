@@ -1,111 +1,27 @@
 {
   "asset": {
-    "generator": "Khronos glTF Blender I/O v3.6.27",
+    "generator": "glTF-Transform v4.5.1",
     "version": "2.0"
   },
-  "scene": 0,
-  "scenes": [
-    {
-      "name": "Scene",
-      "nodes": [
-        0,
-        1
-      ]
-    }
-  ],
-  "nodes": [
-    {
-      "mesh": 0,
-      "name": "water_manhole_cover_frame"
-    },
-    {
-      "mesh": 1,
-      "name": "water_manhole_cover"
-    }
-  ],
-  "materials": [
-    {
-      "doubleSided": true,
-      "name": "water_manhole_cover",
-      "normalTexture": {
-        "index": 0
-      },
-      "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 1
-        },
-        "metallicRoughnessTexture": {
-          "index": 2
-        }
-      }
-    }
-  ],
-  "meshes": [
-    {
-      "name": "Cylinder.008",
-      "primitives": [
-        {
-          "attributes": {
-            "POSITION": 0,
-            "NORMAL": 1,
-            "TEXCOORD_0": 2
-          },
-          "indices": 3,
-          "material": 0
-        }
-      ]
-    },
-    {
-      "name": "Cylinder.001",
-      "primitives": [
-        {
-          "attributes": {
-            "POSITION": 4,
-            "NORMAL": 5,
-            "TEXCOORD_0": 6
-          },
-          "indices": 7,
-          "material": 0
-        }
-      ]
-    }
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
-    }
-  ],
-  "images": [
-    {
-      "mimeType": "image/jpeg",
-      "name": "water_manhole_cover_nor_gl",
-      "uri": "textures/water_manhole_cover_nor_gl_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "water_manhole_cover_diff",
-      "uri": "textures/water_manhole_cover_diff_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "water_manhole_cover_metal-water_manhole_cover_rough",
-      "uri": "textures/water_manhole_cover_arm_1k.jpg"
-    }
-  ],
   "accessors": [
     {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 1824,
       "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 16167,
+      "bufferView": 0,
+      "byteOffset": 3648
+    },
+    {
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 576,
+      "count": 560,
       "max": [
         0.3453802466392517,
         0.03877965733408928,
@@ -116,30 +32,27 @@
         -0.028761375695466995,
         -0.3453802466392517
       ],
-      "type": "VEC3"
-    },
-    {
       "bufferView": 1,
-      "componentType": 5126,
-      "count": 576,
-      "type": "VEC3"
+      "byteOffset": 0
     },
     {
-      "bufferView": 2,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 576,
-      "type": "VEC2"
+      "count": 560,
+      "bufferView": 1,
+      "byteOffset": 12
     },
     {
-      "bufferView": 3,
-      "componentType": 5123,
-      "count": 1920,
-      "type": "SCALAR"
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 560,
+      "bufferView": 1,
+      "byteOffset": 24
     },
     {
-      "bufferView": 4,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 4565,
+      "count": 4397,
       "max": [
         0.3047727644443512,
         0.038856424391269684,
@@ -150,87 +63,158 @@
         0.014296040870249271,
         -0.2999168932437897
       ],
-      "type": "VEC3"
+      "bufferView": 2,
+      "byteOffset": 0
     },
     {
-      "bufferView": 5,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 4565,
-      "type": "VEC3"
+      "count": 4397,
+      "bufferView": 2,
+      "byteOffset": 12
     },
     {
-      "bufferView": 6,
+      "type": "VEC2",
       "componentType": 5126,
-      "count": 4565,
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 7,
-      "componentType": 5123,
-      "count": 16983,
-      "type": "SCALAR"
+      "count": 4397,
+      "bufferView": 2,
+      "byteOffset": 24
     }
   ],
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 6912,
       "byteOffset": 0,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 6912,
-      "byteOffset": 6912,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 4608,
-      "byteOffset": 13824,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 3840,
-      "byteOffset": 18432,
+      "byteLength": 35984,
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 54780,
-      "byteOffset": 22272,
+      "byteOffset": 35984,
+      "byteLength": 17920,
+      "byteStride": 32,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 54780,
-      "byteOffset": 77052,
+      "byteOffset": 53904,
+      "byteLength": 140704,
+      "byteStride": 32,
       "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 36520,
-      "byteOffset": 131832,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 33966,
-      "byteOffset": 168352,
-      "target": 34963
     }
   ],
   "samplers": [
     {
       "magFilter": 9729,
-      "minFilter": 9987
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 2,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "water_manhole_cover_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/water_manhole_cover_nor_gl_1k.jpg"
+    },
+    {
+      "name": "water_manhole_cover_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/water_manhole_cover_diff_1k.jpg"
+    },
+    {
+      "name": "water_manhole_cover_metal-water_manhole_cover_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/water_manhole_cover_arm_1k.jpg"
     }
   ],
   "buffers": [
     {
-      "byteLength": 202320,
-      "uri": "water_manhole_cover.bin"
+      "uri": "water_manhole_cover.bin",
+      "byteLength": 194608
     }
-  ]
+  ],
+  "materials": [
+    {
+      "name": "water_manhole_cover",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      },
+      "normalTexture": {
+        "index": 1
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Cylinder.008",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 2,
+            "NORMAL": 3,
+            "TEXCOORD_0": 4
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    },
+    {
+      "name": "Cylinder.001",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 5,
+            "NORMAL": 6,
+            "TEXCOORD_0": 7
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 1
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "water_manhole_cover_frame",
+      "mesh": 0
+    },
+    {
+      "name": "water_manhole_cover",
+      "mesh": 1
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "scene": 0
 }

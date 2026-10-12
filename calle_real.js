@@ -11,7 +11,7 @@
   function cargar(id) {
     if (id in CACHE) return Promise.resolve(CACHE[id]);
     if (typeof fetch !== 'function' || typeof location === 'undefined' || !/^(https?|app|file):$/.test(location.protocol || '')) return Promise.resolve(CACHE[id] = null);
-    return fetch('osm/' + id + '.json').then(r => r.ok ? r.json() : null).catch(() => null).then(d => (CACHE[id] = d && d.e && d.e.length >= 10 && d.c && d.c.length >= 20 ? d : null));
+    return fetch('osm/' + id + '.json').then(r => r.ok ? r.json() : null).catch(() => null).then(d => (CACHE[id] = d && d.e && d.c && ((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30) ? d : null));
   }
   const datos = id => CACHE[id] || null;
   const rnd = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
