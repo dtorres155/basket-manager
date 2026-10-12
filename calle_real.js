@@ -142,7 +142,9 @@
     };
   }
   // ---------- Construcción ----------
+  const fase = (S, n) => { if (typeof window !== 'undefined' && window.__medirFases) { (S.fases = S.fases || []).push([n, +performance.now().toFixed(0)]); } };
   function construir(S, M, st) {
+    S.fases = []; fase(S, 'inicio');
     const D = datos(st.clubId), club = st.equipos[st.clubId], W = S.mundo, T = M;
     const rr = rnd(U.hash(club.id + 'real')), c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
     const ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50;
@@ -162,6 +164,7 @@
         if (b) G.b[G.idx(i, j)] = 1;
       }
     };
+    fase(S, 'datos y rejilla');
     // Suelo general (adoquín gris), parques, agua, aceras y calzadas
     const mSuelo = suelo('Concrete034', { color: false, escala: 2.4, relieve: 0.5 }, 0x77746e, 0), mAsf = suelo('Asphalt010', { escala: 5, tinte: 0xb4b4b4 }, 0x4a4c50, 3), mAcera = suelo('PavingStones070', { escala: 1.4, tinte: 0x97948d }, 0x8c8982, 1);
     mSuelo.polygonOffset = false;
@@ -186,12 +189,13 @@
         for (let s = (3 - (acum % 5) + 5) % 5; s + 2 < l; s += 5) cinta([[a[0] + ux * s, a[1] + uz * s], [a[0] + ux * (s + 2), a[1] + uz * (s + 2)]], 0.14, 0, MK); acum += l; } });
       const mk = malla(MK, mBl, 'marcas'); if (mk) { mk.receiveShadow = false; W.add(mk); }
     }
+    fase(S, 'suelo, aceras y calzadas');
     // Edificios: paredes y tejados por cuadrantes de 90 m (se dibujan solo los visibles)
     const tex = texFachada(M), pal = (PALETA[club.pais] || PALETA.ES).map(col), teja = col(TEJAS[club.pais] || TEJAS.ES);
     // cada ventana se enciende o no según un número al azar (más apagadas cuanto más tarde) y con luz cálida, blanca o de televisión
     const varVentanas = m => { S.ventU = S.ventU || { value: 0.75 }; const prev = m.onBeforeCompile, key0 = m.customProgramCacheKey;
       m.onBeforeCompile = function (sh, r) { if (prev) prev.call(this, sh, r); sh.uniforms.uVentU = S.ventU;
-        sh.fragmentShader = 'uniform float uVentU;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ vec2 cv = floor(vMapUv) + floor(vWPt.xz * 0.37); float hv = fract(sin(dot(cv, vec2(12.9898, 78.233))) * 43758.5453); float enc = step(hv, uVentU); float hv2 = fract(hv * 7.31 + 0.17); vec3 tinte = hv2 < 0.18 ? vec3(0.75, 0.88, 1.0) : hv2 < 0.5 ? vec3(1.0, 0.86, 0.62) : vec3(1.0, 0.74, 0.45); vec3 dpx = dFdx(vWPt), dpy = dFdy(vWPt); vec2 dux = dFdx(vMapUv), duy = dFdy(vMapUv); vec3 Tt = normalize(dpx * duy.y - dpy * dux.y), Bt = normalize(dpy * dux.x - dpx * duy.x), Nt = normalize(vWNt); vec3 vd = normalize(vWPt - cameraPosition); vec3 dt = vec3(dot(vd, Tt), dot(vd, Bt), dot(vd, Nt)); vec2 cu = fract(vMapUv); float tz = dt.z < -0.01 ? -0.9 / dt.z : 9.0; float tx = dt.x > 0.0 ? (1.0 - cu.x) / dt.x : (dt.x < 0.0 ? -cu.x / dt.x : 9.0); float ty = dt.y > 0.0 ? (1.0 - cu.y) / dt.y : (dt.y < 0.0 ? -cu.y / dt.y : 9.0); float tm = min(tz, min(tx, ty)); vec3 hp = vec3(cu, 0.0) + dt * tm; vec3 pared = mix(vec3(0.95, 0.8, 0.6), vec3(0.8, 0.88, 0.95), step(0.72, fract(hv * 5.3))); float fh = tm == tz ? 1.0 : (tm == ty ? (dt.y > 0.0 ? 1.3 : 0.3) : 0.62); if (tm == tz && hp.y < 0.42 && hp.x > 0.1 + 0.3 * fract(hv * 3.1) && hp.x < 0.75) fh *= 0.22; vec3 hab = pared * fh * (1.3 - 0.7 * tm) + vec3(1.0, 0.85, 0.55) * 0.55 * smoothstep(0.55, 0.0, length(hp.xy - vec2(0.5, 1.0)) + 0.25 * tm); totalEmissiveRadiance *= enc * mix(tinte * 0.8, hab * 1.5, 0.92) * (0.55 + 0.7 * fract(hv * 13.7)); }'); };
+        sh.fragmentShader = 'uniform float uVentU;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ vec2 cv = floor(vMapUv) + floor(vWPt.xz * 0.37); float hv = fract(sin(dot(cv, vec2(12.9898, 78.233))) * 43758.5453); float enc = step(hv, uVentU); float hv2 = fract(hv * 7.31 + 0.17); vec3 tinte = hv2 < 0.18 ? vec3(0.75, 0.88, 1.0) : hv2 < 0.5 ? vec3(1.0, 0.86, 0.62) : vec3(1.0, 0.74, 0.45); vec3 dpx = dFdx(vWPt), dpy = dFdy(vWPt); vec2 dux = dFdx(vMapUv), duy = dFdy(vMapUv); vec3 Tt = normalize(dpx * duy.y - dpy * dux.y), Bt = normalize(dpy * dux.x - dpx * duy.x), Nt = normalize(vWNt); vec3 vd = normalize(vWPt - cameraPosition); vec3 dt = vec3(dot(vd, Tt), dot(vd, Bt), dot(vd, Nt)); vec2 cu = fract(vMapUv); float tz = dt.z < -0.01 ? -0.9 / dt.z : 9.0; float tx = dt.x > 0.0 ? (1.0 - cu.x) / dt.x : (dt.x < 0.0 ? -cu.x / dt.x : 9.0); float ty = dt.y > 0.0 ? (1.0 - cu.y) / dt.y : (dt.y < 0.0 ? -cu.y / dt.y : 9.0); float tm = min(tz, min(tx, ty)); vec3 hp = vec3(cu, 0.0) + dt * tm; vec3 pared = mix(vec3(0.95, 0.8, 0.6), vec3(0.8, 0.88, 0.95), step(0.72, fract(hv * 5.3))); float fh = tm == tz ? 1.0 : (tm == ty ? (dt.y > 0.0 ? 1.3 : 0.3) : 0.62); if (tm == tz && hp.y < 0.42 && hp.x > 0.1 + 0.3 * fract(hv * 3.1) && hp.x < 0.75) fh *= 0.22; vec3 hab = pared * fh * (1.3 - 0.7 * tm) + vec3(1.0, 0.85, 0.55) * 0.55 * smoothstep(0.55, 0.0, length(hp.xy - vec2(0.5, 1.0)) + 0.25 * tm); if (tm == tz) { float px = 0.28 + 0.44 * fract(hv * 9.1); vec2 q = hp.xy - vec2(px, 0.42); float sil = fract(hv * 17.3) < 0.24 ? max(step(abs(q.x), 0.07) * step(q.y, 0.04) * step(-0.42, q.y), step(length(q - vec2(0.0, 0.14)), 0.06)) : 0.0; hab *= 1.0 - 0.8 * sil; } float cort = fract(hv * 11.7) < 0.4 ? step(hp.x, 0.17) + step(0.83, hp.x) : 0.0; hab = mix(hab, (hv2 < 0.5 ? vec3(0.75, 0.28, 0.22) : vec3(0.3, 0.45, 0.7)) * (0.55 + 0.45 * fract(hv * 3.3)), clamp(cort, 0.0, 1.0) * 0.85); totalEmissiveRadiance *= enc * mix(tinte * 0.8, hab * 1.5, 0.92) * (0.55 + 0.7 * fract(hv * 13.7)); }'); };
       m.customProgramCacheKey = () => (key0 ? key0.call(m) : '') + '-vv'; return m; };
     const pared0 = (map, luz) => { const m = new THREE.MeshStandardMaterial({ map, vertexColors: true, roughness: 0.9, emissive: 0xffc98a, emissiveMap: luz, emissiveIntensity: 0, side: THREE.DoubleSide });
       if (GM.texturas) GM.texturas.aplicar(m, club.pais === 'US' ? 'Bricks085' : 'Plaster003', { color: false, escala: club.pais === 'US' ? 1.6 : 2.2, relieve: club.pais === 'US' ? 0.9 : 0.45, rugMin: 0.75 }); return varVentanas(recortable(S, m)); };
@@ -255,8 +259,10 @@
     });
     S.mapaVec = vectorial(X);
     montar(S, M, st, X, roles, { W, G, club, c1, c2, afi, alta, rr, bloquearPoli, mAsf });
+    fase(S, 'edificios (geometría)');
     if (GM.mods.calleRealDetalle) { try { GM.mods.calleRealDetalle.detallar(S, M, st, X, roles, { W, G, club, c1, c2, afi, alta, rr, bloquearPoli, mAsf, mSuelo, mTecho, recortable, PALETA: pal }); } catch (e) { console.warn('detalle de la ciudad real', e); } }
-    GM.kit.fusionar(W);
+    fase(S, 'detalle, zonas y mobiliario');
+    GM.kit.fusionar(W); fase(S, 'fusionar');
     return W;
   }
   // ---------- Frente de cada edificio: qué lado da a la calle y dónde se pone la puerta ----------

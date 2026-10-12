@@ -736,13 +736,16 @@
     const barraC = h('div', { class: 'carga-barra' }, h('span')), consejo = h('p', { class: 'carga-consejo' }, CONSEJOS[(Date.now() / 1000 | 0) % CONSEJOS.length]);
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, h('div', { class: 'carga-caja' }, h('b', null, S.escena === 'pueblo' ? 'Llegando al pueblo…' : S.escena === 'calle' ? 'Saliendo a la calle…' : S.escena === 'deportiva' ? 'Llegando a la ciudad deportiva…' : S.escena === 'casa' ? 'Entrando en casa…' : 'Abriendo la sede del club…'), barraC, consejo)); raiz.append(cargando);
     { const LM = THREE.DefaultLoadingManager, previo = LM.onProgress; LM.onProgress = (u, n, total) => { const sp = barraC.firstChild; if (sp && total) sp.style.width = Math.round(n / total * 100) + '%'; if (previo) previo(u, n, total); }; }
-    (GM.texturas ? GM.texturas.precargar(S.renderer) : Promise.resolve()).then(() => construir(st)).then(async () => {
+    const fm = n => { if (S && window.__medirFases) (S.fasesAbrir = S.fasesAbrir || []).push([n, +performance.now().toFixed(0)]); }; fm('abrir');
+    (GM.texturas ? GM.texturas.precargar(S.renderer) : Promise.resolve()).then(() => { fm('texturas'); return construir(st); }).then(async () => { fm('construir (total)');
+      // Mientras se cargan las personas no se dibuja (la pantalla de carga las tapa) y los shaders de la ciudad se compilan en paralelo: así el primer fotograma no se bloquea compilándolos uno a uno
+      S.sinDibujar = true;
+      const compilar = async () => { try { const ocultos = []; S.scene.traverse(o => { if (!o.visible && (o.isMesh || o.isSprite || o.isPoints || o.isLine)) { o.visible = true; ocultos.push(o); } }); await (renderer.compileAsync ? renderer.compileAsync(S.scene, S.camera) : Promise.resolve(renderer.compile(S.scene, S.camera))); ocultos.forEach(o => { o.visible = false; }); } catch (e) { } };
+      const compCiudad = compilar();
       const yo = await personaje(aspecto(st)); { const sp = S.escena === 'pueblo' && S.spawnPueblo ? S.spawnPueblo : S.escena === 'calle' && S.spawnCalle ? S.spawnCalle : S.escena === 'casa' && S.spawnCasa ? S.spawnCasa : S.escena === 'interior' && S.spawnInterior ? S.spawnInterior : S.escena === 'deportiva' && S.spawnDeportiva ? S.spawnDeportiva : { x: GM.sedePlano.entrada.x, z: 12.5, ry: Math.PI }; yo.obj.position.set(sp.x, 0, sp.z); yo.obj.rotation.y = sp.ry; S.foco.set(sp.x, 0, sp.z); } S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
       const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / yo.obj.scale.x);
       if (S.escena !== 'sede') hud(st);   // la cabecera usa datos de la escena (nombre del pueblo)
-      await poblar(st); cargando.remove();
-      // se compilan ya todos los shaders, también los de quien aún no se ve: así no hay parones cuando aparecen (getProgramInfoLog llegaba al 6 % de la CPU)
-      try { const ocultos = []; S.scene.traverse(o => { if (!o.visible && (o.isMesh || o.isSprite || o.isPoints || o.isLine)) { o.visible = true; ocultos.push(o); } }); await (renderer.compileAsync ? renderer.compileAsync(S.scene, S.camera) : Promise.resolve(renderer.compile(S.scene, S.camera))); ocultos.forEach(o => { o.visible = false; }); } catch (e) { }
+      fm('personaje'); await poblar(st); fm('poblar'); await compCiudad; await compilar(); S.sinDibujar = false; fm('compilar shaders'); cargando.remove();
     }).catch(e => { cargando.textContent = 'No se ha podido cargar la sede: ' + e.message; console.error(e); });
     controles(renderer.domElement);
     (function bucle() {
@@ -801,7 +804,7 @@
           if (!S.solSprite) { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,250,235,1)'); g.addColorStop(0.12, 'rgba(255,240,205,0.9)'); g.addColorStop(0.4, 'rgba(255,215,160,0.25)'); g.addColorStop(1, 'rgba(255,200,140,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); const m = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true, fog: false, toneMapped: false, transparent: true }); S.solSprite = new THREE.Sprite(m); S.solSprite.scale.setScalar(34); S.solSprite.renderOrder = 99; S.solSprite.userData.foto = true; S.scene.add(S.solSprite); }
           S.solSprite.visible = delante && S.noche < 0.6; S.solSprite.position.copy(camera.position).addScaledVector(dir, 175); }
       }
-      if (S.composer) S.composer.render(); else renderer.render(scene, camera);
+      if (!S.sinDibujar) { if (S.composer) S.composer.render(); else renderer.render(scene, camera); }
     })();
   }
   function zonaCercana() {

@@ -18,23 +18,27 @@
     if (GM.campus && GM.campus.config.calidad === 'alta') { const cn = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 9).rotateX(-Math.PI / 2), S.conoMat); cn.position.set(0, 0.06, 7); cn.renderOrder = 3; obj.add(cn); }   // cono de luz sobre el asfalto
   }
   async function poblar(S, M, st) {
+    const fp = n => { if (typeof window !== 'undefined' && window.__medirFases) (S.fasesPoblar = S.fasesPoblar || []).push([n, +performance.now().toFixed(0)]); }; fp('inicio de poblar (calle real)');
     const { MODELOS, PIEL, PELO, coche, perro } = K();
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
     const n = Math.round(((partido ? 50 : 42) + (!GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal' ? 14 : 0)) * (GM.campus && GM.campus.factorGente ? GM.campus.factorGente() : 1)), r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222', alta = !GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal';
-    const lista = await Promise.all(Array.from({ length: n }, () => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [c1, c2] : null }).then(p => { p.hincha = hincha; return p; }); }));
+    const crear = () => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [c1, c2] : null }).then(p => { p.hincha = hincha; return p; }); };
+    const PRIMEROS = 18, lista = await Promise.all(Array.from({ length: Math.min(n, PRIMEROS) }, crear));   // los primeros vecinos salen ya; el resto se va creando por lotes mientras se juega (la carga baja de 2 s a menos de 1)
     const sitio = () => { let q = S.paseo[(r() * S.paseo.length) | 0]; for (let i = 0; i < 3; i++) { const o = S.paseo[(r() * S.paseo.length) | 0]; if (r() < 0.65 && Math.hypot(o[0], o[1]) < Math.hypot(q[0], q[1])) q = o; } return q; };
-    lista.forEach((p, k) => {
+    const colocar = (p, k) => {
       const q = sitio(); p.obj.position.set(q[0] + (r() - 0.5), 0, q[1] + (r() - 0.5) * 0.6);
       Object.assign(p, { peaton: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino de ' + club.ciudad, r: rnd(U.hash(st.fecha + 'p' + k)), espera: r() * 3 });
       p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p);
       // algunos van con bolsas de la compra; tres corren
       if (k % 4 === 1 && !p.hincha) { const sc = p.obj.scale.x || 1, bolsa = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.32, 0.12), new THREE.MeshStandardMaterial({ color: ['#c0392b', '#f4efe3', '#2f6f9e', '#2e7d32'][k % 4 === 1 ? (k >> 2) % 4 : 0], roughness: 0.8 })); bolsa.scale.setScalar(1 / sc); bolsa.position.set(0.32 / sc, 0.8 / sc, 0.04 / sc); p.obj.add(bolsa); p.rol = 'Vecino con la compra'; }
       if (k % 13 === 5 && !p.hincha) { p.corredor = true; p.rapido = true; p.rol = 'Corredor'; }
-    });
-    S.destinos = null;
+    };
+    lista.forEach(colocar);
+    S.cargaDiferida = (async () => { for (let i = PRIMEROS; i < n; i += 6) { await new Promise(rs => setTimeout(rs, 70)); if (!S.vivo) return; const lote = await Promise.all(Array.from({ length: Math.min(6, n - i) }, crear)); if (!S.vivo) return; lote.forEach((p, j) => colocar(p, i + j)); } })();
+    fp('vecinos (primeros)'); S.destinos = null;
     { const ninos = await Promise.all(Array.from({ length: 6 }, (_, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'm-casual'][k % 3], altura: 118 + r() * 26, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: k % 2 ? [c1, c2] : null })));
       ninos.forEach((p, k) => { const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0], 0, q[1]); Object.assign(p, { peaton: true, nino: true, rol: 'Chaval que va al colegio', r: rnd(U.hash(st.fecha + 'n' + k)), espera: r() * 3 }); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); }); }
-    S.palomas = GM.kit.palomas ? GM.kit.palomas(S.mundo, S.paseoBase.filter((_, i) => i % 37 === 5).slice(0, 8), 9) : null;
+    fp('niños'); S.palomas = GM.kit.palomas ? GM.kit.palomas(S.mundo, S.paseoBase.filter((_, i) => i % 37 === 5).slice(0, 8), 9) : null;
     S.multitud = null; S.fasePartido = null; S.partidoCasa = !!partido; S.rua = null;
     const libre = (x, z) => { const [i, j] = S.G.celda(x, z); return S.G.libre(i, j); };
     // Día de partido en casa: aficionados de pie alrededor de la puerta del pabellón
@@ -63,7 +67,7 @@
         if (GM.ui && GM.ui.toast) GM.ui.toast('¡Rúa de campeones! El autobús con el trofeo recorre ' + (L.v.nom || 'la avenida'));
       }
     }
-    // Músico callejero
+    fp('multitud y rúa'); // Músico callejero
     S.musico = null; S.perros = []; S.chavales = null;
     if (S.musicoPos) { const mu = await M.personaje({ modelo: 'h-punk', altura: 176, piel: PIEL[1], pelo: PELO[0] }); mu.fijo = true; mu.rol = 'Músico callejero'; mu.obj.position.set(S.musicoPos[0], 0, S.musicoPos[1]); mu.obj.userData = { npc: S.gente.length }; M.anim(mu, 'idle'); S.mundo.add(mu.obj); S.gente.push(mu); }
     // Vecinos con perro
@@ -75,7 +79,7 @@
       ch.forEach((p, k) => { p.fijo = true; p.rol = 'Chaval del barrio'; p.obj.position.set(pos[k][0], 0, pos[k][1]); p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); });
       S.chavales = { ch, balon, t: 0, de: 0, a: 1, tiro: false };
     }
-    // Coches por las calles reales
+    fp('músico, perros y chavales'); // Coches por las calles reales
     S.coches = []; const vias = (S.vias || []).map(v => { let L = 0; const acum = [0]; for (let i = 0; i + 1 < v.p.length; i++) { L += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); acum.push(L); } let Lin = 0; for (let i = 0; i + 1 < v.p.length; i++) { const mx = (v.p[i][0] + v.p[i + 1][0]) / 2, mz = (v.p[i][1] + v.p[i + 1][1]) / 2; if (Math.hypot(mx, mz) < 240) Lin += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); } return { v, L, acum, Lin }; }).filter(v => v.Lin > 45).sort((a, b) => b.Lin - a.Lin);
     const nC = S.rua ? 0 : alta ? 16 : 9; for (let i = 0; i < nC && vias.length; i++) {
       const vi = vias[i % Math.min(vias.length, 14)], uno = !!vi.v.uno, dir = uno ? 1 : (i % 2 ? 1 : -1), obj = coche(COLORES[i % COLORES.length]); faros(obj); S.mundo.add(obj);
@@ -87,7 +91,7 @@
       for (let i = 0; i < (alta ? 6 : 3); i++) { const vi = vias[i % Math.min(vias.length, 8)], obj = GM.urbano.moto(cols[i % cols.length]); const pil = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color: ['#1d2024', '#3b3b3b', '#5a1020'][i % 3] })); pil.position.set(0, 1.0, -0.1); obj.add(pil); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 2.2, lane: ANCHO[vi.v.k] / 4 - 0.7, vmax: 10 }); }
       if (GM.kit.coche && vias.length) { const vi = vias[0], obj = GM.kit.coche('#e8e8e8', 'furgoneta'); obj.userData.reparto = true; S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 5.4, lane: ANCHO[vi.v.k] / 4, vmax: 5, reparto: true, tParada: 0, tSig: 14 }); }
     }
-    // taxis con su luz de techo
+    fp('coches y motos'); // taxis con su luz de techo
     if (!S.rua && vias.length) for (let i = 0; i < (alta ? 3 : 1); i++) { const vi = vias[(i * 2 + 1) % Math.min(vias.length, 10)], obj = coche('#f2c500'); const luz = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.24), new THREE.MeshStandardMaterial({ color: 0xfff3b0, emissive: 0xffe680, emissiveIntensity: 1.2 })); luz.position.set(0, 1.5, 0); obj.add(luz); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 4.4, lane: ANCHO[vi.v.k] / 4, vmax: 8, taxi: true }); }
     // coche de policía de patrulla y gatos en las aceras
     if (!S.rua && vias.length && alta) { const vi = vias[1 % vias.length], obj = coche('#f2f4f6'), l1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.2), new THREE.MeshStandardMaterial({ color: 0xff3030, emissive: 0xff2020, emissiveIntensity: 0.1 })), l2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.2), new THREE.MeshStandardMaterial({ color: 0x3060ff, emissive: 0x2050ff, emissiveIntensity: 0.1 })); l1.position.set(-0.3, 1.55, 0); l2.position.set(0.3, 1.55, 0); const franja = new THREE.Mesh(new THREE.BoxGeometry(1.84, 0.2, 2.2), new THREE.MeshStandardMaterial({ color: 0x1f3a6a })); franja.position.set(0, 0.62, 0); obj.add(l1, l2, franja); S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 4.4, lane: ANCHO[vi.v.k] / 4, vmax: 6.5, amb: true, lucesA: [l1, l2], patrulla: true }); }
@@ -99,12 +103,12 @@
       if (vi) { const obj = K().autobus(club); S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 10.5, lane: ANCHO[vi.v.k] / 4, vmax: 6, bus: true, paradas, tParada: 0, ultima: -1, pasajeros: [] }); } }
     // ciclistas por el borde de la calzada
     if (!S.rua && GM.urbano && GM.urbano.bici && vias.length) for (let i = 0; i < (alta ? 5 : 2); i++) { const vi = vias[(i + 2) % Math.min(vias.length, 10)], obj = GM.urbano.bici(['#d62d2d', '#2f6f9e', '#e9e5da', '#2e7d32'][i % 4]); const pil = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color: ['#1d2024', '#5a1020', '#2f4a6a'][i % 3] })); pil.position.set(0, 1.05, -0.05); obj.add(pil); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 1.8, lane: ANCHO[vi.v.k] / 2 - 0.9, vmax: 4.2, bici: true }); }
-    // clientes sentados en las terrazas
+    fp('taxis, policía, gatos, autobús y ciclistas'); // clientes sentados en las terrazas
     if (S.sitios && S.sitios.length) { const cl = await Promise.all(S.sitios.map((q, k) => M.personaje({ modelo: MODELOS[(k * 5 + 2) % MODELOS.length], altura: 160 + k * 4, piel: PIEL[k % 5], pelo: PELO[(k * 2) % 6] })));
       cl.forEach((p, k) => { const q = S.sitios[k]; if (k % 3 === 2) { p.obj.visible = false; p.oculto = true; return; } p.fijo = true; p.rol = 'Cliente de la terraza'; p.obj.position.set(q.x, 0, q.z); p.obj.rotation.y = q.ry; p.asiento = 0.45; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); M.anim(p, 'sit'); S.gente.push(p); }); }
-    S.tAmb = 40 + r() * 60;
+    fp('terrazas'); S.tAmb = 40 + r() * 60;
     S.perfilCoches = true;
-    if (GM.calleVida) { GM.calleVida.construir(S, M, st, { W: S.mundo, G: S.G, r, club }); await GM.calleVida.poblar(S, M, st); }
+    fp('antes de calle viva'); if (GM.calleVida) { GM.calleVida.construir(S, M, st, { W: S.mundo, G: S.G, r, club }); await GM.calleVida.poblar(S, M, st); } fp('calle viva');
   }
   function punto(vi, s) {   // posición y tangente a la distancia s de la calle
     s = Math.max(0, Math.min(vi.L, s)); let i = 0; while (i + 2 < vi.acum.length && vi.acum[i + 1] < s) i++;

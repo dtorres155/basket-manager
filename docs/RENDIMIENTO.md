@@ -25,3 +25,16 @@ Lectura: el cuello de botella de cada fila es el mayor entre CPU y GPU respecto 
 - **Móvil (CPU x4):** en Medio la calle y el pueblo rondan 26 a 28 fps y la sede 32: el objetivo de 30 fps está al límite. En Alto con CPU x4 baja a 12 a 17 fps, por eso Alto es solo para ordenador.
 - **Medidas de esta tanda:** A* con tablas reutilizadas y tope de nodos para las personas (no para el jugador), sombra solo de quien está a menos de 26 m, esqueletos ocultos sin recalcular matrices, precompilación de shaders y KTX2 también en Medio. Lo que queda es estructural: 4.700 huesos con animación en CPU (punto 20), la ciudad entera en una malla de navegación de 0,75 m (punto 21) y los niveles de detalle (punto 19).
 - `docs/RENDIMIENTO_antes.md` guarda la medición anterior a estos cambios, para comparar.
+
+## Tiempo de apertura de la calle real (`node tools/fases_construccion.js`)
+
+| Fase | Antes | Ahora |
+|---|---|---|
+| Texturas del mundo (KTX2) | 1,2 s | 1,3 s |
+| Datos de la ciudad y geometría (edificios, aceras, detalle, fusión) | 1,4 s | 1,4 s (la geometría en sí son 0,6 s) |
+| Tu personaje | 4,5 s (en realidad, compilación de shaders con la ciudad ya dibujándose) | 0,4 s |
+| Vecinos y vida de la calle | 2,1 s | 2,0 s (primeros 18 vecinos al abrir; el resto, por lotes de 6 en los 2 s siguientes) |
+| Compilar shaders | 2,0 s tras quitar la pantalla de carga | 0,4 s antes de quitarla |
+| **Total hasta poder jugar** | **11,2 s** | **5,6 s** |
+
+Conclusión: la geometría de la ciudad no era el cuello de botella; lo era dibujar la escena antes de tiempo, con la compilación de shaders bloqueando el primer fotograma. Ahora no se dibuja hasta que la ciudad y las personas están en la escena y sus shaders se compilan en paralelo (`compileAsync`).
