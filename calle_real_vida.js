@@ -12,7 +12,7 @@
   async function poblar(S, M, st) {
     const { MODELOS, PIEL, PELO, coche, perro } = K();
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
-    const n = (partido ? 50 : 42) + (!GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal' ? 14 : 0), r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222', alta = !GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal';
+    const n = Math.round(((partido ? 50 : 42) + (!GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal' ? 14 : 0)) * (GM.campus && GM.campus.factorGente ? GM.campus.factorGente() : 1)), r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222', alta = !GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal';
     const lista = await Promise.all(Array.from({ length: n }, () => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [c1, c2] : null }).then(p => { p.hincha = hincha; return p; }); }));
     const sitio = () => { let q = S.paseo[(r() * S.paseo.length) | 0]; for (let i = 0; i < 3; i++) { const o = S.paseo[(r() * S.paseo.length) | 0]; if (r() < 0.65 && Math.hypot(o[0], o[1]) < Math.hypot(q[0], q[1])) q = o; } return q; };
     lista.forEach((p, k) => {

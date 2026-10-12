@@ -26,7 +26,8 @@ async function centro(id, ciudad, pais, pab) {
     if (sel.length && !sel.includes(id)) continue;
     const f = path.join(DIR, id + '.json');
     if (fs.existsSync(f) && !sel.length) continue;
-    const c = await centro(id, ciudad, pais, pab);
+    const ov = fs.existsSync(path.join(DIR, 'centros.json')) ? JSON.parse(fs.readFileSync(path.join(DIR, 'centros.json'), 'utf8'))[id] : null;   // centro corregido a mano cuando Nominatim no encuentra el pabellón
+    const c = ov ? { lat: ov[0], lon: ov[1], de: ov[2] } : await centro(id, ciudad, pais, pab);
     if (!c) { console.log('SIN CENTRO', id); continue; }
     const q = `[out:json][timeout:60];(way["building"](around:${R},${c.lat},${c.lon});way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|pedestrian|service)$"](around:${R},${c.lat},${c.lon});way["natural"="water"](around:${R},${c.lat},${c.lon});way["waterway"~"river|canal"](around:${R},${c.lat},${c.lon});way["leisure"~"park|pitch|garden"](around:${R},${c.lat},${c.lon}););out geom tags;`;
     let j = null; for (const ep of ['https://overpass.kumi.systems/api/interpreter', 'https://overpass-api.de/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']) { j = await get(ep, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(60000) }); if (j) break; }

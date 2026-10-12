@@ -1,0 +1,5 @@
+const fs=require('fs'); let s=fs.readFileSync('sede3d.js','utf8');
+const r=(a,b)=>{ if(!s.includes(a)) throw new Error('falta '+a.slice(0,50)); s=s.replace(a,()=>b); };
+r("sol.position.set(S.foco.x + d.x * 31, d.y * 31, S.foco.z + d.z * 31); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }",
+"// la sombra cubre lo que se ve (crece con el zoom) y el foco se redondea al texel para que no tiemble al caminar\n      const mitad = Math.max(22, Math.min(58, S.zoom * 1.1 + 6)), q = 2 * mitad / sol.shadow.mapSize.x * 4, fx = Math.round(S.foco.x / q) * q, fz = Math.round(S.foco.z / q) * q;\n      if (Math.abs(mitad - (S.sombraMitad || 0)) > 1.5) { S.sombraMitad = mitad; const c = sol.shadow.camera; c.left = -mitad; c.right = mitad; c.top = mitad * 0.8; c.bottom = -mitad * 0.8; c.updateProjectionMatrix(); }\n      sol.position.set(fx + d.x * 31, d.y * 31, fz + d.z * 31); sol.target.position.set(fx, 0, fz); sol.target.updateMatrixWorld(); }");
+fs.writeFileSync('sede3d.js',s);

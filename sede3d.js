@@ -1119,13 +1119,13 @@
     const h = GM.h, raiz = h('div', { class: 'sede' }), lienzo = h('div', { class: 'sede-3d' });
     raiz.append(lienzo); document.body.append(raiz);
     const alta = !GM.campus || GM.campus.config.calidad === 'alta'; // en «normal» (móvil): sin sombras en tiempo real y menos resolución
-    const renderer = new THREE.WebGLRenderer({ antialias: alta }); renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, alta ? 2 : 1.25));
+    const renderer = new THREE.WebGLRenderer({ antialias: alta }); const nv = (GM.campus && GM.campus.config.nivel) || 'alto'; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, nv === 'ultra' ? 2.5 : alta ? 2 : nv === 'bajo' ? 1 : 1.25));
     renderer.shadowMap.enabled = alta; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
     lienzo.append(renderer.domElement); renderer.domElement.style.touchAction = 'none';
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
     const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
-    const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
+    const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(nv === 'ultra' ? 4096 : 2048, nv === 'ultra' ? 4096 : 2048);
     Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; sol.shadow.radius = 4; sol.shadow.blurSamples = 12; scene.add(sol, sol.target);
     S = { hora: 8, luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
@@ -1165,7 +1165,10 @@
       if (S.lluviaObj || S.nubesObj) moverClima(dt);
       if (S.escena === 'deportiva' && GM.deportivaMundo && GM.deportivaMundo.actualizar) GM.deportivaMundo.actualizar(S, motor(), dt);
       if (S.escena === 'pueblo' && GM.puebloMundo) GM.puebloMundo.actualizar(S, motor(), dt);
-      { const sol = S.luces.sol, SO = GM.mods.sol, d = SO && S.st ? SO.direccion(SO.latitud(S.st), S.st.fecha, SO.horaSolar(S.st, S.hora || 9), 0.3) : { x: -0.45, y: 0.84, z: 0.39 }; sol.position.set(S.foco.x + d.x * 31, d.y * 31, S.foco.z + d.z * 31); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
+      { const sol = S.luces.sol, SO = GM.mods.sol, d = SO && S.st ? SO.direccion(SO.latitud(S.st), S.st.fecha, SO.horaSolar(S.st, S.hora || 9), 0.3) : { x: -0.45, y: 0.84, z: 0.39 }; // la sombra cubre lo que se ve (crece con el zoom) y el foco se redondea al texel para que no tiemble al caminar
+      const mitad = Math.max(22, Math.min(58, S.zoom * 1.1 + 6)), q = 2 * mitad / sol.shadow.mapSize.x * 4, fx = Math.round(S.foco.x / q) * q, fz = Math.round(S.foco.z / q) * q;
+      if (Math.abs(mitad - (S.sombraMitad || 0)) > 1.5) { S.sombraMitad = mitad; const c = sol.shadow.camera; c.left = -mitad; c.right = mitad; c.top = mitad * 0.8; c.bottom = -mitad * 0.8; c.updateProjectionMatrix(); }
+      sol.position.set(fx + d.x * 31, d.y * 31, fz + d.z * 31); sol.target.position.set(fx, 0, fz); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {
         if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
         const dP = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z); if (S.nivelRend >= 2) n.obj.visible = dP < (S.nivelRend >= 3 ? 20 : 28);   // ahorro de CPU: los muy lejanos no se dibujan

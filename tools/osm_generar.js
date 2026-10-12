@@ -38,7 +38,7 @@ const NOMBRES_COLOR = { white: '#f2efe8', grey: '#9a9a96', gray: '#9a9a96', red:
 const colorDe = v => { if (!v) return ''; v = String(v).toLowerCase().trim(); if (/^#[0-9a-f]{6}$/.test(v)) return v; return NOMBRES_COLOR[v] || ''; };
 const techoDe = t => ({ flat: 1, gabled: 2, hipped: 3, 'half-hipped': 3, gambrel: 2, dome: 4, pyramidal: 5, skillion: 2 }[t['roof:shape']] || 0) + 10 * ({ brick: 1, stone: 2, sandstone: 2, limestone: 2, concrete: 0, glass: 3, metal: 3, steel: 3 }[t['building:material']] || 0);
 let total = 0, bytes = 0;
-for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && !/\.(poi|ring)\.json$/.test(n)).sort()) {
+for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring)\.json$/.test(n)).sort()) {
   const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
   const k = 110574, kx = 111320 * Math.cos(j.lat * Math.PI / 180);
   const pr = g => g.map(q => [(q.lon - j.lon) * kx, -(q.lat - j.lat) * k]);

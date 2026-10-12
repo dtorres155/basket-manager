@@ -209,7 +209,7 @@
       h('button', { class: 'tab', onclick: () => { const o = ps.find(x => x.estado === 'obra'); if (o) seleccionar(o.slot, true); else { m.style.display = 'block'; m.textContent = 'No hay obras en marcha.'; } } }, 'Ver obras')));
     if (V.vista) p.append(h('div', { class: 'seg compacto' },
       [['dia', '☀️ Día'], ['tarde', '🌇 Tarde'], ['noche', '🌙 Noche']].map(o => h('button', { class: 'tab' + (V.hora === o[0] ? ' on' : ''), onclick: () => { V.hora = o[0]; V.refrescar(); } }, o[1])),
-      h('button', { class: 'tab', onclick: () => { GM.campus.setCalidad(GM.campus.config.calidad === 'alta' ? 'normal' : 'alta'); const el = V.raiz.parentNode, st0 = V.st; mount(el, st0); } }, 'Calidad: ' + (GM.campus.config.calidad === 'alta' ? 'alta' : 'normal'))));
+      h('button', { class: 'tab', onclick: () => { { const N = GM.campus.NIVELES; GM.campus.setNivel(N[(N.indexOf(GM.campus.config.nivel) + 1) % N.length]); } const el = V.raiz.parentNode, st0 = V.st; mount(el, st0); } }, 'Calidad: ' + GM.campus.config.nivel)));
     p.append(h('div', { class: 'seg compacto' }, ps.map(x => h('button', { class: 'tab' + (V.sel === x.slot ? ' on' : ''), onclick: () => seleccionar(x.slot, true) }, (x.estado === 'obra' ? '🚧 ' : x.estado === 'bloqueado' ? '🔒 ' : '') + x.nombre.split(', ')[0].split(' (')[0] + (x.nivel ? ' ' + x.nivel : '')))));
     const resp = r => { if (!r.ok) { m.style.display = 'block'; m.textContent = r.motivo; } else V.refrescar(); };
     const sel = ps.find(x => x.slot === V.sel);
