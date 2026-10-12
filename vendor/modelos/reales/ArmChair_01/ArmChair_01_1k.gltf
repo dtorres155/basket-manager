@@ -1,37 +1,134 @@
 {
   "asset": {
-    "generator": "Khronos glTF Blender I/O v1.6.16",
+    "generator": "glTF-Transform v4.5.1",
     "version": "2.0"
   },
-  "scene": 0,
-  "scenes": [
+  "accessors": [
     {
-      "name": "Scene",
-      "nodes": [
-        0
-      ]
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 3758,
+      "max": [
+        0.4242154657840729,
+        1.064656138420105,
+        0.34845367074012756
+      ],
+      "min": [
+        -0.4242154359817505,
+        -0.0004314967372920364,
+        -0.4173066020011902
+      ],
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 3758,
+      "bufferView": 0,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 3758,
+      "bufferView": 0,
+      "byteOffset": 24
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 16878,
+      "bufferView": 1,
+      "byteOffset": 0
     }
   ],
-  "nodes": [
+  "bufferViews": [
     {
-      "mesh": 0,
-      "name": "ArmChair_01"
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 120256,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 120256,
+      "byteLength": 33756,
+      "target": 34963
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
+    }
+  ],
+  "images": [
+    {
+      "name": "Armchair_01_nor_gl",
+      "mimeType": "image/ktx2",
+      "uri": "Armchair_01_nor_gl_1k.ktx2"
+    },
+    {
+      "name": "Armchair_01_diff",
+      "mimeType": "image/ktx2",
+      "uri": "Armchair_01_diff_1k.ktx2"
+    },
+    {
+      "name": "Armchair_01_arm",
+      "mimeType": "image/ktx2",
+      "uri": "Armchair_01_arm_1k.ktx2"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "ArmChair_01.bin",
+      "byteLength": 154012
     }
   ],
   "materials": [
     {
-      "doubleSided": true,
       "name": "Armchair_01",
-      "normalTexture": {
-        "index": 0
-      },
+      "doubleSided": true,
       "pbrMetallicRoughness": {
         "baseColorTexture": {
-          "index": 1
+          "index": 0
         },
         "metallicRoughnessTexture": {
           "index": 2
         }
+      },
+      "normalTexture": {
+        "index": 1
       }
     }
   ],
@@ -45,111 +142,32 @@
             "NORMAL": 1,
             "TEXCOORD_0": 2
           },
-          "indices": 3,
-          "material": 0
+          "mode": 4,
+          "material": 0,
+          "indices": 3
         }
       ]
     }
   ],
-  "textures": [
+  "nodes": [
     {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
+      "name": "ArmChair_01",
+      "mesh": 0
     }
   ],
-  "images": [
+  "scenes": [
     {
-      "mimeType": "image/jpeg",
-      "name": "Armchair_01_nor_gl",
-      "uri": "textures/Armchair_01_nor_gl_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "Armchair_01_diff",
-      "uri": "textures/Armchair_01_diff_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "Armchair_01_arm",
-      "uri": "textures/Armchair_01_arm_1k.jpg"
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
     }
   ],
-  "accessors": [
-    {
-      "bufferView": 0,
-      "componentType": 5126,
-      "count": 3758,
-      "max": [
-        0.4242154657840729,
-        1.064656138420105,
-        0.34845367074012756
-      ],
-      "min": [
-        -0.4242154359817505,
-        -0.0004314967372920364,
-        -0.4173066020011902
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 1,
-      "componentType": 5126,
-      "count": 3758,
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 2,
-      "componentType": 5126,
-      "count": 3758,
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 3,
-      "componentType": 5123,
-      "count": 16878,
-      "type": "SCALAR"
-    }
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
   ],
-  "bufferViews": [
-    {
-      "buffer": 0,
-      "byteLength": 45096,
-      "byteOffset": 0
-    },
-    {
-      "buffer": 0,
-      "byteLength": 45096,
-      "byteOffset": 45096
-    },
-    {
-      "buffer": 0,
-      "byteLength": 30064,
-      "byteOffset": 90192
-    },
-    {
-      "buffer": 0,
-      "byteLength": 33756,
-      "byteOffset": 120256
-    }
-  ],
-  "samplers": [
-    {
-      "magFilter": 9729,
-      "minFilter": 9987
-    }
-  ],
-  "buffers": [
-    {
-      "byteLength": 154012,
-      "uri": "ArmChair_01.bin"
-    }
+  "extensionsRequired": [
+    "KHR_texture_basisu"
   ]
 }

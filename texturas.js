@@ -10,10 +10,15 @@
   const IDS = ['Asphalt010', 'PavingStones070', 'Bricks085', 'Plaster003', 'Concrete034', 'Grass004', 'WoodFloor051', 'Tiles074', 'RoofingTiles013A', 'Ground054', 'Marble006', 'Facade006', 'Asphalt031', 'PavingStones150', 'Metal055A'];
   const TX = {}; let promesa = null, ok = false; const mojadoU = { value: 0 }, nieveU = { value: 0 };
   const enNavegador = () => typeof window !== 'undefined' && typeof navigator !== 'undefined' && !/jsdom/i.test(navigator.userAgent || '') && typeof THREE !== 'undefined' && THREE.TextureLoader;
+  // Lector de KTX2 compartido (texturas del mundo y de los modelos glTF): se prepara una vez con un renderer propio, de usar y tirar, para saber qué formatos comprimidos admite la tarjeta
+  let K2 = undefined;
+  function ktx2(renderer) {
+    if (K2 !== undefined) return K2; K2 = null; if (!THREE.KTX2Loader || (typeof window !== 'undefined' && window.__sinKTX2)) return K2;
+    try { let r = renderer, propio = false; if (!r) { r = new THREE.WebGLRenderer({ canvas: document.createElement('canvas') }); propio = true; } K2 = new THREE.KTX2Loader().setTranscoderPath('basis/').detectSupport(r); if (propio) { r.dispose(); if (r.forceContextLoss) r.forceContextLoss(); } } catch (e) { K2 = null; } return K2;
+  }
   function precargar(renderer) {
     if (promesa) return promesa; if (!enNavegador()) return (promesa = Promise.resolve(false));
-    const L = new THREE.TextureLoader(); let K = null;   // KTX2 (Basis): cuatro veces menos memoria de GPU; solo en calidad alta, con un renderer para saber qué formato admite la tarjeta
-    try { if (renderer && THREE.KTX2Loader && GM.campus && GM.campus.config.calidad === 'alta' && !window.__sinKTX2) K = new THREE.KTX2Loader().setTranscoderPath('basis/').detectSupport(renderer); } catch (e) { K = null; }
+    const L = new THREE.TextureLoader(); let K = ktx2(renderer);   // KTX2 (Basis): cuatro veces menos memoria de GPU
     const carga = (url, srgb) => new Promise(res => { const fin = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; if (srgb) t.colorSpace = THREE.SRGBColorSpace; res(t); }; if (K) { K.load(url.replace(/\.jpg$/, '.ktx2'), t => { fin(t); }, undefined, () => cargaJpg(url, srgb, res)); } else cargaJpg(url, srgb, res); }), cargaJpg = (url, srgb, res) => { L.load(url, t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = GM.campus && GM.campus.config.nivel === 'bajo' ? 1 : 4;
       if (GM.campus && GM.campus.config.nivel === 'bajo' && t.image && t.image.width > 512) { try { const c = document.createElement('canvas'); c.width = c.height = 512; c.getContext('2d').drawImage(t.image, 0, 0, 512, 512); t.image = c; t.needsUpdate = true; } catch (e) { } } if (srgb) t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)); };
     promesa = Promise.race([Promise.all(IDS.map(async id => { const [c, n, r] = await Promise.all([carga('texturas/' + id + '_c.jpg', true), carga('texturas/' + id + '_n.jpg'), carga('texturas/' + id + '_r.jpg')]); if (c && n && r) TX[id] = { c, n, r }; })).then(() => (ok = Object.keys(TX).length > 0)),
@@ -46,5 +51,5 @@
   }
   // Material nuevo con la textura real (o el color de respaldo si no hay texturas)
   function material(id, o) { o = o || {}; const m = new THREE.MeshStandardMaterial({ color: o.respaldo || 0x999999, roughness: 0.9 }); return aplicar(m, id, o); }
-  GM.texturas = { _TX: TX, nieveU, mojadoU, precargar, aplicar, material, listo: () => ok, IDS };
+  GM.texturas = { ktx2, _TX: TX, nieveU, mojadoU, precargar, aplicar, material, listo: () => ok, IDS };
 })();

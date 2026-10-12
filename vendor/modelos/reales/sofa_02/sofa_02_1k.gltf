@@ -1,52 +1,179 @@
 {
   "asset": {
-    "generator": "Khronos glTF Blender I/O v1.6.16",
+    "generator": "glTF-Transform v4.5.1",
     "version": "2.0"
   },
-  "scene": 0,
-  "scenes": [
+  "accessors": [
     {
-      "name": "Scene",
-      "nodes": [
-        0,
-        1
-      ]
-    }
-  ],
-  "nodes": [
-    {
-      "mesh": 0,
-      "name": "sofa_02_Base",
-      "translation": [
-        0.00026735191931948066,
-        0.00020578503608703613,
-        0.03126468509435654
-      ]
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 1616,
+      "max": [
+        0.9035836458206177,
+        0.7094888687133789,
+        0.3020688593387604
+      ],
+      "min": [
+        -0.9035837054252625,
+        -5.960464477539063e-8,
+        -0.5089631676673889
+      ],
+      "bufferView": 0,
+      "byteOffset": 0
     },
     {
-      "mesh": 1,
-      "name": "sofa_02_Seat",
-      "translation": [
-        0.00026735191931948066,
-        0.00020578503608703613,
-        0.03126468509435654
-      ]
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 1616,
+      "bufferView": 0,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 1616,
+      "bufferView": 0,
+      "byteOffset": 24
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 7032,
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 1152,
+      "bufferView": 1,
+      "byteOffset": 14064
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 212,
+      "max": [
+        0.7098315358161926,
+        0.41038596630096436,
+        0.3087882101535797
+      ],
+      "min": [
+        -0.7062357068061829,
+        0.24655179679393768,
+        -0.2188045084476471
+      ],
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 212,
+      "bufferView": 2,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 212,
+      "bufferView": 2,
+      "byteOffset": 24
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 51712,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 51712,
+      "byteLength": 16368,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 68080,
+      "byteLength": 6784,
+      "byteStride": 32,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
+    },
+    {
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
+    }
+  ],
+  "images": [
+    {
+      "name": "sofa_02_nor_gl",
+      "mimeType": "image/ktx2",
+      "uri": "sofa_02_nor_gl_1k.ktx2"
+    },
+    {
+      "name": "sofa_02_diff",
+      "mimeType": "image/ktx2",
+      "uri": "sofa_02_diff_1k.ktx2"
+    },
+    {
+      "name": "sofa_02_metallic-sofa_02_roughness",
+      "mimeType": "image/ktx2",
+      "uri": "sofa_02_arm_1k.ktx2"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "sofa_02.bin",
+      "byteLength": 74864
     }
   ],
   "materials": [
     {
-      "doubleSided": true,
       "name": "sofa_02",
-      "normalTexture": {
-        "index": 0
-      },
+      "doubleSided": true,
       "pbrMetallicRoughness": {
         "baseColorTexture": {
-          "index": 1
+          "index": 0
         },
         "metallicRoughnessTexture": {
           "index": 2
         }
+      },
+      "normalTexture": {
+        "index": 1
       }
     }
   ],
@@ -60,8 +187,9 @@
             "NORMAL": 1,
             "TEXCOORD_0": 2
           },
-          "indices": 3,
-          "material": 0
+          "mode": 4,
+          "material": 0,
+          "indices": 3
         }
       ]
     },
@@ -70,169 +198,51 @@
       "primitives": [
         {
           "attributes": {
-            "POSITION": 4,
-            "NORMAL": 5,
-            "TEXCOORD_0": 6
+            "POSITION": 5,
+            "NORMAL": 6,
+            "TEXCOORD_0": 7
           },
-          "indices": 7,
-          "material": 0
+          "mode": 4,
+          "material": 0,
+          "indices": 4
         }
       ]
     }
   ],
-  "textures": [
+  "nodes": [
     {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
-    }
-  ],
-  "images": [
-    {
-      "mimeType": "image/jpeg",
-      "name": "sofa_02_nor_gl",
-      "uri": "textures/sofa_02_nor_gl_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "sofa_02_diff",
-      "uri": "textures/sofa_02_diff_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "sofa_02_metallic-sofa_02_roughness",
-      "uri": "textures/sofa_02_arm_1k.jpg"
-    }
-  ],
-  "accessors": [
-    {
-      "bufferView": 0,
-      "componentType": 5126,
-      "count": 1616,
-      "max": [
-        0.9035836458206177,
-        0.7094888687133789,
-        0.3020688593387604
+      "name": "sofa_02_Base",
+      "translation": [
+        0.00026735191931948066,
+        0.00020578503608703613,
+        0.03126468509435654
       ],
-      "min": [
-        -0.9035837054252625,
-        -5.960464477539063e-8,
-        -0.5089631676673889
+      "mesh": 0
+    },
+    {
+      "name": "sofa_02_Seat",
+      "translation": [
+        0.00026735191931948066,
+        0.00020578503608703613,
+        0.03126468509435654
       ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 1,
-      "componentType": 5126,
-      "count": 1616,
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 2,
-      "componentType": 5126,
-      "count": 1616,
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 3,
-      "componentType": 5123,
-      "count": 7032,
-      "type": "SCALAR"
-    },
-    {
-      "bufferView": 4,
-      "componentType": 5126,
-      "count": 212,
-      "max": [
-        0.7098315358161926,
-        0.41038596630096436,
-        0.3087882101535797
-      ],
-      "min": [
-        -0.7062357068061829,
-        0.24655179679393768,
-        -0.2188045084476471
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 5,
-      "componentType": 5126,
-      "count": 212,
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 6,
-      "componentType": 5126,
-      "count": 212,
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 7,
-      "componentType": 5123,
-      "count": 1152,
-      "type": "SCALAR"
+      "mesh": 1
     }
   ],
-  "bufferViews": [
+  "scenes": [
     {
-      "buffer": 0,
-      "byteLength": 19392,
-      "byteOffset": 0
-    },
-    {
-      "buffer": 0,
-      "byteLength": 19392,
-      "byteOffset": 19392
-    },
-    {
-      "buffer": 0,
-      "byteLength": 12928,
-      "byteOffset": 38784
-    },
-    {
-      "buffer": 0,
-      "byteLength": 14064,
-      "byteOffset": 51712
-    },
-    {
-      "buffer": 0,
-      "byteLength": 2544,
-      "byteOffset": 65776
-    },
-    {
-      "buffer": 0,
-      "byteLength": 2544,
-      "byteOffset": 68320
-    },
-    {
-      "buffer": 0,
-      "byteLength": 1696,
-      "byteOffset": 70864
-    },
-    {
-      "buffer": 0,
-      "byteLength": 2304,
-      "byteOffset": 72560
+      "name": "Scene",
+      "nodes": [
+        0,
+        1
+      ]
     }
   ],
-  "samplers": [
-    {
-      "magFilter": 9729,
-      "minFilter": 9987
-    }
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
   ],
-  "buffers": [
-    {
-      "byteLength": 74864,
-      "uri": "sofa_02.bin"
-    }
+  "extensionsRequired": [
+    "KHR_texture_basisu"
   ]
 }

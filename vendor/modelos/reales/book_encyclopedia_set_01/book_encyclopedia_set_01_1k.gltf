@@ -1823,51 +1823,71 @@
   ],
   "textures": [
     {
-      "source": 1,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
     },
     {
-      "source": 0,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
     },
     {
-      "source": 2,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
     },
     {
-      "source": 4,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 4
+        }
+      }
     },
     {
-      "source": 3,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 3
+        }
+      }
     }
   ],
   "images": [
     {
       "name": "book_encyclopedia_set_01_cover_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/book_encyclopedia_set_01_cover_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "book_encyclopedia_set_01_cover_nor_gl_1k.ktx2"
     },
     {
       "name": "book_encyclopedia_set_01_cover_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/book_encyclopedia_set_01_cover_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "book_encyclopedia_set_01_cover_diff_1k.ktx2"
     },
     {
       "name": "book_encyclopedia_set_01_cover_metallic-book_encyclopedia_set_01_cover_roughness",
-      "mimeType": "image/jpeg",
-      "uri": "textures/book_encyclopedia_set_01_cover_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "book_encyclopedia_set_01_cover_arm_1k.ktx2"
     },
     {
       "name": "book_encyclopedia_set_01_paper_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/book_encyclopedia_set_01_paper_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "book_encyclopedia_set_01_paper_nor_gl_1k.ktx2"
     },
     {
       "name": "book_encyclopedia_set_01_paper_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/book_encyclopedia_set_01_paper_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "book_encyclopedia_set_01_paper_diff_1k.ktx2"
     }
   ],
   "buffers": [
@@ -2618,5 +2638,11 @@
       ]
     }
   ],
-  "scene": 0
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_basisu"
+  ]
 }

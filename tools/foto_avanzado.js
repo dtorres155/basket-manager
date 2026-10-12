@@ -16,6 +16,10 @@ const club = process.argv[2] || 'joventut-badalona', DIR = path.join(__dirname, 
   await clic('Cámara libre: no'); await sleep(300);
   await p.keyboard.down('w'); await sleep(1200); await p.keyboard.up('w'); await p.keyboard.down('e'); await sleep(900); await p.keyboard.up('e');
   await p.mouse.move(640, 400); await p.mouse.down(); await p.mouse.move(520, 380, { steps: 6 }); await p.mouse.up(); await sleep(800); await p.screenshot({ path: path.join(DIR, '5_camara_libre.png') });
+  // guardar a doble resolución con marco y sello
+  await clic('2x'); await clic('Marco'); await clic('Sello'); await p.evaluate(() => { const S = GM.sede._estado(); S.camLibre = null; S.zoom = 18; S.inc = 0.5; });
+  const dl = p.waitForEvent('download', { timeout: 20000 }); await clic('Guardar foto'); const d = await dl; const f = path.join(DIR, 'guardada_2x.png'); await d.saveAs(f);
+  const hd = fs.readFileSync(f); console.log('foto guardada', hd.readUInt32BE(16) + 'x' + hd.readUInt32BE(20), Math.round(hd.length / 1024) + ' KB');
   await p.keyboard.press('h'); await sleep(500); await p.screenshot({ path: path.join(DIR, '6_sin_interfaz.png') });
   console.log(JSON.stringify(await p.evaluate(() => { const S = GM.sede._estado(); return { hora: +S.hora.toFixed(1), libre: !!S.camLibre, pos: S.camLibre && S.camLibre.pos.toArray().map(v => +v.toFixed(1)), clima: S.clima.tipo, expFoto: S.expFoto }; })), 'errores:', errs.length ? errs.slice(0, 5) : 'ninguno'); await b.close();
 })();

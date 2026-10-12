@@ -113,60 +113,84 @@
   ],
   "textures": [
     {
-      "source": 1,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
     },
     {
-      "source": 0,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
     },
     {
-      "source": 2,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
     },
     {
-      "source": 4,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 4
+        }
+      }
     },
     {
-      "source": 3,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 3
+        }
+      }
     },
     {
-      "source": 5,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 5
+        }
+      }
     }
   ],
   "images": [
     {
       "name": "wooden_picnic_table_bottom_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/wooden_picnic_table_bottom_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "wooden_picnic_table_bottom_nor_gl_1k.ktx2"
     },
     {
       "name": "wooden_picnic_table_bottom_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/wooden_picnic_table_bottom_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "wooden_picnic_table_bottom_diff_1k.ktx2"
     },
     {
       "name": "wooden_picnic_table_bottom_metal-wooden_picnic_table_bottom_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/wooden_picnic_table_bottom_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "wooden_picnic_table_bottom_arm_1k.ktx2"
     },
     {
       "name": "wooden_picnic_table_top_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/wooden_picnic_table_top_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "wooden_picnic_table_top_nor_gl_1k.ktx2"
     },
     {
       "name": "wooden_picnic_table_top_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/wooden_picnic_table_top_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "wooden_picnic_table_top_diff_1k.ktx2"
     },
     {
       "name": "wooden_picnic_table_top_metal-wooden_picnic_table_top_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/wooden_picnic_table_top_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "wooden_picnic_table_top_arm_1k.ktx2"
     }
   ],
   "buffers": [
@@ -248,5 +272,11 @@
       ]
     }
   ],
-  "scene": 0
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_basisu"
+  ]
 }

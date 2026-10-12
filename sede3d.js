@@ -19,7 +19,7 @@
   let mapa = () => { };   // sede_mapa.js: se enlaza más abajo, cuando existen irA, entrar, aEstrella y anim   // exposición con la que se salió de la escena anterior
   const { entorno, aplicarAmbiente, tonoCiudad, mezcla, cambiarCielo } = GM.sedeLuz({ S: () => S, exterior: () => ['calle', 'pueblo', 'deportiva'].indexOf(S.escena) >= 0 });   // sede_luz.js
   const cache = {};
-  const cargar = ruta => cache[ruta] || (cache[ruta] = new THREE.GLTFLoader().loadAsync(ruta));
+  const cargar = ruta => cache[ruta] || (cache[ruta] = (() => { const l = new THREE.GLTFLoader(), k = GM.texturas && GM.texturas.ktx2 && GM.texturas.ktx2(); if (k) l.setKTX2Loader(k); return l.loadAsync(ruta); })());
   // Personas de Quaternius (CC0): cada una sin animaciones y un archivo de animaciones compartido (mismo esqueleto)
   const PERSONAS = { jugador: ['h-casual_hoodie', 'h-casual_2', 'h-beach'], Recepcionista: 'm-formal', Fisioterapeuta: 'm-casual', Camarero: 'h-casual_2', 'Preparador físico': 'h-beach', 'Jefe de prensa': 'm-suit', Utillero: 'h-worker', 'Analista de vídeo': 'h-casual_2', 'Médico del club': 'm-formal', director: 'h-suit', entrenador: 'h-casual_hoodie' };
   const ANIM = { idle: 'Idle_Neutral', walk: 'Walk', sprint: 'Run', 'interact-right': 'Interact', 'interact-left': 'Interact', crouch: 'Interact', 'emote-yes': 'Wave', 'emote-no': 'Idle', sit: 'Idle_Neutral' };
@@ -209,29 +209,33 @@
     const bloquea = (xa, za, xb, zb) => { const [ia, ja] = celda(Math.min(xa, xb), Math.min(za, zb)), [ib, jb] = celda(Math.max(xa, xb) - 0.001, Math.max(za, zb) - 0.001); for (let j = Math.max(0, ja); j <= Math.min(H - 1, jb); j++) for (let i = Math.max(0, ia); i <= Math.min(W - 1, ib); i++) b[idx(i, j)] = 1; };
     return { W, H, b, c, x0, z0, idx, celda, bloquea, libre: (i, j) => i >= 0 && j >= 0 && i < W && j < H && !b[idx(i, j)], centro: (i, j) => [x0 + (i + 0.5) * c, z0 + (j + 0.5) * c] };
   }
-  function aEstrella(G, desde, hasta) {
+  function aEstrella(G, desde, hasta, tope) {   // tope: máximo de nodos que se expanden (las personas del mundo no buscan caminos de media ciudad; el jugador sí)
     let [si, sj] = G.celda(desde[0], desde[1]), [ti, tj] = G.celda(hasta[0], hasta[1]);
     const cerca = (i, j, ri, rj) => { if (G.libre(i, j)) return [i, j]; let mejor = null, md = Infinity;
       for (let r = 1; r <= 60; r++) { if (mejor && r > Math.sqrt(md) + 1) break;
         for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) { if (Math.max(Math.abs(di), Math.abs(dj)) !== r || !G.libre(i + di, j + dj)) continue; const d = di * di + dj * dj + (ri === undefined ? 0 : Math.hypot(i + di - ri, j + dj - rj) * 0.02); if (d < md) { md = d; mejor = [i + di, j + dj]; } } }
       return mejor; };
     const s = cerca(si, sj), t = cerca(ti, tj, si, sj); if (!s || !t) return null; [si, sj] = s; [ti, tj] = t;
-    const N = G.W * G.H, gS = new Float32Array(N).fill(Infinity), de = new Int32Array(N).fill(-1), cerrado = new Uint8Array(N);
+    const N = G.W * G.H;   // las tablas se reutilizan entre búsquedas con un número de generación (antes se reservaban y rellenaban 8 MB en cada camino: era lo más caro de la CPU)
+    const A = G._ast || (G._ast = { gS: new Float32Array(N), de: new Int32Array(N), gen: new Uint32Array(N), cer: new Uint32Array(N), cur: 0 }), gen = ++A.cur;
+    const gS = { get length() { return N; } }, de = new Proxy({}, { get: (_, k) => A.gen[k] === gen ? A.de[k] : -1 });
     const h = (i, j) => Math.hypot(i - ti, j - tj), ini = G.idx(si, sj), fin = G.idx(ti, tj);
     // Lista abierta como montículo binario (antes se recorría entera en cada paso: con la ciudad grande era muy lento)
     const hf = [], hn = [];
     const meter = (f, n) => { let i = hf.length; hf.push(f); hn.push(n); while (i > 0) { const p = (i - 1) >> 1; if (hf[p] <= f) break; hf[i] = hf[p]; hn[i] = hn[p]; i = p; } hf[i] = f; hn[i] = n; };
     const sacar = () => { const n0 = hn[0], f = hf.pop(), n = hn.pop(); if (hf.length) { let i = 0; const L = hf.length; for (;;) { let c = 2 * i + 1; if (c >= L) break; if (c + 1 < L && hf[c + 1] < hf[c]) c++; if (hf[c] >= f) break; hf[i] = hf[c]; hn[i] = hn[c]; i = c; } hf[i] = f; hn[i] = n; } return n0; };
     const abierto = { push: ([f, n]) => meter(f, n), get length() { return hf.length; } };
-    gS[ini] = 0; abierto.push([h(si, sj), ini]); let mejorN = ini, mejorH = h(si, sj);
+    A.gen[ini] = gen; A.gS[ini] = 0; A.de[ini] = -1; abierto.push([h(si, sj), ini]); let mejorN = ini, mejorH = h(si, sj);
     const DIR = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
+    let expandidos = 0; const MAXEXP = tope || Infinity;
     while (abierto.length) {
+      if (++expandidos > MAXEXP) break;
       const cur = sacar();
-      if (cur === fin) break; if (cerrado[cur]) continue; cerrado[cur] = 1;
+      if (cur === fin) break; if (A.cer[cur] === gen) continue; A.cer[cur] = gen;
       const ci = cur % G.W, cj = (cur / G.W) | 0; { const hh = h(ci, cj); if (hh < mejorH) { mejorH = hh; mejorN = cur; } }
       for (const [di, dj, cost] of DIR) {
         const ni = ci + di, nj = cj + dj; if (!G.libre(ni, nj)) continue; if (di && dj && (!G.libre(ci + di, cj) || !G.libre(ci, cj + dj))) continue;
-        const n = G.idx(ni, nj), g = gS[cur] + cost; if (g < gS[n]) { gS[n] = g; de[n] = cur; abierto.push([g + h(ni, nj), n]); }
+        const n = G.idx(ni, nj), g = A.gS[cur] + cost; if (A.gen[n] !== gen || g < A.gS[n]) { A.gen[n] = gen; A.gS[n] = g; A.de[n] = cur; abierto.push([g + h(ni, nj), n]); }
       }
     }
     const llega = de[fin] >= 0 || fin === ini, meta = llega ? fin : mejorN; if (!llega && meta === ini) return null;
@@ -242,7 +246,7 @@
       for (let k = 1; k < n; k++) { const x = a[0] + (b[0] - a[0]) * k / n, z = a[1] + (b[1] - a[1]) * k / n; for (const s of [0, 1, -1]) { const [i, j] = G.celda(x + px * s, z + pz * s); if (!G.libre(i, j)) return false; } } return true; };
     aEstrella.ve = ve;
     const out = [camino[0]]; let k = 0; while (k < camino.length - 1) { let l = camino.length - 1; while (l > k + 1 && !ve(camino[k], camino[l])) l--; out.push(camino[l]); k = l; }
-    out.llega = llega; return out;
+    out.llega = llega; out.truncado = expandidos > MAXEXP; return out;
   }
 
   // ---------- Personajes que caminan ----------
@@ -260,7 +264,7 @@
     a.reset().fadeIn(0.2).play(); if (p.accion) p.accion.fadeOut(0.2); p.accion = a; p.actual = nombre;
   }
   function irA(p, x, z, alLlegar) {
-    const c = aEstrella(S.G, [p.obj.position.x, p.obj.position.z], [x, z]); if (!c) return false;
+    const c = aEstrella(S.G, [p.obj.position.x, p.obj.position.z], [x, z], p === S.yo ? 0 : 9000); if (!c || (c.truncado && p !== S.yo)) return false;
     const [ci, cj] = S.G.celda(x, z), ult = c[c.length - 1]; if (c.llega && S.G.libre(ci, cj) && (!aEstrella.ve || aEstrella.ve(ult, [x, z]))) c.push([x, z]);
     p.camino = c.slice(1); p.alLlegar = alLlegar || null; anim(p, p.rapido ? 'sprint' : 'walk'); return true;
   }
@@ -346,10 +350,16 @@
     const vin = h('div', { class: 'sede-foto-vineta', style: { display: 'none' } });
     const poner = () => { cv.style.filter = FILTROS[f][1]; nombre.textContent = FILTROS[f][0]; };
     const nombre = h('b', null, 'Natural');
-    const guardar = () => { if (S.composer) S.composer.render(); else S.renderer.render(S.scene, S.camera); const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const x = c.getContext('2d'); if (!x) return; x.filter = FILTROS[f][1] || 'none'; x.drawImage(cv, 0, 0);
+    const guardar = () => {
+      const k = S.fotoRes || 1, r = S.renderer, w = cv.clientWidth, hh = cv.clientHeight, pr0 = r.getPixelRatio();   // resolución mayor: se redibuja una vez con más píxeles y se vuelve al tamaño normal
+      if (k > 1) { const pr = Math.min(pr0 * k, 16384 / Math.max(w, hh)); r.setPixelRatio(pr); if (S.composer) { S.composer.setPixelRatio(pr); S.composer.setSize(w, hh); } r.setSize(w, hh, false); S.camera.aspect = w / hh; S.camera.updateProjectionMatrix(); }
+      if (S.composer) S.composer.render(); else S.renderer.render(S.scene, S.camera); const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const x = c.getContext('2d'); if (!x) return; x.filter = FILTROS[f][1] || 'none'; x.drawImage(cv, 0, 0);
       if (vin.style.display !== 'none') { const g = x.createRadialGradient(c.width / 2, c.height / 2, c.height * 0.35, c.width / 2, c.height / 2, c.height * 0.85); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)'); x.filter = 'none'; x.fillStyle = g; x.fillRect(0, 0, c.width, c.height); }
+      if (S.fotoMarco) { const m = Math.round(c.height * 0.035); x.filter = 'none'; x.fillStyle = '#f6f3ec'; x.fillRect(0, 0, c.width, m); x.fillRect(0, 0, m, c.height); x.fillRect(c.width - m, 0, m, c.height); x.fillRect(0, c.height - m * 2.2, c.width, m * 2.2); }
+      if (S.fotoSello) { const club = S.st.equipos[S.st.clubId], t = club.nombre + ', ' + U.fechaLarga(S.st.fecha) + '. Basket Manager 26/27', fs = Math.round(c.height * 0.022); x.filter = 'none'; x.font = '600 ' + fs + 'px sans-serif'; x.textBaseline = 'bottom'; x.textAlign = S.fotoMarco ? 'left' : 'right'; const tx = S.fotoMarco ? Math.round(c.height * 0.035) : c.width - fs, ty = S.fotoMarco ? c.height - Math.round(c.height * 0.035 * 0.7) : c.height - fs * 0.8; if (!S.fotoMarco) { x.fillStyle = 'rgba(0,0,0,0.55)'; x.fillText(t, tx + 2, ty + 2); } x.fillStyle = S.fotoMarco ? '#2a2f35' : '#ffffff'; x.fillText(t, tx, ty); }
+      if (k > 1) { r.setPixelRatio(pr0); if (S.composer) { S.composer.setPixelRatio(pr0); S.composer.setSize(w, hh); } r.setSize(w, hh, false); S.camera.aspect = w / hh; S.camera.updateProjectionMatrix(); }
       const a = document.createElement('a'); a.download = 'basket-manager-' + S.st.fecha + '.png'; a.href = c.toDataURL('image/png'); document.body.append(a); a.click(); a.remove(); GM.ui.toast('Foto guardada'); };
-    const salir = () => { window.removeEventListener('keydown', teclasFoto); window.removeEventListener('keyup', teclasFoto); S.camLibre = null; S.fotoTeclas = null; S.expFoto = 1; S.enfoqueManual = null; if (panel) panel.remove(); camera.far = 200; if (S.bokeh) S.bokeh.enabled = false; if (S.rayos) S.rayos.enabled = false; if (S.solSprite) S.solSprite.visible = false; cv.style.filter = ''; S.raiz.classList.remove('en-foto'); barra.remove(); vin.remove(); ocultos.forEach(o => { o.visible = true; }); S.enFoto = false; };
+    const salir = () => { window.removeEventListener('keydown', teclasFoto); window.removeEventListener('keyup', teclasFoto); S.camLibre = null; S.fotoTeclas = null; S.expFoto = 1; S.enfoqueManual = null; if (panel) panel.remove(); if (pad) pad.remove(); S.fotoRes = 1; S.fotoMarco = S.fotoSello = false; camera.far = 200; if (S.bokeh) S.bokeh.enabled = false; if (S.rayos) S.rayos.enabled = false; if (S.solSprite) S.solSprite.visible = false; cv.style.filter = ''; S.raiz.classList.remove('en-foto'); barra.remove(); vin.remove(); ocultos.forEach(o => { o.visible = true; }); S.enFoto = false; };
     const barra = h('div', { class: 'sede-foto' }, h('button', { class: 'btn btn-sec peq', onclick: () => { f = (f + FILTROS.length - 1) % FILTROS.length; poner(); } }, '‹'), nombre, h('button', { class: 'btn btn-sec peq', onclick: () => { f = (f + 1) % FILTROS.length; poner(); } }, '›'),
       h('button', { class: 'btn btn-sec peq', onclick: () => { vin.style.display = vin.style.display === 'none' ? '' : 'none'; } }, 'Viñeta'),
       S.bokeh ? h('button', { class: 'btn btn-sec peq', title: 'Profundidad de campo: enfoca al personaje y desenfoca el resto', onclick: e => { S.bokeh.enabled = !S.bokeh.enabled; e.currentTarget.style.opacity = S.bokeh.enabled ? 1 : 0.7; } }, 'Desenfoque') : null,
@@ -357,23 +367,25 @@
     // ---------- Ajustes de foto: hora, clima, exposición, enfoque, apertura, cámara libre y ocultar la interfaz ----------
     const camera = S.camera, fila = (t, ...hijos) => h('div', { class: 'ff-fila' }, h('span', null, t), ...hijos);
     const rango = (min, max, paso, val, fn) => { const i = h('input', { type: 'range', min, max, step: paso }); i.value = val; i.oninput = () => fn(+i.value); return i; };
-    const bt = (t, fn) => h('button', { class: 'btn btn-sec peq', onclick: fn }, t);
+    const bt = (t, fn, k) => { const b = h('button', { class: 'btn btn-sec peq' + (k ? ' ff-res' : ''), onclick: fn }, t); if (k) { b.dataset.k = k; b.style.opacity = k === 1 ? 1 : 0.6; } return b; };
     const teclasFoto = e => { const k = e.key.toLowerCase(); if (e.type === 'keydown' && (k === 'h' || k === 'escape') && ocultoUI) { mostrar(); return; } if (e.type === 'keydown' && k === 'h') { ocultar(); return; } if (!S.fotoTeclas) S.fotoTeclas = {}; S.fotoTeclas[k] = e.type === 'keydown'; if (e.key === 'Shift') S.fotoTeclas.shift = e.type === 'keydown'; };
     const dirEnfoque = h('b', null, 'Auto'), horaTxt = h('b', null, ''), expTxt = h('b', null, '0 EV');
     const poneHora = v => { S.hora = v; S.tLuz = 0; const hh = Math.floor(v), mm = Math.floor((v - hh) * 60 / 5) * 5; horaTxt.textContent = hh + ':' + String(mm).padStart(2, '0'); if (S.chipHora) S.chipHora.textContent = horaTxt.textContent; };
-    const libre = bt('Cámara libre: no', () => { if (S.camLibre) { S.camLibre = null; libre.textContent = 'Cámara libre: no'; } else { const d = new THREE.Vector3(); camera.getWorldDirection(d); S.camLibre = { pos: camera.position.clone(), yaw: Math.atan2(-d.x, -d.z), pitch: Math.asin(Math.max(-1, Math.min(1, d.y))) }; libre.textContent = 'Cámara libre: sí'; GM.ui.toast('WASD o flechas, Q y E suben y bajan, Mayús rápido, arrastra para girar'); } });
+    const pad = h('div', { class: 'ff-pad', style: { display: 'none' } }, ...[['▲', 'w'], ['◀', 'a'], ['▶', 'd'], ['▼', 's'], ['subir', 'e'], ['bajar', 'q']].map(([t, k]) => { const b = h('button', { class: 'btn btn-sec peq' }, t); const on = e => { e.preventDefault(); (S.fotoTeclas = S.fotoTeclas || {})[k] = true; }, off = () => { if (S.fotoTeclas) S.fotoTeclas[k] = false; }; b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off); return b; }));
+    const libre = bt('Cámara libre: no', () => { if (S.camLibre) { S.camLibre = null; libre.textContent = 'Cámara libre: no'; pad.style.display = 'none'; } else { const d = new THREE.Vector3(); camera.getWorldDirection(d); S.camLibre = { pos: camera.position.clone(), yaw: Math.atan2(-d.x, -d.z), pitch: Math.asin(Math.max(-1, Math.min(1, d.y))) }; libre.textContent = 'Cámara libre: sí'; if ('ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0) pad.style.display = ''; GM.ui.toast('WASD o flechas (o mando), Q y E suben y bajan, Mayús rápido, arrastra para girar'); } });
     const panel = h('div', { class: 'sede-foto-panel', style: { display: 'none' } },
       fila('Clima', ...[['sol', 'Despejado'], ['nubes', 'Nublado'], ['lluvia', 'Lluvia'], ['nieve', 'Nieve']].map(([t, n]) => bt(n, () => { GM.sede._clima(t); S.tLuz = 0; }))),
       fila('Hora', rango(5, 23.5, 0.1, S.hora || 12, poneHora), horaTxt),
       fila('Exposición', rango(-1.5, 1.5, 0.05, 0, v => { S.expFoto = Math.pow(2, v); expTxt.textContent = (v > 0 ? '+' : '') + v.toFixed(2) + ' EV'; }), expTxt),
       S.bokeh ? fila('Enfoque', rango(3, 90, 1, 20, v => { S.enfoqueManual = v; dirEnfoque.textContent = v + ' m'; }), dirEnfoque, bt('Auto', () => { S.enfoqueManual = null; dirEnfoque.textContent = 'Auto'; })) : null,
       S.bokeh ? fila('Apertura', rango(0, 1, 0.02, 0.35, v => { S.bokeh.uniforms.aperture.value = 0.00005 + v * 0.0006; S.bokeh.uniforms.maxblur.value = 0.004 + v * 0.02; })) : null,
-      fila('Cámara', libre, bt('Ocultar interfaz (H)', () => ocultar())));
+      fila('Cámara', libre, bt('Ocultar interfaz (H)', () => ocultar())),
+      fila('Guardar', ...[1, 2, 4].map(k => bt(k + 'x', e => { S.fotoRes = k; panel.querySelectorAll('.ff-res').forEach(q => { q.style.opacity = q.dataset.k == k ? 1 : 0.6; }); }, k)), bt('Marco', e => { S.fotoMarco = !S.fotoMarco; e.currentTarget.style.opacity = S.fotoMarco ? 1 : 0.6; }), bt('Sello', e => { S.fotoSello = !S.fotoSello; e.currentTarget.style.opacity = S.fotoSello ? 1 : 0.6; })));
     let ocultoUI = false; const fantasma = h('button', { class: 'sede-foto-fantasma', title: 'Mostrar la interfaz (H)', onclick: () => mostrar() }, '·');
     const ocultar = () => { ocultoUI = true; barra.style.display = 'none'; panel.style.display = 'none'; S.raiz.append(fantasma); }, mostrar = () => { ocultoUI = false; barra.style.display = ''; fantasma.remove(); };
     barra.insertBefore(h('button', { class: 'btn btn-sec peq', onclick: () => { panel.style.display = panel.style.display === 'none' ? '' : 'none'; } }, 'Ajustes'), barra.lastChild);
     window.addEventListener('keydown', teclasFoto); window.addEventListener('keyup', teclasFoto);
-    S.raiz.append(vin, panel, barra); GM.ui.toast('Modo foto: arrastra para girar, rueda o pellizco para acercar; «Ajustes» para hora, clima, exposición y más');
+    S.raiz.append(vin, panel, pad, barra); GM.ui.toast('Modo foto: arrastra para girar, rueda o pellizco para acercar; «Ajustes» para hora, clima, exposición y más');
   }
   // ---------- Paneles de sala (menús dentro del mundo) ----------
   const destino = sala => { const d = sala.destino.todos || sala.destino[S.st.modo]; return d && GM.ui.screens[d] ? d : null; };
@@ -765,7 +777,8 @@
         if (n.cabizbajo && !n.sentado) cabeza(n, 0.8);
       });
       saludos(dt);
-      { const lim = S.zoom * 1.5 + 8; S.gente.forEach(n => { const v = !n.oculto && Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z) < lim; n.obj.visible = v;
+      { const lim = S.zoom * 1.5 + 8; S.gente.forEach(n => { const dq = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z), v = !n.oculto && dq < lim; n.obj.visible = v;
+        { const cerca = v && dq < 26; if (cerca !== n._sombra) { n._sombra = cerca; n.obj.traverse(o => { if (o.isMesh) o.castShadow = cerca; }); } }   // solo proyectan sombra quienes están cerca: el dibujo de la sombra repetía a todos con sus 62 huesos
         // el esqueleto de quien no se ve (62 huesos por persona) no recalcula sus matrices: ahorra más de la mitad de updateMatrixWorld
         if (v) { if (n.obj.hasOwnProperty('updateMatrixWorld')) { delete n.obj.updateMatrixWorld; n.obj.matrixWorldNeedsUpdate = true; } } else if (!n.obj.hasOwnProperty('updateMatrixWorld')) n.obj.updateMatrixWorld = NOP_MATRIZ; }); } // fuera de la vista no se dibuja ni se anima
       if (S.zonas) S.zonas.forEach(z => z.obj.userData.anim(t));
@@ -773,7 +786,8 @@
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
       if (S.enFoto && S.camLibre) {   // cámara libre: WASD o flechas, Q y E para bajar y subir, Mayús para ir rápido; arrastrar para girar; rueda o pellizco para avanzar
         const L = S.camLibre, T = S.fotoTeclas || {}, v = (T.shift ? 24 : 7) * dt, fx = -Math.sin(L.yaw), fz = -Math.cos(L.yaw), rx = Math.cos(L.yaw), rz = -Math.sin(L.yaw);
-        const av = (T.w || T.arrowup ? 1 : 0) - (T.s || T.arrowdown ? 1 : 0), la = (T.d || T.arrowright ? 1 : 0) - (T.a || T.arrowleft ? 1 : 0), su = (T.e ? 1 : 0) - (T.q ? 1 : 0);
+        let av = (T.w || T.arrowup ? 1 : 0) - (T.s || T.arrowdown ? 1 : 0), la = (T.d || T.arrowright ? 1 : 0) - (T.a || T.arrowleft ? 1 : 0), su = (T.e ? 1 : 0) - (T.q ? 1 : 0);
+        { const gp = navigator.getGamepads && [...navigator.getGamepads()].find(q => q && q.connected); if (gp) { const z = a => Math.abs(a) < 0.15 ? 0 : a; av += -z(gp.axes[1] || 0); la += z(gp.axes[0] || 0); L.yaw -= z(gp.axes[2] || 0) * dt * 1.8; L.pitch = Math.max(-1.4, Math.min(1.4, L.pitch - z(gp.axes[3] || 0) * dt * 1.4)); su += ((gp.buttons[7] && gp.buttons[7].value) || 0) - ((gp.buttons[6] && gp.buttons[6].value) || 0); } }
         L.pos.x += (fx * av + rx * la) * v; L.pos.z += (fz * av + rz * la) * v; L.pos.y = Math.max(0.4, Math.min(120, L.pos.y + su * v));
         camera.position.copy(L.pos); camera.rotation.order = 'YXZ'; camera.rotation.set(L.pitch, L.yaw, 0); camera.far = 600;
       } else {

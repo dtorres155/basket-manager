@@ -113,60 +113,84 @@
   ],
   "textures": [
     {
-      "source": 1,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
     },
     {
-      "source": 0,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
     },
     {
-      "source": 2,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
     },
     {
-      "source": 4,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 4
+        }
+      }
     },
     {
-      "source": 3,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 3
+        }
+      }
     },
     {
-      "source": 5,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 5
+        }
+      }
     }
   ],
   "images": [
     {
       "name": "modern_arm_chair_01_legs_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modern_arm_chair_01_legs_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modern_arm_chair_01_legs_nor_gl_1k.ktx2"
     },
     {
       "name": "modern_arm_chair_01_legs_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modern_arm_chair_01_legs_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modern_arm_chair_01_legs_diff_1k.ktx2"
     },
     {
       "name": "modern_arm_chair_01_legs_metal-modern_arm_chair_01_legs_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modern_arm_chair_01_legs_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modern_arm_chair_01_legs_arm_1k.ktx2"
     },
     {
       "name": "modern_arm_chair_01_pillow_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modern_arm_chair_01_pillow_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modern_arm_chair_01_pillow_nor_gl_1k.ktx2"
     },
     {
       "name": "modern_arm_chair_01_pillow_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modern_arm_chair_01_pillow_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modern_arm_chair_01_pillow_diff_1k.ktx2"
     },
     {
       "name": "modern_arm_chair_01_pillow_metal-modern_arm_chair_01_pillow_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modern_arm_chair_01_pillow_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modern_arm_chair_01_pillow_arm_1k.ktx2"
     }
   ],
   "buffers": [
@@ -248,5 +272,11 @@
       ]
     }
   ],
-  "scene": 0
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_basisu"
+  ]
 }

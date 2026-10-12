@@ -113,42 +113,58 @@
   ],
   "textures": [
     {
-      "source": 1,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
     },
     {
-      "source": 0,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
     },
     {
-      "source": 2,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
     },
     {
-      "source": 3,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 3
+        }
+      }
     }
   ],
   "images": [
     {
       "name": "vintage_microwave_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/vintage_microwave_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "vintage_microwave_nor_gl_1k.ktx2"
     },
     {
       "name": "vintage_microwave_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/vintage_microwave_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "vintage_microwave_diff_1k.ktx2"
     },
     {
       "name": "vintage_microwave_metal-vintage_microwave_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/vintage_microwave_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "vintage_microwave_arm_1k.ktx2"
     },
     {
       "name": "vintage_microwave_diff-vintage_microwave_alpha",
-      "mimeType": "image/jpeg",
-      "uri": "textures/vintage_microwave_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "vintage_microwave_diff_1k.ktx2"
     }
   ],
   "buffers": [
@@ -231,5 +247,11 @@
       ]
     }
   ],
-  "scene": 0
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_basisu"
+  ]
 }

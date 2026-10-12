@@ -428,33 +428,45 @@
   ],
   "textures": [
     {
-      "source": 1,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
     },
     {
-      "source": 0,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
     },
     {
-      "source": 2,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
     }
   ],
   "images": [
     {
       "name": "metal_office_desk_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_office_desk_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_office_desk_nor_gl_1k.ktx2"
     },
     {
       "name": "metal_office_desk_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_office_desk_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_office_desk_diff_1k.ktx2"
     },
     {
       "name": "metal_office_desk_metal-metal_office_desk_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_office_desk_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_office_desk_arm_1k.ktx2"
     }
   ],
   "buffers": [
@@ -671,5 +683,11 @@
       ]
     }
   ],
-  "scene": 0
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_basisu"
+  ]
 }

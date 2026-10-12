@@ -383,60 +383,84 @@
   ],
   "textures": [
     {
-      "source": 1,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
     },
     {
-      "source": 0,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
     },
     {
-      "source": 2,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
     },
     {
-      "source": 4,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 4
+        }
+      }
     },
     {
-      "source": 3,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 3
+        }
+      }
     },
     {
-      "source": 5,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 5
+        }
+      }
     }
   ],
   "images": [
     {
       "name": "metal_trash_can_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_trash_can_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_trash_can_nor_gl_1k.ktx2"
     },
     {
       "name": "metal_trash_can_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_trash_can_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_trash_can_diff_1k.ktx2"
     },
     {
       "name": "metal_trash_can_metal-metal_trash_can_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_trash_can_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_trash_can_arm_1k.ktx2"
     },
     {
       "name": "metal_trash_can_rust_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_trash_can_rust_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_trash_can_rust_nor_gl_1k.ktx2"
     },
     {
       "name": "metal_trash_can_rust_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_trash_can_rust_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_trash_can_rust_diff_1k.ktx2"
     },
     {
       "name": "metal_trash_can_rust_metal-metal_trash_can_rust_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/metal_trash_can_rust_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "metal_trash_can_rust_arm_1k.ktx2"
     }
   ],
   "buffers": [
@@ -739,5 +763,11 @@
       ]
     }
   ],
-  "scene": 0
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_basisu"
+  ]
 }

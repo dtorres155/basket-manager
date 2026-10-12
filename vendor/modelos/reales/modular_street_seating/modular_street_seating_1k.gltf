@@ -757,114 +757,162 @@
   ],
   "textures": [
     {
-      "source": 1,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
     },
     {
-      "source": 0,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
     },
     {
-      "source": 2,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
     },
     {
-      "source": 4,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 4
+        }
+      }
     },
     {
-      "source": 3,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 3
+        }
+      }
     },
     {
-      "source": 5,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 5
+        }
+      }
     },
     {
-      "source": 7,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 7
+        }
+      }
     },
     {
-      "source": 6,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 6
+        }
+      }
     },
     {
-      "source": 8,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 8
+        }
+      }
     },
     {
-      "source": 10,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 10
+        }
+      }
     },
     {
-      "source": 9,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 9
+        }
+      }
     },
     {
-      "source": 11,
-      "sampler": 0
+      "sampler": 0,
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 11
+        }
+      }
     }
   ],
   "images": [
     {
       "name": "modular_street_seating_armrests_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_armrests_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_armrests_nor_gl_1k.ktx2"
     },
     {
       "name": "modular_street_seating_armrests_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_armrests_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_armrests_diff_1k.ktx2"
     },
     {
       "name": "modular_street_seating_armrests_metal-modular_street_seating_armrests_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_armrests_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_armrests_arm_1k.ktx2"
     },
     {
       "name": "modular_street_seating_supports_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_supports_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_supports_nor_gl_1k.ktx2"
     },
     {
       "name": "modular_street_seating_supports_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_supports_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_supports_diff_1k.ktx2"
     },
     {
       "name": "modular_street_seating_supports_metal-modular_street_seating_supports_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_supports_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_supports_arm_1k.ktx2"
     },
     {
       "name": "modular_street_seating_timber_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_timber_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_timber_nor_gl_1k.ktx2"
     },
     {
       "name": "modular_street_seating_timber_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_timber_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_timber_diff_1k.ktx2"
     },
     {
       "name": "modular_street_seating_timber_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_timber_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_timber_arm_1k.ktx2"
     },
     {
       "name": "modular_street_seating_connectors_nor_gl",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_connectors_nor_gl_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_connectors_nor_gl_1k.ktx2"
     },
     {
       "name": "modular_street_seating_connectors_diff",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_connectors_diff_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_connectors_diff_1k.ktx2"
     },
     {
       "name": "modular_street_seating_connectors_rough",
-      "mimeType": "image/jpeg",
-      "uri": "textures/modular_street_seating_connectors_arm_1k.jpg"
+      "mimeType": "image/ktx2",
+      "uri": "modular_street_seating_connectors_arm_1k.ktx2"
     }
   ],
   "buffers": [
@@ -1366,5 +1414,11 @@
       ]
     }
   ],
-  "scene": 0
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_texture_basisu"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_basisu"
+  ]
 }
