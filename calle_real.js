@@ -198,10 +198,11 @@
     const mPared = pared0(tex.base, tex.luz), mPared1 = pared0(tex.base1, tex.luz1), mPared2 = pared0(tex.base2, tex.luz2), PAREDES = [mPared, mPared1, mPared2];
     const mTienda = recortable(S, new THREE.MeshStandardMaterial({ map: tex.tienda, vertexColors: true, roughness: 0.7, emissive: 0xffd9a0, emissiveMap: tex.tienda, emissiveIntensity: 0, side: THREE.DoubleSide }));
     const mTecho = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }); if (GM.texturas) GM.texturas.aplicar(mTecho, 'Concrete034', { color: false, escala: 2, relieve: 0.6, rugMin: 0.8 }); recortable(S, mTecho);
+    const mMetal = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.35, side: THREE.DoubleSide }); if (GM.texturas) GM.texturas.aplicar(mMetal, 'Metal055A', { escala: 2.4, tinte: 0xd8dde2, rugMin: 0.35 }); recortable(S, mMetal);   // tejados de naves industriales: chapa
     const mTejas = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }); if (GM.texturas) GM.texturas.aplicar(mTejas, 'RoofingTiles013A', { escala: 2.6, tinte: club.pais === 'DE' || club.pais === 'US' ? 0x8f8a86 : 0xe9b9a0, relieve: 0.9 }); recortable(S, mTejas);
     S.ventanas.push(mPared, mPared1, mPared2, mTienda);
     const chunks = {};
-    const ch = b => { const k = Math.floor(b.cx / 90) + ',' + Math.floor(b.cz / 90); return chunks[k] || (chunks[k] = { w: [0, 1, 2].map(() => ({ P: [], N: [], U: [], C: [], I: [] })), g: { P: [], N: [], C: [], I: [] }, t: { P: [], N: [], U: [], C: [], I: [] }, r: { P: [], N: [], C: [], I: [] } }); };
+    const ch = b => { const k = Math.floor(b.cx / 90) + ',' + Math.floor(b.cz / 90); return chunks[k] || (chunks[k] = { w: [0, 1, 2].map(() => ({ P: [], N: [], U: [], C: [], I: [] })), g: { P: [], N: [], C: [], I: [] }, t: { P: [], N: [], U: [], C: [], I: [] }, r: { P: [], N: [], C: [], I: [] }, m: { P: [], N: [], C: [], I: [] } }); };
     const altura = b => {
       const h = U.hash(club.id + b.i), a = (h % 1000) / 1000;
       const lv = b.lv || ({ 1: b.ar < 220 ? 2 + (a < 0.3 ? 1 : 0) : 4 + Math.floor(a * 4), 2: 2 + Math.floor(a * 2.4), 3: 4 + Math.floor(a * 5), 4: 3, 5: 6, 6: 4, 7: 1, 8: 6, 9: 2, 10: 1, 11: 1, 12: 2, 13: 2, 0: b.ar > 700 ? 5 : 3 + Math.floor(a * 3) }[b.cl] || 3);
@@ -227,7 +228,7 @@
       }
     };
     const techo = (b, h) => {
-      const A = ch(b).g, R0 = ch(b).r, p = b.p, tc = b.cl === 10 ? col('#9aa3ab') : col(['#5b5753', '#6d6a66', '#8a7f73', '#7a8087', '#9a9088', '#6a5d52'][U.hash(b.i + 'rf') % 6]).offsetHSL(0, 0, ((U.hash(b.i + 'r') % 100) / 100 - 0.5) * 0.06);
+      const A = ch(b).g, R0 = b.cl === 9 ? ch(b).m : ch(b).r, p = b.p, tc = b.cl === 10 ? col('#9aa3ab') : col(['#5b5753', '#6d6a66', '#8a7f73', '#7a8087', '#9a9088', '#6a5d52'][U.hash(b.i + 'rf') % 6]).offsetHSL(0, 0, ((U.hash(b.i + 'r') % 100) / 100 - 0.5) * 0.06);
       const rf = (b.tm || 0) % 10; if (rf !== 1 && ((b.cl === 1 && b.ar < 420 && b.lv <= 4 && p.length <= 12) || ((rf === 2 || rf === 3) && p.length <= 14 && b.ar < 900 && b.cl !== 10))) {   // tejado a dos aguas sobre el rectángulo orientado de la casa
         let li = 0, ml = 0; for (let i = 0; i < p.length; i++) { const a = p[i], e = p[(i + 1) % p.length], l = Math.hypot(e[0] - a[0], e[1] - a[1]); if (l > ml) { ml = l; li = i; } }
         const a0 = p[li], e0 = p[(li + 1) % p.length], ux = (e0[0] - a0[0]) / ml, uz = (e0[1] - a0[1]) / ml, vx = -uz, vz = ux;
@@ -250,7 +251,7 @@
       const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 64).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: c1, roughness: 0.6 })); aro.scale.set(hx * 0.97, 1, hz * 0.97); aro.position.set((x0 + x1) / 2, b.h + 0.15, (z0 + z1) / 2); aro.userData = { cupula: true }; W.add(aro); }
     Object.keys(chunks).forEach(k => {
       const c = chunks[k], me = (A, mat, tri) => { if (!A.P.length) return; const g = geo(A.P, A.I, A.N, A.U, A.C), m = new THREE.Mesh(g, mat); m.userData = { real: 'edif' }; m.castShadow = alta; m.receiveShadow = alta; W.add(m); };
-      c.w.forEach((A, i) => me(A, PAREDES[i])); me(c.t, mTienda); me(c.r, mTecho); me(c.g, mTejas);
+      c.w.forEach((A, i) => me(A, PAREDES[i])); me(c.t, mTienda); me(c.r, mTecho); me(c.m, mMetal); me(c.g, mTejas);
     });
     S.mapaVec = vectorial(X);
     montar(S, M, st, X, roles, { W, G, club, c1, c2, afi, alta, rr, bloquearPoli, mAsf });

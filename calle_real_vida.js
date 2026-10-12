@@ -13,7 +13,9 @@
   function faros(obj) {
     const S = GM.sede._estado(); if (!S || typeof document === 'undefined') return;
     if (!S.farosMat) S.farosMat = new THREE.SpriteMaterial({ map: GM.sede.motor().textura('halo-faro', 64, (x, n) => { const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g.addColorStop(0, 'rgba(255,250,225,1)'); g.addColorStop(0.3, 'rgba(255,238,190,0.5)'); g.addColorStop(1, 'rgba(255,230,170,0)'); x.fillStyle = g; x.fillRect(0, 0, n, n); }), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false });
-    for (const sx of [-0.62, 0.62]) { const sp = new THREE.Sprite(S.farosMat); sp.scale.setScalar(1.5); sp.position.set(sx, 0.7, 2.3); obj.add(sp); }
+    for (const sx of [-0.62, 0.62]) { const sp = new THREE.Sprite(S.farosMat); sp.userData.halo = true; sp.scale.setScalar(1.5); sp.position.set(sx, 0.7, 2.3); obj.add(sp); }
+    if (!S.conoMat) S.conoMat = new THREE.MeshBasicMaterial({ map: GM.sede.motor().textura('cono-faro', 128, (x, n) => { const g = x.createLinearGradient(0, n, 0, 0); g.addColorStop(0, 'rgba(255,240,200,0.8)'); g.addColorStop(1, 'rgba(255,240,200,0)'); x.fillStyle = g; x.beginPath(); x.moveTo(n * 0.4, n); x.lineTo(n * 0.6, n); x.lineTo(n * 0.95, 0); x.lineTo(n * 0.05, 0); x.closePath(); x.fill(); }), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false });
+    if (GM.campus && GM.campus.config.calidad === 'alta') { const cn = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 9).rotateX(-Math.PI / 2), S.conoMat); cn.position.set(0, 0.06, 7); cn.renderOrder = 3; obj.add(cn); }   // cono de luz sobre el asfalto
   }
   async function poblar(S, M, st) {
     const { MODELOS, PIEL, PELO, coche, perro } = K();

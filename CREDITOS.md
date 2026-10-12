@@ -17,6 +17,7 @@
 | Cielos HDRI 1K (kloofendal_48d_partly_cloudy_puresky, overcast_soil_puresky, qwantani_dusk_2_puresky, dikhololo_night) | Poly Haven (Greg Zaal, Jarod Guest, Sergej Majboroda) | CC0 1.0 | `vendor/hdri/` |
 | Texturas: Asphalt031, PavingStones150, Metal055A (color, relieve y rugosidad, 1K); versiones KTX2 de todas las texturas (Basis Universal) | ambientCG (ambientcg.com) | CC0 1.0 | `vendor/texturas/`, `vendor/texturas_ktx2/` |
 | Transcodificador Basis Universal (basis_transcoder.js y .wasm) para leer KTX2 | Binomial LLC, copiado de Three.js | Apache 2.0 | `vendor/basis/` |
+| Clima medio mensual por ciudad (2015-2024: máximas, mínimas, días de lluvia y de nieve) | Open-Meteo.com (reanálisis ERA5, Copernicus Climate Change Service) | CC BY 4.0 | `datos_clima.js` (generado por `tools/clima_datos.js`) |
 
 Los iconos de la app (`vendor/icons/`) son propios del proyecto, generados con `tools/iconos.js`.
 

@@ -46,5 +46,5 @@
   }
   // Material nuevo con la textura real (o el color de respaldo si no hay texturas)
   function material(id, o) { o = o || {}; const m = new THREE.MeshStandardMaterial({ color: o.respaldo || 0x999999, roughness: 0.9 }); return aplicar(m, id, o); }
-  GM.texturas = { nieveU, mojadoU, precargar, aplicar, material, listo: () => ok, IDS };
+  GM.texturas = { _TX: TX, nieveU, mojadoU, precargar, aplicar, material, listo: () => ok, IDS };
 })();

@@ -71,14 +71,17 @@
       if (S.farolas) { S.farolas.emissiveIntensity = 0.4 + noche * 3.5; }
       if (S.charcosNoche) S.charcosNoche.opacity = noche * 0.9;
     if (S.haloFarola) S.haloFarola.opacity = noche * 0.95;
+    if (S.derrameMat) S.derrameMat.opacity = noche * 0.7;
+    if (S.conoMat) S.conoMat.opacity = Math.max(0, Math.min(1, (noche - 0.1) / 0.5)) * 0.4;
+    if (S.lamparas) S.lamparas.forEach(l => { l.intensity = noche * 45; });   // luces reales de las dos farolas más cercanas
     if (S.farosMat) S.farosMat.opacity = Math.max(0, Math.min(1, (noche - 0.1) / 0.5)) * 0.9;
     if (S.ventU) S.ventU.value = Math.max(0.35, Math.min(0.95, 0.97 - (hs - 20) * 0.11));   // a medida que avanza la noche se apagan ventanas
       if (S.ventanas) S.ventanas.forEach(m => { m.emissiveIntensity = (m.emissiveMap ? 0.95 : 0.25) * Math.max(0, Math.min(1, (h - 19) / 1.5)); });
       { const C = S.clima || { tipo: 'sol' }, ext = ctx.exterior(), gris = ext ? (C.tipo === 'lluvia' ? 0.75 : C.tipo === 'nieve' ? 0.55 : C.tipo === 'nubes' ? 0.42 : 0) : 0;
         if (gris) { const gn = gris * (1 - noche * 0.6), gc = new THREE.Color(0x8f99a4).lerp(new THREE.Color(0x283040), noche); S.luces.sol.intensity *= 1 - gn * 0.72; S.luces.cielo.color.lerp(new THREE.Color(0xa3acb6), gn * 0.6); if (S.scene.background && S.scene.background.isColor) S.scene.background.lerp(gc, gn * 0.85); if (S.scene.fog) { S.scene.fog.color.lerp(gc, gn * 0.85); if (!S.fogBase) S.fogBase = S.scene.fog.far; S.scene.fog.far = S.fogBase * (1 - gn * 0.35); } if (S.scene.environment) S.scene.environmentIntensity *= 1 - gn * 0.3; }
-        if (GM.texturas && GM.texturas.mojadoU) GM.texturas.mojadoU.value = ext ? (C.tipo === 'lluvia' ? 1 : C.ayer ? 0.35 : 0) : 0;
+        if (GM.texturas && GM.texturas.mojadoU) GM.texturas.mojadoU.value = ext ? (C.tipo === 'lluvia' ? 1 : C.ayer ? 0.6 * Math.max(0, 1 - (hs - 8) / 9) : 0) : 0;   // los charcos del día anterior se secan a lo largo de la jornada
         if (S.chipDia && S.dia && S.clima) S.chipDia.textContent = S.dia.texto + (ext ? '. ' + S.clima.texto : '');
-        if (GM.texturas && GM.texturas.nieveU) GM.texturas.nieveU.value = ext ? (C.tipo === 'nieve' ? 1 : C.nieve || 0) : 0;
+        if (GM.texturas && GM.texturas.nieveU) GM.texturas.nieveU.value = ext ? (C.tipo === 'nieve' ? Math.max(0.35, Math.min(1, 0.35 + (hs - 8) * 0.1)) : (C.nieve || 0) * Math.max(0, 1 - (hs - 8) / 14)) : 0;   // la nieve se acumula durante el día y la del día anterior se va fundiendo
       if (S.scene.fog) {   // neblina atmosférica: más cerrada al amanecer y al caer la tarde, y con tiempo gris
         const fg = S.scene.fog; if (!S.fogBase) S.fogBase = fg.far; if (!S.fogNear0) S.fogNear0 = fg.near;
         const alba = Math.max(0, Math.min(1, (sp.sale + 1.5 - hs) / 1.5)), bruma = Math.max(tarde * 0.6, alba) * (1 - noche * 0.5), gn2 = gris ? gris * (1 - noche * 0.6) : 0;

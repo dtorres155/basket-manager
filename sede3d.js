@@ -342,19 +342,38 @@
   const FILTROS = [['Natural', ''], ['Cálido', 'sepia(0.25) saturate(1.25) contrast(1.05)'], ['Frío', 'hue-rotate(-12deg) saturate(0.9) brightness(1.03)'], ['Intenso', 'contrast(1.18) saturate(1.35)'], ['Blanco y negro', 'grayscale(1) contrast(1.15)'], ['Película', 'sepia(0.4) contrast(1.1) brightness(0.95) saturate(0.85)']];
   function modoFoto() {
     if (!S || S.raiz.querySelector('.sede-foto')) return; const h = GM.h, cv = S.renderer.domElement; let f = 0; S.raiz.classList.add('en-foto');
-    const ocultos = []; S.scene.traverse(o => { if (o.visible && (o.isSprite || (o.userData && (o.userData.etiqueta || o.userData.zona)) || o === S.marcaDestino)) { o.visible = false; ocultos.push(o); } }); S.enFoto = true; (S.zonas || []).forEach(z => { if (z.obj.visible) { z.obj.visible = false; ocultos.push(z.obj); } }); if (S.yo) S.yo.obj.children.forEach(c => { if (c.geometry && c.geometry.type === 'RingGeometry' && c.visible) { c.visible = false; ocultos.push(c); } });
+    const ocultos = []; S.scene.traverse(o => { if (o.visible && ((o.isSprite && !(o.userData && (o.userData.halo || o.userData.foto)) && !(o.parent && o.parent.userData && (o.parent.userData.cielo || o.parent.userData.nubes))) || (o.userData && (o.userData.etiqueta || o.userData.zona)) || o === S.marcaDestino)) { o.visible = false; ocultos.push(o); } }); S.enFoto = true; (S.zonas || []).forEach(z => { if (z.obj.visible) { z.obj.visible = false; ocultos.push(z.obj); } }); if (S.yo) S.yo.obj.children.forEach(c => { if (c.geometry && c.geometry.type === 'RingGeometry' && c.visible) { c.visible = false; ocultos.push(c); } });
     const vin = h('div', { class: 'sede-foto-vineta', style: { display: 'none' } });
     const poner = () => { cv.style.filter = FILTROS[f][1]; nombre.textContent = FILTROS[f][0]; };
     const nombre = h('b', null, 'Natural');
     const guardar = () => { if (S.composer) S.composer.render(); else S.renderer.render(S.scene, S.camera); const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; const x = c.getContext('2d'); if (!x) return; x.filter = FILTROS[f][1] || 'none'; x.drawImage(cv, 0, 0);
       if (vin.style.display !== 'none') { const g = x.createRadialGradient(c.width / 2, c.height / 2, c.height * 0.35, c.width / 2, c.height / 2, c.height * 0.85); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)'); x.filter = 'none'; x.fillStyle = g; x.fillRect(0, 0, c.width, c.height); }
       const a = document.createElement('a'); a.download = 'basket-manager-' + S.st.fecha + '.png'; a.href = c.toDataURL('image/png'); document.body.append(a); a.click(); a.remove(); GM.ui.toast('Foto guardada'); };
-    const salir = () => { if (S.bokeh) S.bokeh.enabled = false; if (S.rayos) S.rayos.enabled = false; if (S.solSprite) S.solSprite.visible = false; cv.style.filter = ''; S.raiz.classList.remove('en-foto'); barra.remove(); vin.remove(); ocultos.forEach(o => { o.visible = true; }); S.enFoto = false; };
+    const salir = () => { window.removeEventListener('keydown', teclasFoto); window.removeEventListener('keyup', teclasFoto); S.camLibre = null; S.fotoTeclas = null; S.expFoto = 1; S.enfoqueManual = null; if (panel) panel.remove(); camera.far = 200; if (S.bokeh) S.bokeh.enabled = false; if (S.rayos) S.rayos.enabled = false; if (S.solSprite) S.solSprite.visible = false; cv.style.filter = ''; S.raiz.classList.remove('en-foto'); barra.remove(); vin.remove(); ocultos.forEach(o => { o.visible = true; }); S.enFoto = false; };
     const barra = h('div', { class: 'sede-foto' }, h('button', { class: 'btn btn-sec peq', onclick: () => { f = (f + FILTROS.length - 1) % FILTROS.length; poner(); } }, '‹'), nombre, h('button', { class: 'btn btn-sec peq', onclick: () => { f = (f + 1) % FILTROS.length; poner(); } }, '›'),
       h('button', { class: 'btn btn-sec peq', onclick: () => { vin.style.display = vin.style.display === 'none' ? '' : 'none'; } }, 'Viñeta'),
       S.bokeh ? h('button', { class: 'btn btn-sec peq', title: 'Profundidad de campo: enfoca al personaje y desenfoca el resto', onclick: e => { S.bokeh.enabled = !S.bokeh.enabled; e.currentTarget.style.opacity = S.bokeh.enabled ? 1 : 0.7; } }, 'Desenfoque') : null,
       S.rayos ? h('button', { class: 'btn btn-sec peq', title: 'Rayos de luz cuando el sol está delante de la cámara', onclick: e => { S.rayos.enabled = !S.rayos.enabled; if (!S.rayos.enabled && S.solSprite) S.solSprite.visible = false; e.currentTarget.style.opacity = S.rayos.enabled ? 1 : 0.7; } }, 'Rayos de luz') : null, h('button', { class: 'btn peq', onclick: guardar }, 'Guardar foto'), h('button', { class: 'btn btn-sec peq', onclick: salir }, 'Salir'));
-    S.raiz.append(vin, barra); GM.ui.toast('Modo foto: arrastra para girar, rueda o pellizco para acercar');
+    // ---------- Ajustes de foto: hora, clima, exposición, enfoque, apertura, cámara libre y ocultar la interfaz ----------
+    const camera = S.camera, fila = (t, ...hijos) => h('div', { class: 'ff-fila' }, h('span', null, t), ...hijos);
+    const rango = (min, max, paso, val, fn) => { const i = h('input', { type: 'range', min, max, step: paso }); i.value = val; i.oninput = () => fn(+i.value); return i; };
+    const bt = (t, fn) => h('button', { class: 'btn btn-sec peq', onclick: fn }, t);
+    const teclasFoto = e => { const k = e.key.toLowerCase(); if (e.type === 'keydown' && (k === 'h' || k === 'escape') && ocultoUI) { mostrar(); return; } if (e.type === 'keydown' && k === 'h') { ocultar(); return; } if (!S.fotoTeclas) S.fotoTeclas = {}; S.fotoTeclas[k] = e.type === 'keydown'; if (e.key === 'Shift') S.fotoTeclas.shift = e.type === 'keydown'; };
+    const dirEnfoque = h('b', null, 'Auto'), horaTxt = h('b', null, ''), expTxt = h('b', null, '0 EV');
+    const poneHora = v => { S.hora = v; S.tLuz = 0; const hh = Math.floor(v), mm = Math.floor((v - hh) * 60 / 5) * 5; horaTxt.textContent = hh + ':' + String(mm).padStart(2, '0'); if (S.chipHora) S.chipHora.textContent = horaTxt.textContent; };
+    const libre = bt('Cámara libre: no', () => { if (S.camLibre) { S.camLibre = null; libre.textContent = 'Cámara libre: no'; } else { const d = new THREE.Vector3(); camera.getWorldDirection(d); S.camLibre = { pos: camera.position.clone(), yaw: Math.atan2(-d.x, -d.z), pitch: Math.asin(Math.max(-1, Math.min(1, d.y))) }; libre.textContent = 'Cámara libre: sí'; GM.ui.toast('WASD o flechas, Q y E suben y bajan, Mayús rápido, arrastra para girar'); } });
+    const panel = h('div', { class: 'sede-foto-panel', style: { display: 'none' } },
+      fila('Clima', ...[['sol', 'Despejado'], ['nubes', 'Nublado'], ['lluvia', 'Lluvia'], ['nieve', 'Nieve']].map(([t, n]) => bt(n, () => { GM.sede._clima(t); S.tLuz = 0; }))),
+      fila('Hora', rango(5, 23.5, 0.1, S.hora || 12, poneHora), horaTxt),
+      fila('Exposición', rango(-1.5, 1.5, 0.05, 0, v => { S.expFoto = Math.pow(2, v); expTxt.textContent = (v > 0 ? '+' : '') + v.toFixed(2) + ' EV'; }), expTxt),
+      S.bokeh ? fila('Enfoque', rango(3, 90, 1, 20, v => { S.enfoqueManual = v; dirEnfoque.textContent = v + ' m'; }), dirEnfoque, bt('Auto', () => { S.enfoqueManual = null; dirEnfoque.textContent = 'Auto'; })) : null,
+      S.bokeh ? fila('Apertura', rango(0, 1, 0.02, 0.35, v => { S.bokeh.uniforms.aperture.value = 0.00005 + v * 0.0006; S.bokeh.uniforms.maxblur.value = 0.004 + v * 0.02; })) : null,
+      fila('Cámara', libre, bt('Ocultar interfaz (H)', () => ocultar())));
+    let ocultoUI = false; const fantasma = h('button', { class: 'sede-foto-fantasma', title: 'Mostrar la interfaz (H)', onclick: () => mostrar() }, '·');
+    const ocultar = () => { ocultoUI = true; barra.style.display = 'none'; panel.style.display = 'none'; S.raiz.append(fantasma); }, mostrar = () => { ocultoUI = false; barra.style.display = ''; fantasma.remove(); };
+    barra.insertBefore(h('button', { class: 'btn btn-sec peq', onclick: () => { panel.style.display = panel.style.display === 'none' ? '' : 'none'; } }, 'Ajustes'), barra.lastChild);
+    window.addEventListener('keydown', teclasFoto); window.addEventListener('keyup', teclasFoto);
+    S.raiz.append(vin, panel, barra); GM.ui.toast('Modo foto: arrastra para girar, rueda o pellizco para acercar; «Ajustes» para hora, clima, exposición y más');
   }
   // ---------- Paneles de sala (menús dentro del mundo) ----------
   const destino = sala => { const d = sala.destino.todos || sala.destino[S.st.modo]; return d && GM.ui.screens[d] ? d : null; };
@@ -493,6 +512,10 @@
   // ---------- Clima: el tiempo de cada día (según la fecha, el mes y el país), nubes, lluvia y suelo mojado ----------
   const TEMP = { ES: [11, 27], IT: [8, 26], GR: [12, 29], TR: [7, 27], DE: [2, 20], LT: [-3, 19], RS: [1, 24], FR: [5, 21], US: [2, 25] };
   function climaDe(st) {
+    { const CC = GM.climaCiudad && GM.climaCiudad[st.clubId]; if (CC) {   // clima medio real de la ciudad (2015-2024): máxima, mínima, días de lluvia y de nieve de cada mes
+        const mes = +st.fecha.slice(5, 7), az = f => (U.hash(f + 'clima' + st.clubId) >>> 0) / 4294967296, tipoDe = (f, m) => { const r = CC[m - 1], h = az(f); return h < r[3] / 100 ? 'nieve' : h < (r[3] + r[2]) / 100 ? 'lluvia' : h < (r[3] + r[2]) / 100 + 0.27 ? 'nubes' : 'sol'; };
+        const r = CC[mes - 1], tipo = tipoDe(st.fecha, mes), ay = U.addDays(st.fecha, -1), tAyer = tipoDe(ay, +ay.slice(5, 7)), temp = Math.round(r[0] * 0.72 + r[1] * 0.28 - (tipo === 'lluvia' ? 2 : tipo === 'nubes' ? 1 : 0) + (az(st.fecha + 't') * 5 - 2.5));
+        return { tipo, temp, ayer: tAyer === 'lluvia' || tAyer === 'nieve', nieve: tipo === 'nieve' ? 1 : tAyer === 'nieve' && temp <= 4 ? 0.5 : 0, texto: (tipo === 'nieve' ? 'Nieve' : tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado') + ', ' + temp + ' °C' }; } }
     const p = (st.equipos[st.clubId] || {}).pais, mes = +st.fecha.slice(5, 7), inv = [11, 12, 1, 2, 3].indexOf(mes) >= 0, ver = [6, 7, 8].indexOf(mes) >= 0;
     const pl = p === 'US' ? 0.14 : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? (inv ? 0.3 : 0.18) : (inv ? 0.18 : ver ? 0.04 : 0.11);
     const az = f => (U.hash(f + 'clima' + st.clubId) >>> 0) / 4294967296, h = az(st.fecha), ayer = az(U.addDays(st.fecha, -1)) < pl;
@@ -507,9 +530,12 @@
   function montarClima() {
     if (S.mundo) { const viejos = []; S.mundo.children.forEach(o => { if (o.userData && (o.userData.nubes || o.userData.cielo || o.userData.climaObj)) viejos.push(o); }); viejos.forEach(o => S.mundo.remove(o)); }   // al cambiar el clima se quitan lluvia, nieve, nubes y cielo anteriores
     S.lluviaObj = null; S.nubesObj = null; S.nieveObj = null; S.fogBase = null; if (!exterior() || !S.mundo) return; const C = S.clima;
-    if (!texNube && typeof document !== 'undefined') { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext && c.getContext('2d'); if (x) { for (let i = 0; i < 7; i++) { const cx = 30 + i * 11, cy = 64 + Math.sin(i * 1.7) * 12, r = 22 + (i % 3) * 8, g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); } texNube = new THREE.CanvasTexture(c); } }
+    if (!texNube && typeof document !== 'undefined') { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext && c.getContext('2d'); if (x) { for (let i = 0; i < 7; i++) { const cx = 30 + i * 11, cy = 64 + Math.sin(i * 1.7) * 12, r = 22 + (i % 3) * 8, g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); }
+      x.globalCompositeOperation = 'source-atop'; { const sh = x.createLinearGradient(0, 30, 0, 100); sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(95,108,130,0.6)'); x.fillStyle = sh; x.fillRect(0, 0, 128, 128); }   // luz arriba y base gris
+      texNube = new THREE.CanvasTexture(c); } }
     const nN = C.tipo === 'lluvia' || C.tipo === 'nieve' ? 22 : C.tipo === 'nubes' ? 16 : 5, gN = new THREE.Group(); gN.userData = { nubes: true };
-    if (texNube) for (let i = 0; i < nN; i++) { const m = new THREE.SpriteMaterial({ map: texNube, color: C.tipo === 'sol' ? 0xffffff : C.tipo === 'nubes' ? 0xd5dbe2 : C.tipo === 'nieve' ? 0xc4cad2 : 0x9ea7b0, transparent: true, opacity: 0.85, depthWrite: false, fog: false }), s = new THREE.Sprite(m); const a = i * 2.39, d = 60 + (i * 37) % 140; s.position.set(Math.cos(a) * d, 55 + (i % 5) * 8, Math.sin(a) * d); s.scale.set(70 + (i % 4) * 20, 30 + (i % 3) * 8, 1); gN.add(s); }
+    if (texNube) for (let i = 0; i < nN; i++) { const m = new THREE.SpriteMaterial({ map: texNube, color: C.tipo === 'sol' ? 0xffffff : C.tipo === 'nubes' ? 0xd5dbe2 : C.tipo === 'nieve' ? 0xc4cad2 : 0x9ea7b0, transparent: true, opacity: 0.85, depthWrite: false, fog: false }), s = new THREE.Sprite(m); const a = i * 2.39, d = 60 + (i * 37) % 140; s.position.set(Math.cos(a) * d, 55 + (i % 5) * 8, Math.sin(a) * d); s.scale.set(70 + (i % 4) * 20, 30 + (i % 3) * 8, 1); gN.add(s);
+      for (const [dx, dy, dz, k, op] of [[0.32, 0.1, -3, 0.7, 0.8], [-0.38, -0.05, 3, 0.8, 0.7]]) { const s2 = new THREE.Sprite(m.clone()); s2.material.opacity = op * 0.85; s2.position.set(s.position.x + dx * s.scale.x, s.position.y + dy * s.scale.y, s.position.z + dz); s2.scale.set(s.scale.x * k, s.scale.y * k, 1); gN.add(s2); } }
     S.mundo.add(gN); S.nubesObj = gN;
     montarCieloNoche(C);
     if (C.tipo === 'nieve') { const N = 2600, pos = new Float32Array(N * 3); for (let i = 0; i < N; i++) pos.set([(Math.random() - 0.5) * 70, Math.random() * 28, (Math.random() - 0.5) * 70], i * 3); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const pn = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 2.6, sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false })); pn.frustumCulled = false; pn.userData.climaObj = true; S.mundo.add(pn); S.nieveObj = pn; }
@@ -669,11 +695,12 @@
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
     const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
+    const lamparas = alta && ['calle', 'pueblo'].indexOf(escena || 'sede') >= 0 ? [0, 1].map(() => { const l = new THREE.PointLight(0xffc27a, 0, 20, 2); l.position.set(0, 4.3, 0); scene.add(l); return l; }) : null;   // intensidad 0 de día: así el shader no se recompila al anochecer
     const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; { const ms = nv === 'ultra' ? 3072 : ['sede', 'casa', 'interior'].indexOf(escena || 'sede') >= 0 ? 1536 : 2048; sol.shadow.mapSize.set(ms, ms); }   // medido con tools/gpu_tiempo.js: la sombra es lo más caro
     Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; sol.shadow.radius = 4; sol.shadow.blurSamples = 12; scene.add(sol, sol.target);
     // Cascada lejana (solo Ultra): segunda luz solar con un mapa de 260 m que reparte con la cercana, así las sombras llegan a las calles de alrededor
     let sol2 = null; if (alta && nv === 'ultra') { sol2 = new THREE.DirectionalLight(0xfff1dc, 1); sol2.castShadow = true; sol2.shadow.mapSize.set(1536, 1536); Object.assign(sol2.shadow.camera, { left: -130, right: 130, top: 110, bottom: -110, near: 1, far: 260 }); sol2.shadow.bias = -0.001; sol2.shadow.normalBias = 0.06; sol2.shadow.radius = 3; scene.add(sol2, sol2.target); }
-    S = { hora: 8, luces: { cielo, sol, sol2 }, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
+    S = { hora: 8, luces: { cielo, sol, sol2 }, lamparas, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
     if (alta && THREE.EffectComposer && renderer.capabilities && renderer.capabilities.isWebGL2) { try {
       const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 }), comp = new THREE.EffectComposer(renderer, rt);
@@ -702,6 +729,8 @@
       const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / yo.obj.scale.x);
       if (S.escena !== 'sede') hud(st);   // la cabecera usa datos de la escena (nombre del pueblo)
       await poblar(st); cargando.remove();
+      // se compilan ya todos los shaders, también los de quien aún no se ve: así no hay parones cuando aparecen (getProgramInfoLog llegaba al 6 % de la CPU)
+      try { const ocultos = []; S.scene.traverse(o => { if (!o.visible && (o.isMesh || o.isSprite || o.isPoints || o.isLine)) { o.visible = true; ocultos.push(o); } }); await (renderer.compileAsync ? renderer.compileAsync(S.scene, S.camera) : Promise.resolve(renderer.compile(S.scene, S.camera))); ocultos.forEach(o => { o.visible = false; }); } catch (e) { }
     }).catch(e => { cargando.textContent = 'No se ha podido cargar la sede: ' + e.message; console.error(e); });
     controles(renderer.domElement);
     (function bucle() {
@@ -711,11 +740,12 @@
       if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); else if (S.yo.bici && S.yo.actual === 'bici') pedalear(S.yo, dt); if (!S.construccion) S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
-      S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente(); }
+      if (!S.enFoto) S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente();
+        if (S.lamparas && S.farolasPos && S.noche > 0.02) { const ord = S.farolasPos.map(q => [Math.hypot(q[0] - S.foco.x, q[1] - S.foco.z), q]).sort((a, b) => a[0] - b[0]); S.lamparas.forEach((l, i) => { const q = ord[i] && ord[i][1]; if (q) l.position.set(q[0], 4.3, q[1]); }); } }
       // fundido entre cielos HDRI: baja la luz de reflejos, cambia de cielo y vuelve a subirla
       if (S.hdriPend) { S.envMult = Math.max(0.3, (S.envMult == null ? 1 : S.envMult) - dt * 3); if (S.envMult <= 0.3) cambiarCielo(); } else if (S.envMult != null && S.envMult < 1) S.envMult = Math.min(1, S.envMult + dt * 1.5);
       if (S.scene.environment && S.envObj != null && S.envMult != null) S.scene.environmentIntensity = S.envObj * S.envMult;
-      if (S.expObj) { const ex = S.renderer.toneMappingExposure; EXP_PREV = { v: ex, ext: exterior() }; S.renderer.toneMappingExposure = Math.abs(ex - S.expObj) < 0.002 ? S.expObj : ex + (S.expObj - ex) * Math.min(1, dt * 1.5); }
+      if (S.expObj) { const ex = S.renderer.toneMappingExposure, obj = S.expObj * (S.enFoto && S.expFoto ? S.expFoto : 1); EXP_PREV = { v: ex, ext: exterior() }; S.renderer.toneMappingExposure = Math.abs(ex - obj) < 0.002 ? obj : ex + (obj - ex) * Math.min(1, dt * 1.5); }
       if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
       if (S.escena === 'interior' && GM.interiores && GM.interiores.actualizar) GM.interiores.actualizar(S, motor(), dt);
@@ -741,11 +771,17 @@
       if (S.zonas) S.zonas.forEach(z => z.obj.userData.anim(t));
       if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
-      const inc = S.inc || 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z);
+      if (S.enFoto && S.camLibre) {   // cámara libre: WASD o flechas, Q y E para bajar y subir, Mayús para ir rápido; arrastrar para girar; rueda o pellizco para avanzar
+        const L = S.camLibre, T = S.fotoTeclas || {}, v = (T.shift ? 24 : 7) * dt, fx = -Math.sin(L.yaw), fz = -Math.cos(L.yaw), rx = Math.cos(L.yaw), rz = -Math.sin(L.yaw);
+        const av = (T.w || T.arrowup ? 1 : 0) - (T.s || T.arrowdown ? 1 : 0), la = (T.d || T.arrowright ? 1 : 0) - (T.a || T.arrowleft ? 1 : 0), su = (T.e ? 1 : 0) - (T.q ? 1 : 0);
+        L.pos.x += (fx * av + rx * la) * v; L.pos.z += (fz * av + rz * la) * v; L.pos.y = Math.max(0.4, Math.min(120, L.pos.y + su * v));
+        camera.position.copy(L.pos); camera.rotation.order = 'YXZ'; camera.rotation.set(L.pitch, L.yaw, 0); camera.far = 600;
+      } else {
+      const inc = S.inc || 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z); camera.far = 200; }
       // el mapa de sombras se refresca un fotograma de cada dos (la sombra es lo más caro del dibujo); en Ultra, cada uno
       if (renderer.shadowMap.enabled) { S.nSombra = ((S.nSombra || 0) + 1) % 4; const l1 = S.luces.sol.shadow, l2 = S.luces.sol2 && S.luces.sol2.shadow; l1.autoUpdate = false; l1.needsUpdate = nv === 'ultra' || S.nSombra % 2 === 0; if (l2) { l2.autoUpdate = false; l2.needsUpdate = S.nSombra === 0; } }   // sombra cercana a medio ritmo (cada fotograma en Ultra) y la lejana a un cuarto
       if (S.enFoto && S.composer) {   // modo foto: enfoque al personaje y rayos desde el sol
-        if (S.bokeh && S.bokeh.enabled) S.bokeh.uniforms.focus.value = camera.position.distanceTo(S.foco);
+        if (S.bokeh && S.bokeh.enabled) S.bokeh.uniforms.focus.value = S.enfoqueManual != null ? S.enfoqueManual : camera.position.distanceTo(S.yo ? S.yo.obj.position : S.foco);
         if (S.rayos && S.rayos.enabled) { const l = S.luces.sol, dir = new THREE.Vector3().subVectors(l.position, l.target.position).normalize(), p = camera.position.clone().addScaledVector(dir, 800).project(camera), delante = dir.dot(new THREE.Vector3().subVectors(l.target.position, camera.position).normalize()) > 0; S.rayos.uniforms.sol.value.set(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5); S.rayos.uniforms.fuerza.value = delante ? 0.55 * (1 - S.noche) : 0;
           // el cielo no tiene disco solar: se pone un resplandor suave (sprite aditivo) en la dirección del sol, solo con los rayos activados
           if (!S.solSprite) { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,250,235,1)'); g.addColorStop(0.12, 'rgba(255,240,205,0.9)'); g.addColorStop(0.4, 'rgba(255,215,160,0.25)'); g.addColorStop(1, 'rgba(255,200,140,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); const m = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true, fog: false, toneMapped: false, transparent: true }); S.solSprite = new THREE.Sprite(m); S.solSprite.scale.setScalar(34); S.solSprite.renderOrder = 99; S.solSprite.userData.foto = true; S.scene.add(S.solSprite); }

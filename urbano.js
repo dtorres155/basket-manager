@@ -110,6 +110,7 @@
     caja(g, 0.55, 0.14, 0.3, oscuro, x + sx * 1.0, 4.42, z + sz * 1.0, ry);
     caja(g, 0.45, 0.03, 0.22, S.farolas, x + sx * 1.0, 4.39, z + sz * 1.0, ry, false);
     { const hl = new THREE.Sprite(S.haloFarola); hl.scale.setScalar(2.6); hl.position.set(x + sx * 1.0, 4.3, z + sz * 1.0); hl.userData = { halo: true }; g.add(hl); }
+    (S.farolasPos = S.farolasPos || []).push([x + sx * 1.0, z + sz * 1.0]);
     const ch = new THREE.Mesh(new THREE.PlaneGeometry(10, 10).rotateX(-Math.PI / 2), S.charcosNoche); ch.position.set(x + sx * 1.0, 0.02, z + sz * 1.0); ch.renderOrder = 2; g.add(ch);
     G.bloquea(x - 0.2, z - 0.2, x + 0.2, z + 0.2);
   }

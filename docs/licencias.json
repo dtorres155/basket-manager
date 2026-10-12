@@ -88,5 +88,11 @@
   "autor": "Binomial LLC, copiado de Three.js",
   "licencia": "Apache 2.0",
   "donde": "`vendor/basis/`"
+ },
+ {
+  "recurso": "Clima medio mensual por ciudad (2015-2024: máximas, mínimas, días de lluvia y de nieve)",
+  "autor": "Open-Meteo.com (reanálisis ERA5, Copernicus Climate Change Service)",
+  "licencia": "CC BY 4.0",
+  "donde": "`datos_clima.js` (generado por `tools/clima_datos.js`)"
  }
 ]
