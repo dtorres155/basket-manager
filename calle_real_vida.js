@@ -109,7 +109,7 @@
     fp('terrazas'); S.tAmb = 40 + r() * 60;
     S.perfilCoches = true;
     // Multitud lejana en la GPU (multitud_gpu.js): cientos de peatones por las aceras con una sola llamada de dibujo; los cercanos son las personas de verdad
-    if (!S.rua && GM.multGPU && vias.length && !(GM.campus && GM.campus.config.nivel === 'bajo')) S.multGPU = GM.multGPU.crear(S, vias, Math.round((alta ? 260 : 100) * (GM.campus && GM.campus.factorGente ? GM.campus.factorGente() : 1)));
+    if (!S.rua && GM.multGPU && vias.length && !(GM.campus && GM.campus.config.nivel === 'bajo')) S.multGPU = GM.multGPU.crear(S, vias, Math.round((alta ? 260 : 100) * (GM.campus && GM.campus.factorGente ? GM.campus.factorGente() : 1)), { bancos: S.bancosPos, puntos: S.paseoBase });
     fp('antes de calle viva'); if (GM.calleVida) { GM.calleVida.construir(S, M, st, { W: S.mundo, G: S.G, r, club }); await GM.calleVida.poblar(S, M, st); } fp('calle viva');
   }
   function punto(vi, s) {   // posición y tangente a la distancia s de la calle

@@ -5,12 +5,29 @@
    El código del worker es la función `cuerpo` (se serializa a un Blob, así funciona igual en la web, el móvil y la app de escritorio). */
 (function () {
   function cuerpo() {
-    let W = 0, H = 0, b = null, c = 1, x0 = 0, z0 = 0, A = null;
+    let W = 0, H = 0, b = null, c = 1, x0 = 0, z0 = 0, A = null, BW = 0, BH = 0, grueso = null; const cache = new Map();   // grueso: rejilla de bloques de 8x8 celdas (6 m) para trazar un corredor; cache: caminos ya calculados
     const libre = (i, j) => i >= 0 && j >= 0 && i < W && j < H && !b[j * W + i], celda = (x, z) => [Math.floor((x - x0) / c), Math.floor((z - z0) / c)], centro = (i, j) => [x0 + (i + 0.5) * c, z0 + (j + 0.5) * c];
     const DIR = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
     const ve = (a, bb) => { const d = Math.hypot(bb[0] - a[0], bb[1] - a[1]), n = Math.ceil(d / 0.2), px = d ? -(bb[1] - a[1]) / d * 0.22 : 0, pz = d ? (bb[0] - a[0]) / d * 0.22 : 0;
       for (let k = 1; k < n; k++) { const x = a[0] + (bb[0] - a[0]) * k / n, z = a[1] + (bb[1] - a[1]) * k / n; for (const s of [0, 1, -1]) { const [i, j] = celda(x + px * s, z + pz * s); if (!libre(i, j)) return false; } } return true; };
+    // Búsqueda en dos niveles: A* sobre bloques de 8x8 celdas (transitable si tiene 16 celdas libres o más) da un corredor de bloques y la búsqueda fina solo expande dentro de él (más un bloque de margen)
+    function corredor(si, sj, ti, tj) {
+      const sb = (sj >> 3) * BW + (si >> 3), tb = (tj >> 3) * BW + (ti >> 3); if (!grueso[sb] || !grueso[tb]) return null; const N = BW * BH, g = new Float32Array(N).fill(Infinity), de = new Int32Array(N).fill(-1), cer = new Uint8Array(N), hf = [], hn = [], th = Math.floor(tb / BW), tw = tb % BW;
+      const meter = (f, n) => { hf.push(f); hn.push(n); let i = hf.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (hf[p] <= hf[i]) break; [hf[p], hf[i]] = [hf[i], hf[p]]; [hn[p], hn[i]] = [hn[i], hn[p]]; i = p; } };
+      const sacar = () => { const n0 = hn[0], f = hf.pop(), n = hn.pop(); if (hf.length) { hf[0] = f; hn[0] = n; let i = 0; for (;;) { let cc = 2 * i + 1; if (cc >= hf.length) break; if (cc + 1 < hf.length && hf[cc + 1] < hf[cc]) cc++; if (hf[cc] >= hf[i]) break; [hf[cc], hf[i]] = [hf[i], hf[cc]]; [hn[cc], hn[i]] = [hn[i], hn[cc]]; i = cc; } } return n0; };
+      g[sb] = 0; meter(0, sb); let ok = false;
+      while (hf.length) { const cur = sacar(); if (cur === tb) { ok = true; break; } if (cer[cur]) continue; cer[cur] = 1; const ci = cur % BW, cj = (cur / BW) | 0;
+        for (const [di, dj, cost] of DIR) { const ni = ci + di, nj = cj + dj; if (ni < 0 || nj < 0 || ni >= BW || nj >= BH) continue; const n = nj * BW + ni; if (!grueso[n]) continue; const gg = g[cur] + cost; if (gg < g[n]) { g[n] = gg; de[n] = cur; meter(gg + Math.hypot(ni - tw, nj - th), n); } } }
+      if (!ok) return null; const mask = new Uint8Array(N); for (let k = tb; k >= 0; k = de[k]) { const ci = k % BW, cj = (k / BW) | 0; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const ni = ci + di, nj = cj + dj; if (ni >= 0 && nj >= 0 && ni < BW && nj < BH) mask[nj * BW + ni] = 1; } }
+      return mask;
+    }
     function buscar(desde, hasta, tope) {
+      const [s0, s1] = celda(desde[0], desde[1]), [t0, t1] = celda(hasta[0], hasta[1]), clave = s0 + ',' + s1 + ',' + t0 + ',' + t1; if (cache.has(clave)) return cache.get(clave);
+      let mask = null; if (grueso && Math.hypot(s0 - t0, s1 - t1) > 45 && s0 >= 0 && s1 >= 0 && t0 >= 0 && t1 >= 0 && s0 < W && s1 < H && t0 < W && t1 < H) mask = corredor(s0, s1, t0, t1);
+      let r = buscarFino(desde, hasta, tope, mask); if (mask && (!r || !r.llega)) r = buscarFino(desde, hasta, tope, null);   // si el corredor no basta se busca sin límite
+      if (cache.size > 600) cache.delete(cache.keys().next().value); cache.set(clave, r); return r;
+    }
+    function buscarFino(desde, hasta, tope, mask) {
       let [si, sj] = celda(desde[0], desde[1]), [ti, tj] = celda(hasta[0], hasta[1]);
       const cerca = (i, j, ri, rj) => { if (libre(i, j)) return [i, j]; let mejor = null, md = Infinity;
         for (let r = 1; r <= 60; r++) { if (mejor && r > Math.sqrt(md) + 1) break;
@@ -25,7 +42,7 @@
       while (hf.length) {
         if (++exp > MAX) break; const cur = sacar(); if (cur === fin) break; if (A.cer[cur] === gen) continue; A.cer[cur] = gen;
         const ci = cur % W, cj = (cur / W) | 0; { const hh = h(ci, cj); if (hh < mejorH) { mejorH = hh; mejorN = cur; } }
-        for (const [di, dj, cost] of DIR) { const ni = ci + di, nj = cj + dj; if (!libre(ni, nj)) continue; if (di && dj && (!libre(ci + di, cj) || !libre(ci, cj + dj))) continue;
+        for (const [di, dj, cost] of DIR) { const ni = ci + di, nj = cj + dj; if (!libre(ni, nj)) continue; if (mask && !mask[(nj >> 3) * BW + (ni >> 3)]) continue; if (di && dj && (!libre(ci + di, cj) || !libre(ci, cj + dj))) continue;
           const n = nj * W + ni, g = A.gS[cur] + cost; if (A.gen[n] !== gen || g < A.gS[n]) { A.gen[n] = gen; A.gS[n] = g; A.de[n] = cur; meter(g + h(ni, nj), n); } }
       }
       const llega = A.gen[fin] === gen && A.de[fin] >= 0 || fin === ini, meta = llega ? fin : mejorN; if (!llega && meta === ini) return null;
@@ -35,7 +52,7 @@
       return { camino: out, llega, truncado: exp > MAX };
     }
     self.onmessage = e => { const m = e.data;
-      if (m.t === 'rejilla') { W = m.W; H = m.H; b = m.b; c = m.c; x0 = m.x0; z0 = m.z0; return; }
+      if (m.t === 'rejilla') { W = m.W; H = m.H; b = m.b; c = m.c; x0 = m.x0; z0 = m.z0; cache.clear(); BW = Math.ceil(W / 8); BH = Math.ceil(H / 8); grueso = new Uint8Array(BW * BH); const cnt = new Uint8Array(BW * BH); for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (!b[j * W + i]) cnt[(j >> 3) * BW + (i >> 3)]++; for (let k = 0; k < cnt.length; k++) grueso[k] = cnt[k] >= 16 ? 1 : 0; return; }
       if (m.t === 'buscar') { let r = null; try { r = buscar(m.desde, m.hasta, m.tope); } catch (er) { r = null; } self.postMessage({ id: m.id, r }); } };
   }
   function crear(G) {

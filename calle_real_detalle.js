@@ -18,6 +18,10 @@
     const libre = (x, z) => { const [i, j] = G.celda(x, z); return G.libre(i, j) && G.libre(i + 1, j) && G.libre(i - 1, j) && G.libre(i, j + 1) && G.libre(i, j - 1); };
     const caja = (w, h, d, x, y, z) => new THREE.BoxGeometry(w, h, d).translate(x, y, z), fundir = l => THREE.mergeGeometries(l);
     const inst = (geom, mat, items, nom, sombra) => {
+      if (items.length > 40) { const celdas = {}; items.forEach(o => { const k = Math.floor(o.x / 90) + ',' + Math.floor(o.z / 90); (celdas[k] = celdas[k] || []).push(o); }); const ks = Object.keys(celdas); if (ks.length > 1) { let ult = null; ks.forEach(k => { ult = inst1(geom, mat, celdas[k], nom, sombra); }); return ult; } }
+      return inst1(geom, mat, items, nom, sombra);
+    };
+    const inst1 = (geom, mat, items, nom, sombra) => {
       if (!items.length) return null; const im = new THREE.InstancedMesh(geom, mat, items.length);
       items.forEach((o, i) => { q.setFromAxisAngle(eje, o.ry || 0); esc.set(o.sx || 1, o.sy || 1, o.sz || 1); m4.compose(v3.set(o.x, o.y || 0, o.z), q, esc); im.setMatrixAt(i, m4); if (o.c !== undefined) { cc.set(o.c); im.setColorAt(i, cc); } });
       im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.userData = { detalle: nom }; im.castShadow = !!sombra && alta; im.receiveShadow = alta; W.add(im); return im;
@@ -127,6 +131,7 @@
       else if (h < 23 && contenedores.length < 60 && m.k >= 3) { for (let k = 0; k < 3; k++) { const ox = p[0] + Math.cos(m.ry + 1.57) * (k - 1) * 1.25, oz = p[1] - Math.sin(m.ry + 1.57) * (k - 1) * 1.25; contenedores.push({ x: ox, z: oz, ry: m.ry, c: ['#2e6b3a', '#d4a017', '#2f6f9e'][k] }); bloquea(ox, oz, 0.6); } ocupa(p[0], p[1]); }
     });
     X.PT.forEach(p => { if (ocupado(p.x, p.z) || !libre(p.x, p.z)) return; const m = mirar(p.x, p.z); if (p.t === 4) bancos.push({ x: p.x, z: p.z, ry: m ? m.ry : 0, c: '#5a4630' }); else if (p.t === 5) papeleras.push({ x: p.x, z: p.z, c: '#2f4f3a' }); else return; ocupa(p.x, p.z); });
+    S.bancosPos = bancos;   // posiciones de los bancos: sientan a peatones de la multitud de la GPU (multitud_gpu.js)
     inst(fundir([caja(1.6, 0.06, 0.45, 0, 0.45, 0), caja(1.6, 0.4, 0.05, 0, 0.78, -0.2), caja(0.06, 0.45, 0.4, -0.7, 0.22, 0), caja(0.06, 0.45, 0.4, 0.7, 0.22, 0)]), blanco, bancos, 'bancos', true);
     inst(fundir([new THREE.CylinderGeometry(0.22, 0.2, 0.9, 10).translate(0, 0.45, 0), new THREE.CylinderGeometry(0.25, 0.25, 0.06, 10).translate(0, 0.93, 0)]), blanco, papeleras, 'papeleras', true);
     inst(fundir([new THREE.CylinderGeometry(0.1, 0.12, 0.7, 8).translate(0, 0.35, 0), new THREE.SphereGeometry(0.1, 8, 6).translate(0, 0.72, 0)]), mat(0xc0392b), hidrantes, 'hidrantes', true);
