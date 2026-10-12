@@ -186,6 +186,7 @@
   const ROPA = ['#c0392b', '#2f6f9e', '#f1c40f', '#2e7d32', '#e84393', '#e67e22', '#8e44ad'];
   function perfilVecino(r, PIEL, PELO, MODELOS, club, fan) {
     const k = r(), tipo = k < 0.18 ? 'nino' : k < 0.42 ? 'mayor' : 'adulto', o = { modelo: MODELOS[(r() * MODELOS.length) | 0], piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0], ropa: fan ? [club.colores[0], club.colores[1] || '#222'] : null };
+    if (GM.catalogo) { const g = GM.catalogo.generar(r, { pais: club.pais || '', mes: +String((GM.state && GM.state.fecha) || '2026-09-01').slice(5, 7), club, hincha: fan, edad: tipo === 'adulto' && r() < 0.4 ? 'joven' : tipo }); return { tipo, o: g }; }
     if (tipo === 'nino') { o.altura = 108 + r() * 30; o.ropa = [ROPA[(r() * ROPA.length) | 0], ROPA[(r() * ROPA.length) | 0]]; }
     else if (tipo === 'mayor') { o.altura = 150 + r() * 20; o.pelo = '#c9c9c9'; if (!fan) o.ropa = ['#6b5a48', '#8a7a68']; }
     else o.altura = 158 + r() * 28;

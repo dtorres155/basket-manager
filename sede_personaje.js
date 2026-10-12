@@ -48,6 +48,7 @@
       }
       if (o.complexion !== undefined) { const k = [0.93, 1, 1.08][o.complexion] || 1; obj.scale.x *= k; obj.scale.z *= k; }
       if (o.cara && B.Head) { const e = [null, [1.07, 0.95, 1.04], [0.94, 1.07, 0.98], [1.09, 1.0, 1.03]][o.cara]; if (e) B.Head.scale.set(e[0], e[1], e[2]); }
+      if (o.cabeza && B.Head) B.Head.scale.multiplyScalar(o.cabeza);
       complementos(obj, B, o);
       return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa, ropa: o.ropa };
     }

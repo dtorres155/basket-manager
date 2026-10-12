@@ -286,3 +286,9 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 - 20c hecho: peatones de la multitud de la GPU con densidad según la hora, entran en portales y cambian de modo a lo largo del día.
 - 21c hecho: campos de flujo en el worker de navegación para destinos frecuentes (A* 46 ms, con campo 17 ms).
 - 21d pendiente: grafo de calles con cruces (depende del punto 31). Datos más allá de 480 m (punto 31).
+
+## Estado tras la decimoquinta tanda (release 0.9.96)
+- 19d (más rico): las imágenes de los árboles lejanos llevan puntos de luz y sombra y un degradado lateral.
+- 25 (catálogo de personas) hecho en lo esencial: `catalogo_personas.js` (`GM.catalogo.generar/lote/firma`). Edades (niño, joven, adulto, mayor), sexo, piel y pelo por país, ropa de verano, otoño o invierno según el mes y el país, y complementos nuevos (gorra, gorro, bufanda, mochila, bolso, además de gafas, barba, tatuaje y cinta). Lo usan los vecinos de la ciudad real, de la calle antigua y del pueblo. Prueba: `node tools/catalogo_prueba.js` (0 repetidos en 8000 personas) y `node tools/catalogo_capturas.js`.
+  Pendiente 25b: más cuerpos y modelos (solo hay 14 de Quaternius: la ropa de abrigo y las mangas cortas no cambian la malla, solo el color y los complementos), vestidos y faldas, y niños con modelo propio (ahora son adultos a escala con la cabeza más grande).
+- 26 (biblioteca de animaciones) es lo siguiente.

@@ -107,6 +107,11 @@
     if (o.munequeras) ['WristL', 'WristR'].forEach(w => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.06, 10), matC(o.munequeras)); m.rotation.z = Math.PI / 2; pega(B[w], m, 0, 0, 0); });
     if (o.barba) { const t = [0, [0.03, 0.035, 0.02], [0.1, 0.05, 0.05], [0.11, 0.09, 0.06]][o.barba], m = new THREE.Mesh(new THREE.BoxGeometry(t[0], t[1], t[2]), matC(o.pelo || '#2a1f18')); pega(B.Head, m, 0, 0.035 - t[1] / 3, 0.085); }
     if (o.tatuaje) (o.tatuaje === 2 ? ['LowerArmL', 'LowerArmR'] : o.tatuaje === 1 ? ['LowerArmR'] : []).forEach(a => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.07, 10, 1, true), new THREE.MeshStandardMaterial({ color: '#25303b', transparent: true, opacity: 0.55 })); pega(B[a], m, 0, 0.12, 0); });
+    if (o.gorra) { const cp = new THREE.Mesh(new THREE.SphereGeometry(0.108, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), matC(o.gorra)); pega(B.Head, cp, 0, 0.158, 0.008); pega(B.Head, new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.008, 0.075), matC(o.gorra)), 0, 0.165, 0.125); }
+    if (o.gorro) { const gr = new THREE.Mesh(new THREE.SphereGeometry(0.114, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.58), matC(o.gorro)); pega(B.Head, gr, 0, 0.15, 0.004); pega(B.Head, new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), matC(o.gorro)), 0, 0.266, 0.004); }
+    if (o.bufanda) { const bf = new THREE.Mesh(new THREE.TorusGeometry(0.068, 0.028, 8, 16), matC(o.bufanda)); bf.rotation.x = Math.PI / 2; pega(B.Neck, bf, 0, 0.01, 0.005); pega(B.Neck, new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.025), matC(o.bufanda)), 0.03, -0.05, 0.075); }
+    if (o.mochila) pega(B.Chest, new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.1), matC(o.mochila)), 0, 0.02, -0.14);
+    if (o.bolso) pega(B['UpperLeg.R'], new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.26), matC(o.bolso)), 0.09, 0.02, 0);
     if (o.tatuaje === 3) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.03, 12, 1, true), new THREE.MeshStandardMaterial({ color: '#25303b', transparent: true, opacity: 0.5 })); pega(B.Neck, m, 0, 0.03, 0); }
   }
   // Opciones del modelo de tu personaje a partir de su aspecto (st.personaje) y del modo de juego
