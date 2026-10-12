@@ -224,3 +224,29 @@
 ## Límites conocidos / avisos
 - ~~Barrios reales~~ en todas las ciudades del juego: españolas, de Euroliga, grandes europeas, las 29 de la NBA y las pequeñas de Italia, Alemania, Grecia y Turquía (barrios, frazioni, Ortsteile y mahalleler según la Wikipedia de cada país).
 - Los pabellones y campus de cada club son inspirados, no réplicas; solo la ciudad deportiva del Barça y el pabellón de Joventut se basaron en información real.
+
+## Lista viva de pendientes (numeración continua; añadir aquí siempre la parte que quede a medias)
+**Heredados**
+- 27. Niveles de detalle para edificios lejanos y rendimiento en móvil de la ciudad real y del pueblo.
+- 30. Fachadas completas por toda la calle inventada (la ciudad real ya las tiene).
+- 34 a 38. Personas más variadas; más animaciones (sentarse, gesticular, celebrar); animaciones de baloncesto en el directo; muebles reales que faltan; pabellones reconocibles que faltan.
+- 39 a 53. Encargos en el mapa real; minijuegos en la ciudad; coleccionables; coche propio; gente con nombre y móvil; pretemporada y selección; All-Star; ojeadores; negociaciones; rivalidades; prensa con memoria; modo entrenador; ciudad que crece; más ligas; narración.
+- 54 a 62. Transiciones y sonidos de interfaz; ajustes completos; catalán e inglés; pulido de textos e iconos; registro de errores; novedades visibles; modo construcción en más salas; decisión sobre Godot; distribución.
+**Ciudad real (partes que han quedado a medias)**
+- 63. Detalle de edificios: faltan ropa tendida, escaleras exteriores, rótulos luminosos y persianas con más variedad.
+- 64. Texturas: faltan suciedad, humedad y desgaste en fachadas y suelos, y variar el pavimento dentro de cada plaza.
+- 65. Urbanismo: los semáforos son de coches (faltan los de peatones y que la gente espere), faltan señales de tráfico, bordillo elevado en 3D y pasos elevados.
+- 66. Similitud con la realidad: comercios con nombre solo donde OpenStreetMap los tiene; monumentos con una forma genérica (faltan modelos propios); falta usar más etiquetas (materiales, colores) y centros de ciudad alejados del pabellón.
+- 66b. Anillo lejano (300 a 480 m): código hecho; faltan datos de unas 60 ciudades (descarga en curso), regenerar `vendor/osm` y publicar.
+- 67. Vida: faltan pasajeros visibles en el autobús, repartidores a pie, grupos que caminan juntos y más variedad de personas por barrio; la ambulancia y la policía no tienen sonido.
+- 68. Personalidad por ciudad y barrio (carteles en el idioma local, comercios típicos, música y ambiente distintos, vecinos con nombre y rutina por barrio).
+- 69. Interacción con el entorno (sentarte en bancos y terrazas, entrar en comercios y pedir, cajeros, quiosco, hablar con vendedores, montar en el bus, dejar propina al músico, sacar fotos).
+- 70. Menos vacío: ajustar los patios en zonas muy vacías (manchas grandes), añadir relleno de edificios donde OpenStreetMap tiene poco y comprobar que no queden manzanas peladas.
+- 71. Mapa con zoom: falta añadirlo al mapa 3D de Ciudad (nombres de calles y comercios según la altura de cámara) y probarlo en móvil (pellizco).
+- 72. Cola y autobús del equipo: hecho; faltan que los aficionados de la salida se repartan hacia metro y bares, y las voces y cánticos.
+- 73. Banderines por afición: hechos; faltan las obras por reputación (hotel, oficinas) y los murales con el escudo.
+- 74. Clubes sin datos suficientes (Zalgiris, Kolossos, Doxa, Merkezefendi, Philadelphia, Dubai): siguen con la calle inventada.
+- 75. Pasada de la ciudad real por los 117 clubes (se han probado unos 40) tras la descarga del anillo.
+- 76. Fallo intermitente de `t_flow entrenador`: no reproducido (seis ejecuciones limpias); vigilar si vuelve.
+- 77. Recorte alrededor del personaje: ahora es más limpio, pero sigue habiendo un agujero con trama; valorar otra solución (paredes que bajan o se vuelven translúcidas por edificio).
+- 78. Mapa 3D de Ciudad: la ciudad real se ve oscura (iluminación distinta); ajustar luz y color.
