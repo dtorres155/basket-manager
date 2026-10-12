@@ -6,7 +6,7 @@ const club = process.argv[2] || 'joventut-badalona';
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !/X4122|Program Info|404/.test(m.text())) errs.push(m.text().slice(0, 200)); });
   await p.addInitScript('window.__sinAdaptar = true;'); await p.goto('http://localhost:8080/'); await sleep(900);
   await p.evaluate(c => { GM.newGame(c, undefined, { modo: 'carrera', personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } }); GM.ui.start(document.getElementById('app')); GM.sede.abrir(GM.state, 'calle'); }, club);
-  const est = () => p.evaluate(() => { const S = GM.sede._estado(); return S && S.chunks ? S.chunks.construidos() + '/' + S.chunks.total() : 'sin'; });
+  const est = () => p.evaluate(() => { const S = GM.sede._estado(); return S && S.chunks ? S.chunks.construidos() + '/' + S.chunks.total() + ' (de ellas, con detalle lejano: ' + Object.values(S.chunks.vivos).filter(l => l.lod).length + ')' : 'sin'; });
   for (let i = 0; i < 40; i++) { await sleep(500); if (await p.evaluate(() => { const S = GM.sede.activa() && GM.sede._estado(); return !!(S && S.yo && !S.sinDibujar && S.gente && S.gente.length); })) break; }
   console.log('al abrir (juego listo):', await est()); await sleep(3000); console.log('a los 3 s:', await est()); await sleep(7000); console.log('a los 10 s:', await est());
   // al extremo: se mueve el foco 280 m lejos para ver cómo se construyen y descartan las celdas

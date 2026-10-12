@@ -108,6 +108,8 @@
       cl.forEach((p, k) => { const q = S.sitios[k]; if (k % 3 === 2) { p.obj.visible = false; p.oculto = true; return; } p.fijo = true; p.rol = 'Cliente de la terraza'; p.obj.position.set(q.x, 0, q.z); p.obj.rotation.y = q.ry; p.asiento = 0.45; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); M.anim(p, 'sit'); S.gente.push(p); }); }
     fp('terrazas'); S.tAmb = 40 + r() * 60;
     S.perfilCoches = true;
+    // Multitud lejana en la GPU (multitud_gpu.js): cientos de peatones por las aceras con una sola llamada de dibujo; los cercanos son las personas de verdad
+    if (!S.rua && GM.multGPU && vias.length && !(GM.campus && GM.campus.config.nivel === 'bajo')) S.multGPU = GM.multGPU.crear(S, vias, Math.round((alta ? 260 : 100) * (GM.campus && GM.campus.factorGente ? GM.campus.factorGente() : 1)));
     fp('antes de calle viva'); if (GM.calleVida) { GM.calleVida.construir(S, M, st, { W: S.mundo, G: S.G, r, club }); await GM.calleVida.poblar(S, M, st); } fp('calle viva');
   }
   function punto(vi, s) {   // posición y tangente a la distancia s de la calle
@@ -165,6 +167,7 @@
     else if (B.fase === 'se_va') { B.s += dt * 7; const [x, z, ux, uz] = punto(B.vi, Math.min(B.s, B.vi.L)), off = ANCHO[B.vi.v.k] / 4; B.obj.position.set(x - uz * off, 0, z + ux * off); B.obj.rotation.y = Math.atan2(ux, uz); if (B.s >= B.vi.L - 1) { S.mundo.remove(B.obj); B.obj = null; B.fase = 'fuera'; } }
   }
   function actualizar(S, M, dt) {
+    if (S.multGPU) S.multGPU.actualizar(performance.now() / 1000, S.foco);
     if (S.chunks) S.chunks.paso([[S.foco.x, S.foco.z], [S.camera.position.x, S.camera.position.z]], 4);   // ciudad por trozos: construye y descarta celdas de edificios según la distancia
     const t = performance.now() / 1000;
     if (S.partidoCasa) { S.tFase = (S.tFase || 0) - dt; if (S.tFase <= 0) { S.tFase = 1; fasePartido(S, M, S.st); busEquipo(S, M, S.st); } }

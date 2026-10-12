@@ -263,7 +263,24 @@
     const a = p.acc[nombre] || p.acc.idle; if (!a) return;
     a.reset().fadeIn(0.2).play(); if (p.accion) p.accion.fadeOut(0.2); p.accion = a; p.actual = nombre;
   }
+  // Las personas del mundo piden su camino a un Worker (nav_worker.js) y esperan la respuesta (uno o dos fotogramas); el jugador sigue con la búsqueda síncrona.
   function irA(p, x, z, alLlegar) {
+    if (p !== S.yo && S.G && GM.nav && !window.__sinNavWorker) {
+      if (S.navG !== S.G) { if (S.nav) S.nav.cerrar(); S.nav = GM.nav.crear(S.G); S.navG = S.G; }
+      if (S.nav && S.nav.activo()) {
+        const id = p._navId = (p._navId || 0) + 1, escena = S; p.camino = []; p.alLlegar = alLlegar || null; p.espera = Math.max(p.espera || 0, 6);   // mientras llega la respuesta no elige otra actividad
+        S.nav.pedir([p.obj.position.x, p.obj.position.z], [x, z], 9000).then(r => {
+          if (S !== escena || p._navId !== id) return;
+          if (r === undefined) { irASync(p, x, z, alLlegar); return; }   // el Worker se ha caído: búsqueda en el hilo principal
+          if (!r || r.truncado) { p.alLlegar = null; p.espera = 0.3; anim(p, 'idle'); return; }
+          p.camino = r.camino.slice(1); p.espera = 0; anim(p, p.rapido ? 'sprint' : 'walk');
+        });
+        return true;
+      }
+    }
+    return irASync(p, x, z, alLlegar);
+  }
+  function irASync(p, x, z, alLlegar) {
     const c = aEstrella(S.G, [p.obj.position.x, p.obj.position.z], [x, z], p === S.yo ? 0 : 9000); if (!c || (c.truncado && p !== S.yo)) return false;
     const [ci, cj] = S.G.celda(x, z), ult = c[c.length - 1]; if (c.llega && S.G.libre(ci, cj) && (!aEstrella.ve || aEstrella.ve(ult, [x, z]))) c.push([x, z]);
     p.camino = c.slice(1); p.alLlegar = alLlegar || null; anim(p, p.rapido ? 'sprint' : 'walk'); return true;
@@ -760,6 +777,7 @@
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
       if (!S.enFoto) S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente();
+        if (S.nav && (S.tNav = (S.tNav || 0) + 0.5) >= 20) { S.tNav = 0; S.G.sucia = true; S.nav.sincronizar(); }   // la rejilla se reenvía al Worker cada 20 s por si algo ha cambiado
         if (S.lamparas && S.farolasPos && S.noche > 0.02) { const ord = S.farolasPos.map(q => [Math.hypot(q[0] - S.foco.x, q[1] - S.foco.z), q]).sort((a, b) => a[0] - b[0]); S.lamparas.forEach((l, i) => { const q = ord[i] && ord[i][1]; if (q) l.position.set(q[0], 4.3, q[1]); }); } }
       // fundido entre cielos HDRI: baja la luz de reflejos, cambia de cielo y vuelve a subirla
       if (S.hdriPend) { S.envMult = Math.max(0.3, (S.envMult == null ? 1 : S.envMult) - dt * 3); if (S.envMult <= 0.3) cambiarCielo(); } else if (S.envMult != null && S.envMult < 1) S.envMult = Math.min(1, S.envMult + dt * 1.5);
@@ -820,7 +838,8 @@
   const NIVELES_REND = [null, 1, 0.8, 0.65];
   function nivelRend() { try { return Math.min(3, +window.localStorage.getItem('gm1:rendimiento') || 0); } catch (e) { return 0; } }
   function aplicarRend(n, avisar) {
-    const r = S.renderer; if (!r || !n) return; S.nivelRend = n; if (S.composer) { S.composer.dispose && S.composer.dispose(); S.composer = null; }
+    const r = S.renderer; if (!r || !n) return; S.nivelRend = n; if (S.composer) { S.composerOff = S.composer; S.composer = null; }   // el posprocesado se guarda para poder devolverlo si el juego va sobrado
+    if (!S.sombrasOrig) S.sombrasOrig = { sombras: r.shadowMap.enabled, ratio: r.getPixelRatio() };
     r.setPixelRatio(NIVELES_REND[n]);
     if (r.shadowMap.enabled) { r.shadowMap.enabled = false; if (S.luces && S.luces.sol) S.luces.sol.castShadow = false; if (S.luces && S.luces.sol2) S.luces.sol2.castShadow = false; S.scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); }); }
     try { window.localStorage.setItem('gm1:rendimiento', String(n)); } catch (e) { }
@@ -837,7 +856,15 @@
     const E = S.escalaRes || 1;
     if (fps < 40 && E > 0.61) { S.sube = 0; aplicarRes(Math.max(0.6, E - 0.12)); }
     else if (fps < 30 && (S.nivelRend || 0) < 3) aplicarRend((S.nivelRend || 0) + 1, true);
-    else if (fps > 57 && E < 1) { S.sube = (S.sube || 0) + 1; if (S.sube >= 4) { S.sube = 0; aplicarRes(Math.min(1, E + 0.08)); } } else S.sube = 0;
+    else if (fps > 57 && E < 1) { S.sube = (S.sube || 0) + 1; if (S.sube >= 4) { S.sube = 0; aplicarRes(Math.min(1, E + 0.08)); } }
+    else if (fps > 57 && E >= 1 && (S.nivelRend || 0) > 0) { S.sube = (S.sube || 0) + 1; if (S.sube >= 6) { S.sube = 0; subirRend(); } } else S.sube = 0;
+  }
+  // Contrario de aplicarRend: tras 12 s con más de 57 fps y resolución completa vuelve al escalón anterior (la gente lejana y, al llegar a 0, las sombras y el posprocesado)
+  function subirRend() {
+    const r = S.renderer, n = (S.nivelRend || 0) - 1; if (!r || n < 0) return; S.nivelRend = n; const o = S.sombrasOrig || {};
+    r.setPixelRatio(n ? NIVELES_REND[n] : (S.prBase || o.ratio || 1) * (S.escalaRes || 1)); if (!n) { if (o.sombras) { r.shadowMap.enabled = true; if (S.luces && S.luces.sol) S.luces.sol.castShadow = true; if (S.luces && S.luces.sol2) S.luces.sol2.castShadow = true; S.scene.traverse(q => { if (q.material) (Array.isArray(q.material) ? q.material : [q.material]).forEach(m => { m.needsUpdate = true; }); }); } if (S.composerOff) { S.composer = S.composerOff; S.composerOff = null; const cv = r.domElement; S.composer.setPixelRatio(r.getPixelRatio()); S.composer.setSize(cv.clientWidth, cv.clientHeight); } }
+    if (S.escalaRes && S.escalaRes < 1) aplicarRes(S.escalaRes);
+    try { window.localStorage.setItem('gm1:rendimiento', String(n)); } catch (e) { }
   }
   // Escala de resolución: multiplica la densidad de píxeles con la que se dibuja (y se recuerda para la siguiente escena del dispositivo)
   function aplicarRes(e) {
@@ -848,6 +875,7 @@
   }
   function cerrar() {
     if (!S) return; S.vivo = false; cancelAnimationFrame(S.raf); if (GM.sonido) GM.sonido.escena(null);
+    if (S.nav) { S.nav.cerrar(); S.nav = null; }
     window.removeEventListener('resize', S.onResize); window.removeEventListener('keydown', S.onKey); window.removeEventListener('keyup', S.onKey);
     S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();

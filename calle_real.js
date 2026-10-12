@@ -114,7 +114,17 @@
     v.forEach(p => { A.P.push(p.x, y, p.y); A.N.push(0, 1, 0); }); t.forEach(k => A.I.push(b + k[0], b + k[1], b + k[2]));
   }
   const nuevo = () => ({ P: [], N: [], I: [] });
-  const malla = (A, m, nom) => { if (!A.P.length) return null; const me = new THREE.Mesh(geo(A.P, A.I, A.N), m); me.userData = { real: nom || 1 }; me.receiveShadow = true; return me; };
+  // Una malla grande (calzadas, aceras, plazas, marcas, parques...) se parte en trozos de 90 m por el centro de cada triángulo: así el navegador solo dibuja los trozos que se ven (y solo los cercanos entran en las sombras)
+  function dividirEnCeldas(me, celda) {
+    const g = me.geometry, ix = g.index.array, pos = g.attributes.position, nombres = Object.keys(g.attributes), grupos = new Map();
+    for (let t = 0; t < ix.length; t += 3) { const a = ix[t], b = ix[t + 1], c = ix[t + 2], k = Math.floor((pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3 / celda) + ',' + Math.floor((pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3 / celda); let l = grupos.get(k); if (!l) grupos.set(k, l = []); l.push(a, b, c); }
+    if (grupos.size < 2) return me; const gr = new THREE.Group(); gr.userData = me.userData; gr.receiveShadow = true;
+    grupos.forEach(tri => { const remap = new Map(), orig = []; const idx = tri.map(v => { let n = remap.get(v); if (n === undefined) { n = orig.length; remap.set(v, n); orig.push(v); } return n; }); const ng = new THREE.BufferGeometry();
+      nombres.forEach(nm => { const at = g.attributes[nm], arr = new Float32Array(orig.length * at.itemSize); orig.forEach((v, i) => { for (let q = 0; q < at.itemSize; q++) arr[i * at.itemSize + q] = at.array[v * at.itemSize + q]; }); ng.setAttribute(nm, new THREE.BufferAttribute(arr, at.itemSize)); }); ng.setIndex(idx); ng.computeBoundingSphere();
+      const m2 = new THREE.Mesh(ng, me.material); m2.userData = me.userData; m2.receiveShadow = true; gr.add(m2); });
+    g.dispose(); return gr;
+  }
+  const malla = (A, m, nom) => { if (!A.P.length) return null; const me = new THREE.Mesh(geo(A.P, A.I, A.N), m); me.userData = { real: nom || 1 }; me.receiveShadow = true; return A.I.length > 4500 ? dividirEnCeldas(me, 90) : me; };
 
   // ---------- Preparar datos ----------
   function preparar(D) {
@@ -264,12 +274,24 @@
       if (!c) return; const me = A => (mat) => { if (!A.P.length) return; const g = geo(A.P, A.I, A.N, A.U, A.C), m = new THREE.Mesh(g, mat); m.userData = { real: 'edif', chunk: k }; m.castShadow = false; m.receiveShadow = alta; W.add(m); lista.push(m); };
       c.w.forEach((A, i) => me(A)(PAREDES[i])); me(c.t)(mTienda); me(c.r)(mTecho); me(c.m)(mMetal); me(c.g)(mTejas); delete chunks[k];
     };
+    // Nivel de detalle 1 (celdas a más de 230 m): una sola malla de prismas con color por vértice y un material sencillo, sin texturas, ventanas con interior ni sombras
+    // (el coste de una celda lejana está en el shader de fachada y no en los triángulos). Se vuelve al nivel 0 al acercarse a menos de 200 m.
+    const mLejos = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, side: THREE.DoubleSide });
+    const construirLejano = k => {
+      const Pp = [], Nn = [], Cc = [], Ii = [], tc = col('#6f6b66'), lista = vivos[k] = [];
+      (porChunk[k] || []).forEach(b => { const p = b.p, h = b.h, c = b.col;
+        for (let i = 0; i < p.length; i++) { const a = p[i], e = p[(i + 1) % p.length], dx = e[0] - a[0], dz = e[1] - a[1], l = Math.hypot(dx, dz); if (l < 0.25) continue; let nx = dz / l, nz = -dx / l; if (((a[0] + e[0]) / 2 - b.cx) * nx + ((a[1] + e[1]) / 2 - b.cz) * nz < 0) { nx = -nx; nz = -nz; }
+          const o = Pp.length / 3, sh = 0.88 + 0.12 * Math.abs(nx); Pp.push(a[0], 0, a[1], e[0], 0, e[1], e[0], h, e[1], a[0], h, a[1]); for (let q = 0; q < 4; q++) { Nn.push(nx, 0, nz); Cc.push(c.r * sh, c.g * sh, c.b * sh); } Ii.push(o, o + 1, o + 2, o, o + 2, o + 3); }
+        const v = p.map(q => new THREE.Vector2(q[0], q[1])), t = THREE.ShapeUtils.triangulateShape(v, []), base = Pp.length / 3; v.forEach(q => { Pp.push(q.x, h, q.y); Nn.push(0, 1, 0); Cc.push(tc.r, tc.g, tc.b); }); t.forEach(q => Ii.push(base + q[0], base + q[1], base + q[2])); });
+      if (Pp.length) { const m = new THREE.Mesh(geo(Pp, Ii, Nn, null, Cc), mLejos); m.userData = { real: 'edif', chunk: k, lod: 1 }; m.castShadow = false; m.receiveShadow = false; W.add(m); lista.push(m); } lista.lod = 1;
+    };
     const quitarChunk = k => { (vivos[k] || []).forEach(m => { W.remove(m); m.geometry.dispose(); }); delete vivos[k]; };
     S.chunks = { claves: Object.keys(porChunk), vivos, construidos: () => Object.keys(vivos).length, total: () => Object.keys(porChunk).length,
       paso(focos, presupuesto) { const t0 = performance.now(), d = k => { const c = centroChunk(k); return Math.min(...focos.map(f => Math.hypot(c[0] - f[0], c[1] - f[1]))); };
-        Object.keys(vivos).forEach(k => { const dk = d(k); if (dk > 520) quitarChunk(k); else if (alta) { const cerca = dk < 110; (vivos[k] || []).forEach(m => { if (m.castShadow !== cerca) m.castShadow = cerca; }); } });
+        let rehechos = 0; Object.keys(vivos).forEach(k => { const dk = d(k); const lod = vivos[k] && vivos[k].lod || 0, meta = dk > 230 ? 1 : dk < 200 ? 0 : lod; if (dk <= 520 && meta !== lod && rehechos < 2) { quitarChunk(k); if (meta) construirLejano(k); else construirChunk(k); rehechos++; } });
+        Object.keys(vivos).forEach(k => { const dk = d(k); if (dk > 520) quitarChunk(k); else if (alta && !(vivos[k].lod)) { const cerca = dk < 110; (vivos[k] || []).forEach(m => { if (m.castShadow !== cerca) m.castShadow = cerca; }); } });
         const pend = this.claves.filter(k => !vivos[k] && d(k) < 340).sort((a, b) => d(a) - d(b)); let n = 0;
-        for (const k of pend) { if (n && performance.now() - t0 > (presupuesto || 4)) break; construirChunk(k); n++; } return n; },
+        for (const k of pend) { if (n && performance.now() - t0 > (presupuesto || 4)) break; if (d(k) > 230) construirLejano(k); else construirChunk(k); n++; } return n; },
       todos() { this.claves.forEach(k => { if (!vivos[k]) construirChunk(k); }); } };
     S.chunks.claves.forEach(k => { const c = centroChunk(k); if (Math.hypot(c[0], c[1]) < 150) construirChunk(k); });   // al abrir solo las celdas a menos de 150 m del centro; las demás llegan por trozos
     S.mapaVec = vectorial(X);

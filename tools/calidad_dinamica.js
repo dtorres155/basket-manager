@@ -7,6 +7,6 @@ const { chromium } = require('playwright'); const sleep = ms => new Promise(r =>
   await sleep(14000); const cdp = await c.newCDPSession(p); const est = () => p.evaluate(() => { const S = GM.sede._estado(); return { fps: S.fps, res: S.escalaRes || 1, nivelRend: S.nivelRend || 0, pr: +S.renderer.getPixelRatio().toFixed(2) }; });
   console.log('normal       ', JSON.stringify(await est()));
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 }); for (let i = 1; i <= 4; i++) { await sleep(6000); console.log('CPU x6 +' + i * 6 + 's', JSON.stringify(await est())); }
-  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 }); for (let i = 1; i <= 4; i++) { await sleep(8000); console.log('sin freno +' + i * 8 + 's', JSON.stringify(await est())); }
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 }); for (let i = 1; i <= 14; i++) { await sleep(8000); console.log('sin freno +' + i * 8 + 's', JSON.stringify(await est())); }
   console.log('errores:', errs.length ? errs.slice(0, 3) : 'ninguno'); await b.close();
 })();
