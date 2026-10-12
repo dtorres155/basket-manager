@@ -7,8 +7,9 @@
 (function () {
   const U = GM.util;
   let S = null; // escena activa
-  let EXP_PREV = null;   // exposición con la que se salió de la escena anterior
-  const { entorno, aplicarAmbiente, tonoCiudad, mezcla } = GM.sedeLuz({ S: () => S, exterior: () => ['calle', 'pueblo', 'deportiva'].indexOf(S.escena) >= 0 });   // sede_luz.js
+  let EXP_PREV = null;
+  let mapa = () => { };   // sede_mapa.js: se enlaza más abajo, cuando existen irA, entrar, aEstrella y anim   // exposición con la que se salió de la escena anterior
+  const { entorno, aplicarAmbiente, tonoCiudad, mezcla, cambiarCielo } = GM.sedeLuz({ S: () => S, exterior: () => ['calle', 'pueblo', 'deportiva'].indexOf(S.escena) >= 0 });   // sede_luz.js
   const cache = {};
   const cargar = ruta => cache[ruta] || (cache[ruta] = new THREE.GLTFLoader().loadAsync(ruta));
   // Personas de Quaternius (CC0): cada una sin animaciones y un archivo de animaciones compartido (mismo esqueleto)
@@ -575,75 +576,6 @@
       h('button', { class: 'btn btn-sec peq', onclick: () => { vin.style.display = vin.style.display === 'none' ? '' : 'none'; } }, 'Viñeta'), h('button', { class: 'btn peq', onclick: guardar }, 'Guardar foto'), h('button', { class: 'btn btn-sec peq', onclick: salir }, 'Salir'));
     S.raiz.append(vin, barra); GM.ui.toast('Modo foto: arrastra para girar, rueda o pellizco para acercar');
   }
-  function mapa() {
-    if (!S || !S.G) return; const prev = S.raiz.querySelector('.sede-mapa'); if (prev) { prev.remove(); return; }
-    const h = GM.h, G = S.G, club = S.st.equipos[S.st.clubId], cv = h('canvas', { class: 'mapa-cv' }), x = cv.getContext && cv.getContext('2d'); if (!x) return;
-    const VEC = S.mapaVec || null;   // plano vectorial de la ciudad real (calle_real.js); sin él se pinta la cuadrícula de obstáculos
-    let base = null;                 // la cuadrícula, una vez, en un lienzo aparte
-    if (!VEC) { base = document.createElement('canvas'); base.width = G.W; base.height = G.H; const b = base.getContext('2d'); b.fillStyle = '#e9e4d6'; b.fillRect(0, 0, G.W, G.H); b.fillStyle = '#6d6a62'; for (let j = 0; j < G.H; j++) for (let i = 0; i < G.W; i++) if (G.b[G.idx(i, j)]) b.fillRect(i, j, 1, 1); }
-    const lim = { x0: G.x0, z0: G.z0, x1: G.x0 + G.W * G.c, z1: G.z0 + G.H * G.c };
-    const Vw = { cx: S.yo.obj.position.x, cz: S.yo.obj.position.z, s: VEC ? 2.6 : 1, w: 600, h: 400 };
-    const sMin = () => Math.min(Vw.w / (lim.x1 - lim.x0), Vw.h / (lim.z1 - lim.z0)) * 0.9, sMax = () => (VEC ? 22 : 12);
-    if (!VEC) Vw.s = Math.max(sMin(), Math.min(sMax(), Math.min(Vw.w / (lim.x1 - lim.x0), Vw.h / (lim.z1 - lim.z0))));
-    const aPx = (wx, wz) => [(wx - Vw.cx) * Vw.s + Vw.w / 2, (wz - Vw.cz) * Vw.s + Vw.h / 2], aMundo = (px, py) => [Vw.cx + (px - Vw.w / 2) / Vw.s, Vw.cz + (py - Vw.h / 2) / Vw.s];
-    const COL = { parque: '#cfe3b4', pista: '#e3c9b8', agua: '#a9cde6', suelo: '#ece7da', calleBorde: '#c7bfae', calle: '#ffffff', calleMayor: '#fbf3d6', edif: '#c9c1b0', edifBorde: '#a39b8a', tienda: '#e2c4a2', publico: '#c3d0dc' };
-    const ANCHO = [16, 12, 10, 8.5, 7, 5.5, 4];
-    let pendiente = false; const pide = () => { if (pendiente) return; pendiente = true; requestAnimationFrame(() => { pendiente = false; pinta(); }); };
-    const poli = (p, cierra) => { x.beginPath(); p.forEach((q, i) => { const [a, b] = aPx(q[0], q[1]); if (i) x.lineTo(a, b); else x.moveTo(a, b); }); if (cierra) x.closePath(); };
-    const visible = bb => { const [a, b] = aPx(bb[0], bb[1]), [c, d] = aPx(bb[2], bb[3]); return c > -20 && a < Vw.w + 20 && d > -20 && b < Vw.h + 20; };
-    function pinta() {
-      const dpr = cv.width / Math.max(1, Vw.w); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.fillStyle = COL.suelo; x.fillRect(0, 0, Vw.w, Vw.h);
-      if (VEC) {
-        x.lineJoin = 'round'; x.lineCap = 'round';
-        VEC.P.forEach(q => { if (!visible(q.bb)) return; poli(q.p, true); x.fillStyle = q.t === 1 ? COL.pista : COL.parque; x.fill(); });
-        VEC.A.forEach(q => { if (!visible(q.bb)) return; if (q.t === 1) { poli(q.p, false); x.strokeStyle = COL.agua; x.lineWidth = 9 * Vw.s; x.stroke(); } else { poli(q.p, true); x.fillStyle = COL.agua; x.fill(); } });
-        for (const pasada of [0, 1]) VEC.C.forEach(c => { if (!visible(c.bb)) return; const w = Math.max(c.k >= 5 ? 1.4 : 2, (ANCHO[c.k] || 4) * Vw.s * (pasada ? 0.78 : 1)); poli(c.p, false); x.strokeStyle = pasada ? (c.k <= 2 ? COL.calleMayor : COL.calle) : COL.calleBorde; x.lineWidth = w; x.stroke(); });
-        VEC.B.forEach(b => { if (!visible(b.bb)) return; poli(b.p, true); x.fillStyle = b.cl === 2 || b.cl === 12 || b.cl === 11 ? COL.tienda : b.cl === 4 || b.cl === 5 || b.cl === 6 ? COL.publico : COL.edif; x.fill(); if (Vw.s > 1.4) { x.strokeStyle = COL.edifBorde; x.lineWidth = Math.min(1.2, Vw.s * 0.2); x.stroke(); } });
-      } else { x.imageSmoothingEnabled = false; const [a, b] = aPx(lim.x0, lim.z0); x.drawImage(base, a, b, (lim.x1 - lim.x0) * Vw.s, (lim.z1 - lim.z0) * Vw.s); }
-      x.textAlign = 'center'; x.textBaseline = 'middle';
-      const rotulo = (txt, px, py, tam, fondo, color, giro) => { x.save(); x.translate(px, py); if (giro) x.rotate(giro); x.font = '600 ' + tam + 'px sans-serif'; x.lineWidth = 3.2; x.strokeStyle = fondo; x.strokeText(txt, 0, 0); x.fillStyle = color; x.fillText(txt, 0, 0); x.restore(); };
-      if (VEC && Vw.s >= 1.5) {   // nombres de las calles, a lo largo de su tramo más largo
-        const hechos = {};
-        VEC.C.forEach(c => { if (!c.nom || !visible(c.bb) || hechos[c.nom]) return; const [a, b] = aPx(c.mx, c.mz); if (a < 30 || a > Vw.w - 30 || b < 20 || b > Vw.h - 20) return; let ang = c.ang; if (ang > Math.PI / 2) ang -= Math.PI; if (ang < -Math.PI / 2) ang += Math.PI; if (c.len * Vw.s < c.nom.length * 5.6) return; hechos[c.nom] = 1; rotulo(c.nom, a, b, Math.min(15, 9 + Vw.s * 0.7), 'rgba(255,255,255,.85)', '#5a5648', ang); });
-      }
-      if (VEC && Vw.s >= 4.5) VEC.B.forEach(b => { if (!b.nom || !visible(b.bb)) return; const [a, c] = aPx(b.cx, b.cz); rotulo(b.nom.length > 24 ? b.nom.slice(0, 23) + '…' : b.nom, a, c, Math.min(13, 8 + Vw.s * 0.35), 'rgba(255,255,255,.8)', '#4a4639'); });
-      if (VEC && VEC.N && Vw.s >= 5.5) VEC.N.forEach(n => { const [a, c] = aPx(n.x, n.z); if (a < 20 || a > Vw.w - 20 || c < 14 || c > Vw.h - 14) return; x.fillStyle = '#7a6a52'; x.beginPath(); x.arc(a, c, 2.6, 0, 6.3); x.fill(); rotulo(n.nom.length > 22 ? n.nom.slice(0, 21) + '…' : n.nom, a, c - 8, 10.5, 'rgba(255,255,255,.85)', '#5a4f3d'); });
-      (S.zonas || []).forEach(z => {
-        const [px, py] = aPx(z.obj.position.x, z.obj.position.z); if (px < -30 || px > Vw.w + 30 || py < -30 || py > Vw.h + 30) return; const r = Math.max(5, Math.min(9, 4 + Vw.s * 0.6));
-        x.fillStyle = z.sala.irA ? '#e8a400' : club.colores[0] === '#ffffff' ? '#e8590c' : club.colores[0]; x.beginPath(); x.arc(px, py, r, 0, 6.3); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 2; x.stroke();
-        const tx = z.sala.nombre.length > 22 ? z.sala.nombre.slice(0, 21) + '…' : z.sala.nombre; if (!VEC || Vw.s >= 1.1 || z.sala.irA) rotulo(tx, px, py - r - 8, 12, 'rgba(255,255,255,.92)', '#1c2b3a');
-      });
-      const [yx, yz] = aPx(S.yo.obj.position.x, S.yo.obj.position.z); x.fillStyle = '#2f80ed'; x.beginPath(); x.arc(yx, yz, 7, 0, 6.3); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 3; x.stroke();
-      const m = [10, 20, 50, 100, 200].find(v => v * Vw.s >= 60) || 200; x.fillStyle = '#3a3a34'; x.fillRect(12, Vw.h - 18, m * Vw.s, 3); x.font = '600 11px sans-serif'; x.textAlign = 'left'; x.fillText(m + ' m', 12, Vw.h - 26); x.textAlign = 'center';
-    }
-    const visto = (S.st.sede && S.st.sede.visitadas && S.st.sede.visitadas[S.escena + (S.escenaArg ? ':' + S.escenaArg : '')]) || {};
-    const lista = h('div', { class: 'mapa-lista' }, (S.zonas || []).map(z => visto[z.sala.id] ? h('span', { class: 'mapa-par' }, h('button', { class: 'btn btn-sec peq', onclick: () => ir(z) }, z.sala.nombre), h('button', { class: 'btn peq mapa-ya', title: 'Viaje rápido', onclick: () => saltar(z) }, 'Ir ya')) : h('button', { class: 'btn btn-sec peq', onclick: () => ir(z) }, z.sala.nombre)));
-    const capa = h('div', { class: 'sede-hud sede-mapa' }, h('div', { class: 'mapa-cab' }, h('b', null, 'Mapa'), h('span', null, 'Toca un punto o un nombre para ir andando; «Ir ya» te lleva al momento a los sitios que ya conoces'), h('button', { class: 'sp-cerrar', onclick: () => capa.remove() }, '×')), h('div', { class: 'mapa-lienzo' }, cv, h('div', { class: 'mapa-zoom' }, h('button', { title: 'Acercar', onclick: () => zoom(1.6, Vw.w / 2, Vw.h / 2) }, '+'), h('button', { title: 'Alejar', onclick: () => zoom(1 / 1.6, Vw.w / 2, Vw.h / 2) }, '−'), h('button', { title: 'Centrar en ti', onclick: () => { Vw.cx = S.yo.obj.position.x; Vw.cz = S.yo.obj.position.z; pide(); } }, '◎'))), lista);
-    function ir(z) { capa.remove(); irA(S.yo, z.obj.position.x, z.obj.position.z, () => entrar(z.sala)); }
-    function saltar(z) { capa.remove(); const velo = h('div', { class: 'sede-velo' }); S.raiz.append(velo);
-      setTimeout(() => { const zx = z.obj.position.x, zz = z.obj.position.z, cs = aEstrella(S.G, [zx, zz + 1.2], [zx, zz]), q = cs && cs.length ? cs[0] : [zx, zz]; S.yo.camino = null; S.yo.obj.position.set(q[0], 0, q[1]); S.foco.set(q[0], 0, q[1]); anim(S.yo, 'idle'); velo.classList.add('fuera'); setTimeout(() => velo.remove(), 450); entrar(z.sala); }, 300); }
-    // zoom y desplazamiento: rueda, pellizco, arrastre, doble toque y botones
-    const zoom = (f, px, py) => { const [wx, wz] = aMundo(px, py); Vw.s = Math.max(sMin(), Math.min(sMax(), Vw.s * f)); Vw.cx = wx - (px - Vw.w / 2) / Vw.s; Vw.cz = wz - (py - Vw.h / 2) / Vw.s; pide(); };
-    const lugar = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-    const ptrs = new Map(); let moved = 0, d0 = 0;
-    cv.addEventListener('wheel', e => { e.preventDefault(); const [px, py] = lugar(e); zoom(Math.exp(-e.deltaY * 0.0016), px, py); }, { passive: false });
-    cv.addEventListener('pointerdown', e => { cv.setPointerCapture && cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, lugar(e)); moved = 0; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
-    cv.addEventListener('pointermove', e => {
-      if (!ptrs.has(e.pointerId)) return; const [px, py] = lugar(e), [qx, qy] = ptrs.get(e.pointerId);
-      if (ptrs.size === 1) { Vw.cx -= (px - qx) / Vw.s; Vw.cz -= (py - qy) / Vw.s; moved += Math.abs(px - qx) + Math.abs(py - qy); ptrs.set(e.pointerId, [px, py]); pide(); }
-      else if (ptrs.size === 2) { ptrs.set(e.pointerId, [px, py]); const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (d0 > 0) zoom(d / d0, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); d0 = d; moved += 9; }
-    });
-    cv.addEventListener('pointerup', e => { const p = ptrs.get(e.pointerId) || lugar(e), eraUno = ptrs.size === 1; ptrs.delete(e.pointerId); if (eraUno && moved <= 6) clic(p[0], p[1]); });
-    cv.addEventListener('pointercancel', e => ptrs.delete(e.pointerId));
-    cv.addEventListener('dblclick', e => { const [px, py] = lugar(e); zoom(2, px, py); });
-    function clic(px, py) {
-      const [wx, wz] = aMundo(px, py), z = (S.zonas || []).map(q => { const [a, b] = aPx(q.obj.position.x, q.obj.position.z); return { z: q, d: Math.hypot(a - px, b - py) }; }).sort((a, b) => a.d - b.d)[0];
-      if (z && z.d < 20) return ir(z.z);
-      capa.remove(); irA(S.yo, wx, wz, null);
-    }
-    const ajusta = () => { const lz = cv.parentNode; if (!lz) return; const r = lz.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1); Vw.w = Math.max(200, r.width); Vw.h = Math.max(160, r.height); cv.width = Math.round(Vw.w * dpr); cv.height = Math.round(Vw.h * dpr); pide(); };
-    S.raiz.append(capa); ajusta(); if (window.ResizeObserver) new ResizeObserver(ajusta).observe(capa.querySelector('.mapa-lienzo'));
-  }
   // ---------- Paneles de sala (menús dentro del mundo) ----------
   const destino = sala => { const d = sala.destino.todos || sala.destino[S.st.modo]; return d && GM.ui.screens[d] ? d : null; };
   function mostrarAviso(zona) {
@@ -1082,16 +1014,19 @@
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
     const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
-    const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(nv === 'ultra' ? 4096 : 2048, nv === 'ultra' ? 4096 : 2048);
+    const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; { const ms = nv === 'ultra' ? 3072 : ['sede', 'casa', 'interior'].indexOf(escena || 'sede') >= 0 ? 1536 : 2048; sol.shadow.mapSize.set(ms, ms); }   // medido con tools/gpu_tiempo.js: la sombra es lo más caro
     Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; sol.shadow.radius = 4; sol.shadow.blurSamples = 12; scene.add(sol, sol.target);
     // Cascada lejana (solo Ultra): segunda luz solar con un mapa de 260 m que reparte con la cercana, así las sombras llegan a las calles de alrededor
-    let sol2 = null; if (alta && nv === 'ultra') { sol2 = new THREE.DirectionalLight(0xfff1dc, 1); sol2.castShadow = true; sol2.shadow.mapSize.set(2048, 2048); Object.assign(sol2.shadow.camera, { left: -130, right: 130, top: 110, bottom: -110, near: 1, far: 260 }); sol2.shadow.bias = -0.001; sol2.shadow.normalBias = 0.06; sol2.shadow.radius = 3; scene.add(sol2, sol2.target); }
+    let sol2 = null; if (alta && nv === 'ultra') { sol2 = new THREE.DirectionalLight(0xfff1dc, 1); sol2.castShadow = true; sol2.shadow.mapSize.set(1536, 1536); Object.assign(sol2.shadow.camera, { left: -130, right: 130, top: 110, bottom: -110, near: 1, far: 260 }); sol2.shadow.bias = -0.001; sol2.shadow.normalBias = 0.06; sol2.shadow.radius = 3; scene.add(sol2, sol2.target); }
     S = { hora: 8, luces: { cielo, sol, sol2 }, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
     if (alta && THREE.EffectComposer && renderer.capabilities && renderer.capabilities.isWebGL2) { try {
       const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 }), comp = new THREE.EffectComposer(renderer, rt);
       comp.addPass(new THREE.RenderPass(scene, camera));
-      const ao = new THREE.GTAOPass(scene, camera, 4, 4); ao.blendIntensity = 0.75; ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.2, thickness: 1, scale: 1 }); ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 }); comp.addPass(ao);
+      const ao = new THREE.GTAOPass(scene, camera, 4, 4); ao.blendIntensity = 0.75; ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.2, thickness: 1, scale: 1 }); ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 }); { const set0 = ao.setSize.bind(ao), mitad = nv === 'ultra' ? 0.75 : 0.5; ao.setSize = (w, h) => set0(Math.max(2, Math.round(w * mitad)), Math.max(2, Math.round(h * mitad))); }   // el AO se calcula a menos resolución (es lo más caro del posprocesado)
+      // En exteriores el AO repite toda la escena para sacar normales (≈8 ms en una iGPU): solo en Ultra; en interiores, que son pequeños, siempre
+      ao.enabled = ['calle', 'pueblo', 'deportiva'].indexOf(escena || 'sede') < 0 || nv === 'ultra';
+      comp.addPass(ao);
       const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.28, 0.5, 1.6); comp.addPass(bloom); comp.addPass(new THREE.OutputPass());
       // Gradación final (ya en sRGB): tono cálido suave, un poco de contraste en las medias y ruido de dithering contra las bandas del cielo
       if (THREE.ShaderPass) { const gr = new THREE.ShaderPass({ uniforms: { tDiffuse: { value: null }, calido: { value: 0.5 } }, vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }', fragmentShader: 'uniform sampler2D tDiffuse; uniform float calido; varying vec2 vUv; float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); } void main(){ vec4 c = texture2D(tDiffuse, vUv); vec3 x = c.rgb; x = mix(x, x * x * (3.0 - 2.0 * x), 0.18); x *= vec3(1.0 + 0.035 * calido, 1.0 + 0.008 * calido, 1.0 - 0.045 * calido); x += (h(vUv * 1531.0) - 0.5) / 255.0; gl_FragColor = vec4(x, c.a); }' }); comp.addPass(gr); S.grado = gr; }
@@ -1118,6 +1053,9 @@
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
       S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente(); }
+      // fundido entre cielos HDRI: baja la luz de reflejos, cambia de cielo y vuelve a subirla
+      if (S.hdriPend) { S.envMult = Math.max(0.3, (S.envMult == null ? 1 : S.envMult) - dt * 3); if (S.envMult <= 0.3) cambiarCielo(); } else if (S.envMult != null && S.envMult < 1) S.envMult = Math.min(1, S.envMult + dt * 1.5);
+      if (S.scene.environment && S.envObj != null && S.envMult != null) S.scene.environmentIntensity = S.envObj * S.envMult;
       if (S.expObj) { const ex = S.renderer.toneMappingExposure; EXP_PREV = { v: ex, ext: exterior() }; S.renderer.toneMappingExposure = Math.abs(ex - S.expObj) < 0.002 ? S.expObj : ex + (S.expObj - ex) * Math.min(1, dt * 1.5); }
       if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
@@ -1143,6 +1081,8 @@
       if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
       const inc = S.inc || 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z);
+      // el mapa de sombras se refresca un fotograma de cada dos (la sombra es lo más caro del dibujo); en Ultra, cada uno
+      if (renderer.shadowMap.enabled) { renderer.shadowMap.autoUpdate = false; S.nSombra = ((S.nSombra || 0) + 1) % 2; renderer.shadowMap.needsUpdate = S.nSombra === 0 || nv === 'ultra'; }
       if (S.composer) S.composer.render(); else renderer.render(scene, camera);
     })();
   }
@@ -1211,5 +1151,6 @@
   }
   // Árboles reales (solo en la versión de escritorio, recursos/pesados): devuelve los modelos que se puedan cargar
   async function arbolesReales(ids) { if (GM.campus && GM.campus.config.calidad !== 'alta') return []; return (await Promise.all(ids.map(id => cargar('modelos/reales/arboles/' + id + '.glb').then(g => g.scene).catch(() => null)))).filter(Boolean); }
+  mapa = GM.sedeMapa({ S: () => S, irA, entrar, aEstrella, anim });
   GM.sede = { arbolesReales, modeloReal: (id, ruta) => cargar(ruta || 'modelos/reales/' + id + '/' + id + '_1k.gltf').then(g => g.scene), _clima: tipo => { if (!S) return null; S.clima = Object.assign(climaDe(S.st), { tipo, ayer: false, texto: tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado' }); montarClima(); aplicarAmbiente(); return S.clima; }, pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

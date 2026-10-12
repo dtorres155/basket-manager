@@ -160,7 +160,7 @@
         h('div', { class: 'm-fila' },
           slots.length > 1 ? h('button', { class: 'm-sec', onclick: () => cargarMenu(slots) }, 'Otras partidas') : null,
           g ? h('button', { class: 'm-sec', onclick: dialogoImportar }, 'Importar') : null,
-          h('button', { class: 'm-sec', onclick: accesModal }, 'Accesibilidad'),
+          h('button', { class: 'm-sec', onclick: accesModal }, 'Accesibilidad'), h('button', { class: 'm-sec', onclick: ajustesModal }, 'Ajustes gráficos'),
           h('button', { class: 'm-sec', onclick: () => { setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche'); } }, 'Tema claro u oscuro'))),
       h('p', { class: 'm-pie' }, 'Clubes y jugadores reales; las valoraciones son estimaciones. Modelos 3D de Kenney y Quaternius (CC0).')));
   }
@@ -306,6 +306,16 @@
     try { screens[ui.pantalla].render(ui.cuerpo, S()); } catch (err) { ui.cuerpo.append(aviso('Error al mostrar la pantalla: ' + err.message, 'mal')); if (typeof console !== 'undefined') console.error(err); }
     ui.cuerpo.scrollTop = arriba ? 0 : y;
   }
+  // Ajustes gráficos y de sonido: nivel de calidad (bajo, medio, alto, ultra; docs/PRESUPUESTOS.md) y sonido. Los cambios gráficos valen al abrir de nuevo el mundo 3D.
+  function ajustesModal() {
+    const CP = GM.campus, DESC = { bajo: 'Móvil flojo: sin sombras, mitad de gente, texturas de 512', medio: 'Móvil o PC modesto: sin sombras en tiempo real', alto: 'PC: sombras del sol, cielo HDRI y oclusión en interiores', ultra: 'PC potente: sombras lejanas, oclusión en todo y más resolución' };
+    const cuerpo = h('div', null), pintar = () => {
+      cuerpo.replaceChildren(h('h3', null, 'Ajustes'), h('p', { class: 'muted' }, 'Calidad gráfica'),
+        h('div', { class: 'lista' }, (CP ? CP.NIVELES : []).map(n => h('button', { class: 'btn ' + (CP.config.nivel === n ? '' : 'btn-sec'), style: { display: 'block', width: '100%', textAlign: 'left', marginBottom: '6px' }, onclick: () => { CP.setNivel(n); toast('Calidad ' + n + ': se aplica al abrir de nuevo el mundo 3D'); pintar(); } }, h('b', { style: { display: 'block' } }, n.charAt(0).toUpperCase() + n.slice(1)), h('span', { style: { display: 'block', fontSize: '0.85em', opacity: 0.8, fontWeight: 400 } }, DESC[n])))),
+        GM.sonido ? h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { const on = GM.sonido.alternar(); toast(on ? 'Sonido activado' : 'Sonido desactivado'); } }, 'Activar o silenciar el sonido') : null);
+    };
+    pintar(); modal(cuerpo, [{ t: 'Cerrar', cls: 'btn-sec' }]);
+  }
   function menuJuego() {
     const g = M().guardado, st = S();
     const filas = g ? g.listar().map(s => h('div', { class: 'item' }, h('div', null, h('b', null, s.slot === 0 ? 'Autoguardado' : 'Ranura ' + s.slot), h('div', { class: 'muted' }, s.club ? s.temporada + ', ' + U.fechaLarga(s.fecha) : 'Vacía')),
@@ -317,6 +327,7 @@
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { try { window.localStorage.setItem('gm1:directo', directoOn() ? 'no' : 'si'); } catch (e) { } toast(directoOn() ? 'Partidos en directo activados' : 'Partidos en directo desactivados'); } }, 'Ver los partidos en directo: activar o desactivar'),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche') }, 'Tema claro u oscuro'),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: accesModal }, 'Accesibilidad'),
+      h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: ajustesModal }, 'Ajustes gráficos y de sonido'),
       GM.ui.tutorial ? h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { cerrarModales(); navegar('inicio'); setTimeout(() => GM.ui.tutorial(), 300); } }, 'Ver el tutorial') : null,
       h('p', { class: 'muted' }, 'El guardado vive en este móvil' + (g && g.protegido() ? ' y el navegador lo protege (no lo borra aunque falte espacio)' : g && g.protegido() === false ? '; el navegador podría borrarlo si falta espacio' : '') + '. Haz copias de seguridad de vez en cuando.')),
       [{ t: 'Salir al menú principal', cls: 'btn-sec', fn: () => { if (g) g.guardar(0); GM.state = null; setTimeout(menu, 0); } }, { t: 'Cerrar', cls: 'btn-sec' }]);
@@ -502,6 +513,6 @@
     return ok;
   }
   // Utilidades compartidas con los archivos de pantallas (ui_gestion.js, ui_ciudad.js, ui_presidente.js, ui_carrera.js, ui_entrenador.js)
-  GM.ui._ = { addTab, tabsExtra, tabExtra, accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
+  GM.ui._ = { ajustesModal, addTab, tabsExtra, tabExtra, accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
   GM.register('ui', { start, navegar, refrescar, toast, modal, registerScreen, selfTest });
 })();

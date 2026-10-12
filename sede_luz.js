@@ -22,12 +22,14 @@
       const antes = S.scene.environment; S.envK = null; entorno(); if (S.scene.environment !== antes) { antes.dispose(); S.scene.environmentIntensity = S.envBase; } else S.envK = 'ext';
     }
     // Cielos HDRI de Poly Haven (CC0) en calidad alta: dia, nublado, tarde y noche. Se cargan una vez (PMREM) y se elige uno según el sol y el clima; sin ellos queda el cielo procedural.
-    const HDRI = {};
+    const HDRI = {}, SOLHDRI = {};
+    // Azimut del sol del HDRI (el texel más brillante, en el sentido de atan2(z, x) de Three) para girar el cielo hasta que coincida con el sol real
+    function sol_de(t) { const d = t.image.data, w = t.image.width; let mx = -1, mi = 0; for (let i = 0; i < d.length; i += 4) { const l = d[i] + d[i + 1] + d[i + 2]; if (l > mx) { mx = l; mi = i / 4; } } return { az: ((mi % w) / w - 0.5) * 2 * Math.PI, fuerte: mx > 30 }; }
     function cieloHDRI(nombre) {
       if (HDRI[nombre] !== undefined) return HDRI[nombre];
       HDRI[nombre] = null;   // en curso
       if (!THREE.RGBELoader || typeof fetch === 'undefined') return null;
-      new THREE.RGBELoader().load('hdri/' + nombre + '.hdr', t => { try { t.mapping = THREE.EquirectangularReflectionMapping; const pm = new THREE.PMREMGenerator(ctx.S() ? ctx.S().renderer : null), e = pm.fromEquirectangular(t); pm.dispose(); t.dispose(); HDRI[nombre] = e.texture; if (ctx.S()) ctx.S().hdriK = null; } catch (er) { HDRI[nombre] = false; } }, undefined, () => { HDRI[nombre] = false; });
+      new THREE.RGBELoader().setDataType(THREE.FloatType).load('hdri/' + nombre + '.hdr', t => { try { t.mapping = THREE.EquirectangularReflectionMapping; SOLHDRI[nombre] = sol_de(t); const pm = new THREE.PMREMGenerator(ctx.S() ? ctx.S().renderer : null), e = pm.fromEquirectangular(t); pm.dispose(); t.dispose(); HDRI[nombre] = e.texture; if (ctx.S()) ctx.S().hdriK = null; } catch (er) { HDRI[nombre] = false; } }, undefined, () => { HDRI[nombre] = false; });
       return null;
     }
     function elegirHDRI() {
@@ -36,7 +38,13 @@
       const C = S.clima || { tipo: 'sol' }, nombre = S.noche > 0.55 ? 'noche' : (S.solElev < 0.3 || S.noche > 0) ? 'tarde' : C.tipo === 'lluvia' || C.tipo === 'nubes' ? 'nublado' : 'dia';
       if (S.hdriK === nombre) return;
       const t = cieloHDRI(nombre); if (!t) return;
-      S.hdriK = nombre; S.scene.environment = t; S.hdriBase = { dia: 0.9, nublado: 0.85, tarde: 1.1, noche: 0.5 }[nombre]; S.envBase = S.hdriBase * 0.45;
+      if (!S.hdriK) { S.hdriPend = { t, nombre }; cambiarCielo(); } else S.hdriPend = { t, nombre };   // el primero entra de golpe; los siguientes con un fundido (en el bucle de sede3d.js)
+    }
+    // Pone el cielo pendiente: su intensidad y el giro que alinea el sol del HDRI con el sol real
+    function cambiarCielo() {
+      const S = ctx.S(), p = S && S.hdriPend; if (!p) return; S.hdriPend = null;
+      S.hdriK = p.nombre; S.scene.environment = p.t; S.envBase = { dia: 0.9, nublado: 0.85, tarde: 1.1, noche: 0.5 }[p.nombre] * 0.45;
+      const h = SOLHDRI[p.nombre]; if (S.scene.environmentRotation && h && h.fuerte && S.solAzim != null) { const az = Math.atan2(Math.cos(S.solAzim), -Math.sin(S.solAzim)); S.scene.environmentRotation.y = az - h.az; } else if (S.scene.environmentRotation) S.scene.environmentRotation.y = 0;
     }
     function tonoCiudad(st) { const p = (st.equipos[st.clubId] || {}).pais; return TONOS[p === 'US' ? 'us' : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? 'centro' : 'med']; }
 
@@ -55,7 +63,7 @@
       S.luces.cielo.intensity = ((S.scene.environment ? 0.55 : 1.1) * (1 - noche) + 0.5 * noche) * triste;
       S.luces.cielo.color.setHex(mezcla(T0.cielo, 0x5a6c9a, noche)); if (S.escena === 'pueblo') { S.luces.sol.intensity *= 1.25; S.luces.cielo.intensity *= 0.8; }
       S.expObj = T0.exp * (1 - noche * 0.12) * (S.solElev < 0.15 && !noche ? 1 + (0.15 - S.solElev) * 0.5 : 1);   // el ojo se adapta: la exposición se acerca poco a poco a este valor
-      if (!S.hdriK) { actualizarCielo(); } elegirHDRI(); if (S.scene.environment) S.scene.environmentIntensity = (S.envBase || 0.5) * (1 - noche * 0.75) * triste;
+      if (!S.hdriK) { actualizarCielo(); } elegirHDRI(); S.envObj = (S.envBase || 0.5) * (1 - noche * 0.75) * triste; if (S.scene.environment) S.scene.environmentIntensity = S.envObj * (S.envMult == null ? 1 : S.envMult);
       if (S.grado) S.grado.uniforms.calido.value = 0.65 * (1 - noche * 0.5);
       if (S.bloom) { S.bloom.enabled = noche > 0.05; S.bloom.strength = noche * 0.5; S.bloom.threshold = 2.4 - noche * 1.5; }
       if (S.escena === 'calle' || S.escena === 'pueblo') { const f = noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0xb2cce2, 0xf0a46a, tarde); S.scene.background = new THREE.Color(f); if (S.scene.fog) S.scene.fog.color.setHex(f); }
@@ -71,6 +79,6 @@
       if (S.luces.sol2) { const l2 = S.luces.sol2; l2.color.copy(S.luces.sol.color); l2.intensity = S.luces.sol.intensity * 0.4; S.luces.sol.intensity *= 0.6; }
       if (S.chipHora) { const hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15; S.chipHora.textContent = hh + ':' + String(mm).padStart(2, '0'); }
     }
-    return { entorno, aplicarAmbiente, tonoCiudad, mezcla };
+    return { entorno, aplicarAmbiente, tonoCiudad, mezcla, cambiarCielo };
   };
 })();

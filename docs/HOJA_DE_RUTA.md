@@ -191,3 +191,11 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 - **2c hecho a medias:** botón «Calidad» en la barra del mundo (bajo, medio, alto, ultra; reinicia la escena). Pendiente 2d: pantalla de Ajustes completa (punto 82) y texturas 512 en Bajo.
 - **5b hecho a medias:** `sede_luz.js` sale de `sede3d.js` (1.278 a 1.215 líneas). Pendiente 5c: seguir separando `sede3d.js` (personajes, movimiento, paneles, mapa) y revisar los demás archivos con un plan por trozos.
 - **1c hecho:** Kolossos ya es ciudad real (116 de 120). Con calle inventada: Manresa, Treviso, Philadelphia y Zalgiris.
+
+### Estado (12 oct 2026, cuarta tanda: cierre de 3c, 7c, 9c, 10c, 2d y 5c)
+- **3c hecho:** selección de referencias con los rasgos a copiar en `docs/referencias/SELECCION.md` (calle, plaza, interior, pueblo, pabellón, noche y Gran Vía), hojas de contacto con `node tools/hoja_referencias.js`.
+- **7c hecho:** `node tools/gpu_tiempo.js` mide el dibujo con la GPU (ver `docs/PRESUPUESTOS.md`). Resultado: el AO costaba 8 ms y la sombra 3 a 6 ms; AO solo en interiores y Ultra, y sombras a medio ritmo: la calle en Alto pasa de 19 a 8 ms. **Pendiente 7d:** la sede (1,1 M triángulos) sigue en 16 a 27 ms en Alto.
+- **9c hecho:** los cambios de cielo HDRI se hacen con fundido y el cielo se gira para que su sol coincida con el sol real. Pendiente 9d: comprobar a ojo en una captura de hora punta que el giro apunta bien (el signo se razonó, no se verificó con una esfera de prueba).
+- **10c hecho:** se decide no usar LUT: la gradación del último pase (calidez, contraste, dithering) basta.
+- **2d hecho:** pantalla «Ajustes gráficos y de sonido» (menú principal y menú de partida) con los cuatro niveles, y Bajo reduce las texturas a 512.
+- **5c hecho a medias:** `sede_mapa.js` sale de `sede3d.js` (de 1.215 a 1.156 líneas). Pendiente 5d: seguir con `decorar`, `construir` y `personaje` (en este orden).

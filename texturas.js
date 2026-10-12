@@ -12,7 +12,8 @@
   const enNavegador = () => typeof window !== 'undefined' && typeof navigator !== 'undefined' && !/jsdom/i.test(navigator.userAgent || '') && typeof THREE !== 'undefined' && THREE.TextureLoader;
   function precargar() {
     if (promesa) return promesa; if (!enNavegador()) return (promesa = Promise.resolve(false));
-    const L = new THREE.TextureLoader(), carga = (url, srgb) => new Promise(res => { L.load(url, t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; if (srgb) t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)); });
+    const L = new THREE.TextureLoader(), carga = (url, srgb) => new Promise(res => { L.load(url, t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = GM.campus && GM.campus.config.nivel === 'bajo' ? 1 : 4;
+      if (GM.campus && GM.campus.config.nivel === 'bajo' && t.image && t.image.width > 512) { try { const c = document.createElement('canvas'); c.width = c.height = 512; c.getContext('2d').drawImage(t.image, 0, 0, 512, 512); t.image = c; t.needsUpdate = true; } catch (e) { } } if (srgb) t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, () => res(null)); });
     promesa = Promise.race([Promise.all(IDS.map(async id => { const [c, n, r] = await Promise.all([carga('texturas/' + id + '_c.jpg', true), carga('texturas/' + id + '_n.jpg'), carga('texturas/' + id + '_r.jpg')]); if (c && n && r) TX[id] = { c, n, r }; })).then(() => (ok = Object.keys(TX).length > 0)),
       new Promise(res => setTimeout(() => res(false), 8000))]);
     return promesa;
