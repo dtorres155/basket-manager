@@ -12,6 +12,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
-const THREE = Object.assign({}, T, { mergeGeometries, mergeVertices, GLTFLoader, RoundedBoxGeometry, Sky, clonarEsqueleto, EffectComposer, RenderPass, OutputPass, UnrealBloomPass, GTAOPass, RoomEnvironment });
+const THREE = Object.assign({}, T, { mergeGeometries, mergeVertices, GLTFLoader, RoundedBoxGeometry, Sky, clonarEsqueleto, EffectComposer, RenderPass, OutputPass, UnrealBloomPass, GTAOPass, RoomEnvironment, RGBELoader, ShaderPass });
 globalThis.THREE = THREE;

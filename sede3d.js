@@ -7,6 +7,8 @@
 (function () {
   const U = GM.util;
   let S = null; // escena activa
+  let EXP_PREV = null;   // exposición con la que se salió de la escena anterior
+  const { entorno, aplicarAmbiente, tonoCiudad, mezcla } = GM.sedeLuz({ S: () => S, exterior: () => ['calle', 'pueblo', 'deportiva'].indexOf(S.escena) >= 0 });   // sede_luz.js
   const cache = {};
   const cargar = ruta => cache[ruta] || (cache[ruta] = new THREE.GLTFLoader().loadAsync(ruta));
   // Personas de Quaternius (CC0): cada una sin animaciones y un archivo de animaciones compartido (mismo esqueleto)
@@ -335,24 +337,6 @@
   }
 
   // ---------- Construcción de la escena ----------
-  // Entorno (reflejos y luz ambiente realista): un cielo de verdad en exteriores y una sala neutra en interiores; se calcula una vez por tipo
-  function entorno() {
-    const r = S.renderer, interior = ['sede', 'casa', 'interior'].indexOf(S.escena) >= 0, k = interior ? 'int' : 'ext'; if (S.envK === k) return;
-    try {
-      const pm = new THREE.PMREMGenerator(r); let tex;
-      if (interior && THREE.RoomEnvironment) tex = pm.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
-      else if (THREE.Sky) { const sky = new THREE.Sky(), u = sky.material.uniforms, sc = new THREE.Scene(); sky.scale.setScalar(1000); u.turbidity.value = 5; u.rayleigh.value = 1.4; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.8; const el = Math.max(0.3, S.solElev == null ? 0.55 : S.solElev); S.envElev = el; u.sunPosition.value.setFromSphericalCoords(1, Math.PI / 2 - el, S.solAzim == null ? 3.5 : Math.PI - S.solAzim); sc.add(sky); tex = pm.fromScene(sc).texture; }
-      pm.dispose(); if (!tex) return; if (S.scene.environment) S.scene.environment.dispose(); S.scene.environment = tex; S.envK = k; S.envBase = interior ? 0.4 : 0.3; S.scene.environmentIntensity = S.envBase;
-    } catch (e) { S.envK = k; }
-  }
-  // Tono de cada ciudad: más cálido y luminoso en el Mediterráneo, más frío y neutro en el centro de Europa, nítido en EE. UU.
-  const TONOS = { med: { sol: 0xffecc8, cielo: 0xe2e9f2, exp: 0.95 }, centro: { sol: 0xf1f3ff, cielo: 0xd0dbe8, exp: 0.88 }, us: { sol: 0xfff4e4, cielo: 0xdfe9f5, exp: 0.92 } };
-  // Al cambiar la altura del sol más de 0,1 rad se recalcula el cielo de reflejos (un PMREM pequeño, solo en exteriores)
-  function actualizarCielo() {
-    if (!S.scene.environment || S.envK !== 'ext' || S.envElev == null || Math.abs(Math.max(0.3, S.solElev) - S.envElev) < 0.1 || S.noche > 0.6) return;
-    const antes = S.scene.environment; S.envK = null; entorno(); if (S.scene.environment !== antes) { antes.dispose(); S.scene.environmentIntensity = S.envBase; } else S.envK = 'ext';
-  }
-  function tonoCiudad(st) { const p = (st.equipos[st.clubId] || {}).pais; return TONOS[p === 'US' ? 'us' : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? 'centro' : 'med']; }
   async function construir(st) {
     entorno();
     if (S.escena === 'calle') { S.redes = []; S.mundo = new THREE.Group(); S.scene.add(S.mundo); if (GM.calle.preparar) await GM.calle.preparar(st); return GM.calle.construir(S, motor(), st); }
@@ -550,6 +534,7 @@
       h('div', { class: 'ct' }, h('b', null, S.escena === 'casa' ? (S.casaNombre || 'Tu casa') : S.escena === 'interior' ? (S.interiorNombre || 'Interior') : S.escena === 'deportiva' ? (S.calleNombre || 'Ciudad deportiva') : S.escena === 'calle' || S.escena === 'pueblo' ? (S.calleNombre || club.ciudad) : club.nombre), S.escena === 'pueblo' ? h('span', null, 'Tu pueblo, ' + U.fechaLarga(st.fecha)) : S.escena === 'calle' ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha)) : fecha), (S.chipHora = h('button', { class: 'sede-hora', title: 'Pasar una hora', onclick: () => { if (S.hora >= 23) return GM.ui.toast('Es tarde: avanza al día siguiente'); S.hora = Math.min(23, Math.floor(S.hora) + 1); S.tLuz = 0; GM.ui.toast('Pasa una hora: ' + Math.floor(S.hora) + ':00'); } }, '8:00')), (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
       h('button', { class: 'btn btn-sec peq', onclick: () => mapa() }, 'Mapa'),
       h('button', { class: 'btn btn-sec peq', onclick: () => modoFoto() }, 'Foto'),
+      h('button', { class: 'btn btn-sec peq', title: 'Calidad gráfica: bajo, medio, alto o ultra (reinicia la escena)', onclick: () => { const N = GM.campus.NIVELES, n = N[(N.indexOf(GM.campus.config.nivel) + 1) % N.length]; GM.campus.setNivel(n); const st = S.st, arg = S.escena + (S.escenaArg ? ':' + S.escenaArg : ''); cerrar(); GM.ui.toast('Calidad ' + n); setTimeout(() => abrir(st, arg), 60); } }, 'Calidad: ' + ((GM.campus && GM.campus.config.nivel) || 'alto')),
       GM.sonido ? h('button', { class: 'btn btn-sec peq', title: 'Activar o silenciar el sonido', onclick: e => { const on = GM.sonido.alternar(); e.currentTarget.textContent = on ? 'Sonido' : 'Sin sonido'; } }, GM.sonido.activo() ? 'Sonido' : 'Sin sonido') : null,
       S.escena === 'pueblo' && GM.puebloJuego ? h('button', { class: 'btn btn-sec peq', onclick: () => GM.puebloJuego.panelEncargos() }, 'Encargos (' + GM.puebloJuego.pendientes(st) + ')') : null,
       st.modo === 'carrera' && GM.mods.movil && GM.ui.movil ? (() => { const n = GM.mods.movil.noLeidos(st); return h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil' + (n ? ' (' + n + ')' : '')); })() : null,
@@ -929,34 +914,6 @@
     }
     return { tipo: 'normal', texto: 'Día de entrenamiento' };
   }
-  // La luz depende de la hora (9:00 a 23:00; una hora de juego dura 40 s reales) y del ambiente del día
-  const _cA = new THREE.Color(), _cB = new THREE.Color();
-  function mezcla(a, b, t) { return _cA.setHex(a).lerp(_cB.setHex(b), Math.max(0, Math.min(1, t))).getHex(); }
-  function aplicarAmbiente() {
-    if (!S.luces || !S.dia) return;
-    const h = S.hora || 9, SO = GM.mods.sol, hs = SO ? SO.horaSolar(S.st, h) : h, sp = SO ? SO.salidaPuesta(SO.latitud(S.st), S.st.fecha) : { sale: 7, pone: 20 }, tarde = Math.max(0, Math.min(1, (hs - (sp.pone - 2.5)) / 2.5)), noche = Math.max(0, Math.min(1, Math.max((hs - (sp.pone - 0.5)) / 1.5, (sp.sale + 0.5 - hs) / 1.2))), triste = S.dia.tipo === 'derrota' ? 0.72 : S.dia.tipo === 'victoria' ? 1.08 : 1;
-    S.noche = noche;
-    { const pz = SO ? SO.posicion(SO.latitud(S.st), S.st.fecha, hs) : null; S.solElev = pz ? pz.elev : 0.9; S.solAzim = pz ? pz.azim : null; }   // altura real del sol: baja en invierno y al caer la tarde
-    S.luces.sol.intensity = (2.6 * (1 - noche) + 0.7 * noche) * triste * (SO ? Math.max(0.55, Math.min(1, (S.solElev + 0.04) / 0.45)) : 1);
-    const T0 = tonoCiudad(S.st);
-    S.luces.sol.color.setHex(noche > 0 ? mezcla(0xffa060, 0x8fa6d6, noche) : mezcla(S.dia.tipo === 'derrota' ? 0xd9e2f0 : T0.sol, 0xffa060, tarde));
-    S.luces.cielo.intensity = ((S.scene.environment ? 0.55 : 1.1) * (1 - noche) + 0.5 * noche) * triste;
-    S.luces.cielo.color.setHex(mezcla(T0.cielo, 0x5a6c9a, noche)); if (S.escena === 'pueblo') { S.luces.sol.intensity *= 1.25; S.luces.cielo.intensity *= 0.8; }
-    S.expObj = T0.exp * (1 - noche * 0.12) * (S.solElev < 0.15 && !noche ? 1 + (0.15 - S.solElev) * 0.5 : 1);   // el ojo se adapta: la exposición se acerca poco a poco a este valor
-    actualizarCielo(); if (S.scene.environment) S.scene.environmentIntensity = (S.envBase || 0.5) * (1 - noche * 0.75) * triste;
-    if (S.bloom) { S.bloom.enabled = noche > 0.05; S.bloom.strength = noche * 0.5; S.bloom.threshold = 2.4 - noche * 1.5; }
-    if (S.escena === 'calle' || S.escena === 'pueblo') { const f = noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0xb2cce2, 0xf0a46a, tarde); S.scene.background = new THREE.Color(f); if (S.scene.fog) S.scene.fog.color.setHex(f); }
-    else S.scene.background = new THREE.Color(noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0x9fb8c8, 0xf0a46a, tarde));
-    if (S.farolas) { S.farolas.emissiveIntensity = 0.4 + noche * 3.5; }
-    if (S.charcosNoche) S.charcosNoche.opacity = noche * 0.9;
-    if (S.ventanas) S.ventanas.forEach(m => { m.emissiveIntensity = (m.emissiveMap ? 1.3 : 0.25) * Math.max(0, Math.min(1, (h - 19) / 1.5)); });
-    { const C = S.clima || { tipo: 'sol' }, ext = exterior(), gris = ext ? (C.tipo === 'lluvia' ? 0.75 : C.tipo === 'nubes' ? 0.42 : 0) : 0;
-      if (gris) { const gn = gris * (1 - noche * 0.6), gc = new THREE.Color(0x8f99a4).lerp(new THREE.Color(0x283040), noche); S.luces.sol.intensity *= 1 - gn * 0.72; S.luces.cielo.color.lerp(new THREE.Color(0xa3acb6), gn * 0.6); if (S.scene.background && S.scene.background.isColor) S.scene.background.lerp(gc, gn * 0.85); if (S.scene.fog) { S.scene.fog.color.lerp(gc, gn * 0.85); if (!S.fogBase) S.fogBase = S.scene.fog.far; S.scene.fog.far = S.fogBase * (1 - gn * 0.35); } if (S.scene.environment) S.scene.environmentIntensity *= 1 - gn * 0.3; }
-      if (GM.texturas && GM.texturas.mojadoU) GM.texturas.mojadoU.value = ext ? (C.tipo === 'lluvia' ? 1 : C.ayer ? 0.35 : 0) : 0;
-      if (S.chipDia && S.dia && S.clima) S.chipDia.textContent = S.dia.texto + (ext ? '. ' + S.clima.texto : '');
-      if (GM.sonido) { const pc = !!(S.dia && S.dia.tipo === 'partido' && S.dia.casa); GM.sonido.estado({ hora: h, clima: C.tipo, partido: pc && h >= 20.4 && h < 22.3, previa: pc && h >= 16 && h < 20.5 }); } }
-    if (S.chipHora) { const hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15; S.chipHora.textContent = hh + ':' + String(mm).padStart(2, '0'); }
-  }
 
   // ---------- Ánimo: cabeza baja y saludos ----------
   function cabeza(p, ang) {
@@ -1120,20 +1077,24 @@
     raiz.append(lienzo); document.body.append(raiz);
     const alta = !GM.campus || GM.campus.config.calidad === 'alta'; // en «normal» (móvil): sin sombras en tiempo real y menos resolución
     const renderer = new THREE.WebGLRenderer({ antialias: alta }); const nv = (GM.campus && GM.campus.config.nivel) || 'alto'; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, nv === 'ultra' ? 2.5 : alta ? 2 : nv === 'bajo' ? 1 : 1.25));
-    renderer.shadowMap.enabled = alta; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.enabled = alta; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05; if (EXP_PREV) { renderer.toneMappingExposure = EXP_PREV.v * (EXP_PREV.ext === (['sede', 'casa', 'interior'].indexOf(escena || 'sede') < 0) ? 1 : EXP_PREV.ext ? 0.8 : 1.2); }   // el ojo viene adaptado de la escena anterior
     lienzo.append(renderer.domElement); renderer.domElement.style.touchAction = 'none';
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 200);
     const cielo = new THREE.HemisphereLight(0xdfe8f2, 0x6b5a48, 1.1); scene.add(cielo);
     const sol = new THREE.DirectionalLight(0xfff1dc, 2.6); sol.position.set(-14, 26, 12); sol.castShadow = true; sol.shadow.mapSize.set(nv === 'ultra' ? 4096 : 2048, nv === 'ultra' ? 4096 : 2048);
     Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 20, bottom: -20, near: 1, far: 70 }); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.02; sol.shadow.radius = 4; sol.shadow.blurSamples = 12; scene.add(sol, sol.target);
-    S = { hora: 8, luces: { cielo, sol }, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
+    // Cascada lejana (solo Ultra): segunda luz solar con un mapa de 260 m que reparte con la cercana, así las sombras llegan a las calles de alrededor
+    let sol2 = null; if (alta && nv === 'ultra') { sol2 = new THREE.DirectionalLight(0xfff1dc, 1); sol2.castShadow = true; sol2.shadow.mapSize.set(2048, 2048); Object.assign(sol2.shadow.camera, { left: -130, right: 130, top: 110, bottom: -110, near: 1, far: 260 }); sol2.shadow.bias = -0.001; sol2.shadow.normalBias = 0.06; sol2.shadow.radius = 3; scene.add(sol2, sol2.target); }
+    S = { hora: 8, luces: { cielo, sol, sol2 }, st, raiz, renderer, scene, camera, escena: escena || 'sede', escenaArg: argEsc, gente: [], ocupados: new Set(), flotantes: [], reloj: new THREE.Timer(), yaw: 0, yawObj: 0, zoom: 22, foco: new THREE.Vector3(6, 0, 10), teclas: {}, vivo: true };
     hud(st);
     if (alta && THREE.EffectComposer && renderer.capabilities && renderer.capabilities.isWebGL2) { try {
       const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 }), comp = new THREE.EffectComposer(renderer, rt);
       comp.addPass(new THREE.RenderPass(scene, camera));
       const ao = new THREE.GTAOPass(scene, camera, 4, 4); ao.blendIntensity = 0.75; ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.2, thickness: 1, scale: 1 }); ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 }); comp.addPass(ao);
       const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.28, 0.5, 1.6); comp.addPass(bloom); comp.addPass(new THREE.OutputPass());
+      // Gradación final (ya en sRGB): tono cálido suave, un poco de contraste en las medias y ruido de dithering contra las bandas del cielo
+      if (THREE.ShaderPass) { const gr = new THREE.ShaderPass({ uniforms: { tDiffuse: { value: null }, calido: { value: 0.5 } }, vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }', fragmentShader: 'uniform sampler2D tDiffuse; uniform float calido; varying vec2 vUv; float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); } void main(){ vec4 c = texture2D(tDiffuse, vUv); vec3 x = c.rgb; x = mix(x, x * x * (3.0 - 2.0 * x), 0.18); x *= vec3(1.0 + 0.035 * calido, 1.0 + 0.008 * calido, 1.0 - 0.045 * calido); x += (h(vUv * 1531.0) - 0.5) / 255.0; gl_FragColor = vec4(x, c.a); }' }); comp.addPass(gr); S.grado = gr; }
       S.composer = comp; S.ao = ao; S.bloom = bloom; } catch (e) { S.composer = null; console.warn('Sin posprocesado:', e.message); } }
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); if (S.composer) { S.composer.setPixelRatio(Math.min(renderer.getPixelRatio(), 1.5)); S.composer.setSize(w, hh); } };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
@@ -1157,7 +1118,7 @@
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
       S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente(); }
-      if (S.expObj) { const ex = S.renderer.toneMappingExposure; S.renderer.toneMappingExposure = Math.abs(ex - S.expObj) < 0.002 ? S.expObj : ex + (S.expObj - ex) * Math.min(1, dt * 1.5); }
+      if (S.expObj) { const ex = S.renderer.toneMappingExposure; EXP_PREV = { v: ex, ext: exterior() }; S.renderer.toneMappingExposure = Math.abs(ex - S.expObj) < 0.002 ? S.expObj : ex + (S.expObj - ex) * Math.min(1, dt * 1.5); }
       if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
       if (S.escena === 'interior' && GM.interiores && GM.interiores.actualizar) GM.interiores.actualizar(S, motor(), dt);
@@ -1168,7 +1129,8 @@
       { const sol = S.luces.sol, SO = GM.mods.sol, d = SO && S.st ? SO.direccion(SO.latitud(S.st), S.st.fecha, SO.horaSolar(S.st, S.hora || 9), 0.3) : { x: -0.45, y: 0.84, z: 0.39 }; // la sombra cubre lo que se ve (crece con el zoom) y el foco se redondea al texel para que no tiemble al caminar
       const mitad = Math.max(22, Math.min(58, S.zoom * 1.1 + 6)), q = 2 * mitad / sol.shadow.mapSize.x * 4, fx = Math.round(S.foco.x / q) * q, fz = Math.round(S.foco.z / q) * q;
       if (Math.abs(mitad - (S.sombraMitad || 0)) > 1.5) { S.sombraMitad = mitad; const c = sol.shadow.camera; c.left = -mitad; c.right = mitad; c.top = mitad * 0.8; c.bottom = -mitad * 0.8; c.updateProjectionMatrix(); }
-      sol.position.set(fx + d.x * 31, d.y * 31, fz + d.z * 31); sol.target.position.set(fx, 0, fz); sol.target.updateMatrixWorld(); }
+      sol.position.set(fx + d.x * 31, d.y * 31, fz + d.z * 31); sol.target.position.set(fx, 0, fz); sol.target.updateMatrixWorld();
+        const l2 = S.luces.sol2; if (l2) { const q2 = 260 / 2048 * 8, gx = Math.round(S.foco.x / q2) * q2, gz = Math.round(S.foco.z / q2) * q2; l2.position.set(gx + d.x * 120, d.y * 120, gz + d.z * 120); l2.target.position.set(gx, 0, gz); l2.target.updateMatrixWorld(); } }
       S.gente.forEach(n => {
         if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
         const dP = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z); if (S.nivelRend >= 2) n.obj.visible = dP < (S.nivelRend >= 3 ? 20 : 28);   // ahorro de CPU: los muy lejanos no se dibujan
@@ -1205,7 +1167,7 @@
   function aplicarRend(n, avisar) {
     const r = S.renderer; if (!r || !n) return; S.nivelRend = n; if (S.composer) { S.composer.dispose && S.composer.dispose(); S.composer = null; }
     r.setPixelRatio(NIVELES_REND[n]);
-    if (r.shadowMap.enabled) { r.shadowMap.enabled = false; if (S.luces && S.luces.sol) S.luces.sol.castShadow = false; S.scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); }); }
+    if (r.shadowMap.enabled) { r.shadowMap.enabled = false; if (S.luces && S.luces.sol) S.luces.sol.castShadow = false; if (S.luces && S.luces.sol2) S.luces.sol2.castShadow = false; S.scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); }); }
     try { window.localStorage.setItem('gm1:rendimiento', String(n)); } catch (e) { }
     if (avisar && GM.ui && GM.ui.toast) GM.ui.toast('Calidad ajustada para que vaya más fluido');
   }

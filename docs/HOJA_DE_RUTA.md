@@ -182,3 +182,12 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 - **6b hecho:** `tools/datos.js`, `docs/DATOS.md` y `docs/licencias.json` (fuente única de `CREDITOS.md`).
 - **7 hecho a medias:** la sombra del sol cubre ahora lo que se ve (crece con el zoom, 22 a 58 m) y el foco se redondea al texel para que no tiemble al caminar. **7b pendiente:** cascadas de verdad (dos o más mapas) y medir GPU con temporizador; el addon CSM choca con nuestros shaders recortables, así que se haría con dos luces solo para sombra.
 - **10b pendiente:** el antialiasing ya está (render con 4 muestras); faltan LUT de color cálido tras el tono, dithering y adaptar la exposición al pasar de la calle a un interior (la escena se reconstruye).
+
+### Estado (12 oct 2026, tercera tanda: lo que necesitaba tu respuesta)
+- **3b hecho:** 90 fotos de referencia con licencia libre de Wikimedia Commons (calle de Badalona, plaza mediterránea, interior de vivienda, pueblo, pabellón, calle de noche, avenida comercial) en `recursos/referencias/` (fuera de git) y autores y licencias en `docs/referencias/*.md`; se amplían con `node tools/referencias.js`. Pendiente 3c: elegir las 15 mejores por escena y anotar qué rasgos copiar (la selección visual es tuya cuando quieras).
+- **9b hecho:** cuatro cielos HDRI (día, nublado, tarde y noche) de Poly Haven en `vendor/hdri`, usados en calidad alta; se elige según sol y clima. Pendiente 9c: mezclar suavemente entre cielos (ahora cambia de golpe en el siguiente refresco) y rotar el cielo para que su sol coincida con el sol real.
+- **10b hecho:** gradación final cálida con contraste suave y dithering (último pase del posprocesado) y exposición que viene de la escena anterior y se adapta. Pendiente 10c: una LUT de color real si el pase actual no basta.
+- **7b hecho (solo Ultra):** segunda luz solar de 260 m con su mapa de sombras que reparte con la cercana. No es una cascada exacta (fuera de la zona cercana la sombra lejana es más suave); medir la GPU con un temporizador sigue pendiente (7c).
+- **2c hecho a medias:** botón «Calidad» en la barra del mundo (bajo, medio, alto, ultra; reinicia la escena). Pendiente 2d: pantalla de Ajustes completa (punto 82) y texturas 512 en Bajo.
+- **5b hecho a medias:** `sede_luz.js` sale de `sede3d.js` (1.278 a 1.215 líneas). Pendiente 5c: seguir separando `sede3d.js` (personajes, movimiento, paneles, mapa) y revisar los demás archivos con un plan por trozos.
+- **1c hecho:** Kolossos ya es ciudad real (116 de 120). Con calle inventada: Manresa, Treviso, Philadelphia y Zalgiris.

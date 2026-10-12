@@ -1,0 +1,4 @@
+const fs=require('fs');
+function ed(f,pairs){ let s=fs.readFileSync(f,'utf8'); for(const [a,b] of pairs){ if(!s.includes(a)) throw new Error(f+' falta '+a.slice(0,50)); s=s.replace(a,()=>b);} fs.writeFileSync(f,s); }
+ed('sede3d.js',[["      GM.sonido ? h('button', { class: 'btn btn-sec peq', title: 'Activar o silenciar el sonido'",
+"      h('button', { class: 'btn btn-sec peq', title: 'Calidad gráfica: bajo, medio, alto o ultra (reinicia la escena)', onclick: () => { const N = GM.campus.NIVELES, n = N[(N.indexOf(GM.campus.config.nivel) + 1) % N.length]; GM.campus.setNivel(n); const st = S.st, arg = S.escenaArg || S.escena; cerrar(); GM.ui.toast('Calidad ' + n); setTimeout(() => abrir(st, arg), 60); } }, 'Calidad: ' + ((GM.campus && GM.campus.config.nivel) || 'alto')),\n      GM.sonido ? h('button', { class: 'btn btn-sec peq', title: 'Activar o silenciar el sonido'"]]);

@@ -14,6 +14,7 @@
 | Graduate | Eduardo Tunni | SIL Open Font License 1.1 | `vendor/fonts/graduate-*.woff2`, `Graduate.OFL.txt` |
 | Bricolage Grotesque (variable, ejes opsz y wght) | Mathieu Triay y The Bricolage Grotesque Project Authors | SIL Open Font License 1.1 | `vendor/fonts/bricolage-grotesque-*.woff2`, `BricolageGrotesque.OFL.txt` |
 | Doto (variable, eje wght) | Oliver Lalan y The Doto Project Authors | SIL Open Font License 1.1 | `vendor/fonts/doto-*.woff2`, `Doto.OFL.txt` |
+| Cielos HDRI 1K (kloofendal_48d_partly_cloudy_puresky, overcast_soil_puresky, qwantani_dusk_2_puresky, dikhololo_night) | Poly Haven (Greg Zaal, Jarod Guest, Sergej Majboroda) | CC0 1.0 | `vendor/hdri/` |
 
 Los iconos de la app (`vendor/icons/`) son propios del proyecto, generados con `tools/iconos.js`.
 

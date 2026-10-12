@@ -70,5 +70,11 @@
   "autor": "Oliver Lalan y The Doto Project Authors",
   "licencia": "SIL Open Font License 1.1",
   "donde": "`vendor/fonts/doto-*.woff2`, `Doto.OFL.txt`"
+ },
+ {
+  "recurso": "Cielos HDRI 1K (kloofendal_48d_partly_cloudy_puresky, overcast_soil_puresky, qwantani_dusk_2_puresky, dikhololo_night)",
+  "autor": "Poly Haven (Greg Zaal, Jarod Guest, Sergej Majboroda)",
+  "licencia": "CC0 1.0",
+  "donde": "`vendor/hdri/`"
  }
 ]
