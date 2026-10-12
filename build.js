@@ -105,7 +105,7 @@ fs.writeFileSync(path.join(DIST, 'manifest.webmanifest'), JSON.stringify(manifes
 
 // Service worker: precarga todo dist/. La versión es un hash del contenido, así que cada cambio crea una caché nueva
 // y el juego ofrece actualizar (ver registroSW). Estrategia: primero caché, red como respaldo.
-const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].concat(FUENTES.map(x => 'fonts/' + x[2]), ICONOS.map(f => 'icons/' + f), MODELOS, TEXTURAS, OSM);
+const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].concat(FUENTES.map(x => 'fonts/' + x[2]), ICONOS.map(f => 'icons/' + f), MODELOS, TEXTURAS);   // las ciudades (osm/), los cielos HDRI, el transcodificador Basis, las texturas KTX2 y los modelos realistas se piden la primera vez y se guardan en la caché (ya no se descargan las 120 ciudades al instalar)
 const hash = require('crypto').createHash('sha1');
 archivos.filter(f => f !== './').forEach(f => hash.update(fs.readFileSync(path.join(DIST, f))));
 const VERSION = hash.digest('hex').slice(0, 10);
@@ -118,7 +118,7 @@ self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skip
 self.addEventListener('fetch', e => {
   const r = e.request; if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;
   if (r.mode === 'navigate') { e.respondWith(caches.match('index.html').then(x => x || fetch(r))); return; }
-  if (r.url.indexOf('/modelos/reales/') >= 0) { e.respondWith(caches.open('reales-v1').then(c => c.match(r).then(x => x || fetch(r).then(res => { if (res.ok) c.put(r, res.clone()); return res; })))); return; }
+  if (['/modelos/reales/', '/osm/', '/hdri/', '/basis/'].some(p => r.url.indexOf(p) >= 0) || r.url.indexOf('.ktx2') >= 0) { e.respondWith(caches.open('reales-v1').then(c => c.match(r).then(x => x || fetch(r).then(res => { if (res.ok) c.put(r, res.clone()); return res; })))); return; }
   e.respondWith(caches.match(r, { ignoreSearch: true }).then(x => x || fetch(r)));
 });
 `;

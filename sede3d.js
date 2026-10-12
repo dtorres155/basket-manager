@@ -731,12 +731,16 @@
       S.composer = comp; S.ao = ao; S.bloom = bloom; S.bokeh = bokeh; S.rayos = rayos; } catch (e) { S.composer = null; console.warn('Sin posprocesado:', e.message); } }
     const tam = () => { const w = lienzo.clientWidth || window.innerWidth, hh = lienzo.clientHeight || window.innerHeight; renderer.setSize(w, hh); camera.aspect = w / hh; camera.updateProjectionMatrix(); if (S.composer) { S.composer.setPixelRatio(Math.min(renderer.getPixelRatio(), 1.5)); S.composer.setSize(w, hh); } };
     tam(); S.onResize = tam; window.addEventListener('resize', tam);
-    if (nivelRend()) aplicarRend(nivelRend(), false);   // lo que se aprendió en escenas anteriores de este dispositivo
+    if (nivelRend()) aplicarRend(nivelRend(), false);
+    try { const er = +window.localStorage.getItem('gm1:escalaRes'); if (er && er < 1 && er >= 0.6) setTimeout(() => { if (S) aplicarRes(er); }, 100); } catch (e) { }   // lo que se aprendió en escenas anteriores de este dispositivo
     const CONSEJOS = ['Toca el reloj para pasar una hora y ver cómo cambia la ciudad.', 'Doble toque (o doble clic) para correr.', 'En el mapa, «Ir ya» te lleva al momento a los sitios que ya conoces.', 'Las palomas salen volando si pasas corriendo.', 'El día de partido en casa, a las 19:00 llega el autobús del equipo.', 'El botón Foto quita la interfaz para hacer capturas.', 'Cuando llueve hay menos gente por la calle y el suelo refleja.'];
     const barraC = h('div', { class: 'carga-barra' }, h('span')), consejo = h('p', { class: 'carga-consejo' }, CONSEJOS[(Date.now() / 1000 | 0) % CONSEJOS.length]);
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, h('div', { class: 'carga-caja' }, h('b', null, S.escena === 'pueblo' ? 'Llegando al pueblo…' : S.escena === 'calle' ? 'Saliendo a la calle…' : S.escena === 'deportiva' ? 'Llegando a la ciudad deportiva…' : S.escena === 'casa' ? 'Entrando en casa…' : 'Abriendo la sede del club…'), barraC, consejo)); raiz.append(cargando);
     { const LM = THREE.DefaultLoadingManager, previo = LM.onProgress; LM.onProgress = (u, n, total) => { const sp = barraC.firstChild; if (sp && total) sp.style.width = Math.round(n / total * 100) + '%'; if (previo) previo(u, n, total); }; }
     const fm = n => { if (S && window.__medirFases) (S.fasesAbrir = S.fasesAbrir || []).push([n, +performance.now().toFixed(0)]); }; fm('abrir');
+    // Mientras los trabajadores del navegador decodifican las texturas KTX2 (y el hilo principal espera), se adelanta la carga y el análisis de los modelos de personas y, en la sede, de los muebles
+    try { const nombres = new Set(['animaciones']); Object.values(PERSONAS).forEach(v => (Array.isArray(v) ? v : [v]).forEach(x => x && nombres.add(x))); ((GM.calle && GM.calle.util && GM.calle.util.MODELOS) || []).forEach(x => nombres.add(x)); nombres.forEach(n => cargar('modelos/personas/' + n + '.glb').catch(() => { }));
+      if (S.escena === 'sede' && GM.sedePlano && GM.sedePlano.muebles) new Set(GM.sedePlano.muebles.map(m => m[0])).forEach(n => { mueble(n).catch(() => { }); }); } catch (e) { }
     (GM.texturas ? GM.texturas.precargar(S.renderer) : Promise.resolve()).then(() => { fm('texturas'); return construir(st); }).then(async () => { fm('construir (total)');
       // Mientras se cargan las personas no se dibuja (la pantalla de carga las tapa) y los shaders de la ciudad se compilan en paralelo: así el primer fotograma no se bloquea compilándolos uno a uno
       S.sinDibujar = true;
@@ -825,10 +829,22 @@
   function rendimiento() {
     if (typeof window !== 'undefined' && window.__sinAdaptar) return;   // capturas: no bajar la calidad
     const ahora = performance.now(), R = S.rend || (S.rend = { ini: ahora, ult: ahora, n: 0, acum: 0 });
+    if (S.sinDibujar) { R.ini = ahora; R.ult = ahora; return; }   // mientras se carga no se mide
     const d = ahora - R.ult; R.ult = ahora; if (ahora - R.ini < 3000 || d > 500) return;   // arranque o pestaña en segundo plano
     R.n++; R.acum += d; if (R.acum < 2000) return;
     const fps = R.n * 1000 / R.acum; S.fps = Math.round(fps); R.n = 0; R.acum = 0;
-    if (fps < 30 && (S.nivelRend || 0) < 3) aplicarRend((S.nivelRend || 0) + 1, true);
+    // Calidad dinámica en tres escalones: 1) resolución (de 1 a 0,6 en pasos de 0,12, y vuelve a subir si el juego va sobrado), 2) lo que ya había (sin sombras, menos gente...), 3) nada más
+    const E = S.escalaRes || 1;
+    if (fps < 40 && E > 0.61) { S.sube = 0; aplicarRes(Math.max(0.6, E - 0.12)); }
+    else if (fps < 30 && (S.nivelRend || 0) < 3) aplicarRend((S.nivelRend || 0) + 1, true);
+    else if (fps > 57 && E < 1) { S.sube = (S.sube || 0) + 1; if (S.sube >= 4) { S.sube = 0; aplicarRes(Math.min(1, E + 0.08)); } } else S.sube = 0;
+  }
+  // Escala de resolución: multiplica la densidad de píxeles con la que se dibuja (y se recuerda para la siguiente escena del dispositivo)
+  function aplicarRes(e) {
+    const r = S.renderer, cv = r && r.domElement; if (!cv) return; if (!S.prBase) S.prBase = r.getPixelRatio() / (S.escalaRes || 1); S.escalaRes = Math.round(e * 100) / 100; const pr = S.prBase * S.escalaRes, w = cv.clientWidth, h = cv.clientHeight;
+    r.setPixelRatio(pr); if (S.composer) { S.composer.setPixelRatio(pr); S.composer.setSize(w, h); } r.setSize(w, h, false); if (S.camera) { S.camera.aspect = w / h; S.camera.updateProjectionMatrix(); }
+    try { window.localStorage.setItem('gm1:escalaRes', String(S.escalaRes)); } catch (er) { }
+    if (GM.ui && GM.ui.toast && e < 0.99 && !S.avisoRes) { S.avisoRes = true; GM.ui.toast('Resolución ajustada para que vaya más fluido'); }
   }
   function cerrar() {
     if (!S) return; S.vivo = false; cancelAnimationFrame(S.raf); if (GM.sonido) GM.sonido.escena(null);

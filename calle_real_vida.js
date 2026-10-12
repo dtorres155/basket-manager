@@ -165,6 +165,7 @@
     else if (B.fase === 'se_va') { B.s += dt * 7; const [x, z, ux, uz] = punto(B.vi, Math.min(B.s, B.vi.L)), off = ANCHO[B.vi.v.k] / 4; B.obj.position.set(x - uz * off, 0, z + ux * off); B.obj.rotation.y = Math.atan2(ux, uz); if (B.s >= B.vi.L - 1) { S.mundo.remove(B.obj); B.obj = null; B.fase = 'fuera'; } }
   }
   function actualizar(S, M, dt) {
+    if (S.chunks) S.chunks.paso([[S.foco.x, S.foco.z], [S.camera.position.x, S.camera.position.z]], 4);   // ciudad por trozos: construye y descarta celdas de edificios según la distancia
     const t = performance.now() / 1000;
     if (S.partidoCasa) { S.tFase = (S.tFase || 0) - dt; if (S.tFase <= 0) { S.tFase = 1; fasePartido(S, M, S.st); busEquipo(S, M, S.st); } }
     moverPartido(S, M, dt);

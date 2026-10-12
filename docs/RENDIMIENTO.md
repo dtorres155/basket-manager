@@ -38,3 +38,14 @@ Lectura: el cuello de botella de cada fila es el mayor entre CPU y GPU respecto 
 | **Total hasta poder jugar** | **11,2 s** | **5,6 s** |
 
 Conclusión: la geometría de la ciudad no era el cuello de botella; lo era dibujar la escena antes de tiempo, con la compilación de shaders bloqueando el primer fotograma. Ahora no se dibuja hasta que la ciudad y las personas están en la escena y sus shaders se compilan en paralelo (`compileAsync`).
+
+## Apertura de cada escena (12 oct 2026, tras el trabajo de la Fase 2)
+
+| Escena | Antes | Ahora | Qué cambió |
+|---|---|---|---|
+| Calle real | 11,2 s | 5,8 s | sin dibujar hasta compilar los shaders en paralelo; vecinos por lotes; ciudad por trozos |
+| Pueblo | 8,0 s (estimado) | 5,3 s | sin dibujar hasta compilar, modelos de personas adelantados |
+| Sede | 8,2 s | 5,7 s | además, los muebles se cargan mientras se decodifican las texturas |
+| Ciudad deportiva | 6,0 s (estimado) | 4,5 s | sin dibujar hasta compilar |
+
+Medido con `node tools/fases_construccion.js [club] [escena]`.

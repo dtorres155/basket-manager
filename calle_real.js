@@ -248,15 +248,30 @@
     };
     const roles = asignar(X, st, club);   // qué edificio hace de qué (cambia la clase del edificio: la peña lleva escaparates, el pabellón es grande…)
     B.forEach(b => { const h = altura(b); b.h = h; b.col = color(b); b.colBajo = col(['#3a3f45', '#5a3b26', '#2f4f6e', '#7a2f22', '#2e5d3a', '#6b4a3a'][U.hash(club.id + 'b' + b.i) % 6]); });
-    B.forEach(b => { pared(b, b.h, 0); if (b !== roles.pabellon) techo(b, b.h); bloquearPoli(b.p, 0.35); });
+    // Los edificios se agrupan por celdas de 90 m: aquí solo se prepara el estilo y se bloquea el paso (la rejilla de navegación necesita toda la ciudad);
+    // la geometría de cada celda se crea más abajo, por trozos, según la distancia al personaje y a la cámara
+    const claveChunk = b => Math.floor(b.cx / 90) + ',' + Math.floor(b.cz / 90), porChunk = {};
+    B.forEach(b => { b.estilo = estilo(b); bloquearPoli(b.p, 0.35); (porChunk[claveChunk(b)] = porChunk[claveChunk(b)] || []).push(b); });
     { const b = roles.pabellon, [x0, z0, x1, z1] = b.bb, hx = (x1 - x0) / 2, hz = (z1 - z0) / 2, alto = Math.min(9, Math.max(hx, hz) * 0.22);
       const cu = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 14, 0, Math.PI * 2, 0, Math.PI / 2), recortable(S, new THREE.MeshStandardMaterial({ map: M.textura('real-cupula', 512, (x, n) => { x.fillStyle = '#d6dadd'; x.fillRect(0, 0, n, n); x.strokeStyle = '#9aa1a8'; x.lineWidth = 2; for (let i = 0; i <= 24; i++) { x.beginPath(); x.moveTo(i * n / 24, 0); x.lineTo(i * n / 24, n); x.stroke(); } for (let j = 0; j <= 8; j++) { x.beginPath(); x.moveTo(0, j * n / 8); x.lineTo(n, j * n / 8); x.stroke(); } x.fillStyle = 'rgba(0,0,0,.06)'; for (let i = 0; i < 24; i += 2) x.fillRect(i * n / 24, 0, n / 24, n); }), color: 0xffffff, metalness: 0.4, roughness: 0.42 })));
       cu.scale.set(hx * 0.97, alto, hz * 0.97); cu.position.set((x0 + x1) / 2, b.h, (z0 + z1) / 2); cu.castShadow = alta; cu.userData = { cupula: true }; W.add(cu);
       const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 64).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: c1, roughness: 0.6 })); aro.scale.set(hx * 0.97, 1, hz * 0.97); aro.position.set((x0 + x1) / 2, b.h + 0.15, (z0 + z1) / 2); aro.userData = { cupula: true }; W.add(aro); }
-    Object.keys(chunks).forEach(k => {
-      const c = chunks[k], me = (A, mat, tri) => { if (!A.P.length) return; const g = geo(A.P, A.I, A.N, A.U, A.C), m = new THREE.Mesh(g, mat); m.userData = { real: 'edif' }; m.castShadow = alta; m.receiveShadow = alta; W.add(m); };
-      c.w.forEach((A, i) => me(A, PAREDES[i])); me(c.t, mTienda); me(c.r, mTecho); me(c.m, mMetal); me(c.g, mTejas);
-    });
+    // Ciudad por trozos: cada celda de 90 m se construye cuando el personaje o la cámara se acercan (a menos de 340 m, la más cercana primero y con un presupuesto de milisegundos por fotograma) y se descarta al alejarse (más de 520 m).
+    // Al abrir la escena solo se crean las celdas del centro; el resto va apareciendo en los fotogramas siguientes. Con ciudades más grandes que la actual (punto 31) este es el mecanismo que evita construirlo todo de golpe.
+    const vivos = {}, centroChunk = k => { const [i, j] = k.split(',').map(Number); return [(i + 0.5) * 90, (j + 0.5) * 90]; };
+    const construirChunk = k => {
+      delete chunks[k]; (porChunk[k] || []).forEach(b => { pared(b, b.h, 0); if (b !== roles.pabellon) techo(b, b.h); }); const c = chunks[k], lista = vivos[k] = [];
+      if (!c) return; const me = A => (mat) => { if (!A.P.length) return; const g = geo(A.P, A.I, A.N, A.U, A.C), m = new THREE.Mesh(g, mat); m.userData = { real: 'edif', chunk: k }; m.castShadow = false; m.receiveShadow = alta; W.add(m); lista.push(m); };
+      c.w.forEach((A, i) => me(A)(PAREDES[i])); me(c.t)(mTienda); me(c.r)(mTecho); me(c.m)(mMetal); me(c.g)(mTejas); delete chunks[k];
+    };
+    const quitarChunk = k => { (vivos[k] || []).forEach(m => { W.remove(m); m.geometry.dispose(); }); delete vivos[k]; };
+    S.chunks = { claves: Object.keys(porChunk), vivos, construidos: () => Object.keys(vivos).length, total: () => Object.keys(porChunk).length,
+      paso(focos, presupuesto) { const t0 = performance.now(), d = k => { const c = centroChunk(k); return Math.min(...focos.map(f => Math.hypot(c[0] - f[0], c[1] - f[1]))); };
+        Object.keys(vivos).forEach(k => { const dk = d(k); if (dk > 520) quitarChunk(k); else if (alta) { const cerca = dk < 110; (vivos[k] || []).forEach(m => { if (m.castShadow !== cerca) m.castShadow = cerca; }); } });
+        const pend = this.claves.filter(k => !vivos[k] && d(k) < 340).sort((a, b) => d(a) - d(b)); let n = 0;
+        for (const k of pend) { if (n && performance.now() - t0 > (presupuesto || 4)) break; construirChunk(k); n++; } return n; },
+      todos() { this.claves.forEach(k => { if (!vivos[k]) construirChunk(k); }); } };
+    S.chunks.claves.forEach(k => { const c = centroChunk(k); if (Math.hypot(c[0], c[1]) < 150) construirChunk(k); });   // al abrir solo las celdas a menos de 150 m del centro; las demás llegan por trozos
     S.mapaVec = vectorial(X);
     montar(S, M, st, X, roles, { W, G, club, c1, c2, afi, alta, rr, bloquearPoli, mAsf });
     fase(S, 'edificios (geometría)');
