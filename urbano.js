@@ -87,6 +87,7 @@
     if (!S.charcosNoche) {
       const t = M.textura('charco-farola', 128, (x, n) => { const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g.addColorStop(0, 'rgba(255,214,150,0.75)'); g.addColorStop(1, 'rgba(255,214,150,0)'); x.fillStyle = g; x.fillRect(0, 0, n, n); });
       S.charcosNoche = new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+      S.haloFarola = new THREE.SpriteMaterial({ map: M.textura('halo-farola', 64, (x, n) => { const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g.addColorStop(0, 'rgba(255,240,200,1)'); g.addColorStop(0.25, 'rgba(255,205,130,0.55)'); g.addColorStop(1, 'rgba(255,190,110,0)'); x.fillStyle = g; x.fillRect(0, 0, n, n); }), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false });
     }
   }
   // Posiciones a lo largo de una acera entre desde y hasta (metros): una farola a cada lado de cada paso de peatones (a 1,3 m de su
@@ -108,7 +109,8 @@
     caja(g, 1.1, 0.08, 0.12, oscuro, x + sx * 0.5, 4.5, z + sz * 0.5, ry);
     caja(g, 0.55, 0.14, 0.3, oscuro, x + sx * 1.0, 4.42, z + sz * 1.0, ry);
     caja(g, 0.45, 0.03, 0.22, S.farolas, x + sx * 1.0, 4.39, z + sz * 1.0, ry, false);
-    const ch = new THREE.Mesh(new THREE.PlaneGeometry(7, 7).rotateX(-Math.PI / 2), S.charcosNoche); ch.position.set(x + sx * 1.0, 0.02, z + sz * 1.0); ch.renderOrder = 2; g.add(ch);
+    { const hl = new THREE.Sprite(S.haloFarola); hl.scale.setScalar(2.6); hl.position.set(x + sx * 1.0, 4.3, z + sz * 1.0); hl.userData = { halo: true }; g.add(hl); }
+    const ch = new THREE.Mesh(new THREE.PlaneGeometry(10, 10).rotateX(-Math.PI / 2), S.charcosNoche); ch.position.set(x + sx * 1.0, 0.02, z + sz * 1.0); ch.renderOrder = 2; g.add(ch);
     G.bloquea(x - 0.2, z - 0.2, x + 0.2, z + 0.2);
   }
 

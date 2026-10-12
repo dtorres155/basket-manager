@@ -76,5 +76,17 @@
   "autor": "Poly Haven (Greg Zaal, Jarod Guest, Sergej Majboroda)",
   "licencia": "CC0 1.0",
   "donde": "`vendor/hdri/`"
+ },
+ {
+  "recurso": "Texturas: Asphalt031, PavingStones150, Metal055A (color, relieve y rugosidad, 1K); versiones KTX2 de todas las texturas (Basis Universal)",
+  "autor": "ambientCG (ambientcg.com)",
+  "licencia": "CC0 1.0",
+  "donde": "`vendor/texturas/`, `vendor/texturas_ktx2/`"
+ },
+ {
+  "recurso": "Transcodificador Basis Universal (basis_transcoder.js y .wasm) para leer KTX2",
+  "autor": "Binomial LLC, copiado de Three.js",
+  "licencia": "Apache 2.0",
+  "donde": "`vendor/basis/`"
  }
 ]

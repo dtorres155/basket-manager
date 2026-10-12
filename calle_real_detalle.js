@@ -190,6 +190,27 @@
     // aparcamientos: asfalto del suelo
     { const AP = I.nuevo(); X.K.forEach(k => I.rellenar(k.p, 0, AP)); const me = I.malla(AP, (() => { const m = I.suelo('Asphalt010', { escala: 5, tinte: 0x9a9a9a }, 0x484a4e, 2.2); return m; })(), 'aparcamientos'); if (me) { me.receiveShadow = false; W.add(me); } }
     // los coches aparcados añadidos en patios también cuentan
+    // ---------- Decales del asfalto: manchas de aceite, grietas, parches y frenadas (cuatro mallas instanciadas) ----------
+    if (typeof document !== 'undefined') {
+      const tex = dibuja => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; dibuja(cv.getContext('2d')); const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+      const dmat = t => { const m = new THREE.MeshStandardMaterial({ map: t, transparent: true, depthWrite: false, roughness: 0.95 }); m.polygonOffset = true; m.polygonOffsetFactor = -4; m.polygonOffsetUnits = -4; return m; };
+      const T = {
+        mancha: tex(x => { for (let k = 0; k < 7; k++) { const px = 40 + rr() * 48, py = 40 + rr() * 48, r = 14 + rr() * 22, g = x.createRadialGradient(px, py, 0, px, py, r); g.addColorStop(0, 'rgba(20,16,12,0.55)'); g.addColorStop(1, 'rgba(20,16,12,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); } }),
+        grieta: tex(x => { x.strokeStyle = 'rgba(10,10,10,0.75)'; x.lineWidth = 1.6; for (let k = 0; k < 3; k++) { let px = 4, py = 40 + rr() * 48; x.beginPath(); x.moveTo(px, py); while (px < 124) { px += 6 + rr() * 10; py += (rr() - 0.5) * 14; x.lineTo(px, py); } x.stroke(); } }),
+        parche: tex(x => { x.fillStyle = 'rgba(30,30,33,0.55)'; x.fillRect(14, 24, 100, 80); x.strokeStyle = 'rgba(15,15,15,0.7)'; x.lineWidth = 3; x.strokeRect(14, 24, 100, 80); }),
+        frenada: tex(x => { x.strokeStyle = 'rgba(10,10,10,0.35)'; x.lineWidth = 7; for (const yy of [46, 82]) { x.beginPath(); x.moveTo(0, yy); x.quadraticCurveTo(64, yy + (rr() - 0.5) * 14, 128, yy); x.stroke(); } })
+      };
+      const L = { mancha: [], grieta: [], parche: [], frenada: [] };
+      X.C.forEach(cl => { if (cl.k < 1 || cl.k > 4) return; const w = ANCHO[cl.k] || 6;
+        for (let i = 0; i + 1 < cl.p.length; i++) { const a = cl.p[i], b = cl.p[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 8) continue; const ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l;
+          for (let t = 6 + rr() * 20; t < l - 4; t += 26 + rr() * 38) {
+            const lat = (rr() - 0.5) * w * 0.6, x = a[0] + ux * t - uz * lat, z = a[1] + uz * t + ux * lat; if (Math.hypot(x, z) > R - 6) continue;
+            const u = rr(), tipo = u < 0.4 ? 'mancha' : u < 0.7 ? 'grieta' : u < 0.85 ? 'parche' : 'frenada', ry = Math.atan2(-uz, ux) + (tipo === 'mancha' ? rr() * 6.28 : 0);
+            const sx = tipo === 'mancha' ? 1.4 + rr() * 1.8 : tipo === 'grieta' ? 3 + rr() * 3.5 : tipo === 'parche' ? 2 + rr() * 2.2 : 6 + rr() * 4, sz = tipo === 'mancha' ? sx : tipo === 'grieta' ? 1.6 : tipo === 'parche' ? 1.5 + rr() * 1.4 : 1.5;
+            L[tipo].push({ x, y: 0.02, z, ry, sx, sz }); } } });
+      const plano = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+      Object.keys(L).forEach(k => inst(plano, dmat(T[k]), L[k], 'decal-' + k, false));
+    }
     // ---------- Comercios con nombre de OpenStreetMap ----------
     { const TIPO = { cafe: ['#6b3a2a', '#ffffff'], bar: ['#5a3b26', '#f2d27a'], pub: ['#2f3a2a', '#f2d27a'], restaurant: ['#7a1a22', '#ffffff'], fast_food: ['#c0392b', '#fff2a8'], bank: ['#1d4f91', '#ffffff'], pharmacy: ['#1f8f5f', '#ffffff'], cinema: ['#7a1a22', '#ffffff'], theatre: ['#4a2a6a', '#ffffff'], supermarket: ['#2e5d3a', '#ffffff'], bakery: ['#c9a36a', '#3a2a1a'], ice_cream: ['#d86a8a', '#ffffff'], fuel: ['#1d4f91', '#ffd23f'], library: ['#2a2f35', '#ffffff'], post_office: ['#e0b020', '#1d2024'] };
       const lista = X.N.filter(n => Math.hypot(n.x, n.z) < R - 20).sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z)); let puestos = 0;

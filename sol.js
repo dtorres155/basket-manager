@@ -27,9 +27,10 @@
     if (D && D.g) return D.g[0];
     const c = st.equipos && st.equipos[st.clubId]; return LAT_PAIS[c && c.pais] || 42;
   }
+  const latitudPais = st => { const c = st.equipos && st.equipos[st.clubId]; return LAT_PAIS[c && c.pais] || 42; };
   // El reloj del juego es el reloj de pared: en verano de Europa y de EE. UU. (abril a octubre) la hora solar va una hora por detrás
   function horaSolar(st, hora) { const m = +String(st.fecha || '2026-10-01').slice(5, 7), c = st.equipos && st.equipos[st.clubId], verano = m >= 4 && m <= 10 && !(c && (c.pais === 'AE' || c.pais === 'TR')); return hora - (verano ? 1 : 0); }
-  GM.register('sol', { posicion, direccion, salidaPuesta, latitud, horaSolar, selfTest() {
+  GM.register('sol', { latitudPais, posicion, direccion, salidaPuesta, latitud, horaSolar, selfTest() {
     const e = [], inv = salidaPuesta(41.4, '2026-12-21'), ver = salidaPuesta(41.4, '2026-06-21');
     if (!(ver.pone - ver.sale > inv.pone - inv.sale + 4)) e.push('el día de verano debe ser mucho más largo');
     if (!(posicion(41.4, '2026-06-21', 12).elev > posicion(41.4, '2026-12-21', 12).elev)) e.push('el sol de verano al mediodía va más alto');

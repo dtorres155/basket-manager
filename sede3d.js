@@ -8,6 +8,7 @@
   const U = GM.util;
   let S = null; // escena activa
   let EXP_PREV = null;
+  const NOP_MATRIZ = function () { };
   let actualizarGrupo = () => { };   // sede_grupo.js: se enlazan justo antes de GM.sede
   let hud = () => { }, controles = () => { }, teclado = () => { };   // sede_hud.js: se enlazan justo antes de GM.sede
   let abrirSala = () => { }, pintarPanel = () => { }, pintarFicha = () => { }, refrescarSala = () => { }, reaccion = () => { };   // sede_paneles.js: se enlazan justo antes de GM.sede
@@ -495,22 +496,45 @@
     const p = (st.equipos[st.clubId] || {}).pais, mes = +st.fecha.slice(5, 7), inv = [11, 12, 1, 2, 3].indexOf(mes) >= 0, ver = [6, 7, 8].indexOf(mes) >= 0;
     const pl = p === 'US' ? 0.14 : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? (inv ? 0.3 : 0.18) : (inv ? 0.18 : ver ? 0.04 : 0.11);
     const az = f => (U.hash(f + 'clima' + st.clubId) >>> 0) / 4294967296, h = az(st.fecha), ayer = az(U.addDays(st.fecha, -1)) < pl;
-    const tipo = h < pl ? 'lluvia' : h < pl + 0.26 ? 'nubes' : 'sol', b = TEMP[p] || [8, 24], f = (1 - Math.cos((mes - 1) / 12 * Math.PI * 2)) / 2;
-    const temp = Math.round(b[0] + (b[1] - b[0]) * f - (tipo === 'lluvia' ? 3 : tipo === 'nubes' ? 1 : 0) + (az(st.fecha + 't') * 4 - 2));
-    return { tipo, temp, ayer, texto: (tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado') + ', ' + temp + ' °C' };
+    let tipo = h < pl ? 'lluvia' : h < pl + 0.26 ? 'nubes' : 'sol'; const b = TEMP[p] || [8, 24], f = (1 - Math.cos((mes - 1) / 12 * Math.PI * 2)) / 2;
+    const SO = GM.mods.sol, dLat = SO ? (SO.latitudPais(st) - SO.latitud(st)) * 0.5 : 0;   // dentro de un país, cada ciudad más al norte es más fría
+    const temp = Math.round(b[0] + (b[1] - b[0]) * f + dLat - (tipo === 'lluvia' ? 3 : tipo === 'nubes' ? 1 : 0) + (az(st.fecha + 't') * 4 - 2));
+    if (tipo === 'lluvia' && temp <= 1) tipo = 'nieve';
+    return { tipo, temp, ayer, nieve: tipo === 'nieve' ? 1 : ayer && temp <= 2 ? 0.5 : 0, texto: (tipo === 'nieve' ? 'Nieve' : tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado') + ', ' + temp + ' °C' };
   }
   const exterior = () => ['calle', 'pueblo', 'deportiva'].indexOf(S.escena) >= 0;
   let texNube = null;
   function montarClima() {
-    S.lluviaObj = null; S.nubesObj = null; S.fogBase = null; if (!exterior() || !S.mundo) return; const C = S.clima;
+    if (S.mundo) { const viejos = []; S.mundo.children.forEach(o => { if (o.userData && (o.userData.nubes || o.userData.cielo || o.userData.climaObj)) viejos.push(o); }); viejos.forEach(o => S.mundo.remove(o)); }   // al cambiar el clima se quitan lluvia, nieve, nubes y cielo anteriores
+    S.lluviaObj = null; S.nubesObj = null; S.nieveObj = null; S.fogBase = null; if (!exterior() || !S.mundo) return; const C = S.clima;
     if (!texNube && typeof document !== 'undefined') { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext && c.getContext('2d'); if (x) { for (let i = 0; i < 7; i++) { const cx = 30 + i * 11, cy = 64 + Math.sin(i * 1.7) * 12, r = 22 + (i % 3) * 8, g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); } texNube = new THREE.CanvasTexture(c); } }
-    const nN = C.tipo === 'lluvia' ? 22 : C.tipo === 'nubes' ? 16 : 5, gN = new THREE.Group(); gN.userData = { nubes: true };
-    if (texNube) for (let i = 0; i < nN; i++) { const m = new THREE.SpriteMaterial({ map: texNube, color: C.tipo === 'sol' ? 0xffffff : C.tipo === 'nubes' ? 0xd5dbe2 : 0x9ea7b0, transparent: true, opacity: 0.85, depthWrite: false, fog: false }), s = new THREE.Sprite(m); const a = i * 2.39, d = 60 + (i * 37) % 140; s.position.set(Math.cos(a) * d, 55 + (i % 5) * 8, Math.sin(a) * d); s.scale.set(70 + (i % 4) * 20, 30 + (i % 3) * 8, 1); gN.add(s); }
+    const nN = C.tipo === 'lluvia' || C.tipo === 'nieve' ? 22 : C.tipo === 'nubes' ? 16 : 5, gN = new THREE.Group(); gN.userData = { nubes: true };
+    if (texNube) for (let i = 0; i < nN; i++) { const m = new THREE.SpriteMaterial({ map: texNube, color: C.tipo === 'sol' ? 0xffffff : C.tipo === 'nubes' ? 0xd5dbe2 : C.tipo === 'nieve' ? 0xc4cad2 : 0x9ea7b0, transparent: true, opacity: 0.85, depthWrite: false, fog: false }), s = new THREE.Sprite(m); const a = i * 2.39, d = 60 + (i * 37) % 140; s.position.set(Math.cos(a) * d, 55 + (i % 5) * 8, Math.sin(a) * d); s.scale.set(70 + (i % 4) * 20, 30 + (i % 3) * 8, 1); gN.add(s); }
     S.mundo.add(gN); S.nubesObj = gN;
+    montarCieloNoche(C);
+    if (C.tipo === 'nieve') { const N = 2600, pos = new Float32Array(N * 3); for (let i = 0; i < N; i++) pos.set([(Math.random() - 0.5) * 70, Math.random() * 28, (Math.random() - 0.5) * 70], i * 3); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const pn = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 2.6, sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false })); pn.frustumCulled = false; pn.userData.climaObj = true; S.mundo.add(pn); S.nieveObj = pn; }
     if (C.tipo === 'lluvia') { const N = 3500, pos = new Float32Array(N * 6); for (let i = 0; i < N; i++) { const x = (Math.random() - 0.5) * 70, y = Math.random() * 28, z = (Math.random() - 0.5) * 70; pos.set([x, y, z, x + 0.05, y - 0.55, z], i * 6); }
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xaebfcf, transparent: true, opacity: 0.45, depthWrite: false })); l.frustumCulled = false; l.userData = { lluvia: true }; S.mundo.add(l); S.lluviaObj = l; }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xaebfcf, transparent: true, opacity: 0.45, depthWrite: false })); l.frustumCulled = false; l.userData = { lluvia: true, climaObj: true }; S.mundo.add(l); S.lluviaObj = l; }
+  }
+  // Estrellas y luna con fases (según la fecha): un grupo pegado a la cámara que aparece al caer la noche con cielo despejado
+  function montarCieloNoche() {
+    S.cieloNoche = null; if (!exterior() || !S.mundo || typeof document === 'undefined') return;
+    const g = new THREE.Group(); g.userData = { cielo: true };
+    const N = 750, pos = new Float32Array(N * 3), r = rnd(U.hash('estrellas' + S.st.clubId));
+    for (let i = 0; i < N; i++) { const a = r() * 6.2832, e = 0.12 + r() * 1.35, d = 170; pos.set([Math.cos(a) * Math.cos(e) * d, Math.sin(e) * d, Math.sin(a) * Math.cos(e) * d], i * 3); }
+    const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const est = new THREE.Points(gg, new THREE.PointsMaterial({ color: 0xffffff, size: 1.7, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false })); est.frustumCulled = false; est.renderOrder = -2; g.add(est);
+    const dias = (Date.UTC(+S.st.fecha.slice(0, 4), +S.st.fecha.slice(5, 7) - 1, +S.st.fecha.slice(8, 10)) - Date.UTC(2000, 0, 6)) / 864e5, fase = ((dias % 29.530588) + 29.530588) % 29.530588 / 29.530588, k = (1 - Math.cos(fase * 6.2832)) / 2;
+    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+    if (x) { const halo = x.createRadialGradient(64, 64, 30, 64, 64, 64); halo.addColorStop(0, 'rgba(210,225,255,0.35)'); halo.addColorStop(1, 'rgba(210,225,255,0)'); x.fillStyle = halo; x.fillRect(0, 0, 128, 128);
+      for (let yy = -40; yy <= 40; yy++) { const w = Math.sqrt(1600 - yy * yy), xr = fase < 0.5 ? 64 + w : 64 + w * (2 * k - 1) * -1 + 0, xl = fase < 0.5 ? 64 + w * (1 - 2 * k) : 64 - w; const a0 = fase < 0.5 ? 64 + w * (1 - 2 * k) : 64 - w, a1 = fase < 0.5 ? 64 + w : 64 - w * (1 - 2 * k); x.fillStyle = '#f1ecd9'; x.fillRect(Math.min(a0, a1), 64 + yy, Math.abs(a1 - a0), 1); } }
+    const luna = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0, depthWrite: false, fog: false, toneMapped: false })); luna.scale.setScalar(16); luna.renderOrder = -1; g.add(luna);
+    S.mundo.add(g); S.cieloNoche = { g, est, luna };
   }
   function moverClima(dt) {
+    if (S.cieloNoche) { const cn = S.cieloNoche, C = S.clima || { tipo: 'sol' }, vis = Math.max(0, Math.min(1, (S.noche - 0.35) / 0.4)) * (C.tipo === 'sol' ? 1 : C.tipo === 'nubes' ? 0.35 : 0); cn.g.position.copy(S.camera.position); cn.est.material.opacity = vis * 0.9; cn.luna.material.opacity = vis;
+      const l = S.luces.sol, dx = l.position.x - l.target.position.x, dz = l.position.z - l.target.position.z, hh = Math.hypot(dx, dz) || 1, el = 0.6; cn.luna.position.set(-dx / hh * Math.cos(el) * 165, Math.sin(el) * 165, -dz / hh * Math.cos(el) * 165); cn.g.visible = vis > 0.01; }
+    if (S.nieveObj) { const a = S.nieveObj.geometry.attributes.position, v = a.array, b = dt * 1.7, t = performance.now() / 1000; for (let i = 0; i < v.length; i += 3) { v[i + 1] -= b * (0.8 + (i % 7) * 0.08); v[i] += Math.sin(t * 0.9 + i) * dt * 0.35; if (v[i + 1] < 0) v[i + 1] += 28; } a.needsUpdate = true; S.nieveObj.position.set(S.foco.x, 0, S.foco.z); }
     if (S.nubesObj) { S.nubesObj.position.x += dt * 1.6; S.nubesObj.position.z = S.foco.z * 0.6; if (S.nubesObj.position.x - S.foco.x > 120) S.nubesObj.position.x -= 240; }
     if (S.lluviaObj) { const a = S.lluviaObj.geometry.attributes.position, v = a.array, b = dt * 17; for (let i = 0; i < v.length; i += 6) { v[i + 1] -= b; v[i + 4] -= b; v[i] += b * 0.06; v[i + 3] += b * 0.06; if (v[i + 4] < 0) { v[i + 1] += 28; v[i + 4] += 28; } } a.needsUpdate = true; S.lluviaObj.position.set(S.foco.x, 0, S.foco.z); }
   }
@@ -673,7 +697,7 @@
     const barraC = h('div', { class: 'carga-barra' }, h('span')), consejo = h('p', { class: 'carga-consejo' }, CONSEJOS[(Date.now() / 1000 | 0) % CONSEJOS.length]);
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, h('div', { class: 'carga-caja' }, h('b', null, S.escena === 'pueblo' ? 'Llegando al pueblo…' : S.escena === 'calle' ? 'Saliendo a la calle…' : S.escena === 'deportiva' ? 'Llegando a la ciudad deportiva…' : S.escena === 'casa' ? 'Entrando en casa…' : 'Abriendo la sede del club…'), barraC, consejo)); raiz.append(cargando);
     { const LM = THREE.DefaultLoadingManager, previo = LM.onProgress; LM.onProgress = (u, n, total) => { const sp = barraC.firstChild; if (sp && total) sp.style.width = Math.round(n / total * 100) + '%'; if (previo) previo(u, n, total); }; }
-    (GM.texturas ? GM.texturas.precargar() : Promise.resolve()).then(() => construir(st)).then(async () => {
+    (GM.texturas ? GM.texturas.precargar(S.renderer) : Promise.resolve()).then(() => construir(st)).then(async () => {
       const yo = await personaje(aspecto(st)); { const sp = S.escena === 'pueblo' && S.spawnPueblo ? S.spawnPueblo : S.escena === 'calle' && S.spawnCalle ? S.spawnCalle : S.escena === 'casa' && S.spawnCasa ? S.spawnCasa : S.escena === 'interior' && S.spawnInterior ? S.spawnInterior : S.escena === 'deportiva' && S.spawnDeportiva ? S.spawnDeportiva : { x: GM.sedePlano.entrada.x, z: 12.5, ry: Math.PI }; yo.obj.position.set(sp.x, 0, sp.z); yo.obj.rotation.y = sp.ry; S.foco.set(sp.x, 0, sp.z); } S.yo = yo; anim(yo, 'idle'); S.mundo.add(yo.obj);
       const marca = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); marca.position.y = 0.02; yo.obj.add(marca); marca.scale.setScalar(1 / yo.obj.scale.x);
       if (S.escena !== 'sede') hud(st);   // la cabecera usa datos de la escena (nombre del pueblo)
@@ -711,7 +735,9 @@
         if (n.cabizbajo && !n.sentado) cabeza(n, 0.8);
       });
       saludos(dt);
-      { const lim = S.zoom * 1.5 + 8; S.gente.forEach(n => { n.obj.visible = !n.oculto && Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z) < lim; }); } // fuera de la vista no se dibuja ni se anima
+      { const lim = S.zoom * 1.5 + 8; S.gente.forEach(n => { const v = !n.oculto && Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z) < lim; n.obj.visible = v;
+        // el esqueleto de quien no se ve (62 huesos por persona) no recalcula sus matrices: ahorra más de la mitad de updateMatrixWorld
+        if (v) { if (n.obj.hasOwnProperty('updateMatrixWorld')) { delete n.obj.updateMatrixWorld; n.obj.matrixWorldNeedsUpdate = true; } } else if (!n.obj.hasOwnProperty('updateMatrixWorld')) n.obj.updateMatrixWorld = NOP_MATRIZ; }); } // fuera de la vista no se dibuja ni se anima
       if (S.zonas) S.zonas.forEach(z => z.obj.userData.anim(t));
       if (S.flotantes.length) moverFlotantes(dt);
       S.yaw += (S.yawObj - S.yaw) * Math.min(1, dt * 6);
@@ -720,9 +746,9 @@
       if (renderer.shadowMap.enabled) { S.nSombra = ((S.nSombra || 0) + 1) % 4; const l1 = S.luces.sol.shadow, l2 = S.luces.sol2 && S.luces.sol2.shadow; l1.autoUpdate = false; l1.needsUpdate = nv === 'ultra' || S.nSombra % 2 === 0; if (l2) { l2.autoUpdate = false; l2.needsUpdate = S.nSombra === 0; } }   // sombra cercana a medio ritmo (cada fotograma en Ultra) y la lejana a un cuarto
       if (S.enFoto && S.composer) {   // modo foto: enfoque al personaje y rayos desde el sol
         if (S.bokeh && S.bokeh.enabled) S.bokeh.uniforms.focus.value = camera.position.distanceTo(S.foco);
-        if (S.rayos && S.rayos.enabled) { const l = S.luces.sol, dir = new THREE.Vector3().subVectors(l.position, l.target.position).normalize(), p = camera.position.clone().addScaledVector(dir, 800).project(camera), delante = dir.dot(new THREE.Vector3().subVectors(l.target.position, camera.position).normalize()) < 0; S.rayos.uniforms.sol.value.set(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5); S.rayos.uniforms.fuerza.value = delante ? 0.55 * (1 - S.noche) : 0;
+        if (S.rayos && S.rayos.enabled) { const l = S.luces.sol, dir = new THREE.Vector3().subVectors(l.position, l.target.position).normalize(), p = camera.position.clone().addScaledVector(dir, 800).project(camera), delante = dir.dot(new THREE.Vector3().subVectors(l.target.position, camera.position).normalize()) > 0; S.rayos.uniforms.sol.value.set(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5); S.rayos.uniforms.fuerza.value = delante ? 0.55 * (1 - S.noche) : 0;
           // el cielo no tiene disco solar: se pone un resplandor suave (sprite aditivo) en la dirección del sol, solo con los rayos activados
-          if (!S.solSprite) { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,250,235,1)'); g.addColorStop(0.12, 'rgba(255,240,205,0.9)'); g.addColorStop(0.4, 'rgba(255,215,160,0.25)'); g.addColorStop(1, 'rgba(255,200,140,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); const m = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, fog: false, toneMapped: false, transparent: true }); S.solSprite = new THREE.Sprite(m); S.solSprite.scale.setScalar(34); S.solSprite.renderOrder = 99; S.solSprite.userData.foto = true; S.scene.add(S.solSprite); }
+          if (!S.solSprite) { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,250,235,1)'); g.addColorStop(0.12, 'rgba(255,240,205,0.9)'); g.addColorStop(0.4, 'rgba(255,215,160,0.25)'); g.addColorStop(1, 'rgba(255,200,140,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); const m = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true, fog: false, toneMapped: false, transparent: true }); S.solSprite = new THREE.Sprite(m); S.solSprite.scale.setScalar(34); S.solSprite.renderOrder = 99; S.solSprite.userData.foto = true; S.scene.add(S.solSprite); }
           S.solSprite.visible = delante && S.noche < 0.6; S.solSprite.position.copy(camera.position).addScaledVector(dir, 175); }
       }
       if (S.composer) S.composer.render(); else renderer.render(scene, camera);
@@ -767,5 +793,5 @@
   ({ abrirSala, pintarPanel, pintarFicha, refrescarSala, reaccion } = GM.sedePaneles({ S: () => S, U, anim, cambiarEscena, destino, ejecutar, flotar, barra, avanzar, entrarClasica, repoblar }));
   ({ hud, controles, teclado } = GM.sedeHud({ S: () => S, U, mapa, anim, irA, girar, motor, modoFoto, avanzar, entrar, fichaJugador, estadoDia, abrir, cerrar }));
   ({ actualizarGrupo } = GM.sedeGrupo({ S: () => S, ARO, anim, CENTRO, crearGrupo, peto, disolver, entrenadorDice, manosDe, mirar, lanzar, irDirecto }));
-  GM.sede = { arbolesReales, modeloReal: (id, ruta) => cargar(ruta || 'modelos/reales/' + id + '/' + id + '_1k.gltf').then(g => g.scene), _clima: tipo => { if (!S) return null; S.clima = Object.assign(climaDe(S.st), { tipo, ayer: false, texto: tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado' }); montarClima(); aplicarAmbiente(); return S.clima; }, pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { arbolesReales, modeloReal: (id, ruta) => cargar(ruta || 'modelos/reales/' + id + '/' + id + '_1k.gltf').then(g => g.scene), _clima: tipo => { if (!S) return null; S.clima = Object.assign(climaDe(S.st), { tipo, ayer: false, texto: tipo === 'nieve' ? 'Nieve' : tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado', nieve: tipo === 'nieve' ? 1 : 0 }); montarClima(); aplicarAmbiente(); return S.clima; }, pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

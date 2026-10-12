@@ -93,6 +93,9 @@ const MODELOS = [];
 // Texturas reales (CC0, ambientCG): vendor/texturas -> dist/texturas
 const TEXTURAS = []; fs.mkdirSync(path.join(DIST, 'texturas'), { recursive: true });
 fs.readdirSync(path.join(VENDOR, 'texturas')).filter(f => /\.jpg$/.test(f)).forEach(f => { fs.copyFileSync(path.join(VENDOR, 'texturas', f), path.join(DIST, 'texturas', f)); TEXTURAS.push('texturas/' + f); });
+// Transcodificador Basis (KTX2) y texturas KTX2: vendor/basis -> dist/basis, vendor/texturas_ktx2 -> dist/texturas (se piden por fetch en calidad alta; las JPG quedan de respaldo)
+if (fs.existsSync(path.join(VENDOR, 'basis'))) { fs.mkdirSync(path.join(DIST, 'basis'), { recursive: true }); fs.readdirSync(path.join(VENDOR, 'basis')).forEach(f => fs.copyFileSync(path.join(VENDOR, 'basis', f), path.join(DIST, 'basis', f))); }
+if (fs.existsSync(path.join(VENDOR, 'texturas_ktx2'))) fs.readdirSync(path.join(VENDOR, 'texturas_ktx2')).filter(f => /\.ktx2$/.test(f)).forEach(f => fs.copyFileSync(path.join(VENDOR, 'texturas_ktx2', f), path.join(DIST, 'texturas', f)));
 // Cielos HDRI (Poly Haven, CC0): vendor/hdri -> dist/hdri; se piden por fetch en calidad alta y no van a la caché de arranque
 if (fs.existsSync(path.join(VENDOR, 'hdri'))) { fs.mkdirSync(path.join(DIST, 'hdri'), { recursive: true }); fs.readdirSync(path.join(VENDOR, 'hdri')).filter(f => /.hdr$/.test(f)).forEach(f => fs.copyFileSync(path.join(VENDOR, 'hdri', f), path.join(DIST, 'hdri', f))); }
 // Ciudades reales (OpenStreetMap, ODbL): vendor/osm -> dist/osm (calle_real.js las pide por fetch)

@@ -15,6 +15,8 @@
 | Bricolage Grotesque (variable, ejes opsz y wght) | Mathieu Triay y The Bricolage Grotesque Project Authors | SIL Open Font License 1.1 | `vendor/fonts/bricolage-grotesque-*.woff2`, `BricolageGrotesque.OFL.txt` |
 | Doto (variable, eje wght) | Oliver Lalan y The Doto Project Authors | SIL Open Font License 1.1 | `vendor/fonts/doto-*.woff2`, `Doto.OFL.txt` |
 | Cielos HDRI 1K (kloofendal_48d_partly_cloudy_puresky, overcast_soil_puresky, qwantani_dusk_2_puresky, dikhololo_night) | Poly Haven (Greg Zaal, Jarod Guest, Sergej Majboroda) | CC0 1.0 | `vendor/hdri/` |
+| Texturas: Asphalt031, PavingStones150, Metal055A (color, relieve y rugosidad, 1K); versiones KTX2 de todas las texturas (Basis Universal) | ambientCG (ambientcg.com) | CC0 1.0 | `vendor/texturas/`, `vendor/texturas_ktx2/` |
+| Transcodificador Basis Universal (basis_transcoder.js y .wasm) para leer KTX2 | Binomial LLC, copiado de Three.js | Apache 2.0 | `vendor/basis/` |
 
 Los iconos de la app (`vendor/icons/`) son propios del proyecto, generados con `tools/iconos.js`.
 

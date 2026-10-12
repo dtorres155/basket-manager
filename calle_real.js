@@ -176,9 +176,10 @@
       const ag = malla(AG, mAgua, 'agua'); if (ag) { ag.position.y = -0.01; ag.receiveShadow = false; W.add(ag); }
       X.A.forEach(a => { if (a.t === 0 && a.p.length >= 3) bloquearPoli(a.p, 0.2); else if (a.t === 1) for (let i = 0; i + 1 < a.p.length; i++) { const f = a.p[i], g = a.p[i + 1]; bloquearPoli([[f[0] - 3.5, f[1] - 3.5], [g[0] + 3.5, g[1] - 3.5], [g[0] + 3.5, g[1] + 3.5], [f[0] - 3.5, f[1] + 3.5]], 0); } });
     }
-    { const PA = [nuevo(), nuevo(), nuevo()], PR = nuevo(), MR = nuevo(), MK = nuevo();
-      X.C.forEach(c => { const w = ANCHO[c.k] || 4; if (c.k === 0) return; if (c.k <= 5) cinta(c.p, w + ACERA * 2, 0, PA[(U.hash(club.id + (c.nom || 'x') + c.k) >>> 0) % 3]); if (c.k !== 5) cinta(c.p, w, 0, PR); });
+    { const PA = [nuevo(), nuevo(), nuevo()], PR = nuevo(), PR2 = nuevo(), PZ = nuevo(), MR = nuevo(), MK = nuevo();
+      X.C.forEach(c => { const w = ANCHO[c.k] || 4; if (c.k === 0) return; if (c.k <= 5) cinta(c.p, w + ACERA * 2, 0, c.k === 5 ? PZ : PA[(U.hash(club.id + (c.nom || 'x') + c.k) >>> 0) % 3]); if (c.k !== 5) cinta(c.p, w, 0, c.k >= 4 ? PR2 : PR); });   // principales: asfalto oscuro; residenciales y de servicio: asfalto gastado más claro; peatonales: adoquín de granito
       [mAcera, suelo('Tiles074', { escala: 1.2, tinte: 0xb9b4aa }, 0xb0aca2, 1), suelo('Concrete034', { escala: 1.8, tinte: 0xa8a59d }, 0x9a978f, 1)].forEach((m, i) => { const mp = malla(PA[i], m, 'aceras'); if (mp) W.add(mp); }); const ma = malla(PR, mAsf, 'calzadas'); if (ma) W.add(ma);
+      { const mp2 = malla(PR2, suelo('Asphalt031', { escala: 4.5, tinte: 0x8e8e90 }, 0x55585c, 3), 'calzadas2'); if (mp2) W.add(mp2); const mz = malla(PZ, suelo('PavingStones150', { escala: 1.7, tinte: 0xb9b5ad }, 0xb0aca2, 1), 'plazas'); if (mz) W.add(mz); }
       // marcas viales: línea discontinua en el eje de las calles de doble sentido
       const mBl = new THREE.MeshStandardMaterial({ color: 0xf1efe8, roughness: 0.8, side: THREE.DoubleSide }); mBl.polygonOffset = true; mBl.polygonOffsetFactor = -5; mBl.polygonOffsetUnits = -5;
       X.C.forEach(c => { if (c.k > 4 || c.uno) return; let acum = 0; for (let i = 0; i + 1 < c.p.length; i++) { const a = c.p[i], b = c.p[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 1) continue; const ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l;
@@ -187,8 +188,13 @@
     }
     // Edificios: paredes y tejados por cuadrantes de 90 m (se dibujan solo los visibles)
     const tex = texFachada(M), pal = (PALETA[club.pais] || PALETA.ES).map(col), teja = col(TEJAS[club.pais] || TEJAS.ES);
+    // cada ventana se enciende o no según un número al azar (más apagadas cuanto más tarde) y con luz cálida, blanca o de televisión
+    const varVentanas = m => { S.ventU = S.ventU || { value: 0.75 }; const prev = m.onBeforeCompile, key0 = m.customProgramCacheKey;
+      m.onBeforeCompile = function (sh, r) { if (prev) prev.call(this, sh, r); sh.uniforms.uVentU = S.ventU;
+        sh.fragmentShader = 'uniform float uVentU;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ vec2 cv = floor(vMapUv) + floor(vWPt.xz * 0.37); float hv = fract(sin(dot(cv, vec2(12.9898, 78.233))) * 43758.5453); float enc = step(hv, uVentU); float hv2 = fract(hv * 7.31 + 0.17); vec3 tinte = hv2 < 0.18 ? vec3(0.75, 0.88, 1.0) : hv2 < 0.5 ? vec3(1.0, 0.86, 0.62) : vec3(1.0, 0.74, 0.45); totalEmissiveRadiance *= enc * tinte * (0.55 + 0.7 * fract(hv * 13.7)); }'); };
+      m.customProgramCacheKey = () => (key0 ? key0.call(m) : '') + '-vv'; return m; };
     const pared0 = (map, luz) => { const m = new THREE.MeshStandardMaterial({ map, vertexColors: true, roughness: 0.9, emissive: 0xffc98a, emissiveMap: luz, emissiveIntensity: 0, side: THREE.DoubleSide });
-      if (GM.texturas) GM.texturas.aplicar(m, club.pais === 'US' ? 'Bricks085' : 'Plaster003', { color: false, escala: club.pais === 'US' ? 1.6 : 2.2, relieve: club.pais === 'US' ? 0.9 : 0.45, rugMin: 0.75 }); return recortable(S, m); };
+      if (GM.texturas) GM.texturas.aplicar(m, club.pais === 'US' ? 'Bricks085' : 'Plaster003', { color: false, escala: club.pais === 'US' ? 1.6 : 2.2, relieve: club.pais === 'US' ? 0.9 : 0.45, rugMin: 0.75 }); return varVentanas(recortable(S, m)); };
     const mPared = pared0(tex.base, tex.luz), mPared1 = pared0(tex.base1, tex.luz1), mPared2 = pared0(tex.base2, tex.luz2), PAREDES = [mPared, mPared1, mPared2];
     const mTienda = recortable(S, new THREE.MeshStandardMaterial({ map: tex.tienda, vertexColors: true, roughness: 0.7, emissive: 0xffd9a0, emissiveMap: tex.tienda, emissiveIntensity: 0, side: THREE.DoubleSide }));
     const mTecho = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }); if (GM.texturas) GM.texturas.aplicar(mTecho, 'Concrete034', { color: false, escala: 2, relieve: 0.6, rugMin: 0.8 }); recortable(S, mTecho);
@@ -341,7 +347,9 @@
     });
     const g = new THREE.PlaneGeometry(ancho, ancho / 4.2);
     { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 0.75 + uv.getY(i) * 0.25); }   // el rótulo ocupa el cuarto de arriba del lienzo
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+    const mRot = new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0 });   // de noche los rótulos brillan (neón)
+    { const S0 = GM.sede && GM.sede._estado && GM.sede._estado(); if (S0 && S0.ventanas) S0.ventanas.push(mRot); }
+    const m = new THREE.Mesh(g, mRot);
     m.position.set(x, y, z); m.rotation.y = ry; m.userData = { cartel: true }; W.add(m); return m;
   }
   function puertaVisual(W, p, ancho, color, S) {

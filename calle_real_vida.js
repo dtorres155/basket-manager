@@ -9,6 +9,12 @@
   const COLORES = ['#c8102e', '#f4f4f4', '#1d2024', '#2f6f9e', '#8a8f94', '#e8b923', '#3a5a3a', '#7a2f22'];
   const K = () => GM.calle.util;
 
+  // Halos de los faros (sprites aditivos compartidos): solo se ven de noche; el coche mira hacia +z
+  function faros(obj) {
+    const S = GM.sede._estado(); if (!S || typeof document === 'undefined') return;
+    if (!S.farosMat) S.farosMat = new THREE.SpriteMaterial({ map: GM.sede.motor().textura('halo-faro', 64, (x, n) => { const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g.addColorStop(0, 'rgba(255,250,225,1)'); g.addColorStop(0.3, 'rgba(255,238,190,0.5)'); g.addColorStop(1, 'rgba(255,230,170,0)'); x.fillStyle = g; x.fillRect(0, 0, n, n); }), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false });
+    for (const sx of [-0.62, 0.62]) { const sp = new THREE.Sprite(S.farosMat); sp.scale.setScalar(1.5); sp.position.set(sx, 0.7, 2.3); obj.add(sp); }
+  }
   async function poblar(S, M, st) {
     const { MODELOS, PIEL, PELO, coche, perro } = K();
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
@@ -70,7 +76,7 @@
     // Coches por las calles reales
     S.coches = []; const vias = (S.vias || []).map(v => { let L = 0; const acum = [0]; for (let i = 0; i + 1 < v.p.length; i++) { L += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); acum.push(L); } let Lin = 0; for (let i = 0; i + 1 < v.p.length; i++) { const mx = (v.p[i][0] + v.p[i + 1][0]) / 2, mz = (v.p[i][1] + v.p[i + 1][1]) / 2; if (Math.hypot(mx, mz) < 240) Lin += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); } return { v, L, acum, Lin }; }).filter(v => v.Lin > 45).sort((a, b) => b.Lin - a.Lin);
     const nC = S.rua ? 0 : alta ? 16 : 9; for (let i = 0; i < nC && vias.length; i++) {
-      const vi = vias[i % Math.min(vias.length, 14)], uno = !!vi.v.uno, dir = uno ? 1 : (i % 2 ? 1 : -1), obj = coche(COLORES[i % COLORES.length]); S.mundo.add(obj);
+      const vi = vias[i % Math.min(vias.length, 14)], uno = !!vi.v.uno, dir = uno ? 1 : (i % 2 ? 1 : -1), obj = coche(COLORES[i % COLORES.length]); faros(obj); S.mundo.add(obj);
       S.coches.push({ obj, vi, dir, pos: r() * vi.L, vel: 0, len: 4.2, lane: ANCHO[vi.v.k] / 4 });
     }
     // motos que adelantan y furgoneta de reparto que se para a descargar

@@ -2,7 +2,7 @@
 // Uso en las pruebas: global.THREE = require('./tools/three_node');
 const esbuild = require('esbuild'), path = require('path');
 if (!globalThis.__THREE_JUEGO) {
-  const r = esbuild.buildSync({ entryPoints: [path.join(__dirname, 'three_entry.js')], bundle: true, format: 'iife', write: false, platform: 'neutral', mainFields: ['module', 'main'] });
+  const r = esbuild.buildSync({ entryPoints: [path.join(__dirname, 'three_entry.js')], bundle: true, format: 'iife', write: false, platform: 'neutral', mainFields: ['module', 'main'], define: { 'import.meta.url': '"http://localhost/three/"' } });
   const previo = globalThis.THREE;
   new Function(r.outputFiles[0].text)();
   globalThis.__THREE_JUEGO = globalThis.THREE; globalThis.THREE = previo;
