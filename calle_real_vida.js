@@ -12,12 +12,16 @@
   async function poblar(S, M, st) {
     const { MODELOS, PIEL, PELO, coche, perro } = K();
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
-    const n = partido ? 40 : 32, r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222', alta = !GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal';
+    const n = (partido ? 50 : 42) + (!GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal' ? 14 : 0), r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222', alta = !GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal';
     const lista = await Promise.all(Array.from({ length: n }, () => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [c1, c2] : null }).then(p => { p.hincha = hincha; return p; }); }));
+    const sitio = () => { let q = S.paseo[(r() * S.paseo.length) | 0]; for (let i = 0; i < 3; i++) { const o = S.paseo[(r() * S.paseo.length) | 0]; if (r() < 0.65 && Math.hypot(o[0], o[1]) < Math.hypot(q[0], q[1])) q = o; } return q; };
     lista.forEach((p, k) => {
-      const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0] + (r() - 0.5), 0, q[1] + (r() - 0.5) * 0.6);
+      const q = sitio(); p.obj.position.set(q[0] + (r() - 0.5), 0, q[1] + (r() - 0.5) * 0.6);
       Object.assign(p, { peaton: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino de ' + club.ciudad, r: rnd(U.hash(st.fecha + 'p' + k)), espera: r() * 3 });
       p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p);
+      // algunos van con bolsas de la compra; tres corren
+      if (k % 4 === 1 && !p.hincha) { const sc = p.obj.scale.x || 1, bolsa = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.32, 0.12), new THREE.MeshStandardMaterial({ color: ['#c0392b', '#f4efe3', '#2f6f9e', '#2e7d32'][k % 4 === 1 ? (k >> 2) % 4 : 0], roughness: 0.8 })); bolsa.scale.setScalar(1 / sc); bolsa.position.set(0.32 / sc, 0.8 / sc, 0.04 / sc); p.obj.add(bolsa); p.rol = 'Vecino con la compra'; }
+      if (k % 13 === 5 && !p.hincha) { p.corredor = true; p.rapido = true; p.rol = 'Corredor'; }
     });
     S.destinos = null;
     { const ninos = await Promise.all(Array.from({ length: 6 }, (_, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'm-casual'][k % 3], altura: 118 + r() * 26, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: k % 2 ? [c1, c2] : null })));
@@ -64,7 +68,7 @@
       S.chavales = { ch, balon, t: 0, de: 0, a: 1, tiro: false };
     }
     // Coches por las calles reales
-    S.coches = []; const vias = (S.vias || []).map(v => { let L = 0; const acum = [0]; for (let i = 0; i + 1 < v.p.length; i++) { L += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); acum.push(L); } return { v, L, acum }; }).filter(v => v.L > 45).sort((a, b) => b.L - a.L);
+    S.coches = []; const vias = (S.vias || []).map(v => { let L = 0; const acum = [0]; for (let i = 0; i + 1 < v.p.length; i++) { L += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); acum.push(L); } let Lin = 0; for (let i = 0; i + 1 < v.p.length; i++) { const mx = (v.p[i][0] + v.p[i + 1][0]) / 2, mz = (v.p[i][1] + v.p[i + 1][1]) / 2; if (Math.hypot(mx, mz) < 240) Lin += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); } return { v, L, acum, Lin }; }).filter(v => v.Lin > 45).sort((a, b) => b.Lin - a.Lin);
     const nC = S.rua ? 0 : alta ? 16 : 9; for (let i = 0; i < nC && vias.length; i++) {
       const vi = vias[i % Math.min(vias.length, 14)], uno = !!vi.v.uno, dir = uno ? 1 : (i % 2 ? 1 : -1), obj = coche(COLORES[i % COLORES.length]); S.mundo.add(obj);
       S.coches.push({ obj, vi, dir, pos: r() * vi.L, vel: 0, len: 4.2, lane: ANCHO[vi.v.k] / 4 });
@@ -75,6 +79,22 @@
       for (let i = 0; i < (alta ? 6 : 3); i++) { const vi = vias[i % Math.min(vias.length, 8)], obj = GM.urbano.moto(cols[i % cols.length]); const pil = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color: ['#1d2024', '#3b3b3b', '#5a1020'][i % 3] })); pil.position.set(0, 1.0, -0.1); obj.add(pil); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 2.2, lane: ANCHO[vi.v.k] / 4 - 0.7, vmax: 10 }); }
       if (GM.kit.coche && vias.length) { const vi = vias[0], obj = GM.kit.coche('#e8e8e8', 'furgoneta'); obj.userData.reparto = true; S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 5.4, lane: ANCHO[vi.v.k] / 4, vmax: 5, reparto: true, tParada: 0, tSig: 14 }); }
     }
+    // taxis con su luz de techo
+    if (!S.rua && vias.length) for (let i = 0; i < (alta ? 3 : 1); i++) { const vi = vias[(i * 2 + 1) % Math.min(vias.length, 10)], obj = coche('#f2c500'); const luz = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.24), new THREE.MeshStandardMaterial({ color: 0xfff3b0, emissive: 0xffe680, emissiveIntensity: 1.2 })); luz.position.set(0, 1.5, 0); obj.add(luz); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 4.4, lane: ANCHO[vi.v.k] / 4, vmax: 8, taxi: true }); }
+    // coche de policía de patrulla y gatos en las aceras
+    if (!S.rua && vias.length && alta) { const vi = vias[1 % vias.length], obj = coche('#f2f4f6'), l1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.2), new THREE.MeshStandardMaterial({ color: 0xff3030, emissive: 0xff2020, emissiveIntensity: 0.1 })), l2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.2), new THREE.MeshStandardMaterial({ color: 0x3060ff, emissive: 0x2050ff, emissiveIntensity: 0.1 })); l1.position.set(-0.3, 1.55, 0); l2.position.set(0.3, 1.55, 0); const franja = new THREE.Mesh(new THREE.BoxGeometry(1.84, 0.2, 2.2), new THREE.MeshStandardMaterial({ color: 0x1f3a6a })); franja.position.set(0, 0.62, 0); obj.add(l1, l2, franja); S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 4.4, lane: ANCHO[vi.v.k] / 4, vmax: 6.5, amb: true, lucesA: [l1, l2], patrulla: true }); }
+    if (GM.kit.gato) for (let i = 0; i < (alta ? 6 : 3); i++) { const q = S.paseoBase[(r() * Math.min(S.paseoBase.length, 120)) | 0]; if (!q) continue; const g = GM.kit.gato(['#3b3b3b', '#c98d4f', '#f2efe8', '#7a6a5a', '#1d1d1d'][i % 5]); g.scale.setScalar(1.5); g.position.set(q[0] + 0.5, 0, q[1] + 0.5); g.rotation.y = r() * 6.28; g.userData = { gato: true }; S.mundo.add(g); }
+    // autobús urbano: recorre la calle más larga y se para en las marquesinas; sube a los vecinos que esperan cerca y los baja en la siguiente
+    if (!S.rua && vias.length && K().autobus) { const paradasDe = vi => (S.paradas || []).map(p => { let mejor = { d: 1e9, s: 0 }; for (let i = 0; i + 1 < vi.v.p.length; i++) { const a = vi.v.p[i], b = vi.v.p[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], l = dx * dx + dz * dz || 1e-9, t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / l)), d = Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dz); if (d < mejor.d) mejor = { d, s: vi.acum[i] + t * Math.sqrt(l) }; } return mejor; }).filter(q => q.d < 24).map(q => q.s).sort((a, b) => a - b);
+      let vi = vias[0], paradas = paradasDe(vi); vias.slice(0, 12).forEach(v0 => { const ps = paradasDe(v0); if (ps.length > paradas.length) { vi = v0; paradas = ps; } });
+      if (paradas.length < 2 && S.crearMarquesina) { for (let s = 10; s < vi.L - 10 && paradas.length < 3; s += 12) { const [x, z, ux, uz] = punto(vi, s), off = ANCHO[vi.v.k] / 2 + 1.5, bx = x - uz * off, bz = z + ux * off; if (Math.hypot(bx, bz) > 250 || paradas.some(p => Math.abs(p - s) < 70)) continue; const [ci, cj] = S.G.celda(bx, bz); if (!S.G.libre(ci, cj)) continue; S.crearMarquesina(bx, bz, Math.atan2(uz, -ux)); paradas.push(s); } paradas.sort((p, q) => p - q); }
+      if (vi) { const obj = K().autobus(club); S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 10.5, lane: ANCHO[vi.v.k] / 4, vmax: 6, bus: true, paradas, tParada: 0, ultima: -1, pasajeros: [] }); } }
+    // ciclistas por el borde de la calzada
+    if (!S.rua && GM.urbano && GM.urbano.bici && vias.length) for (let i = 0; i < (alta ? 5 : 2); i++) { const vi = vias[(i + 2) % Math.min(vias.length, 10)], obj = GM.urbano.bici(['#d62d2d', '#2f6f9e', '#e9e5da', '#2e7d32'][i % 4]); const pil = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color: ['#1d2024', '#5a1020', '#2f4a6a'][i % 3] })); pil.position.set(0, 1.05, -0.05); obj.add(pil); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 1.8, lane: ANCHO[vi.v.k] / 2 - 0.9, vmax: 4.2, bici: true }); }
+    // clientes sentados en las terrazas
+    if (S.sitios && S.sitios.length) { const cl = await Promise.all(S.sitios.map((q, k) => M.personaje({ modelo: MODELOS[(k * 5 + 2) % MODELOS.length], altura: 160 + k * 4, piel: PIEL[k % 5], pelo: PELO[(k * 2) % 6] })));
+      cl.forEach((p, k) => { const q = S.sitios[k]; if (k % 3 === 2) { p.obj.visible = false; p.oculto = true; return; } p.fijo = true; p.rol = 'Cliente de la terraza'; p.obj.position.set(q.x, 0, q.z); p.obj.rotation.y = q.ry; p.asiento = 0.45; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); M.anim(p, 'sit'); S.gente.push(p); }); }
+    S.tAmb = 40 + r() * 60;
     S.perfilCoches = true;
     if (GM.calleVida) { GM.calleVida.construir(S, M, st, { W: S.mundo, G: S.G, r, club }); await GM.calleVida.poblar(S, M, st); }
   }
@@ -83,8 +103,60 @@
     const a = vi.v.p[i], b = vi.v.p[i + 1], l = (vi.acum[i + 1] - vi.acum[i]) || 1, t = (s - vi.acum[i]) / l, dx = (b[0] - a[0]) / l, dz = (b[1] - a[1]) / l;
     return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, dx, dz];
   }
+  // El autobús para: baja a quien llevaba (en esta parada) y sube a quien espera cerca
+  function parada(S, M, c, sp) {
+    const [bx, bz] = punto(c.vi, sp), t = (S.hora || 9);
+    c.pasajeros.forEach(n => { n.oculto = false; n.dentro = false; n.obj.visible = true; n.obj.position.set(bx + 2.4, 0, bz + 1.5); n.espera = 1; }); c.pasajeros = [];
+    S.gente.filter(n => n.peaton && !n.oculto && !n.fijo && !n.dentro && !n.enCasa && Math.hypot(n.obj.position.x - bx, n.obj.position.z - bz) < 16).slice(0, 2).forEach(n => { M.irA(n, bx + 1.2, bz + 1.4, () => { n.oculto = true; n.dentro = true; n.hasta = t + 0.5; c.pasajeros.push(n); }); });
+  }
+  // Ambulancia de vez en cuando: pasa deprisa con las luces en marcha
+  function ambulancia(S, M) {
+    if (!GM.kit.coche || !S.coches.length) return; const vias = [...new Set(S.coches.filter(c => !c.bici && !c.bus).map(c => c.vi))]; if (!vias.length) return;
+    const vi = vias[(Math.random() * vias.length) | 0], obj = GM.kit.coche('#ffffff', 'furgoneta'), l1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.16, 0.2), new THREE.MeshStandardMaterial({ color: 0xff3030, emissive: 0xff2020, emissiveIntensity: 0.1 })), l2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.16, 0.2), new THREE.MeshStandardMaterial({ color: 0x3060ff, emissive: 0x2050ff, emissiveIntensity: 0.1 }));
+    l1.position.set(-0.4, 2.35, 1.2); l2.position.set(0.4, 2.35, 1.2); const cruz = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.35, 0.02), new THREE.MeshStandardMaterial({ color: 0xc0392b })); cruz.position.set(0, 1.1, 0); obj.add(l1, l2, cruz); S.mundo.add(obj);
+    S.coches.push({ obj, vi, dir: 1, pos: 0, vel: 6, len: 5.6, lane: ANCHO[vi.v.k] / 4, vmax: 12, amb: true, lucesA: [l1, l2], reparto: true, unaVez: true });
+  }
+  // Fases del día de partido en casa: la cola en las taquillas y los grupos cantando junto a la peña (previa), el autobús del equipo y la salida del público
+  async function fasePartido(S, M, st) {
+    const h = S.hora || 9, f = h < 16 ? 'antes' : h < 20.5 ? 'previa' : h < 22.25 ? 'juego' : 'salida'; if (S.fasePartido === f || S.cambiandoFase || !GM.kit.publico || !S.ptoPab) return; S.cambiandoFase = true; S.fasePartido = f;
+    const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222', r = rnd(U.hash(st.fecha + f)), { PIEL, PELO } = K(), P = S.partidoObj || (S.partidoObj = {}), quitar = k => { if (P[k]) { S.mundo.remove(P[k].grupo); P[k] = null; } };
+    const libre = (x, z) => { const [i, j] = S.G.celda(x, z); return S.G.libre(i, j); }, fan = (x, z, ry) => ({ x, y: 0.88, z, ry, ropa: r() < 0.7 ? c1 : c2, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], pantalon: '#2f3640' });
+    if (S.multitud) S.multitud.grupo.visible = f === 'previa' || f === 'juego';
+    if (f === 'previa') {
+      const cola = [], [px, pz] = S.ptoPab, fr = S.G; void fr; for (let t = 0; t < 400 && cola.length < 34; t++) { const a = r() * 6.28, d = 1.2 + r() * 3.2, x = px + Math.cos(a) * d, z = pz + Math.sin(a) * d; if (libre(x, z)) cola.push(fan(x, z, Math.atan2(px - x, pz - z))); }
+      P.cola = GM.kit.publico(cola, 1, true); S.mundo.add(P.cola.grupo); P.colaT = 0;
+      if (S.ptoPena) { const bar = [], [qx, qz] = S.ptoPena; for (let t = 0; t < 400 && bar.length < 24; t++) { const a = r() * 6.28, d = 0.8 + r() * 2.6, x = qx + Math.cos(a) * d, z = qz + Math.sin(a) * d; if (libre(x, z)) bar.push(fan(x, z, r() * 6.28)); } P.bares = GM.kit.publico(bar, 1, true); S.mundo.add(P.bares.grupo); }
+    } else { quitar('cola'); quitar('bares'); }
+    if (f === 'salida') { const sal = [], [px, pz] = S.ptoPab; for (let t = 0; t < 600 && sal.length < 120; t++) { const a = r() * 6.28, d = 1.5 + r() * 5, x = px + Math.cos(a) * d, z = pz + Math.sin(a) * d; if (libre(x, z)) sal.push(fan(x, z, r() * 6.28)); } P.salida = GM.kit.publico(sal, 1, true); S.mundo.add(P.salida.grupo); P.salidaT = 0; } else quitar('salida');
+    S.cambiandoFase = false;
+  }
+  // A las 19:00 llega el autobús del equipo, se baja la plantilla y entra en el pabellón
+  async function busEquipo(S, M, st) {
+    const h = S.hora || 9; if (S.busEquipo || h < 19 || h >= 20.5 || !S.ptoPab || !K().autobusEquipo) return;
+    const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222', { PIEL, PELO } = K(), [px, pz] = S.ptoPab;
+    let mejor = null; (S.vias || []).forEach(v => { let L = 0; const ac = [0]; for (let i = 0; i + 1 < v.p.length; i++) { L += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); ac.push(L); } if (L < 70) return; const vi = { v, L, acum: ac }; for (let s = 0; s <= L; s += 4) { const q = punto(vi, s), d = Math.hypot(q[0] - px, q[1] - pz); if (!mejor || d < mejor.d) mejor = { vi, s, d }; } });
+    if (!mejor || mejor.d > 40) return; const obj = K().autobusEquipo(club); S.mundo.add(obj); S.busEquipo = { obj, vi: mejor.vi, s: Math.max(0, mejor.s - 70), parar: mejor.s, fase: 'llega', t: 0, jugadores: [] };
+    const jug = club.plantilla.map(i => st.jugadores[i]).filter(p => p && p.id !== 'yo').sort((a, b) => b.ovr - a.ovr).slice(0, 6);
+    S.busEquipo.jugadores = await Promise.all(jug.map((j, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][k % 3], altura: j.altura || 198, piel: PIEL[(U.hash(j.id) >>> 2) % 5], pelo: PELO[(U.hash(j.id) >>> 5) % 6], ropa: [c1, c2] }).then(p => { p.oculto = true; p.obj.visible = false; p.fijo = true; p.rol = 'Jugador del ' + club.siglas; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); S.gente.push(p); return p; })));
+    if (GM.ui && GM.ui.toast) GM.ui.toast('Llega el autobús del equipo al pabellón');
+  }
+  function moverPartido(S, M, dt) {
+    const P = S.partidoObj, t = performance.now() / 1000;
+    if (P) {
+      if (P.cola) { P.colaT -= dt; if (P.colaT <= 0) { P.colaT = 0.15; P.cola.colocar(i => (Math.sin(t * 2 + i) > 0.85 ? { brazos: 0.6 } : null)); } }
+      if (P.bares) { P.baresT = (P.baresT || 0) - dt; if (P.baresT <= 0) { P.baresT = 0.12; P.bares.colocar(i => { const v = Math.sin(t * 5 + i * 1.7); return v > 0.3 ? { salto: (v - 0.3) * 0.4, brazos: 1 } : null; }); } }
+      if (P.salida) { P.salidaT += dt; P.salidaCad = (P.salidaCad || 0) - dt; if (P.salidaCad <= 0) { P.salidaCad = 0.1; P.salida.colocar(i => ({ salto: Math.max(0, Math.sin(t * 3 + i)) * 0.1, brazos: i % 5 === 0 ? 0.8 : 0 })); } }
+    }
+    const B = S.busEquipo; if (!B || !B.obj) return; B.t += dt;
+    if (B.fase === 'llega') { B.s += dt * 7; const [x, z, ux, uz] = punto(B.vi, Math.min(B.s, B.parar)), off = ANCHO[B.vi.v.k] / 4; B.obj.position.set(x - uz * off, 0, z + ux * off); B.obj.rotation.y = Math.atan2(ux, uz); if (B.s >= B.parar) { B.fase = 'bajan'; B.t = 0; B.pos = [B.obj.position.x, B.obj.position.z]; if (S.multitud) S.multitud.saltaHasta = t + 12; } }
+    else if (B.fase === 'bajan') { B.jugadores.forEach((p, k) => { if (B.t > k * 1.2 && !p.bajado) { p.bajado = true; p.oculto = false; p.obj.visible = true; p.obj.position.set(B.pos[0] + 2.2, 0, B.pos[1] + 1.6); M.irA(p, S.ptoPab[0] + (k - 2.5) * 0.7, S.ptoPab[1], () => { p.oculto = true; p.obj.visible = false; }); } }); if (B.t > 9) { B.fase = 'se_va'; B.s = B.parar; } }
+    else if (B.fase === 'se_va') { B.s += dt * 7; const [x, z, ux, uz] = punto(B.vi, Math.min(B.s, B.vi.L)), off = ANCHO[B.vi.v.k] / 4; B.obj.position.set(x - uz * off, 0, z + ux * off); B.obj.rotation.y = Math.atan2(ux, uz); if (B.s >= B.vi.L - 1) { S.mundo.remove(B.obj); B.obj = null; B.fase = 'fuera'; } }
+  }
   function actualizar(S, M, dt) {
     const t = performance.now() / 1000;
+    if (S.partidoCasa) { S.tFase = (S.tFase || 0) - dt; if (S.tFase <= 0) { S.tFase = 1; fasePartido(S, M, S.st); busEquipo(S, M, S.st); } }
+    moverPartido(S, M, dt);
+    S.tAmb = (S.tAmb || 80) - dt; if (S.tAmb <= 0) { S.tAmb = 90 + Math.random() * 120; if (Math.random() < 0.6) ambulancia(S, M); }
     if (GM.calleVida) { GM.calleVida.actualizar(S, M, dt); (S.puebloAnim || []).forEach(f => f(t)); }
     if (GM.arquitectura && GM.arquitectura.aguaMover) GM.arquitectura.aguaMover(t);
     if (S.yo && S.rec) { S.rec.p.value.set(S.yo.obj.position.x, 1.1, S.yo.obj.position.z); S.rec.c.value.copy(S.camera.position); }
@@ -118,13 +190,21 @@
     if (S.multitud) { S.tMult = (S.tMult || 0) - dt; if (S.tMult <= 0) { S.tMult = 0.12; S.multitud.colocar(i => { const v = Math.sin(t * 3 + i * 1.7); return v > 0.72 ? { salto: (v - 0.72) * 0.6, brazos: 1 } : null; }); } }
     if (!S.coches) return;
     const gente = S.gente.concat(S.yo ? [S.yo] : []);
+    if (S.coches.some(c => c.borrar)) S.coches = S.coches.filter(c => !c.borrar);
     S.coches.forEach(c => {
       const [x, z, ux, uz] = punto(c.vi, c.pos), tx = ux * c.dir, tz = uz * c.dir, ox = -tz * c.lane, oz = tx * c.lane;
       let objetivo = c.vmax || 7;
       if (c.reparto) { if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else { c.tSig -= dt; if (c.tSig <= 0) { c.tParada = 6; c.tSig = 22; } } }
       for (const p of gente) { const o = p.obj.position, ax = o.x - (x + ox), az = o.z - (z + oz), lon = ax * tx + az * tz - c.len / 2, lat = Math.abs(-ax * tz + az * tx); if (lat < 1.3 && lon > -0.3 && lon < 6.5 && !p.oculto) objetivo = Math.min(objetivo, Math.max(0, (lon - 1.4) * 1.5)); }
+      if (S.semaforos && S.semaforos.length && !c.reparto) for (const sm of S.semaforos) { if (sm.fase === S.semFase) continue; if (tx * sm.ax + tz * sm.az < 0.8) continue; const ax = sm.x - (x + ox), az = sm.z - (z + oz), lon = ax * tx + az * tz - c.len / 2, lat = Math.abs(-ax * tz + az * tx); if (lat < 7 && lon > -0.3 && lon < 9) objetivo = Math.min(objetivo, Math.max(0, (lon - 0.8) * 1.2)); }
       for (const o of S.coches) { if (o === c || o.vi !== c.vi || o.dir !== c.dir) continue; const gap = c.dir * (o.pos - c.pos) - c.len; if (gap > 0 && gap < 6) objetivo = Math.min(objetivo, Math.max(0, gap - 1.5)); }
+      if (c.bus && c.paradas) {
+        if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else for (const sp of c.paradas) { const dd = c.dir * (sp - c.pos); if (dd > 0 && dd < 14) objetivo = Math.min(objetivo, Math.max(0.5, dd * 0.5)); if (dd > -0.4 && dd < 1 && c.vel < 1.5 && c.ultima !== sp) { c.tParada = 6; c.ultima = sp; parada(S, M, c, sp); } }
+      }
       c.vel += Math.max(-9 * dt, Math.min(3 * dt, objetivo - c.vel)); c.pos += c.dir * c.vel * dt;
+      if (c.bici && c.obj.userData.ruedas) c.obj.userData.ruedas.forEach(w => { w.rotation.x += c.vel * dt / 0.34; });
+      if (c.amb) { c.obj.userData.sirena = (c.obj.userData.sirena || 0) + dt; const f = Math.sin(c.obj.userData.sirena * 14) > 0; if (c.lucesA) { c.lucesA[0].material.emissiveIntensity = f ? 3 : 0.1; c.lucesA[1].material.emissiveIntensity = f ? 0.1 : 3; } }
+      if (c.unaVez && c.pos > c.vi.L - 2) { S.mundo.remove(c.obj); c.borrar = true; }
       if (c.pos > c.vi.L) c.pos = 0; else if (c.pos < 0) c.pos = c.vi.L;
       const [x2, z2, ux2, uz2] = punto(c.vi, c.pos), tx2 = ux2 * c.dir, tz2 = uz2 * c.dir;
       c.obj.position.set(x2 - tz2 * c.lane, -0.0, z2 + tx2 * c.lane); c.obj.rotation.y = Math.atan2(tx2, tz2);

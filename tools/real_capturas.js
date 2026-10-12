@@ -15,9 +15,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await normal('1_inicio');
   const aerea = async (n, c, t) => { await p.evaluate(([c, t]) => { const S = GM.sede._estado(); S.pausa = true; if (S.scene.fog) S.scene.fog.far = 1500; S.camera.far = 2500; S.camera.updateProjectionMatrix(); S.camera.position.set(...c); S.camera.lookAt(...t); S.renderer.render(S.scene, S.camera); }, [c, t]); await sleep(700); await p.screenshot({ path: path.join(DIR, n + '.png') }); };
   await aerea('2_aerea', [0, 260, 150], [0, 0, 0]);
+  await aerea('2b_ciudad', [0, 700, 480], [0, 0, 0]);
   await aerea('3_centro', [40, 70, 60], [0, 0, 0]);
   await p.evaluate(() => { GM.sede._estado().pausa = false; });
-  for (const [n, id, zoom] of [['4_pabellon', 'pabellon', 14], ['5_tienda', 'tienda', 12], ['6_pena', 'pena', 12], ['7_ayto', 'ayuntamiento', 14], ['8_calle', 'mercado', 22]]) {
+  for (const [n, id, zoom] of [['4_pabellon', 'pabellon', 14], ['5_tienda', 'tienda', 12], ['6_pena', 'pena', 12], ['7_ayto', 'ayuntamiento', 14], ['8_calle', 'mercado', 22], ['9_terraza', 'terraza', 12], ['9b_parque', 'parque', 16]]) {
     await p.evaluate(([id, zoom]) => { const S = GM.sede._estado(), z = S.zonas.find(q => q.sala.id === id); if (!z) return; S.yo.camino = null; S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z + 0.2); S.foco.set(z.obj.position.x, 0, z.obj.position.z); S.zoom = zoom; }, [id, zoom]);
     await normal(n);
   }

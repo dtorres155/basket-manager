@@ -1,7 +1,7 @@
 // recursos/osm/<id>.json (crudo, de tools/osm_descargar.js) -> vendor/osm/<id>.json (compacto; build.js los copia a dist/osm).
 // Datos © colaboradores de OpenStreetMap (ODbL). Coordenadas en decímetros enteros alrededor del pabellón (x al este, z al sur).
 // Con recursos/osm/<id>.poi.json (tools/osm_descargar2.js) añade: n (comercios y sitios con nombre: [tipo, nombre, x, z]), t (árboles [x, z]), pt (puntos de calle [clase, x, z]: 0 parada de bus, 1 semáforo, 2 paso de peatones, 3 farola, 4 banco, 5 papelera, 6 aparcabicis, 7 contenedores, 8 otros), k (aparcamientos), u (usos del suelo [tipo, ...]), v (vías de tren), f (vallas y muros [tipo, ...])
-// Formato: { s: [textos], e: [[plantas, clase, nombre, x0, z0, x1, z1, ...]], c: [[clase, nombre, sentidoUnico, x0, z0, ...]], a: [[tipo, x0, z0, ...]], p: [[tipo, x0, z0, ...]] }
+// Formato: { s: [textos], e: [[plantas, clase, nombre, color, techoYmaterial, x0, z0, x1, z1, ...]],   (color: índice en s del color del edificio o -1; techoYmaterial = forma del tejado (0 sin dato, 1 plano, 2 dos aguas, 3 cuatro aguas, 4 cúpula, 5 pirámide) + 10 por el material (1 ladrillo, 2 piedra, 3 cristal o metal)) c: [[clase, nombre, sentidoUnico, x0, z0, ...]], a: [[tipo, x0, z0, ...]], p: [[tipo, x0, z0, ...]] }
 // clase de edificio: 0 otro, 1 vivienda, 2 comercio, 3 oficina, 4 colegio, 5 hospital, 6 ayuntamiento/público, 7 iglesia, 8 hotel, 9 industrial, 10 deporte, 11 quiosco, 12 restauración, 13 estación
 // clase de calle: 0 autovía, 1 principal, 2 secundaria, 3 terciaria, 4 residencial, 5 peatonal, 6 servicio
 const fs = require('fs'), path = require('path');
@@ -34,8 +34,11 @@ function claseEdificio(t) {
   return 0;
 }
 const ent = v => Math.round(v * 10);
+const NOMBRES_COLOR = { white: '#f2efe8', grey: '#9a9a96', gray: '#9a9a96', red: '#a8493a', brown: '#7a5a43', beige: '#e0d2b4', yellow: '#e6cf86', orange: '#d98a50', pink: '#e0aeb0', green: '#8aa078', blue: '#8fa5bd', cream: '#efe4c8', ochre: '#c9a05a', sand: '#d9c9a3', black: '#4a4a4a', salmon: '#e0a58f' };
+const colorDe = v => { if (!v) return ''; v = String(v).toLowerCase().trim(); if (/^#[0-9a-f]{6}$/.test(v)) return v; return NOMBRES_COLOR[v] || ''; };
+const techoDe = t => ({ flat: 1, gabled: 2, hipped: 3, 'half-hipped': 3, gambrel: 2, dome: 4, pyramidal: 5, skillion: 2 }[t['roof:shape']] || 0) + 10 * ({ brick: 1, stone: 2, sandstone: 2, limestone: 2, concrete: 0, glass: 3, metal: 3, steel: 3 }[t['building:material']] || 0);
 let total = 0, bytes = 0;
-for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && !n.endsWith('.poi.json')).sort()) {
+for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && !/\.(poi|ring)\.json$/.test(n)).sort()) {
   const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
   const k = 110574, kx = 111320 * Math.cos(j.lat * Math.PI / 180);
   const pr = g => g.map(q => [(q.lon - j.lon) * kx, -(q.lat - j.lat) * k]);
@@ -51,7 +54,7 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
       p = dp(p.concat([p[0]]), 0.9).slice(0, -1); if (p.length < 3) continue;
       if (p.length > 18) p = p.filter((_, i) => i % Math.ceil(p.length / 18) === 0);
       const pl = +t['building:levels'] || (t.height ? Math.max(1, Math.round(+t.height / 3.1)) : 0);
-      r.e.push([Math.min(pl, 60) || 0, claseEdificio(t), nom(t.name)].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
+      r.e.push([Math.min(pl, 60) || 0, claseEdificio(t), nom(t.name), nom(colorDe(t['building:colour'] || t['building:facade:colour'])), techoDe(t)].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
     } else if (t.highway) {
       if (t.tunnel && t.tunnel !== 'no') continue;
       p = dp(p, 1.2); r.c.push([CALLE[t.highway] === undefined ? 6 : CALLE[t.highway], nom(t.name), t.oneway === 'yes' ? 1 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
@@ -84,6 +87,20 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
         else if (t.barrier) { p = dp(p, 0.8); r.f.push([t.barrier === 'hedge' ? 1 : t.barrier === 'wall' ? 2 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])]))); }
       }
     }
+  }
+  // anillo lejano (tools/osm_descargar3.js): de 300 a 480 m, con la mínima información (metros enteros): l = { e: [[plantas, x0, z0, ...]], c: [[clase, x0, z0, ...]], a: [[tipo, ...]], p: [[...]], v: [[...]] }
+  const rf = path.join(DIR, j.id + '.ring.json');
+  if (fs.existsSync(rf)) {
+    const RG = JSON.parse(fs.readFileSync(rf, 'utf8')), L = { e: [], c: [], a: [], p: [], v: [] }, KH = { motorway: 0, trunk: 0, primary: 1, secondary: 2, tertiary: 3, residential: 4 }, m = p => p.map(q => [q[0] / 10, q[1] / 10]), pl = p => [].concat(...p.map(q => [Math.round(q[0]), Math.round(q[1])]));
+    for (const w of RG.el) {
+      let p = m(w.g);
+      if (w.t === 'b') { if (p.length > 1 && p[0][0] === p[p.length - 1][0] && p[0][1] === p[p.length - 1][1]) p.pop(); if (p.length < 3 || area(p) < 70) continue; p = dp(p.concat([p[0]]), 2.2).slice(0, -1); if (p.length < 3) continue; if (p.length > 8) p = p.filter((_, i) => i % Math.ceil(p.length / 8) === 0); L.e.push([Math.min(w.l, 40)].concat(pl(p))); }
+      else if (w.t === 'h') { p = dp(p, 3); L.c.push([KH[w.k] === undefined ? 4 : KH[w.k]].concat(pl(p))); }
+      else if (w.t === 'r') { p = dp(p, 3); L.v.push(pl(p)); }
+      else if (w.t === 'a') { const cerr = w.g.length > 3 && w.g[0][0] === w.g[w.g.length - 1][0] && w.g[0][1] === w.g[w.g.length - 1][1]; p = dp(p, 3); L.a.push([cerr ? 1 : 0].concat(pl(p))); }
+      else { p = dp(p, 3.5); if (p.length >= 3) L.p.push(pl(p)); }
+    }
+    r.l = L;
   }
   const s = JSON.stringify(r); fs.writeFileSync(path.join(OUT, j.id + '.json'), s);
   total++; bytes += s.length;

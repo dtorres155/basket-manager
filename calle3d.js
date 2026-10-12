@@ -500,9 +500,9 @@
     }
     let cat;
     if (n.nino) cat = h < 9 ? 'colegio' : h < 14 ? 'colegio' : h < 20 ? 'parque' : 'casa';
-    else cat = elegir(n, PESOS[FRANJA(h)]);
+    else cat = n.corredor ? 'paseo' : elegir(n, PESOS[FRANJA(h)]);
     const L = D[cat] && D[cat].length ? D[cat] : S.paseo, q = L[(n.r() * L.length) | 0];
-    n.rapido = !!n.nino && n.r() < 0.5; n.destino = cat;
+    n.rapido = !!n.corredor || (!!n.nino && n.r() < 0.5); n.destino = cat;
     const ok = M.irA(n, q[0] + (n.r() - 0.5) * 1.6, q[1] + (n.r() - 0.5) * 1.2, () => {
       if (cat === 'colegio' && h < 14) { n.oculto = true; n.dentro = true; n.hasta = 14 + n.r(); n.espera = 4; return; }
       if (cat === 'trabajo' && n.r() < 0.6) { n.oculto = true; n.dentro = true; n.hasta = h + 2 + n.r() * 5; n.espera = 4; return; }
@@ -617,5 +617,5 @@
   const esReal = st => !!(GM.mods.calleReal && GM.mods.calleReal.datos(st.clubId));
   function construir(S, M, st) { return esReal(st) ? GM.mods.calleReal.construir(S, M, st) : construirAntigua(S, M, st); }
   const preparar = st => GM.mods.calleReal ? GM.mods.calleReal.cargar(st.clubId) : Promise.resolve(null);
-  GM.calle = { moverPalomas, partidoFase: true, construir, construirAntigua, poblar, siguiente, actualizar, LIM, real: esReal, preparar, util: { MODELOS, PIEL, PELO, coche, perro, autobusRua } };
+  GM.calle = { moverPalomas, partidoFase: true, construir, construirAntigua, poblar, siguiente, actualizar, LIM, real: esReal, preparar, util: { MODELOS, PIEL, PELO, coche, perro, autobusRua, autobus, autobusEquipo } };
 })();
