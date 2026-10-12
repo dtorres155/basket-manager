@@ -410,7 +410,10 @@ body{background:var(--bg)}
 .sede-mapa .mapa-cab { display: flex; align-items: center; gap: 10px; }
 .sede-mapa .mapa-cab span { opacity: .7; font-size: 13px; flex: 1; }
 .sede-mapa .mapa-lienzo { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.sede-mapa canvas { max-width: 100%; max-height: 100%; border-radius: 12px; cursor: pointer; touch-action: manipulation; }
+.sede-mapa .mapa-lienzo { position: relative; }
+.sede-mapa canvas { width: 100%; height: 100%; display: block; border-radius: 12px; cursor: grab; touch-action: none; }
+.sede-mapa .mapa-zoom { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
+.sede-mapa .mapa-zoom button { width: 38px; height: 38px; border-radius: 12px; border: 1px solid rgba(0,0,0,.2); background: rgba(255,255,255,.94); color: #1c2b3a; font-size: 20px; font-weight: 700; cursor: pointer; }
 .sede-mapa .mapa-lista { display: flex; flex-wrap: wrap; gap: 6px; max-height: 92px; overflow-y: auto; }
 .sede-mapa .mapa-lista .btn { background: rgba(255,255,255,.12); color: #f3efe6; border-color: rgba(255,255,255,.28); }
 

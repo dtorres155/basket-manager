@@ -34,14 +34,16 @@
   }
   // Recorte: la pared, el techo y lo que hay entre la cámara y tu personaje se perfora (con borde difuminado) para no perderte detrás de un edificio
   function recortable(S, m) {
+    const previo = m.onBeforeCompile, clave = m.customProgramCacheKey ? m.customProgramCacheKey() : '';
     m.onBeforeCompile = sh => {
+      if (previo) previo(sh);
       sh.uniforms.uRecP = S.rec.p; sh.uniforms.uRecC = S.rec.c; sh.uniforms.uRecR = S.rec.r;
       sh.vertexShader = 'varying vec3 vWp;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = 'varying vec3 vWp; uniform vec3 uRecP; uniform vec3 uRecC; uniform float uRecR;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n' +
         ' { vec3 ab = uRecP - uRecC; float t = clamp(dot(vWp - uRecC, ab) / max(dot(ab, ab), 0.001), 0.0, 1.0); float d = distance(vWp, uRecC + ab * t);\n' +
-        '   if (t < 0.96 && d < uRecR && vWp.y > 0.9) { float k = smoothstep(uRecR * 0.72, uRecR, d); float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453); if (n > k) discard; } }');
+        '   if (t < 0.96 && d < uRecR && vWp.y > 0.9) { float k = smoothstep(uRecR * 0.9, uRecR, d); float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453); if (n > k) discard; } }');
     };
-    m.customProgramCacheKey = () => 'recorte';
+    m.customProgramCacheKey = () => clave + 'recorte';
     return m;
   }
   function texFachada(M) {
@@ -51,7 +53,14 @@
     const luz = M.textura('real-fachada-luz', 128, (x, n) => { x.fillStyle = '#000'; x.fillRect(0, 0, n, n); x.fillStyle = '#ffd9a0'; x.fillRect(n * 0.31, n * 0.29, n * 0.38, n * 0.44); });
     const tienda = M.textura('real-tienda', 128, (x, n) => { x.fillStyle = '#ffffff'; x.fillRect(0, 0, n, n); x.fillStyle = '#26323b'; x.fillRect(n * 0.06, n * 0.16, n * 0.88, n * 0.72); x.fillStyle = 'rgba(255,240,200,.35)'; x.fillRect(n * 0.08, n * 0.18, n * 0.84, n * 0.68);
       x.fillStyle = 'rgba(0,0,0,.28)'; for (let i = 1; i < 3; i++) x.fillRect(n * 0.06 + i * n * 0.29, n * 0.16, 3, n * 0.74); x.fillStyle = 'rgba(0,0,0,.2)'; x.fillRect(0, n * 0.92, n, n * 0.08); });
-    return { base, luz, tienda };
+    // estilo 1: balconera alta con contraventanas; estilo 2: cinta de ventanas de oficina
+    const base1 = M.textura('real-fachada1', 128, (x, n) => { x.fillStyle = '#ffffff'; x.fillRect(0, 0, n, n); x.fillStyle = 'rgba(0,0,0,.06)'; x.fillRect(0, 0, n, 4);
+      x.fillStyle = '#3a4653'; x.fillRect(n * 0.36, n * 0.16, n * 0.28, n * 0.64); x.fillStyle = 'rgba(255,255,255,.18)'; x.fillRect(n * 0.38, n * 0.18, n * 0.1, n * 0.24); x.fillStyle = '#e4dfd3'; x.fillRect(n * 0.33, n * 0.8, n * 0.34, n * 0.04); x.fillRect(n * 0.49, n * 0.16, n * 0.02, n * 0.64);
+      x.fillStyle = '#8f9a86'; for (const sx of [0.18, 0.64]) { x.fillRect(n * sx, n * 0.16, n * 0.18, n * 0.64); x.fillStyle = 'rgba(0,0,0,.25)'; for (let k = 0; k < 9; k++) x.fillRect(n * sx, n * (0.18 + k * 0.07), n * 0.18, 2); x.fillStyle = '#8f9a86'; } });
+    const luz1 = M.textura('real-fachada1-luz', 128, (x, n) => { x.fillStyle = '#000'; x.fillRect(0, 0, n, n); x.fillStyle = '#ffd9a0'; x.fillRect(n * 0.38, n * 0.18, n * 0.24, n * 0.6); });
+    const base2 = M.textura('real-fachada2', 128, (x, n) => { x.fillStyle = '#ffffff'; x.fillRect(0, 0, n, n); x.fillStyle = '#3d4d5c'; x.fillRect(0, n * 0.22, n, n * 0.5); x.fillStyle = 'rgba(255,255,255,.18)'; x.fillRect(0, n * 0.24, n, n * 0.14); x.fillStyle = '#cfd3d6'; for (let k = 0; k <= 2; k++) x.fillRect(k * n * 0.5 - 2, n * 0.22, 4, n * 0.5); x.fillStyle = '#c6c9cc'; x.fillRect(0, n * 0.72, n, n * 0.05); });
+    const luz2 = M.textura('real-fachada2-luz', 128, (x, n) => { x.fillStyle = '#000'; x.fillRect(0, 0, n, n); x.fillStyle = '#f2f0d0'; x.fillRect(n * 0.02, n * 0.24, n * 0.46, n * 0.46); x.fillRect(n * 0.52, n * 0.24, n * 0.46, n * 0.46); });
+    return { base, luz, tienda, base1, luz1, base2, luz2 };
   }
 
   // ---------- Geometría ----------
@@ -90,9 +99,21 @@
     }).filter(b => Math.hypot(b.cx, b.cz) < R + 5);
     B.forEach(b => { b.dc = Math.hypot(b.cx, b.cz); });
     const C = D.c.map(c => ({ k: c[0], nom: c[1] >= 0 ? D.s[c[1]] : '', uno: c[2], p: pts(c, 3) })).filter(c => c.p.length > 1);
-    return { B, C, A: D.a.map(a => ({ t: a[0], p: pts(a, 1) })), P: D.p.map(a => ({ t: a[0], p: pts(a, 1) })) };
+    const lista = (v, h) => (v || []).map(a => ({ t: a[0], p: pts(a, h) })).filter(a => a.p.length >= 2), punto = (v, i, j) => (v || []).map(a => ({ t: a[0], x: a[i] / 10, z: a[j] / 10 }));
+    return { B, C, A: D.a.map(a => ({ t: a[0], p: pts(a, 1) })), P: D.p.map(a => ({ t: a[0], p: pts(a, 1) })),
+      N: (D.n || []).map(a => ({ t: a[0], nom: a[1] >= 0 ? D.s[a[1]] : '', x: a[2] / 10, z: a[3] / 10 })).filter(a => a.nom), T: (D.t || []).map(a => [a[0] / 10, a[1] / 10]), PT: punto(D.pt, 1, 2),
+      K: lista(D.k, 1).filter(a => a.p.length >= 3), U: lista(D.u, 1).filter(a => a.p.length >= 3), V: lista(D.v, 1), F: lista(D.f, 1) };
   }
 
+  // Plano vectorial para el mapa de la sede3d (calles con su nombre y tramo más largo, edificios, parques y agua)
+  function vectorial(X) {
+    const bb = p => { let a = 1e9, b = 1e9, c = -1e9, d = -1e9; p.forEach(q => { a = Math.min(a, q[0]); c = Math.max(c, q[0]); b = Math.min(b, q[1]); d = Math.max(d, q[1]); }); return [a, b, c, d]; };
+    return {
+      B: X.B.map(b => ({ p: b.p, cl: b.cl, nom: b.nom, cx: b.cx, cz: b.cz, bb: b.bb })),
+      C: X.C.map(c => { let mi = 0, ml = 0; for (let i = 0; i + 1 < c.p.length; i++) { const l = Math.hypot(c.p[i + 1][0] - c.p[i][0], c.p[i + 1][1] - c.p[i][1]); if (l > ml) { ml = l; mi = i; } } const a = c.p[mi], b = c.p[mi + 1] || a; return { k: c.k, nom: c.nom, p: c.p, bb: bb(c.p), mx: (a[0] + b[0]) / 2, mz: (a[1] + b[1]) / 2, ang: Math.atan2(b[1] - a[1], b[0] - a[0]), len: ml }; }).sort((a, b) => b.k - a.k),
+      P: X.P.map(q => ({ t: q.t, p: q.p, bb: bb(q.p) })), A: X.A.map(q => ({ t: q.t, p: q.p, bb: bb(q.p) }))
+    };
+  }
   // ---------- Construcción ----------
   function construir(S, M, st) {
     const D = datos(st.clubId), club = st.equipos[st.clubId], W = S.mundo, T = M;
@@ -128,9 +149,9 @@
       const ag = malla(AG, mAgua, 'agua'); if (ag) { ag.position.y = -0.01; ag.receiveShadow = false; W.add(ag); }
       X.A.forEach(a => { if (a.t === 0 && a.p.length >= 3) bloquearPoli(a.p, 0.2); else if (a.t === 1) for (let i = 0; i + 1 < a.p.length; i++) { const f = a.p[i], g = a.p[i + 1]; bloquearPoli([[f[0] - 3.5, f[1] - 3.5], [g[0] + 3.5, g[1] - 3.5], [g[0] + 3.5, g[1] + 3.5], [f[0] - 3.5, f[1] + 3.5]], 0); } });
     }
-    { const PA = nuevo(), PR = nuevo(), MR = nuevo(), MK = nuevo();
-      X.C.forEach(c => { const w = ANCHO[c.k] || 4; if (c.k === 0) return; if (c.k <= 5) cinta(c.p, w + ACERA * 2, 0, PA); if (c.k !== 5) cinta(c.p, w, 0, PR); });
-      const mp = malla(PA, mAcera, 'aceras'); if (mp) W.add(mp); const ma = malla(PR, mAsf, 'calzadas'); if (ma) W.add(ma);
+    { const PA = [nuevo(), nuevo(), nuevo()], PR = nuevo(), MR = nuevo(), MK = nuevo();
+      X.C.forEach(c => { const w = ANCHO[c.k] || 4; if (c.k === 0) return; if (c.k <= 5) cinta(c.p, w + ACERA * 2, 0, PA[(U.hash(club.id + (c.nom || 'x') + c.k) >>> 0) % 3]); if (c.k !== 5) cinta(c.p, w, 0, PR); });
+      [mAcera, suelo('Tiles074', { escala: 1.2, tinte: 0xb9b4aa }, 0xb0aca2, 1), suelo('Concrete034', { escala: 1.8, tinte: 0xa8a59d }, 0x9a978f, 1)].forEach((m, i) => { const mp = malla(PA[i], m, 'aceras'); if (mp) W.add(mp); }); const ma = malla(PR, mAsf, 'calzadas'); if (ma) W.add(ma);
       // marcas viales: línea discontinua en el eje de las calles de doble sentido
       const mBl = new THREE.MeshStandardMaterial({ color: 0xf1efe8, roughness: 0.8, side: THREE.DoubleSide }); mBl.polygonOffset = true; mBl.polygonOffsetFactor = -5; mBl.polygonOffsetUnits = -5;
       X.C.forEach(c => { if (c.k > 4 || c.uno) return; let acum = 0; for (let i = 0; i + 1 < c.p.length; i++) { const a = c.p[i], b = c.p[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 1) continue; const ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l;
@@ -139,12 +160,15 @@
     }
     // Edificios: paredes y tejados por cuadrantes de 90 m (se dibujan solo los visibles)
     const tex = texFachada(M), pal = (PALETA[club.pais] || PALETA.ES).map(col), teja = col(TEJAS[club.pais] || TEJAS.ES);
-    const mPared = recortable(S, new THREE.MeshStandardMaterial({ map: tex.base, vertexColors: true, roughness: 0.9, emissive: 0xffc98a, emissiveMap: tex.luz, emissiveIntensity: 0, side: THREE.DoubleSide }));
+    const pared0 = (map, luz) => { const m = new THREE.MeshStandardMaterial({ map, vertexColors: true, roughness: 0.9, emissive: 0xffc98a, emissiveMap: luz, emissiveIntensity: 0, side: THREE.DoubleSide });
+      if (GM.texturas) GM.texturas.aplicar(m, club.pais === 'US' ? 'Bricks085' : 'Plaster003', { color: false, escala: club.pais === 'US' ? 1.6 : 2.2, relieve: club.pais === 'US' ? 0.9 : 0.45, rugMin: 0.75 }); return recortable(S, m); };
+    const mPared = pared0(tex.base, tex.luz), mPared1 = pared0(tex.base1, tex.luz1), mPared2 = pared0(tex.base2, tex.luz2), PAREDES = [mPared, mPared1, mPared2];
     const mTienda = recortable(S, new THREE.MeshStandardMaterial({ map: tex.tienda, vertexColors: true, roughness: 0.7, emissive: 0xffd9a0, emissiveMap: tex.tienda, emissiveIntensity: 0, side: THREE.DoubleSide }));
-    const mTecho = recortable(S, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }));
-    S.ventanas.push(mPared, mTienda);
+    const mTecho = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }); if (GM.texturas) GM.texturas.aplicar(mTecho, 'Concrete034', { color: false, escala: 2, relieve: 0.6, rugMin: 0.8 }); recortable(S, mTecho);
+    const mTejas = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide }); if (GM.texturas) GM.texturas.aplicar(mTejas, 'RoofingTiles013A', { escala: 2.6, tinte: club.pais === 'DE' || club.pais === 'US' ? 0x8f8a86 : 0xe9b9a0, relieve: 0.9 }); recortable(S, mTejas);
+    S.ventanas.push(mPared, mPared1, mPared2, mTienda);
     const chunks = {};
-    const ch = b => { const k = Math.floor(b.cx / 90) + ',' + Math.floor(b.cz / 90); return chunks[k] || (chunks[k] = { w: { P: [], N: [], U: [], C: [], I: [] }, t: { P: [], N: [], U: [], C: [], I: [] }, r: { P: [], N: [], C: [], I: [] } }); };
+    const ch = b => { const k = Math.floor(b.cx / 90) + ',' + Math.floor(b.cz / 90); return chunks[k] || (chunks[k] = { w: [0, 1, 2].map(() => ({ P: [], N: [], U: [], C: [], I: [] })), g: { P: [], N: [], C: [], I: [] }, t: { P: [], N: [], U: [], C: [], I: [] }, r: { P: [], N: [], C: [], I: [] } }); };
     const altura = b => {
       const h = U.hash(club.id + b.i), a = (h % 1000) / 1000;
       const lv = b.lv || ({ 1: b.ar < 220 ? 2 + (a < 0.3 ? 1 : 0) : 4 + Math.floor(a * 4), 2: 2 + Math.floor(a * 2.4), 3: 4 + Math.floor(a * 5), 4: 3, 5: 6, 6: 4, 7: 1, 8: 6, 9: 2, 10: 1, 11: 1, 12: 2, 13: 2, 0: b.ar > 700 ? 5 : 3 + Math.floor(a * 3) }[b.cl] || 3);
@@ -156,43 +180,46 @@
       if (b.cl === 5) return col('#e4e9ee'); if (b.cl === 4) return col('#d9b08a'); if (b.cl === 7) return col('#d9d0bd'); if (b.cl === 9) return col('#b7b9bb'); if (b.cl === 3 && b.lv > 4) return col('#aeb9c4');
       const h = U.hash(club.id + 'c' + b.i); return pal[h % pal.length].clone().offsetHSL(0, 0, (((h >>> 8) % 100) / 100 - 0.5) * 0.07);
     };
+    const estilo = b => { const k = U.hash(club.id + 'e' + b.i) % 100; return b.cl === 3 || b.cl === 8 ? (k < 70 ? 2 : 0) : b.cl === 5 || b.cl === 4 ? 2 : ['ES', 'IT', 'GR', 'TR'].indexOf(club.pais) >= 0 ? (k < 52 ? 1 : 0) : (k < 25 ? 1 : 0); };
     const pared = (b, h, k) => {
-      const c = b.col, tienda = b.cl === 2 || b.cl === 12 || b.cl === 11, A = ch(b), p = b.p; let u = 0;
+      const c = b.col, est = b.estilo = estilo(b), oscuro = c.clone().multiplyScalar(0.78), tienda = b.cl === 2 || b.cl === 12 || b.cl === 11, A = ch(b), p = b.p; let u = 0;
       for (let i = 0; i < p.length; i++) {
         const a = p[i], e = p[(i + 1) % p.length], l = Math.hypot(e[0] - a[0], e[1] - a[1]); if (l < 0.25) continue;
         const nx = (e[1] - a[1]) / l, nz = -(e[0] - a[0]) / l;
         const quad = (S0, y0, y1, ua, ub, v0, v1, cc) => { const v = S0.P.length / 3; S0.P.push(a[0], y0, a[1], e[0], y0, e[1], e[0], y1, e[1], a[0], y1, a[1]); for (let j = 0; j < 4; j++) { S0.N.push(nx, 0, nz); S0.C.push(cc.r, cc.g, cc.b); } S0.U.push(ua, v0, ub, v0, ub, v1, ua, v1); S0.I.push(v, v + 1, v + 2, v, v + 2, v + 3); };
-        if (tienda) { quad(A.t, 0, 3.4, u / 3, (u + l) / 3, 0, 1, b.colBajo); quad(A.w, 3.4, h, u / 3, (u + l) / 3, 0, (h - 3.4) / 3.1, c); } else quad(A.w, 0, h, u / 3, (u + l) / 3, 0, h / 3.1, c);
+        if (tienda) { quad(A.t, 0, 3.4, u / 3, (u + l) / 3, 0, 1, b.colBajo); quad(A.w[est], 3.4, h, u / 3, (u + l) / 3, 0, (h - 3.4) / 3.1, c); } else { quad(A.w[est], 0, 0.9, u / 3, (u + l) / 3, 0, 0.9 / 3.1, oscuro); quad(A.w[est], 0.9, h, u / 3, (u + l) / 3, 0.9 / 3.1, h / 3.1, c); }
         u += l;
       }
     };
     const techo = (b, h) => {
-      const A = ch(b).r, p = b.p, tc = b.cl === 10 ? col('#9aa3ab') : col('#5b5753').offsetHSL(0, 0, ((U.hash(b.i + 'r') % 100) / 100 - 0.5) * 0.08);
-      if (b.cl === 1 && b.ar < 230 && b.lv <= 3 && p.length <= 12) {   // tejado a dos aguas sobre el rectángulo orientado de la casa
+      const A = ch(b).g, R0 = ch(b).r, p = b.p, tc = b.cl === 10 ? col('#9aa3ab') : col(['#5b5753', '#6d6a66', '#8a7f73', '#7a8087', '#9a9088', '#6a5d52'][U.hash(b.i + 'rf') % 6]).offsetHSL(0, 0, ((U.hash(b.i + 'r') % 100) / 100 - 0.5) * 0.06);
+      if (b.cl === 1 && b.ar < 420 && b.lv <= 4 && p.length <= 12) {   // tejado a dos aguas sobre el rectángulo orientado de la casa
         let li = 0, ml = 0; for (let i = 0; i < p.length; i++) { const a = p[i], e = p[(i + 1) % p.length], l = Math.hypot(e[0] - a[0], e[1] - a[1]); if (l > ml) { ml = l; li = i; } }
         const a0 = p[li], e0 = p[(li + 1) % p.length], ux = (e0[0] - a0[0]) / ml, uz = (e0[1] - a0[1]) / ml, vx = -uz, vz = ux;
         let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9; p.forEach(q => { const u = (q[0] - a0[0]) * ux + (q[1] - a0[1]) * uz, v = (q[0] - a0[0]) * vx + (q[1] - a0[1]) * vz; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); });
         u0 -= 0.35; u1 += 0.35; v0 -= 0.35; v1 += 0.35; const vm = (v0 + v1) / 2, rh = Math.min(2.4, (v1 - v0) * 0.32), P = (u, v, y) => [a0[0] + ux * u + vx * v, y, a0[1] + uz * u + vz * v];
-        const tj = teja.clone().offsetHSL(0, 0, ((U.hash(b.i + 't') % 100) / 100 - 0.5) * 0.08), vs = [P(u0, v0, h), P(u1, v0, h), P(u1, vm, h + rh), P(u0, vm, h + rh), P(u0, v1, h), P(u1, v1, h)], base = A.P.length / 3;
+        const tj = col('#ffffff').multiplyScalar(0.8 + ((U.hash(b.i + 't') % 100) / 100) * 0.2), vs = [P(u0, v0, h), P(u1, v0, h), P(u1, vm, h + rh), P(u0, vm, h + rh), P(u0, v1, h), P(u1, v1, h)], base = A.P.length / 3;
         vs.forEach(q => { A.P.push(...q); A.N.push(0, 1, 0); A.C.push(tj.r, tj.g, tj.b); }); A.I.push(base, base + 1, base + 2, base, base + 2, base + 3, base + 3, base + 2, base + 5, base + 3, base + 5, base + 4);
-        const gb = A.P.length / 3, cg = col('#e9e2d4'); [P(u0, v0, h), P(u0, v1, h), P(u0, vm, h + rh), P(u1, v0, h), P(u1, v1, h), P(u1, vm, h + rh)].forEach(q => { A.P.push(...q); A.N.push(1, 0, 0); A.C.push(cg.r, cg.g, cg.b); }); A.I.push(gb, gb + 1, gb + 2, gb + 3, gb + 5, gb + 4);
+        const gb = R0.P.length / 3, cg = col('#e9e2d4'); [P(u0, v0, h), P(u0, v1, h), P(u0, vm, h + rh), P(u1, v0, h), P(u1, v1, h), P(u1, vm, h + rh)].forEach(q => { R0.P.push(...q); R0.N.push(1, 0, 0); R0.C.push(cg.r, cg.g, cg.b); }); R0.I.push(gb, gb + 1, gb + 2, gb + 3, gb + 5, gb + 4); b.gable = { ux, uz, vx, vz, u0, u1, v0, v1, vm, rh, a0 };
         return;
       }
-      const v = p.map(q => new THREE.Vector2(q[0], q[1])), t = THREE.ShapeUtils.triangulateShape(v, []), base = A.P.length / 3;
-      v.forEach(q => { A.P.push(q.x, h, q.y); A.N.push(0, 1, 0); A.C.push(tc.r, tc.g, tc.b); }); t.forEach(k => A.I.push(base + k[0], base + k[1], base + k[2]));
+      const v = p.map(q => new THREE.Vector2(q[0], q[1])), t = THREE.ShapeUtils.triangulateShape(v, []), base = R0.P.length / 3;
+      v.forEach(q => { R0.P.push(q.x, h, q.y); R0.N.push(0, 1, 0); R0.C.push(tc.r, tc.g, tc.b); }); t.forEach(k => R0.I.push(base + k[0], base + k[1], base + k[2]));
     };
     const roles = asignar(X, st, club);   // qué edificio hace de qué (cambia la clase del edificio: la peña lleva escaparates, el pabellón es grande…)
     B.forEach(b => { const h = altura(b); b.h = h; b.col = color(b); b.colBajo = col(['#3a3f45', '#5a3b26', '#2f4f6e', '#7a2f22', '#2e5d3a', '#6b4a3a'][U.hash(club.id + 'b' + b.i) % 6]); });
     B.forEach(b => { pared(b, b.h, 0); if (b !== roles.pabellon) techo(b, b.h); bloquearPoli(b.p, 0.35); });
     { const b = roles.pabellon, [x0, z0, x1, z1] = b.bb, hx = (x1 - x0) / 2, hz = (z1 - z0) / 2, alto = Math.min(9, Math.max(hx, hz) * 0.22);
-      const cu = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 14, 0, Math.PI * 2, 0, Math.PI / 2), recortable(S, new THREE.MeshStandardMaterial({ color: 0xc9ced4, metalness: 0.45, roughness: 0.38 })));
+      const cu = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 14, 0, Math.PI * 2, 0, Math.PI / 2), recortable(S, new THREE.MeshStandardMaterial({ map: M.textura('real-cupula', 512, (x, n) => { x.fillStyle = '#d6dadd'; x.fillRect(0, 0, n, n); x.strokeStyle = '#9aa1a8'; x.lineWidth = 2; for (let i = 0; i <= 24; i++) { x.beginPath(); x.moveTo(i * n / 24, 0); x.lineTo(i * n / 24, n); x.stroke(); } for (let j = 0; j <= 8; j++) { x.beginPath(); x.moveTo(0, j * n / 8); x.lineTo(n, j * n / 8); x.stroke(); } x.fillStyle = 'rgba(0,0,0,.06)'; for (let i = 0; i < 24; i += 2) x.fillRect(i * n / 24, 0, n / 24, n); }), color: 0xffffff, metalness: 0.4, roughness: 0.42 })));
       cu.scale.set(hx * 0.97, alto, hz * 0.97); cu.position.set((x0 + x1) / 2, b.h, (z0 + z1) / 2); cu.castShadow = alta; cu.userData = { cupula: true }; W.add(cu);
       const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 64).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: c1, roughness: 0.6 })); aro.scale.set(hx * 0.97, 1, hz * 0.97); aro.position.set((x0 + x1) / 2, b.h + 0.15, (z0 + z1) / 2); aro.userData = { cupula: true }; W.add(aro); }
     Object.keys(chunks).forEach(k => {
       const c = chunks[k], me = (A, mat, tri) => { if (!A.P.length) return; const g = geo(A.P, A.I, A.N, A.U, A.C), m = new THREE.Mesh(g, mat); m.userData = { real: 'edif' }; m.castShadow = alta; m.receiveShadow = alta; W.add(m); };
-      me(c.w, mPared); me(c.t, mTienda); me(c.r, mTecho);
+      c.w.forEach((A, i) => me(A, PAREDES[i])); me(c.t, mTienda); me(c.r, mTecho); me(c.g, mTejas);
     });
+    S.mapaVec = vectorial(X);
     montar(S, M, st, X, roles, { W, G, club, c1, c2, afi, alta, rr, bloquearPoli, mAsf });
+    if (GM.mods.calleRealDetalle) { try { GM.mods.calleRealDetalle.detallar(S, M, st, X, roles, { W, G, club, c1, c2, afi, alta, rr, bloquearPoli, mAsf, mSuelo, mTecho, recortable, PALETA: pal }); } catch (e) { console.warn('detalle de la ciudad real', e); } }
     GM.kit.fusionar(W);
     return W;
   }
@@ -280,14 +307,15 @@
       c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, n / 2, n / 8);
     });
     const g = new THREE.PlaneGeometry(ancho, ancho / 4.2);
+    { const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 0.75 + uv.getY(i) * 0.25); }   // el rótulo ocupa el cuarto de arriba del lienzo
     const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
     m.position.set(x, y, z); m.rotation.y = ry; m.userData = { cartel: true }; W.add(m); return m;
   }
-  function puertaVisual(W, p, ancho) {
+  function puertaVisual(W, p, ancho, color) {
     const a = ancho || 1.8, m = new THREE.Mesh(new THREE.PlaneGeometry(a, 2.5), new THREE.MeshStandardMaterial({ color: 0x23272c, roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     m.position.set(p.mx + p.nx * 0.05, 1.25, p.mz + p.nz * 0.05); m.rotation.y = p.ry; m.userData = { puerta: true }; W.add(m);
-    const t = new THREE.Mesh(new THREE.BoxGeometry(a + 0.5, 0.1, 0.55), new THREE.MeshStandardMaterial({ color: 0x2a2f35 }));
-    t.position.set(p.mx + p.nx * 0.45, 2.7, p.mz + p.nz * 0.45); t.rotation.y = p.ry; t.userData = { puerta: true }; W.add(t);
+    const t = new THREE.Mesh(new THREE.BoxGeometry(a + 0.5, 0.08, 0.8).translate(0, 0, 0.4).rotateX(0.25), new THREE.MeshStandardMaterial({ color: new THREE.Color(color || '#2a2f35').multiplyScalar(0.75), roughness: 0.9 }));
+    t.position.set(p.mx + p.nx * 0.05, 2.65, p.mz + p.nz * 0.05); t.rotation.y = p.ry; t.userData = { puerta: true }; W.add(t);
   }
   function montar(S, M, st, X, R, c) {
     const { W, G, club, c1, c2 } = c, C3 = GM.mods.ciudad3d;
@@ -305,7 +333,7 @@
     const poner = (clave, b, txt, fondo, letra, o) => {
       o = o || {}; const p = puntoPuerta(b, X, G, o.fuera), fr = frente(b, X);
       const ancho = Math.min(o.ancho || 6, Math.max(2.5, fr.l * 0.85)), y = o.y || (b.cl === 2 || b.cl === 12 ? 3.05 : 3.7);
-      cartel(W, M, txt, fondo, letra, p.mx + p.nx * 0.07, y, p.mz + p.nz * 0.07, p.ry, ancho); puertaVisual(W, p);
+      cartel(W, M, txt, fondo, letra, p.mx + p.nx * 0.07, y, p.mz + p.nz * 0.07, p.ry, ancho); puertaVisual(W, p, 1.8, fondo);
       zonas[clave] = [p.x, p.z]; paseo.push([p.x, p.z]); b.puerta = p; return p;
     };
     const entrada = (id, p) => { S.puertas[id] = { x: p.x + p.nx * 0.5, z: p.z + p.nz * 0.5, ry: p.ry }; };
@@ -469,5 +497,5 @@
     });
   }
 
-  GM.register('calleReal', { cargar, datos, cargado: id => id in CACHE, construir, preparar });
+  GM.register('calleReal', { cargar, datos, cargado: id => id in CACHE, construir, preparar, _int: { cartel, frente, puntoPuerta, pip, dSeg, ANCHO, ACERA, R, rnd, geo, cinta, rellenar, nuevo, malla, suelo } });
 })();

@@ -1,5 +1,6 @@
 // recursos/osm/<id>.json (crudo, de tools/osm_descargar.js) -> vendor/osm/<id>.json (compacto; build.js los copia a dist/osm).
 // Datos © colaboradores de OpenStreetMap (ODbL). Coordenadas en decímetros enteros alrededor del pabellón (x al este, z al sur).
+// Con recursos/osm/<id>.poi.json (tools/osm_descargar2.js) añade: n (comercios y sitios con nombre: [tipo, nombre, x, z]), t (árboles [x, z]), pt (puntos de calle [clase, x, z]: 0 parada de bus, 1 semáforo, 2 paso de peatones, 3 farola, 4 banco, 5 papelera, 6 aparcabicis, 7 contenedores, 8 otros), k (aparcamientos), u (usos del suelo [tipo, ...]), v (vías de tren), f (vallas y muros [tipo, ...])
 // Formato: { s: [textos], e: [[plantas, clase, nombre, x0, z0, x1, z1, ...]], c: [[clase, nombre, sentidoUnico, x0, z0, ...]], a: [[tipo, x0, z0, ...]], p: [[tipo, x0, z0, ...]] }
 // clase de edificio: 0 otro, 1 vivienda, 2 comercio, 3 oficina, 4 colegio, 5 hospital, 6 ayuntamiento/público, 7 iglesia, 8 hotel, 9 industrial, 10 deporte, 11 quiosco, 12 restauración, 13 estación
 // clase de calle: 0 autovía, 1 principal, 2 secundaria, 3 terciaria, 4 residencial, 5 peatonal, 6 servicio
@@ -34,7 +35,7 @@ function claseEdificio(t) {
 }
 const ent = v => Math.round(v * 10);
 let total = 0, bytes = 0;
-for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json').sort()) {
+for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && !n.endsWith('.poi.json')).sort()) {
   const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
   const k = 110574, kx = 111320 * Math.cos(j.lat * Math.PI / 180);
   const pr = g => g.map(q => [(q.lon - j.lon) * kx, -(q.lat - j.lat) * k]);
@@ -58,6 +59,30 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
       p = dp(p, 1.8); r.a.push([t.waterway ? 1 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
     } else if (t.leisure) {
       p = dp(p, 1.8); r.p.push([t.leisure === 'pitch' ? 1 : t.leisure === 'garden' ? 2 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
+    }
+  }
+  const pf = path.join(DIR, j.id + '.poi.json');
+  if (fs.existsSync(pf)) {
+    const P = JSON.parse(fs.readFileSync(pf, 'utf8')); r.n = []; r.t = []; r.s = r.s; r.pt = []; r.k = []; r.u = []; r.v = []; r.f = [];
+    const USO = { grass: 0, forest: 1, residential: 2, commercial: 3, retail: 4, industrial: 5, cemetery: 6, railway: 7, construction: 8, brownfield: 9 }, PUNTO = { bus_stop: 0, traffic_signals: 1, crossing: 2, street_lamp: 3, bench: 4, waste_basket: 5, bicycle_parking: 6, recycling: 7 };
+    const xy = q => [ent((q.lon - j.lon) * kx), ent(-(q.lat - j.lat) * k)];
+    for (const w of P.el) {
+      const t = w.tags || {};
+      if (w.type === 'node') {
+        const [x, z] = xy(w); if (Math.hypot(x, z) > 3100) continue;
+        if (t.natural === 'tree') r.t.push([x, z]);
+        else if (t.highway && PUNTO[t.highway] !== undefined) r.pt.push([PUNTO[t.highway], x, z]);
+        else if (t.amenity && PUNTO[t.amenity] !== undefined) r.pt.push([PUNTO[t.amenity], x, z]);
+        else if (t.amenity && /atm|vending_machine|drinking_water|fountain/.test(t.amenity)) r.pt.push([8, x, z]);
+        else if (t.name) r.n.push([t.shop || t.amenity || t.tourism || t.historic || 'x', nom(t.name), x, z]);
+      } else if (w.geometry && w.geometry.length >= 2) {
+        let p = pr(w.geometry);
+        if (t.amenity === 'parking') { p = dp(p, 1.2); if (p.length >= 3) r.k.push([0].concat(...p.map(q => [ent(q[0]), ent(q[1])]))); }
+        else if (t.landuse && USO[t.landuse] !== undefined) { p = dp(p, 2); if (p.length >= 3) r.u.push([USO[t.landuse]].concat(...p.map(q => [ent(q[0]), ent(q[1])]))); }
+        else if (t.natural) { p = dp(p, 2); if (p.length >= 3) r.u.push([1].concat(...p.map(q => [ent(q[0]), ent(q[1])]))); }
+        else if (t.railway) { p = dp(p, 1.5); r.v.push([0].concat(...p.map(q => [ent(q[0]), ent(q[1])]))); }
+        else if (t.barrier) { p = dp(p, 0.8); r.f.push([t.barrier === 'hedge' ? 1 : t.barrier === 'wall' ? 2 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])]))); }
+      }
     }
   }
   const s = JSON.stringify(r); fs.writeFileSync(path.join(OUT, j.id + '.json'), s);
