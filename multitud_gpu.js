@@ -41,11 +41,11 @@
     L.forEach((o, i) => { aRuta.set(o.ruta, i * 4); aInfo.set(o.info, i * 4); aModo[i] = o.modo;
       c.set(ROPA[(r() * ROPA.length) | 0]); aRopa.set([c.r, c.g, c.b], i * 3); c.set(PANT[(r() * PANT.length) | 0]); aPant.set([c.r, c.g, c.b], i * 3); c.set(PIEL[(r() * PIEL.length) | 0]); aPiel.set([c.r, c.g, c.b], i * 3); });
     geo.setAttribute('iRuta', new THREE.InstancedBufferAttribute(aRuta, 4)); geo.setAttribute('iInfo', new THREE.InstancedBufferAttribute(aInfo, 4)); geo.setAttribute('iModo', new THREE.InstancedBufferAttribute(aModo, 1)); geo.setAttribute('iRopa', new THREE.InstancedBufferAttribute(aRopa, 3)); geo.setAttribute('iPant', new THREE.InstancedBufferAttribute(aPant, 3)); geo.setAttribute('iPiel', new THREE.InstancedBufferAttribute(aPiel, 3));
-    const U_T = { value: 0 }, U_F = { value: new THREE.Vector3(1e5, 0, 1e5) }, mat = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0 });
+    const U_T = { value: 0 }, U_H = { value: 12 }, U_F = { value: new THREE.Vector3(1e5, 0, 1e5) }, mat = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0 });
     mat.onBeforeCompile = sh => {
-      sh.uniforms.uT = U_T; sh.uniforms.uFoco = U_F;
-      sh.vertexShader = 'uniform float uT; uniform vec3 uFoco; attribute float aParte; attribute float aLado; attribute vec4 iRuta; attribute vec4 iInfo; attribute float iModo; attribute vec3 iRopa; attribute vec3 iPant; attribute vec3 iPiel; varying vec3 vCol;\n' + sh.vertexShader
-        .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n float _cam = iModo < 0.5 ? 1.0 : 0.0; float _s = _cam > 0.5 ? mod(uT * iInfo.y + iInfo.z, iInfo.x) : 0.0; float _paso = uT * iInfo.y * 3.2 + iInfo.z; float _sw = _cam > 0.5 ? sin(_paso) : 0.0;')
+      sh.uniforms.uT = U_T; sh.uniforms.uFoco = U_F; sh.uniforms.uHora = U_H;
+      sh.vertexShader = 'uniform float uT; uniform float uHora; uniform vec3 uFoco; attribute float aParte; attribute float aLado; attribute vec4 iRuta; attribute vec4 iInfo; attribute float iModo; attribute vec3 iRopa; attribute vec3 iPant; attribute vec3 iPiel; varying vec3 vCol;\n' + sh.vertexShader
+        .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n float _cam = iModo < 0.5 ? 1.0 : 0.0; float _s = _cam > 0.5 ? mod(uT * iInfo.y + iInfo.z, iInfo.x) : 0.0; float _paso = uT * iInfo.y * 3.2 + iInfo.z; float _sw = _cam > 0.5 ? sin(_paso) : 0.0; float _rr = fract(iInfo.z * 0.0731 + 0.37); float _den = iModo < 0.5 ? (uHora < 6.5 ? 0.12 : (uHora < 8.0 ? 0.55 : (uHora < 19.5 ? 0.9 : (uHora < 22.0 ? 0.6 : 0.2)))) : (iModo < 1.5 ? ((uHora >= 10.0 && uHora < 13.0) ? 0.8 : ((uHora >= 17.0 && uHora < 22.5) ? 1.0 : 0.25)) : ((uHora >= 10.5 && uHora < 21.5) ? 0.9 : 0.1));')
         .replace('#include <begin_vertex>', [
           '#include <begin_vertex>',
           ' vec3 _l = position; float _alt = 0.92 + 0.16 * fract(iInfo.z * 0.137);',
@@ -54,17 +54,18 @@
           ' if (iModo > 1.5) { float _p = _l.y / 0.85; if (aParte < 0.5) { _l.z += 0.38 * (1.0 - _p); _l.y = _p * 0.47; } else { _l.y -= 0.4; _l.z += 0.02; } }',
           ' _l.y *= _alt; if (_cam > 0.5) _l.y += abs(sin(_paso)) * 0.035;',
           ' float _esc = _cam > 0.5 ? clamp(min(_s, iInfo.x - _s) / 0.9, 0.0, 1.0) : 1.0; _l *= _esc;',
-          ' vec2 _ruta = iRuta.xy + iRuta.zw * _s + (_cam > 0.5 ? vec2(-iRuta.w, iRuta.z) * iInfo.w : vec2(0.0));',
+          ' float _ent = _cam > 0.5 ? clamp(smoothstep(iInfo.x - 2.6, iInfo.x - 0.9, _s) + (1.0 - smoothstep(0.9, 2.6, _s)), 0.0, 1.0) : 0.0;',
+          ' vec2 _ruta = iRuta.xy + iRuta.zw * _s + (_cam > 0.5 ? vec2(-iRuta.w, iRuta.z) * (iInfo.w + sign(iInfo.w) * _ent * 2.4) : vec2(0.0));',
           ' transformed = vec3(_ruta.x + _l.z * iRuta.z + _l.x * iRuta.w, _l.y, _ruta.y + _l.z * iRuta.w - _l.x * iRuta.z);',
           ' vCol = aParte < 0.5 ? iPant : (aParte < 1.5 ? iRopa : (aParte < 2.5 ? iRopa * 0.9 : iPiel));',
-          ' if (distance(_ruta, uFoco.xz) < 14.0) transformed = vec3(0.0, -50.0, 0.0);'].join('\n'))
+          ' if (distance(_ruta, uFoco.xz) < 14.0 || _rr > _den) transformed = vec3(0.0, -50.0, 0.0);'].join('\n'))
         .replace('#include <defaultnormal_vertex>', 'vec3 transformedNormal = normalMatrix * normalize(vec3(objectNormal.z * iRuta.z + objectNormal.x * iRuta.w, objectNormal.y, objectNormal.z * iRuta.w - objectNormal.x * iRuta.z));');
       sh.fragmentShader = 'varying vec3 vCol;\n' + sh.fragmentShader.replace('#include <color_fragment>', 'diffuseColor.rgb *= vCol;');
     };
-    mat.customProgramCacheKey = () => 'multitud-gpu-2';
+    mat.customProgramCacheKey = () => 'multitud-gpu-3';
     const malla = new THREE.Mesh(geo, mat); malla.frustumCulled = false; malla.userData = { multitudGPU: true, anim: true }; S.mundo.add(malla);
     const cuenta = { caminan: n, sentados: L.filter(o => o.modo === 2).length, charlan: L.filter(o => o.modo === 1).length };
-    return { malla, n: N, cuenta, actualizar(t, foco) { U_T.value = t; U_F.value.set(foco.x, 0, foco.z); }, quitar() { S.mundo.remove(malla); geo.dispose(); mat.dispose(); } };
+    return { malla, n: N, cuenta, actualizar(t, foco, hora) { U_T.value = t; U_F.value.set(foco.x, 0, foco.z); if (hora !== undefined) U_H.value = hora; }, quitar() { S.mundo.remove(malla); geo.dispose(); mat.dispose(); } };
   }
   GM.multGPU = { crear };
 })();

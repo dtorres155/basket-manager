@@ -280,3 +280,9 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 - **19c hecho:** los árboles también van por celdas de 90 m y las celdas a más de 330 m del personaje y de la cámara no se dibujan (`S.chunks.paso`). **Pendiente 19d:** árboles lejanos como imágenes planas en lugar de ocultarlos, y un presupuesto de triángulos por celda.
 - **20b hecho:** la multitud de la GPU tiene tres modos por instancia: camina por la acera (y se encoge al llegar a una esquina o portal), **charla de pie** por parejas que se miran y gesticulan (28 personas) y **sentada en los bancos** (35 personas, con las piernas dobladas y el cuerpo más bajo). **Pendiente 20c:** que entren de verdad en los portales (hoy se encogen al final del tramo) y que cambien de modo a lo largo del día.
 - **21b hecho:** el Worker de navegación busca en dos niveles (A* sobre bloques de 8x8 celdas que traza un corredor y la búsqueda fina solo dentro de él) y guarda en caché hasta 600 caminos: un camino largo al azar cuesta unos 47 ms en el Worker (fuera del hilo principal) y 0,1 ms si se repite. **Pendiente 21c:** el grafo de calles y aceras con cruces (necesita el punto 31) y caché por destinos frecuentes (campos de flujo).
+
+## Estado tras la decimocuarta tanda (release 0.9.95)
+- 19d hecho: árboles lejanos (200 a 460 m) como imágenes planas cruzadas (siluetas en canvas) en vez de ocultarlos; presupuesto de 45 k triángulos por celda (si lo supera, el detalle lejano empieza a 150 m). Pendiente: imágenes de árbol más ricas.
+- 20c hecho: peatones de la multitud de la GPU con densidad según la hora, entran en portales y cambian de modo a lo largo del día.
+- 21c hecho: campos de flujo en el worker de navegación para destinos frecuentes (A* 46 ms, con campo 17 ms).
+- 21d pendiente: grafo de calles con cruces (depende del punto 31). Datos más allá de 480 m (punto 31).

@@ -5,7 +5,7 @@
    El código del worker es la función `cuerpo` (se serializa a un Blob, así funciona igual en la web, el móvil y la app de escritorio). */
 (function () {
   function cuerpo() {
-    let W = 0, H = 0, b = null, c = 1, x0 = 0, z0 = 0, A = null, BW = 0, BH = 0, grueso = null; const cache = new Map();   // grueso: rejilla de bloques de 8x8 celdas (6 m) para trazar un corredor; cache: caminos ya calculados
+    let W = 0, H = 0, b = null, c = 1, x0 = 0, z0 = 0, A = null, BW = 0, BH = 0, grueso = null; const cache = new Map(), campos = new Map(), conteo = new Map();   // campos: campos de flujo (distancia a un destino frecuente desde cada celda); conteo: cuántas veces se ha pedido cada destino. grueso: rejilla de bloques de 8x8 celdas (6 m) para trazar un corredor; cache: caminos ya calculados
     const libre = (i, j) => i >= 0 && j >= 0 && i < W && j < H && !b[j * W + i], celda = (x, z) => [Math.floor((x - x0) / c), Math.floor((z - z0) / c)], centro = (i, j) => [x0 + (i + 0.5) * c, z0 + (j + 0.5) * c];
     const DIR = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
     const ve = (a, bb) => { const d = Math.hypot(bb[0] - a[0], bb[1] - a[1]), n = Math.ceil(d / 0.2), px = d ? -(bb[1] - a[1]) / d * 0.22 : 0, pz = d ? (bb[0] - a[0]) / d * 0.22 : 0;
@@ -21,8 +21,37 @@
       if (!ok) return null; const mask = new Uint8Array(N); for (let k = tb; k >= 0; k = de[k]) { const ci = k % BW, cj = (k / BW) | 0; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const ni = ci + di, nj = cj + dj; if (ni >= 0 && nj >= 0 && ni < BW && nj < BH) mask[nj * BW + ni] = 1; } }
       return mask;
     }
+    // Campos de flujo para destinos frecuentes: a la tercera petición hacia la misma celda se calcula (Dijkstra desde el destino) la distancia de todas las celdas a ella y desde entonces cada camino a ese
+    // destino cuesta lo que mide (se baja por la pendiente de distancias); se guardan los 10 últimos destinos usados (Uint16, 1,3 MB cada uno).
+    const cercaLibre = (i, j, ri, rj) => { if (libre(i, j)) return [i, j]; let mejor = null, md = Infinity;
+      for (let r = 1; r <= 60; r++) { if (mejor && r > Math.sqrt(md) + 1) break;
+        for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) { if (Math.max(Math.abs(di), Math.abs(dj)) !== r || !libre(i + di, j + dj)) continue; const d = di * di + dj * dj + (ri === undefined ? 0 : Math.hypot(i + di - ri, j + dj - rj) * 2); if (d < md) { md = d; mejor = [i + di, j + dj]; } } }
+      return mejor; };
+    function construirCampo(ti, tj) {
+      const N = W * H, d = new Uint16Array(N).fill(65535), hf = [], hn = [];
+      const meter = (f, n) => { let i = hf.length; hf.push(f); hn.push(n); while (i > 0) { const p = (i - 1) >> 1; if (hf[p] <= f) break; hf[i] = hf[p]; hn[i] = hn[p]; i = p; } hf[i] = f; hn[i] = n; };
+      const sacar = () => { const n0 = hn[0], f = hf.pop(), n = hn.pop(); if (hf.length) { let i = 0; const L = hf.length; for (;;) { let cc = 2 * i + 1; if (cc >= L) break; if (cc + 1 < L && hf[cc + 1] < hf[cc]) cc++; if (hf[cc] >= f) break; hf[i] = hf[cc]; hn[i] = hn[cc]; i = cc; } hf[i] = f; hn[i] = n; } return n0; };
+      const ini = tj * W + ti; d[ini] = 0; meter(0, ini);
+      while (hf.length) { const f = hf[0], cur = sacar(); if (f > d[cur]) continue; const ci = cur % W, cj = (cur / W) | 0;
+        for (const [di, dj] of DIR) { const ni = ci + di, nj = cj + dj; if (!libre(ni, nj)) continue; if (di && dj && (!libre(ci + di, cj) || !libre(ci, cj + dj))) continue; const g = f + (di && dj ? 6 : 4); if (g < 65535 && g < d[nj * W + ni]) { d[nj * W + ni] = g; meter(g, nj * W + ni); } } }
+      return d;
+    }
+    function rutaCampo(d, desde, hasta, ti, tj) {
+      let [si, sj] = celda(desde[0], desde[1]); const s = cercaLibre(si, sj, ti, tj); if (!s) return null; [si, sj] = s; if (d[sj * W + si] === 65535) return null;
+      const camino = [centro(si, sj)]; let ci = si, cj = sj, pasos = 0;
+      while ((ci !== ti || cj !== tj) && pasos++ < 6000) { let mejor = d[cj * W + ci], bi = -1, bj = -1;
+        for (const [di, dj] of DIR) { const ni = ci + di, nj = cj + dj; if (!libre(ni, nj)) continue; if (di && dj && (!libre(ci + di, cj) || !libre(ci, cj + dj))) continue; const v = d[nj * W + ni]; if (v < mejor) { mejor = v; bi = ni; bj = nj; } }
+        if (bi < 0) return null; ci = bi; cj = bj; camino.push(centro(ci, cj)); }
+      if (ci !== ti || cj !== tj) return null;
+      const out = [camino[0]]; let k = 0; while (k < camino.length - 1) { let l = camino.length - 1; while (l > k + 1 && !ve(camino[k], camino[l])) l--; out.push(camino[l]); k = l; }
+      const [ci2, cj2] = celda(hasta[0], hasta[1]), ult = out[out.length - 1]; if (libre(ci2, cj2) && ve(ult, hasta)) out.push([hasta[0], hasta[1]]);
+      return { camino: out, llega: true, truncado: false, campo: true };
+    }
     function buscar(desde, hasta, tope) {
       const [s0, s1] = celda(desde[0], desde[1]), [t0, t1] = celda(hasta[0], hasta[1]), clave = s0 + ',' + s1 + ',' + t0 + ',' + t1; if (cache.has(clave)) return cache.get(clave);
+      if (libre(t0, t1) && s0 >= 0 && s1 >= 0 && s0 < W && s1 < H && Math.hypot(s0 - t0, s1 - t1) > 30) { const kt = t1 * W + t0, u = (conteo.get(kt) || 0) + 1; conteo.set(kt, u);
+        if (u >= 3) { let f = campos.get(kt); if (!f) { f = construirCampo(t0, t1); if (campos.size >= 10) campos.delete(campos.keys().next().value); } else campos.delete(kt); campos.set(kt, f);
+          const rc = rutaCampo(f, desde, hasta, t0, t1); if (rc) { if (cache.size > 600) cache.delete(cache.keys().next().value); cache.set(clave, rc); return rc; } } }
       let mask = null; if (grueso && Math.hypot(s0 - t0, s1 - t1) > 45 && s0 >= 0 && s1 >= 0 && t0 >= 0 && t1 >= 0 && s0 < W && s1 < H && t0 < W && t1 < H) mask = corredor(s0, s1, t0, t1);
       let r = buscarFino(desde, hasta, tope, mask); if (mask && (!r || !r.llega)) r = buscarFino(desde, hasta, tope, null);   // si el corredor no basta se busca sin límite
       if (cache.size > 600) cache.delete(cache.keys().next().value); cache.set(clave, r); return r;
@@ -52,7 +81,7 @@
       return { camino: out, llega, truncado: exp > MAX };
     }
     self.onmessage = e => { const m = e.data;
-      if (m.t === 'rejilla') { W = m.W; H = m.H; b = m.b; c = m.c; x0 = m.x0; z0 = m.z0; cache.clear(); BW = Math.ceil(W / 8); BH = Math.ceil(H / 8); grueso = new Uint8Array(BW * BH); const cnt = new Uint8Array(BW * BH); for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (!b[j * W + i]) cnt[(j >> 3) * BW + (i >> 3)]++; for (let k = 0; k < cnt.length; k++) grueso[k] = cnt[k] >= 16 ? 1 : 0; return; }
+      if (m.t === 'rejilla') { W = m.W; H = m.H; b = m.b; c = m.c; x0 = m.x0; z0 = m.z0; cache.clear(); campos.clear(); conteo.clear(); BW = Math.ceil(W / 8); BH = Math.ceil(H / 8); grueso = new Uint8Array(BW * BH); const cnt = new Uint8Array(BW * BH); for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (!b[j * W + i]) cnt[(j >> 3) * BW + (i >> 3)]++; for (let k = 0; k < cnt.length; k++) grueso[k] = cnt[k] >= 16 ? 1 : 0; return; }
       if (m.t === 'buscar') { let r = null; try { r = buscar(m.desde, m.hasta, m.tope); } catch (er) { r = null; } self.postMessage({ id: m.id, r }); } };
   }
   function crear(G) {

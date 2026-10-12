@@ -268,11 +268,11 @@
       const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 64).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: c1, roughness: 0.6 })); aro.scale.set(hx * 0.97, 1, hz * 0.97); aro.position.set((x0 + x1) / 2, b.h + 0.15, (z0 + z1) / 2); aro.userData = { cupula: true }; W.add(aro); }
     // Ciudad por trozos: cada celda de 90 m se construye cuando el personaje o la cámara se acercan (a menos de 340 m, la más cercana primero y con un presupuesto de milisegundos por fotograma) y se descarta al alejarse (más de 520 m).
     // Al abrir la escena solo se crean las celdas del centro; el resto va apareciendo en los fotogramas siguientes. Con ciudades más grandes que la actual (punto 31) este es el mecanismo que evita construirlo todo de golpe.
-    const vivos = {}, centroChunk = k => { const [i, j] = k.split(',').map(Number); return [(i + 0.5) * 90, (j + 0.5) * 90]; };
+    const vivos = {}, tri0 = {}, PRESUPUESTO = 45000, centroChunk = k => { const [i, j] = k.split(',').map(Number); return [(i + 0.5) * 90, (j + 0.5) * 90]; };
     const construirChunk = k => {
       delete chunks[k]; (porChunk[k] || []).forEach(b => { pared(b, b.h, 0); if (b !== roles.pabellon) techo(b, b.h); }); const c = chunks[k], lista = vivos[k] = [];
       if (!c) return; const me = A => (mat) => { if (!A.P.length) return; const g = geo(A.P, A.I, A.N, A.U, A.C), m = new THREE.Mesh(g, mat); m.userData = { real: 'edif', chunk: k }; m.castShadow = false; m.receiveShadow = alta; W.add(m); lista.push(m); };
-      c.w.forEach((A, i) => me(A)(PAREDES[i])); me(c.t)(mTienda); me(c.r)(mTecho); me(c.m)(mMetal); me(c.g)(mTejas); delete chunks[k];
+      c.w.forEach((A, i) => me(A)(PAREDES[i])); me(c.t)(mTienda); me(c.r)(mTecho); me(c.m)(mMetal); me(c.g)(mTejas); delete chunks[k]; tri0[k] = lista.reduce((a, m) => a + m.geometry.index.count / 3, 0);
     };
     // Nivel de detalle 1 (celdas a más de 230 m): una sola malla de prismas con color por vértice y un material sencillo, sin texturas, ventanas con interior ni sombras
     // (el coste de una celda lejana está en el shader de fachada y no en los triángulos). Se vuelve al nivel 0 al acercarse a menos de 200 m.
@@ -288,12 +288,12 @@
     const quitarChunk = k => { (vivos[k] || []).forEach(m => { W.remove(m); m.geometry.dispose(); }); delete vivos[k]; };
     S.chunks = { claves: Object.keys(porChunk), vivos, construidos: () => Object.keys(vivos).length, total: () => Object.keys(porChunk).length,
       paso(focos, presupuesto) { const t0 = performance.now();
-        (W.userData.celdasArb || []).forEach(a => { const dd = Math.min(...focos.map(f => Math.hypot(a.x - f[0], a.z - f[1]))), ver = dd < 330; if (a.tr.visible !== ver) a.tr.visible = a.co.visible = ver; });   // árboles de las celdas lejanas: no se dibujan
+        (W.userData.celdasArb || []).forEach(a => { const dd = Math.min(...focos.map(f => Math.hypot(a.x - f[0], a.z - f[1]))), cerca = dd < 200, lejos = dd >= 200 && dd < 460; if (a.tr.visible !== cerca) a.tr.visible = a.co.visible = cerca; if (a.bb && a.bb.visible !== lejos) a.bb.visible = lejos; });   // árboles: de cerca modelo completo; de 200 a 460 m, dos planos con su silueta; más lejos, nada
         const d = k => { const c = centroChunk(k); return Math.min(...focos.map(f => Math.hypot(c[0] - f[0], c[1] - f[1]))); };
-        let rehechos = 0; Object.keys(vivos).forEach(k => { const dk = d(k); const lod = vivos[k] && vivos[k].lod || 0, meta = dk > 230 ? 1 : dk < 200 ? 0 : lod; if (dk <= 520 && meta !== lod && rehechos < 2) { quitarChunk(k); if (meta) construirLejano(k); else construirChunk(k); rehechos++; } });
+        let rehechos = 0; Object.keys(vivos).forEach(k => { const dk = d(k); const lod = vivos[k] && vivos[k].lod || 0, lim = (tri0[k] || (porChunk[k] || []).length * 400) > PRESUPUESTO ? 150 : 230, meta = dk > lim ? 1 : dk < lim - 30 ? 0 : lod; if (dk <= 520 && meta !== lod && rehechos < 2) { quitarChunk(k); if (meta) construirLejano(k); else construirChunk(k); rehechos++; } });
         Object.keys(vivos).forEach(k => { const dk = d(k); if (dk > 520) quitarChunk(k); else if (alta && !(vivos[k].lod)) { const cerca = dk < 110; (vivos[k] || []).forEach(m => { if (m.castShadow !== cerca) m.castShadow = cerca; }); } });
         const pend = this.claves.filter(k => !vivos[k] && d(k) < 340).sort((a, b) => d(a) - d(b)); let n = 0;
-        for (const k of pend) { if (n && performance.now() - t0 > (presupuesto || 4)) break; if (d(k) > 230) construirLejano(k); else construirChunk(k); n++; } return n; },
+        for (const k of pend) { if (n && performance.now() - t0 > (presupuesto || 4)) break; if (d(k) > ((tri0[k] || (porChunk[k] || []).length * 400) > PRESUPUESTO ? 150 : 230)) construirLejano(k); else construirChunk(k); n++; } return n; },
       todos() { this.claves.forEach(k => { if (!vivos[k]) construirChunk(k); }); } };
     S.chunks.claves.forEach(k => { const c = centroChunk(k); if (Math.hypot(c[0], c[1]) < 150) construirChunk(k); });   // al abrir solo las celdas a menos de 150 m del centro; las demás llegan por trozos
     S.mapaVec = vectorial(X);
@@ -552,6 +552,7 @@
   const PALMERAS = ['miami-heat', 'los-angeles-lakers', 'phoenix-suns', 'houston-rockets', 'san-antonio-spurs', 'orlando-magic', 'new-orleans-pelicans', 'dubai-basketball', 'golden-state-warriors'];
   const ESPECIES = { ES: [0.6, 0.14, 0.06, 0.2], IT: [0.52, 0.26, 0.16, 0.06], GR: [0.46, 0.2, 0.17, 0.17], TR: [0.52, 0.2, 0.18, 0.1], DE: [0.78, 0.02, 0.2, 0], US: [0.74, 0.02, 0.2, 0.04] };   // [redondo, ciprés, pino, palmera]
   let GEOARB = null;
+  const TEXARB = {};   // materiales de las imágenes planas de los árboles lejanos (uno por especie)
   function plantar(W, G, lista, club, alta, rr, forzar) {
     if (!lista.length) return; const T3 = THREE;
     if (!GEOARB) { const m = (g, c) => { const x = g.index ? g.toNonIndexed() : g; const n = x.attributes.position.count, col = new Float32Array(n * 3), k = new T3.Color(c); for (let i = 0; i < n; i++) { col[i * 3] = k.r; col[i * 3 + 1] = k.g; col[i * 3 + 2] = k.b; } x.setAttribute('color', new T3.BufferAttribute(col, 3)); x.deleteAttribute('uv'); return x; };
@@ -567,7 +568,10 @@
     porCelda.forEach(([e, L, kc]) => { const [gt, gc] = GEOARB[e];
       const tr = new T3.InstancedMesh(gt, new T3.MeshStandardMaterial({ vertexColors: true, roughness: 1 }), L.length), co = new T3.InstancedMesh(gc, GM.kit.viento(new T3.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: e === 'palmera' ? T3.DoubleSide : T3.FrontSide }), 'copa'), L.length);
       L.forEach(([x, z], i) => { const sc = (e === 'palmera' ? 0.9 : 0.8) + rr() * 0.6; m4.compose(new T3.Vector3(x, 0, z), new T3.Quaternion().setFromAxisAngle(new T3.Vector3(0, 1, 0), rr() * 6.28), new T3.Vector3(sc, sc * (0.9 + rr() * 0.3), sc)); tr.setMatrixAt(i, m4); co.setMatrixAt(i, m4); const t = tint[e]; cc.setHSL(t[0] + (rr() - 0.5) * 0.06, t[1] + rr() * 0.12, t[2] + rr() * 0.1); co.setColorAt(i, cc); G.bloquea(x - 0.3, z - 0.3, x + 0.3, z + 0.3); });
-      tr.userData = { arboles: e }; co.userData = { arboles: e }; tr.castShadow = co.castShadow = alta; W.add(tr); W.add(co); const cs = kc.split(',').map(Number); celdasArb.push({ tr, co, x: (cs[0] + 0.5) * 90, z: (cs[1] + 0.5) * 90 }); });
+      tr.userData = { arboles: e }; co.userData = { arboles: e }; tr.castShadow = co.castShadow = alta; W.add(tr); W.add(co); const cs = kc.split(',').map(Number); let bb = null;
+      if (typeof document !== 'undefined') { if (!TEXARB[e]) { const cv = document.createElement('canvas'); cv.width = 64; cv.height = 128; const x = cv.getContext('2d'), t = tint[e], cl = new T3.Color().setHSL(t[0], t[1] * 0.9, t[2] * 0.85).getStyle(); x.fillStyle = '#6b5136'; if (e === 'palmera') { x.fillRect(30, 40, 4, 88); x.strokeStyle = cl; x.lineWidth = 4; for (let a = 0; a < 8; a++) { x.beginPath(); x.moveTo(32, 40); x.lineTo(32 + Math.cos(a * 0.8) * 28, 40 + Math.sin(a * 0.8) * 14 - 4); x.stroke(); } } else { x.fillRect(29, 88, 6, 40); x.fillStyle = cl; if (e === 'redondo') { x.beginPath(); x.ellipse(32, 56, 26, 30, 0, 0, 6.3); x.fill(); } else if (e === 'cipres') { x.beginPath(); x.ellipse(32, 62, 13, 58, 0, 0, 6.3); x.fill(); } else { for (let i = 0; i < 3; i++) { x.beginPath(); x.moveTo(32, 14 + i * 22); x.lineTo(32 + 26 - i * 5, 56 + i * 22); x.lineTo(32 - 26 + i * 5, 56 + i * 22); x.fill(); } } } const tx = new T3.CanvasTexture(cv); tx.colorSpace = T3.SRGBColorSpace; TEXARB[e] = new T3.MeshLambertMaterial({ map: tx, alphaTest: 0.5, side: T3.DoubleSide }); }
+        const plano = new T3.PlaneGeometry(3.4, 6.8).translate(0, 3.4, 0), g2 = T3.mergeGeometries([plano, plano.clone().rotateY(Math.PI / 2)]); bb = new T3.InstancedMesh(g2, TEXARB[e], L.length); const mm = new T3.Matrix4(); L.forEach(([x, z], i) => { const sc = e === 'palmera' ? 1.0 : 0.9; mm.compose(new T3.Vector3(x, 0, z), new T3.Quaternion(), new T3.Vector3(sc, sc, sc)); bb.setMatrixAt(i, mm); }); bb.userData = { arbolesLejos: e }; bb.visible = false; bb.frustumCulled = true; W.add(bb); }
+      celdasArb.push({ tr, co, bb, x: (cs[0] + 0.5) * 90, z: (cs[1] + 0.5) * 90 }); });
   }
   // ---------- Árboles y farolas ----------
   function mobiliario(S, M, X, G, W, c) {
