@@ -100,6 +100,7 @@
   // o: { modelo, altura (cm), piel, pelo, ropa: [color principal, color secundario] }
   // Gafas, cinta, muñequeras, barba y tatuajes (geometría sencilla pegada a los huesos; medidas en metros)
   const _mats = {}; const matC = c => _mats[c] || (_mats[c] = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }));
+  const ctxTex = (id, fn) => textura(id, 128, fn);
   function complementos(obj, B, o) {
     const inv = 1 / obj.scale.y, pega = (hueso, malla, x, y, z) => { if (!hueso) return; malla.position.set(x * inv, y * inv, z * inv); malla.scale.setScalar(inv); hueso.add(malla); };
     if (o.gafas) { [-1, 1].forEach(sx => { const m = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.0045, 6, o.gafas === 1 ? 16 : 4), matC('#1d2630')); if (o.gafas === 2) m.rotation.z = Math.PI / 4; pega(B.Head, m, sx * 0.036, 0.108, 0.122); }); pega(B.Head, new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.005, 0.005), matC('#1d2630')), 0, 0.11, 0.124); }
@@ -112,6 +113,14 @@
     if (o.bufanda) { const bf = new THREE.Mesh(new THREE.TorusGeometry(0.068, 0.028, 8, 16), matC(o.bufanda)); bf.rotation.x = Math.PI / 2; pega(B.Neck, bf, 0, 0.01, 0.005); pega(B.Neck, new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.025), matC(o.bufanda)), 0.03, -0.05, 0.075); }
     if (o.mochila) pega(B.Chest, new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.1), matC(o.mochila)), 0, 0.02, -0.14);
     if (o.bolso) pega(B['UpperLeg.R'], new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.26), matC(o.bolso)), 0.09, 0.02, 0);
+    if (o.pendientes) [1, 2].slice(0, o.pendientes).forEach((_, i) => pega(B.Head, new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), matC('#d4af37')), i ? -0.098 : 0.098, 0.085, 0.0));
+    if (o.reloj) pega(B.WristL, new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.022, 12), matC('#2a2d33')), 0, 0.01, 0);
+    if (o.cadena) { const cd = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.006, 6, 20), matC('#d4af37')); cd.rotation.x = Math.PI / 2; pega(B.Neck, cd, 0, -0.03, 0.02); }
+    if (o.mangas) ['LowerArmL', 'LowerArmR'].forEach(a => pega(B[a], new THREE.Mesh(new THREE.CylinderGeometry(0.043, 0.04, 0.16, 10, 1, true), matC(o.mangas)), 0, 0.1, 0));
+    if (o.escudo && B.Chest) { const e = o.escudo, mk = (id, fn) => ctxTex(id, fn); const fr = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.09), new THREE.MeshBasicMaterial({ map: mk('cr-' + e.siglas + e.c1 + e.c2, (x, n) => { x.fillStyle = e.c2; x.beginPath(); x.arc(n / 2, n / 2, n * 0.46, 0, 6.3); x.fill(); x.fillStyle = e.c1; x.beginPath(); x.arc(n / 2, n / 2, n * 0.38, 0, 6.3); x.fill(); x.fillStyle = e.c2; x.font = 'bold ' + n * 0.3 + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(e.siglas).slice(0, 3), n / 2, n / 2 + 2); }), transparent: true, depthWrite: false })); pega(B.Chest, fr, 0.075, 0.04, 0.14);
+      const bk = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.16), new THREE.MeshBasicMaterial({ map: mk('dr-' + e.num + e.c2, (x, n) => { x.fillStyle = e.c2; x.font = 'bold ' + n * 0.75 + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(e.num), n / 2, n / 2 + 4); }), transparent: true, depthWrite: false })); bk.rotation.y = Math.PI; pega(B.Chest, bk, 0, -0.03, -0.14); }
+    if (o.abrigo) { const ab = matC(o.abrigo), tr = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.235, 0.62, 14, 1, true), ab); tr.scale.z = 0.62; ab.side = THREE.DoubleSide; pega(B.Torso, tr, 0, 0.0, 0); ['UpperArmL', 'UpperArmR', 'LowerArmL', 'LowerArmR'].forEach(a => pega(B[a], new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.046, a[0] === 'U' ? 0.26 : 0.25, 10, 1, true), ab), 0, a[0] === 'U' ? 0.12 : 0.11, 0)); }
+    if (o.falda) { const fl = matC(o.falda); fl.side = THREE.DoubleSide; pega(B.Hips, new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.3, o.faldaLarga ? 0.62 : 0.4, 16, 1, true), fl), 0, -0.1, 0); }
     if (o.tatuaje === 3) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.03, 12, 1, true), new THREE.MeshStandardMaterial({ color: '#25303b', transparent: true, opacity: 0.5 })); pega(B.Neck, m, 0, 0.03, 0); }
   }
   // Opciones del modelo de tu personaje a partir de su aspecto (st.personaje) y del modo de juego
@@ -124,7 +133,8 @@
       piel: OPC && OPC.piel[pj.piel], pelo: OPC && OPC.peloColor[pj.peloColor], sinPelo: pj.pelo === 0 || pj.pelo === 5,
       ropa: jugador || ropa === 3 ? [c1, c2 === c1 ? '#222' : c2] : null, complexion: pj.complexion, gafas: pj.gafas || 0, barba: mujer ? 0 : pj.barba || 0,
       cinta: acc === 1 || acc === 3 ? c2 : null, munequeras: acc === 2 || acc === 3 ? c1 : null, tatuaje: pj.tatuaje || 0, cara: pj.cara || 0,
-      zapas: (GM.mods.personaje.ZAPAS || [])[pj.zapas || 0] || c1 };
+      zapas: (GM.mods.personaje.ZAPAS || [])[pj.zapas || 0] || c1, ojos: (GM.mods.personaje.OJOS || [])[pj.ojos || 0], pendientes: pj.pendientes || 0, reloj: pj.reloj || 0, cadena: pj.cadena || 0, mangas: pj.mangas ? c2 : null,
+      escudo: jugador ? { siglas: club.siglas, c1, c2, num: GM.ui && GM.ui._ && GM.ui._.dorsal ? GM.ui._.dorsal(st) : 7 } : null };
   }
   // Persona real para las escenas antiguas (campus, mapa de la ciudad, casa): devuelve un grupo al momento, con la figura de cajas
   // si se pasa, y la sustituye por el modelo cuando carga. alto: altura en unidades de esa escena. El movimiento se pone en
@@ -266,7 +276,7 @@
     if (nombre === 'bici') { p.mixer.stopAllAction(); const a0 = p.acc.idle; a0.reset().play(); p.mixer.update(0); a0.stop(); p.obj.position.y = 0; ponerBici(p); p.sentado = true; p.accion = null; p.actual = nombre; return; }
     if (p.sentado) { p.sentado = false; p.obj.position.y = 0; }
     const a = p.acc[nombre] || p.acc.idle; if (!a) return;
-    a.reset().fadeIn(0.2).play(); if (p.accion) p.accion.fadeOut(0.2); p.accion = a; p.actual = nombre;
+    a.reset(); a.timeScale = 1; a.fadeIn(0.2).play(); if (p.accion) p.accion.fadeOut(0.2); p.accion = a; p.actual = nombre;
   }
   // Las personas del mundo piden su camino a un Worker (nav_worker.js) y esperan la respuesta (uno o dos fotogramas); el jugador sigue con la búsqueda síncrona.
   function irA(p, x, z, alLlegar) {
@@ -292,7 +302,8 @@
   }
   function moverPaso(p, dt) {
     if (!p.camino || !p.camino.length) return;
-    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * (p.bici ? (p.velBici || 2.5) : 1) * dt;
+    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * (p.bici ? (p.velBici || 2.5) : 1) * (p.lento ? 0.7 : 1) * dt;
+    if ((p.actual === 'walk' || p.actual === 'sprint') && p.accion && dt > 0) p.accion.timeScale = Math.min(1.8, Math.max(0.5, v / dt / (p.actual === 'sprint' ? 2.7 : 1.3)));   // el paso va al ritmo del movimiento: los pies no patinan
     if (d < v) { o.x = tx; o.z = tz; p.camino.shift(); if (!p.camino.length) { anim(p, 'idle'); const f = p.alLlegar; p.alLlegar = null; if (f) f(); } return; }
     o.x += dx / d * v; o.z += dz / d * v; girar(p, Math.atan2(dx, dz), dt);
   }
@@ -472,11 +483,23 @@
     const acc = f ? f.acciones : Gn.casual(st, n);
     F.append(h('div', { class: 'ct' }, h('b', null, f ? f.nombre : n.rol), h('span', { class: 'muted' }, f ? f.rol + ', ' + f.relTexto.toLowerCase() + ' (' + Math.round(f.rel) + ')' : '')));
     if (f) { F.append(h('p', { class: 'ficha-dice' }, '«' + f.texto + '»')); if (!n.saludado) { n.saludado = true; bocadillo(f.texto, n.obj); } }
+    if (!f && n.idV && GM.dialogo) F.append(h('button', { class: 'btn peq', onclick: () => dialogoVecino(n, 'inicio') }, 'Conversar'));
     acc.forEach(x => F.append(h('button', { class: 'btn peq' + (x.disponible ? '' : ' btn-sec'), disabled: !x.disponible, title: x.disponible ? x.d : x.motivo, onclick: () => {
       const r = x.fn(); if (!r || !r.ok) return; anim(n, 'emote-yes'); n.espera = 3;
       if (r.bocadillo) bocadillo(r.texto, n.obj); else GM.ui.toast(r.texto + (r.efectos && r.efectos.length ? ' (+' + r.efectos.join(', ') + ')' : ''));
       fichaGente(n); } }, x.disponible ? x.t : x.t + ' (' + x.motivo.toLowerCase() + ')')));
     F.append(h('button', { class: 'btn btn-sec peq', onclick: () => fichaJugador(null) }, 'Cerrar'));
+    F.style.display = 'flex';
+  }
+
+  // Conversación con un vecino (dialogo.js): el vecino se queda quieto, te mira y habla; cada respuesta tuya lleva a otro nodo
+  function dialogoVecino(n, id) {
+    const h = GM.h, F = S.ficha; if (!n.dialogo) n.dialogo = GM.dialogo.crear(S.st, n, S);
+    const nd = n.dialogo.nodo(id); F.innerHTML = ''; F.classList.add('ficha-gente');
+    n.camino = []; n.espera = 12; n.obj.rotation.y = Math.atan2(S.yo.obj.position.x - n.obj.position.x, S.yo.obj.position.z - n.obj.position.z); anim(n, nd.fin ? 'saludar' : 'hablar');
+    F.append(h('div', { class: 'ct' }, h('b', null, nd.titulo || n.rol), h('span', { class: 'muted' }, n.rol + (n.pers ? ', ' + n.pers : ''))), h('p', { class: 'ficha-dice' }, '«' + nd.texto + '»'));
+    if (nd.efecto) F.append(h('span', { class: 'muted' }, nd.efecto));
+    nd.opciones.forEach(o => F.append(h('button', { class: 'btn peq' + (o.id === 'fin' ? ' btn-sec' : ''), onclick: () => { if (o.id === 'fin') { const f = n.dialogo.nodo('fin'); bocadillo(f.texto, n.obj); n.dialogo = null; n.espera = 2; anim(n, 'saludar'); fichaJugador(null); } else dialogoVecino(n, o.id); } }, o.t)));
     F.style.display = 'flex';
   }
 
@@ -677,7 +700,7 @@
     let ids = eq.plantilla.filter(i => i !== 'yo').slice(0, 12);
     if (S.dia.tipo === 'derrota') ids = ids.filter(id => U.hash(id + st.fecha) % 100 > 30); // tras perder, algunos ni aparecen
     const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222222';
-    const nuevos = await Promise.all(ids.map(id => { const j = st.jugadores[id], h = U.hash(id), oscura = /US|SN|NG|CM|ML|CD|SS|AO|FR|DO|BR|GB/.test(j.nac || '') && h % 3 !== 0; return personaje({ modelo: PERSONAS.jugador[h % 3], altura: j.altura || 198, piel: PIEL[oscura ? 3 + (h >>> 3) % 3 : (h >>> 3) % 3], pelo: PELO[(h >>> 6) % 5], ropa: [c1, c2] }); }));
+    const nuevos = await Promise.all(ids.map(id => { const j = st.jugadores[id], h = U.hash(id), oscura = /US|SN|NG|CM|ML|CD|SS|AO|FR|DO|BR|GB/.test(j.nac || '') && h % 3 !== 0; return personaje({ modelo: PERSONAS.jugador[h % 3], altura: j.altura || 198, piel: PIEL[oscura ? 3 + (h >>> 3) % 3 : (h >>> 3) % 3], pelo: PELO[(h >>> 6) % 5], ropa: [c1, c2], escudo: { siglas: club.siglas, c1, c2, num: 2 + (U.hash(id) % 30) } }); }));
     nuevos.forEach((n, k) => {
       const mor = st.jugadores[ids[k]].estado.moral; Object.assign(n, { jugador: ids[k], r: rnd(U.hash(ids[k] + st.fecha)), espera: 0, cabizbajo: mor < 45, animado: mor > 78 });
       const z = P.puntos.pasillo[k % P.puntos.pasillo.length]; n.obj.position.set(z[0] + (r() - 0.5) * 2, 0, z[1] + (r() - 0.5) * 0.8); n.obj.userData = { npc: k }; S.mundo.add(n.obj); anim(n, 'idle'); S.gente.push(n);

@@ -17,15 +17,22 @@
     accesorio: ['Ninguno', 'Cinta', 'Muñequeras', 'Cinta y muñequeras'],
     tatuaje: ['Sin tatuajes', 'Un brazo', 'Los dos brazos', 'Cuello'],
     cara: ['Ovalada', 'Redonda', 'Alargada', 'Cuadrada'],
-    zapas: ['Blancas', 'Negras', 'Del club', 'Fosforito']
+    zapas: ['Blancas', 'Negras', 'Del club', 'Fosforito'],
+    // Punto 29: más detalle en el personaje principal
+    ojos: ['Marrones', 'Azules', 'Verdes', 'Grises'],
+    pendientes: ['Sin pendientes', 'Uno', 'Dos'],
+    reloj: ['Sin reloj', 'Reloj'],
+    cadena: ['Sin cadena', 'Cadena'],
+    mangas: ['Sin manguitos', 'Manguito de compresión']
   };
+  const OJOS = ['#2a1a10', '#2f6f9e', '#3f7a45', '#7d8791'];
   const ZAPAS = ['#f1f1ee', '#1e1f22', null, '#c6f23a'];   // «Del club»: el color principal del club
   const ALTURAS = [168, 180, 192];
   let uid = 0;
   const clamp = (v, n) => ((v % n) + n) % n;
   function oscuro(hex, t) { const n = parseInt(hex.slice(1), 16); const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v * (1 - t))); return '#' + c.map(v => v.toString(16).padStart(2, '0')).join(''); }
-  function crear(extra) { return Object.assign({ nombre: '', apellido: '', piel: 1, pelo: 1, peloColor: 1, barba: 0, gafas: 0, ropa: 0, cuerpo: 0, altura: 1, complexion: 1, accesorio: 0, tatuaje: 0, cara: 0, zapas: 0 }, extra || {}); }
-  function aleatorio() { return crear({ piel: GM.rng.int(0, 4), pelo: GM.rng.int(0, 5), peloColor: GM.rng.int(0, 5), barba: GM.rng.int(0, 3), gafas: GM.rng.int(0, 2), ropa: GM.rng.int(0, 3), complexion: GM.rng.int(0, 2), accesorio: GM.rng.int(0, 3), tatuaje: GM.rng.int(0, 3), cara: GM.rng.int(0, 3), zapas: GM.rng.int(0, 3) }); }
+  function crear(extra) { return Object.assign({ nombre: '', apellido: '', piel: 1, pelo: 1, peloColor: 1, barba: 0, gafas: 0, ropa: 0, cuerpo: 0, altura: 1, complexion: 1, accesorio: 0, tatuaje: 0, cara: 0, zapas: 0, ojos: 0, pendientes: 0, reloj: 0, cadena: 0, mangas: 0 }, extra || {}); }
+  function aleatorio() { return crear({ ojos: GM.rng.int(0, 3), pendientes: GM.rng.int(0, 2), reloj: GM.rng.int(0, 1), cadena: GM.rng.int(0, 1), mangas: GM.rng.int(0, 1), piel: GM.rng.int(0, 4), pelo: GM.rng.int(0, 5), peloColor: GM.rng.int(0, 5), barba: GM.rng.int(0, 3), gafas: GM.rng.int(0, 2), ropa: GM.rng.int(0, 3), complexion: GM.rng.int(0, 2), accesorio: GM.rng.int(0, 3), tatuaje: GM.rng.int(0, 3), cara: GM.rng.int(0, 3), zapas: GM.rng.int(0, 3) }); }
   function nombre(p) { return ((p && p.nombre ? p.nombre : '') + ' ' + (p && p.apellido ? p.apellido : '')).trim(); }
 
   function avatar(p, o) {
@@ -77,5 +84,5 @@
     const a = avatar(crear({ piel: 2, pelo: 3, barba: 2, gafas: 1, ropa: 3 }), { size: 40 }), b = avatar({ ropa: 0 }, { camiseta: true, numero: 7 });
     return a.indexOf('<svg') === 0 && a.indexOf(OPC.piel[2]) > 0 && a.indexOf('width="40"') > 0 && b.indexOf('>7<') > 0 && nombre({ nombre: 'Ana', apellido: 'Ruiz' }) === 'Ana Ruiz';
   }
-  GM.register('personaje', { crear, avatar, nombre, aleatorio, OPC, ALTURAS, ZAPAS, selfTest });
+  GM.register('personaje', { crear, avatar, nombre, aleatorio, OPC, OJOS, ALTURAS, ZAPAS, selfTest });
 })();

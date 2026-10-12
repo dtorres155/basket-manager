@@ -49,7 +49,7 @@
         ['A', 'B'].forEach(k => { const cid = k === 'A' ? g.local : g.visitante, c = col(cid); for (let i = 0; i < 5; i++) { const gr = new THREE.Group(); gr.add(K.cilindro(0.34, 1.35, c, 0, 0.2, 0, 10)); gr.add(new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), K.mat(0xe4b88f))); gr.children[1].position.y = 1.85; gr.position.set(0, 0, 0); W3.add(gr); jug[k].push({ g: gr, x: 0, z: 0, tx: 0, tz: 0, k, i }); } });
         // Personas de verdad (Quaternius) con la camiseta de cada equipo; los cilindros quedan si no cargan
         if (GM.sede && GM.sede.personaje) ['A', 'B'].forEach(k => { const e = st.equipos[k === 'A' ? g.local : g.visitante], c1 = e.colores[0], c2 = e.colores[1] || '#222'; jug[k].forEach((o, i) => {
-          const hsh = U.hash(e.id + i); GM.sede.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][hsh % 3], altura: 196 + hsh % 14, piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329', '#e0ac85'][(hsh >>> 3) % 5], pelo: ['#1d1510', '#3b2617', '#a9793e'][(hsh >>> 6) % 3], ropa: [c1, c2] }).then(p => {
+          const hsh = U.hash(e.id + i); GM.sede.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][hsh % 3], altura: 196 + hsh % 14, piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329', '#e0ac85'][(hsh >>> 3) % 5], pelo: ['#1d1510', '#3b2617', '#a9793e'][(hsh >>> 6) % 3], ropa: [c1, c2], escudo: { siglas: e.siglas, c1, c2, num: 2 + (U.hash(e.id + i) % 30) } }).then(p => {
             if (!V) return; o.g.children.forEach(ch => { ch.visible = false; }); p.obj.scale.multiplyScalar(1.15); o.g.add(p.obj); o.p = p; GM.sede.animar(p, 'idle'); }).catch(() => {}); }); });
         V.scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
         { // Público: personas sentadas instanciadas (GM.kit.publico), 3/4 con los colores del local; al celebrar saltan y alzan los brazos
@@ -65,23 +65,36 @@
           const banco = (x) => { const b = K.caja(5.4, 0.45, 0.6, 0x2a2f35, x, 0, W + 0.85); W3.add(b); };
           banco(-5); banco(5);
           if (GM.sede && GM.sede.personaje) ['A', 'B'].forEach(k => { const e = st.equipos[k === 'A' ? g.local : g.visitante], c1 = e.colores[0], c2 = e.colores[1] || '#222', bx = k === 'A' ? -5 : 5;
-            for (let i = 0; i < 5; i++) { const h0 = U.hash(e.id + 'banco' + i); GM.sede.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][h0 % 3], altura: 194 + h0 % 14, piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329'][(h0 >>> 3) % 4], pelo: ['#1d1510', '#3b2617'][(h0 >>> 6) % 2], ropa: [c1, c2] }).then(p => { if (!V) return; p.obj.scale.multiplyScalar(1.15); p.obj.position.set(bx - 2 + i, 0, W + 0.85); p.obj.rotation.y = Math.PI; p.asiento = 0.45; W3.add(p.obj); GM.sede.animar(p, 'sit'); }).catch(() => {}); }
+            for (let i = 0; i < 5; i++) { const h0 = U.hash(e.id + 'banco' + i); GM.sede.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][h0 % 3], altura: 194 + h0 % 14, piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329'][(h0 >>> 3) % 4], pelo: ['#1d1510', '#3b2617'][(h0 >>> 6) % 2], ropa: [c1, c2] }).then(p => { if (!V) return; p.obj.scale.multiplyScalar(1.15); p.obj.position.set(bx - 2 + i, 0, W + 0.85); p.obj.rotation.y = Math.PI; p.asiento = 0.45; W3.add(p.obj); GM.sede.animar(p, 'sit'); ((ES.suplentes = ES.suplentes || { A: [], B: [] })[k]).push({ p, x: p.obj.position.x, z: p.obj.position.z }); }).catch(() => {}); }
             GM.sede.personaje({ modelo: 'h-suit', altura: 182, piel: '#e0ac85', pelo: '#8a8a8a' }).then(p => { if (!V) return; p.obj.scale.multiplyScalar(1.15); p.obj.position.set(bx + (k === 'A' ? 3.3 : -3.3), 0, W + 0.6); p.obj.rotation.y = Math.PI; W3.add(p.obj); GM.sede.animar(p, 'idle'); ES.entrenadores = (ES.entrenadores || []).concat([p]); }).catch(() => {});
           });
         }
+        if (GM.sede && GM.sede.personaje) { ES.arbitros = []; [0, 1].forEach(j => GM.sede.personaje({ modelo: 'h-casual_2', altura: 178, piel: ['#e0ac85', '#c68863'][j], pelo: '#2b2018', ropa: ['#e9c11f', '#1b1b1b'], zapas: '#111111' }).then(p => { if (!V) return; p.obj.scale.multiplyScalar(1.08); W3.add(p.obj); p.obj.position.set(j ? 3 : -3, 0, j ? -W + 1.3 : W - 1.3); GM.sede.animar(p, 'idle'); ES.arbitros.push({ p, g: p.obj, x: p.obj.position.x, z: p.obj.position.z, j }); }).catch(() => { })); }
         balon = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 10), K.mat(0xe3622b)); balon.position.set(0, 1, 0); W3.add(balon);
         ES.bx = 0; ES.bz = 0; ES.by = 1;
         // posiciones iniciales
         ['A', 'B'].forEach((k, ki) => jug[k].forEach((o, i) => { const f = formacion(k === 'A', i); o.x = o.tx = (k === 'A' ? -1 : 1) * 4 + (ki ? 1 : -1) * (i * 0.8); o.z = o.tz = (i - 2) * 2; }));
+        // Qué animación lleva cada jugador: clips puntuales (tiro, mate, pase, rebote), celebración, bote del que lleva el balón, defensa en cuclillas o el paso al ritmo del movimiento
+        const nombreAnim = (o, k, i, v) => {
+          const ya = performance.now() / 1000, cp = o.clip, S0 = GM.sede;
+          if (cp && ya >= cp.t0 && ya < cp.t0 + cp.dur && o.p.acc[cp.nombre]) { S0.animar(o.p, cp.nombre); if (o.p.accion) o.p.accion.timeScale = cp.esc; return; }
+          if (cp && ya >= cp.t0 + cp.dur) o.clip = null;
+          const att = ES.ataca === k, c = ES.celebra;
+          if (c && c.k === k && ya >= c.t0 && ya - c.t0 < 1.4 && v < 1.5) { S0.animar(o.p, 'celebrar'); if (o.p.accion) o.p.accion.timeScale = 1; return; }
+          const n = att && i === 0 ? (v > 2.5 ? 'boteCorriendo' : v > 0.4 ? 'walk' : 'bote') : !att && ES.ataca && v < 0.6 ? 'defensa' : v > 2.5 ? 'sprint' : v > 0.4 ? 'walk' : 'idle';
+          S0.animar(o.p, n); if (o.p.accion) o.p.accion.timeScale = n === 'walk' || n === 'sprint' ? Math.min(1.8, Math.max(0.6, v / (n === 'sprint' ? 2.7 : 1.3))) : 1;
+        };
         V.anim = function (tm) {
           const dt = 0.033;
           ['A', 'B'].forEach(k => jug[k].forEach(o => { const dx = (o.tx - o.x) * 0.12, dz = (o.tz - o.z) * 0.12; o.x += dx; o.z += dz; o.g.position.set(o.x, 0, o.z); const v = Math.hypot(dx, dz) / dt;
             if (o.p) { if (v > 0.25) { let a = Math.atan2(dx, dz) - o.g.rotation.y; while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; o.g.rotation.y += a * 0.25; } else { const hx = (ES.ataca === k ? 1 : -1) * (k === 'A' ? 1 : -1) * HX; o.g.rotation.y += (Math.atan2(hx - o.x, -o.z) - o.g.rotation.y) * 0.08; }
-              GM.sede.animar(o.p, v > 2.5 ? 'sprint' : v > 0.4 ? 'walk' : 'idle'); o.p.mixer.update(dt);
+              nombreAnim(o, k, jug[k].indexOf(o), v); o.p.mixer.update(dt);
               if (o.gesto && GM.sede.brazos) { const u = (performance.now() / 1000 - o.gesto.t0) / o.gesto.dur; if (u >= 0 && u <= 1) { const w = Math.sin(u * Math.PI) * o.gesto.w; GM.sede.brazos(o.p, w, new THREE.Vector3(Math.sin(o.g.rotation.y), 0, Math.cos(o.g.rotation.y))); if (o.gesto.salto) o.g.position.y = Math.sin(u * Math.PI) * 0.35; } else if (u > 1) { o.gesto = null; o.g.position.y = 0; } } } }));
           const a = ES.anim, ahora = performance.now() / 1000;
           if (ES.colocaPublico && !(ES.publicoQuieto && !(ES.celebra && ahora - ES.celebra.t0 < 1.4))) ES.colocaPublico(ahora);
           if (ES.entrenadores) ES.entrenadores.forEach(p => p.mixer.update(dt));
+          if (ES.arbitros) ES.arbitros.forEach(a => { const tx = balon.position.x * 0.85 + (a.j ? 2.2 : -2.2), tz = a.j ? -W + 1.3 : W - 1.3, dx = (tx - a.x) * 0.07, dz = (tz - a.z) * 0.07, v = Math.hypot(dx, dz) / dt, cp = a.clip; a.x += dx; a.z += dz; a.g.position.set(a.x, 0, a.z); let ang = Math.atan2(balon.position.x - a.x, balon.position.z - a.z) - a.g.rotation.y; while (ang > Math.PI) ang -= 2 * Math.PI; while (ang < -Math.PI) ang += 2 * Math.PI; a.g.rotation.y += ang * 0.12; const ya2 = performance.now() / 1000; if (cp && ya2 >= cp.t0 && ya2 < cp.t0 + cp.dur) GM.sede.animar(a.p, cp.nombre); else { if (cp && ya2 >= cp.t0 + cp.dur) a.clip = null; GM.sede.animar(a.p, v > 0.35 ? 'walk' : 'idle'); if (a.p.accion) a.p.accion.timeScale = v > 0.35 ? Math.min(1.8, Math.max(0.6, v / 1.3)) : 1; } a.p.mixer.update(dt); });
+          if (ES.suplentes) ['A', 'B'].forEach(k => { const c = ES.celebra, act = c && c.k === k && performance.now() / 1000 >= c.t0 && performance.now() / 1000 - c.t0 < 1.4; (ES.suplentes[k] || []).forEach(sp => { if (act && !sp.de) { sp.de = true; GM.sede.animar(sp.p, 'celebrar'); } else if (!act && sp.de) { sp.de = false; GM.sede.animar(sp.p, 'sit'); } if (sp.de) sp.p.mixer.update(dt); }); });
           if (a) {
             let u = (ahora - a.t0) / a.dur; if (ES.pausa) { a.t0 += dt; u = (ahora - a.t0) / a.dur; }
             if (u >= 1) { balon.position.set(a.fin[0], a.fin[1], a.fin[2]); ES.anim = null; if (a.cb) a.cb(); }
@@ -113,16 +126,23 @@
       if (!V || ES.vel >= 16) return;
       const sh = posJug(k, ev.jug), hoop = [dir * HX, 3.0, 0], pase = () => { const o = jug[k][Math.floor(Math.random() * 5)]; return [o.tx, 1.4, o.tz]; };
       const pts = ev.r === 'ok' || ev.r === 'fallo' ? (ev.v === 3 ? 7 : 3.5) : 2;
-      const ang = (Math.random() - 0.5) * 2.2, sp = sh ? [dir * (HX - pts * Math.cos(ang)), 0, pts * Math.sin(ang)] : [dir * 3, 0, 0];
+      const mate = !!sh && ev.r === 'ok' && ev.v === 2 && ES.vel < 16 && Math.random() < 0.3 && !!sh.p && !!sh.p.acc.mate, ang = (Math.random() - 0.5) * 2.2, sp = mate ? [dir * (HX - 1.5), 0, (Math.random() - 0.5) * 1.4] : sh ? [dir * (HX - pts * Math.cos(ang)), 0, pts * Math.sin(ang)] : [dir * 3, 0, 0];
       if (sh) { sh.tx = sp[0]; sh.tz = sp[2]; }
       const m0 = jug[k][0], keys = [[m0.x, 1.2, m0.z], pase(), pase(), [sp[0], 1.5, sp[2]]];
       if (ev.r === 'tov') keys.push([jug[otro][0].tx, 1.2, jug[otro][0].tz]);
       else if (ev.r === 'falta') keys.push([sp[0], 1.4, sp[2]]);
       else keys.push(hoop);
       const dur = Math.max(0.25, Math.min(1.6, 14 / ES.vel * 0.12));
-      { const ahora = performance.now() / 1000, tramo = dur / (keys.length - 1);
-        [1, 2].forEach(j => { const pasador = jug[k].reduce((b, o) => { const dd = Math.hypot(o.tx - keys[j - 1][0], o.tz - keys[j - 1][2]); return dd < b.d ? { o, d: dd } : b; }, { o: null, d: 9 }).o; if (pasador) pasador.gesto = { t0: ahora + tramo * (j - 1), dur: tramo * 0.9, w: 0.55 }; });
-        if (sh && (ev.r === 'ok' || ev.r === 'fallo')) { sh.gesto = { t0: ahora + tramo * (keys.length - 2.6), dur: Math.max(0.45, tramo * 1.4), w: 1, salto: true }; sh.g.rotation.y = Math.atan2(hoop[0] - sp[0], hoop[2] - sp[2]); }
+      { const ahora = performance.now() / 1000, tramo = dur / (keys.length - 1), clips = !!(sh && sh.p && sh.p.acc.tiro);
+        [1, 2].forEach(j => { const pasador = jug[k].reduce((b, o) => { const dd = Math.hypot(o.tx - keys[j - 1][0], o.tz - keys[j - 1][2]); return dd < b.d ? { o, d: dd } : b; }, { o: null, d: 9 }).o; if (pasador) { if (pasador.p && pasador.p.acc.pase) pasador.clip = { nombre: 'pase', t0: ahora + tramo * (j - 1), dur: tramo * 0.95, esc: 0.7 / (tramo * 0.95) }; else pasador.gesto = { t0: ahora + tramo * (j - 1), dur: tramo * 0.9, w: 0.55 }; } });
+        if (sh && (ev.r === 'ok' || ev.r === 'fallo')) {
+          sh.g.rotation.y = Math.atan2(hoop[0] - sp[0], hoop[2] - sp[2]);
+          if (clips) { const dp = mate ? Math.max(0.6, tramo * 1.6) : Math.max(0.5, tramo * 1.5), cl = mate ? 1.5 : 1.2, f = mate ? 0.85 : 0.55, suelta = ahora + tramo * (keys.length - 2); sh.clip = { nombre: mate ? 'mate' : 'tiro', t0: suelta - f * dp, dur: dp * 1.1, esc: cl / dp }; }
+          else sh.gesto = { t0: ahora + tramo * (keys.length - 2.6), dur: Math.max(0.45, tramo * 1.4), w: 1, salto: true };
+        }
+        const rb = ev.r === 'fallo' && (ev.reb || ev.oreb) ? posJug(ev.reb ? otro : k, ev.reb || ev.oreb) : null;
+        if (rb && rb.p && rb.p.acc.rebote) { rb.tx = hoop[0] - dir * 1.6; rb.tz = (Math.random() - 0.5) * 2; rb.clip = { nombre: 'rebote', t0: ahora + dur * 0.85, dur: 1, esc: 1.2 }; }
+        if (ev.r === 'falta' && ES.arbitros && ES.arbitros[0]) ES.arbitros[0].clip = { nombre: 'arbitro', t0: ahora + dur * 0.6, dur: 2, esc: 1 };
         if (ev.r === 'ok') ES.celebra = { k: k, t0: ahora + dur }; }
       ES.anim = { t0: performance.now() / 1000, dur, keys, arco: ev.r === 'ok' || ev.r === 'fallo', fin: ev.r === 'fallo' ? [hoop[0] - dir * 1.2, 0.3, (Math.random() - 0.5) * 3] : keys[keys.length - 1] };
     }

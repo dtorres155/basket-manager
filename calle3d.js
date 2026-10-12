@@ -360,10 +360,11 @@
     await vestirCalle(S, M, st);
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
     const n = partido ? 40 : 32, r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222';
-    const lista = await Promise.all(Array.from({ length: n }, (_, k) => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje((GM.catalogo && GM.catalogo.generar(r, { pais: club.pais || '', mes: +String(st.fecha).slice(5, 7), club, hincha })) || { modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [r() < 0.6 ? c1 : c2, c1] : null }).then(p => Object.assign(p, { hincha })); }));
+    const lista = await Promise.all(Array.from({ length: n }, (_, k) => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6); return M.personaje((GM.catalogo && GM.catalogo.generar(r, { pais: club.pais || '', mes: +String(st.fecha).slice(5, 7), temp: S.clima && S.clima.temp, club, hincha, rol: !hincha && GM.vecinos ? GM.vecinos.rolPara(r) : '' })) || { modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [r() < 0.6 ? c1 : c2, c1] : null }).then(p => Object.assign(p, { hincha })); }));
     lista.forEach((p, k) => {
       const q = S.paseo[(r() * S.paseo.length) | 0]; p.obj.position.set(q[0] + (r() - 0.5), 0, q[1] + (r() - 0.5) * 0.6);
       Object.assign(p, { peaton: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino de ' + club.ciudad, r: rnd(U.hash(st.fecha + 'p' + k)), espera: r() * 3 });
+      if (GM.vecinos) GM.vecinos.asignar(S, st, p, k);
       p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p);
     });
     // Niños que van al colegio y luego al parque, y vecinos que pasean al perro
@@ -491,6 +492,7 @@
     const activo = n.nino ? (h >= 7.5 && h < 21) : n.k < DENS(h) * (S.clima && S.clima.tipo === 'lluvia' ? 0.55 : 1);
     if (n.enCasa) { if (activo && !(n.hasta && h < n.hasta)) { n.enCasa = false; n.oculto = false; n.hasta = 0; } else { n.espera = 6; return; } }
     if (n.dentro) { if (h >= n.hasta) { n.dentro = false; n.oculto = false; } else { n.espera = 4; return; } }
+    if (n.idV && GM.vecinos && GM.vecinos.siguiente(S, M, n, D)) return;   // roles con agenda, grupos y reacciones (vecinos.js)
     if (!activo && !n.hincha) { const q = D.casa[(n.r() * D.casa.length) | 0]; if (M.irA(n, q[0], q[1], () => { n.oculto = true; n.enCasa = true; n.espera = 8; })) return; }
     if (S.dia && S.dia.tipo === 'partido' && S.dia.casa && (n.hincha || n.r() < 0.25) && h >= 16 && h < 20.5 && GM.calle.partidoFase) {   // a la previa
       const q = S.ptoPab ? (n.r() < 0.5 && S.ptoPena ? [S.ptoPena[0] + (n.r() - 0.5) * 5, S.ptoPena[1] + (n.r() - 0.5) * 3] : [S.ptoPab[0] + (n.r() - 0.5) * 8, S.ptoPab[1] + (n.r() - 0.5) * 3]) : n.r() < 0.5 ? [19 + (n.r() - 0.5) * 6, 6.2] : [-19.5 + (n.r() - 0.5) * 10, -5.6]; if (M.irA(n, q[0], q[1], () => { M.anim(n, 'emote-yes'); n.espera = 6 + n.r() * 8; })) return;
@@ -507,7 +509,7 @@
       if (cat === 'colegio' && h < 14) { n.oculto = true; n.dentro = true; n.hasta = 14 + n.r(); n.espera = 4; return; }
       if (cat === 'trabajo' && n.r() < 0.6) { n.oculto = true; n.dentro = true; n.hasta = h + 2 + n.r() * 5; n.espera = 4; return; }
       if (cat === 'casa') { n.oculto = true; n.enCasa = true; n.hasta = h + 3; n.espera = 8; return; }
-      M.anim(n, cat === 'compras' ? 'interact-right' : cat === 'parque' && n.nino ? 'emote-yes' : (cat === 'bares' || cat === 'comer') && n.r() < 0.4 ? 'emote-yes' : 'idle');
+      M.anim(n, GM.vecinos && n.idV ? GM.vecinos.actividad(n, cat, M) : cat === 'compras' ? 'interact-right' : cat === 'parque' && n.nino ? 'emote-yes' : (cat === 'bares' || cat === 'comer') && n.r() < 0.4 ? 'emote-yes' : 'idle');
       n.espera = cat === 'comer' || cat === 'bares' ? 8 + n.r() * 14 : cat === 'parque' ? 4 + n.r() * 6 : 2 + n.r() * 6; });
     if (ok) return;
     const q2 = S.paseo[(n.r() * S.paseo.length) | 0]; if (!M.irA(n, q2[0], q2[1], () => { M.anim(n, 'idle'); n.espera = 2 + n.r() * 4; })) n.espera = 1;
@@ -539,7 +541,7 @@
     if (S.busEquipo || (S.hora || 9) < 19 || (S.hora || 9) >= 20.5) return; const club = st.equipos[st.clubId], bus = autobusEquipo(club); bus.position.set(90, -0.12, -1.5); bus.rotation.y = -Math.PI / 2; S.mundo.add(bus);
     S.busEquipo = { obj: bus, fase: 'llega', t: 0, jugadores: [] };
     const jug = club.plantilla.map(i => st.jugadores[i]).filter(p => p && p.id !== 'yo').sort((a, b) => b.ovr - a.ovr).slice(0, 6), c1 = club.colores[0], c2 = club.colores[1] || '#222';
-    S.busEquipo.jugadores = await Promise.all(jug.map((j, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][k % 3], altura: j.altura || 198, piel: PIEL[(U.hash(j.id) >>> 2) % 5], pelo: PELO[(U.hash(j.id) >>> 5) % 6], ropa: [c1, c2] }).then(p => { Object.assign(p, { rol: j.nombre, jugador: j.id, fijo: true, oculto: true, r: rnd(U.hash(j.id)), espera: 999 }); p.obj.visible = false; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); S.gente.push(p); return p; })));
+    S.busEquipo.jugadores = await Promise.all(jug.map((j, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][k % 3], altura: j.altura || 198, piel: PIEL[(U.hash(j.id) >>> 2) % 5], pelo: PELO[(U.hash(j.id) >>> 5) % 6], ropa: [c1, c2], escudo: { siglas: club.siglas, c1, c2, num: 2 + (U.hash(j.id) % 30) } }).then(p => { Object.assign(p, { rol: j.nombre, jugador: j.id, fijo: true, oculto: true, r: rnd(U.hash(j.id)), espera: 999 }); p.obj.visible = false; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); S.gente.push(p); return p; })));
   }
   function moverPartido(S, M, dt) {
     const P = S.partidoObj; if (!P) return; const t = performance.now() / 1000;
@@ -603,6 +605,7 @@
       _ray.set(ojo, dir.normalize()); _ray.far = dist; const set = new Set(S.oclusores), tapan = new Set(_ray.intersectObjects(S.oclusores, true).map(h => { let o = h.object; while (o && !set.has(o)) o = o.parent; return o; }));
       S.oclusores.forEach(g => { const meta = tapan.has(g) ? 0.2 : 1; g.traverse(m => { if (!m.isMesh) return; const mt = m.material; if (!tapan.has(g) && mt.opacity === 1) return; mt.transparent = true; mt.opacity += (meta - mt.opacity) * 0.6; if (Math.abs(mt.opacity - 1) < 0.02) { mt.opacity = 1; mt.transparent = false; } mt.depthWrite = mt.opacity > 0.95; mt.needsUpdate = true; }); });
     }
+    if (GM.vecinos) GM.vecinos.actualizar(S, M, dt);
     // Los aficionados reconocen a tu personaje
     S.tFan = (S.tFan || 0) - dt; if (S.tFan > 0 || !S.yo) return; S.tFan = 2.5;
     const cerca = S.gente.filter(p => p.hincha && p.obj.position.distanceTo(S.yo.obj.position) < 3.2);

@@ -193,11 +193,11 @@
         h('div', { class: 'filtros' }, ni, na), campo('Piel', 'piel', 5, i => punto(OP.piel[i])), campo('Cara', 'cara', 4, i => OP.cara[i]), campo('Peinado', 'pelo', 6, i => OP.pelo[i]), campo('Color de pelo', 'peloColor', 6, i => punto(OP.peloColor[i])),
         modo === 'carrera' ? null : campo('Cuerpo', 'cuerpo', 2, i => OP.cuerpo[i]), modo === 'carrera' ? null : campo('Altura', 'altura', 3, i => OP.altura[i]),
         campo('Complexión', 'complexion', 3, i => OP.complexion[i]), pj.cuerpo === 1 ? null : campo('Barba', 'barba', 4, i => OP.barba[i]), campo('Gafas', 'gafas', 3, i => OP.gafas[i]),
-        campo(modo === 'carrera' ? 'Ropa de calle' : 'Ropa', 'ropa', 4, i => OP.ropa[i]), campo('Accesorios', 'accesorio', 4, i => OP.accesorio[i]), campo('Tatuajes', 'tatuaje', 4, i => OP.tatuaje[i]), campo('Zapatillas', 'zapas', 4, i => OP.zapas[i]));
+        campo(modo === 'carrera' ? 'Ropa de calle' : 'Ropa', 'ropa', 4, i => OP.ropa[i]), campo('Accesorios', 'accesorio', 4, i => OP.accesorio[i]), campo('Tatuajes', 'tatuaje', 4, i => OP.tatuaje[i]), campo('Zapatillas', 'zapas', 4, i => OP.zapas[i]), campo('Ojos', 'ojos', 4, i => OP.ojos[i]), campo('Pendientes', 'pendientes', 3, i => OP.pendientes[i]), campo('Reloj', 'reloj', 2, i => OP.reloj[i]), campo('Cadena', 'cadena', 2, i => OP.cadena[i]), campo('Manguitos', 'mangas', 2, i => OP.mangas[i]));
     }
     pintar();
     modal(h('div', null, h('h3', null, titulo), cuerpo), [{ t: edit ? 'Guardar' : 'Continuar', fn: () => { pj.nombre = ni.value.trim(); pj.apellido = na.value.trim(); if (!pj.nombre) { toast('Escribe un nombre'); return false; } setTimeout(() => fin(pj), 0); } },
-      { t: 'Aspecto aleatorio', cls: 'btn-sec', queda: true, fn: () => { const a = M().personaje.aleatorio(); ['piel', 'pelo', 'peloColor', 'barba', 'gafas', 'ropa', 'complexion', 'accesorio', 'tatuaje', 'cara', 'zapas'].forEach(k => { pj[k] = a[k]; }); pj.nombre = ni.value; pj.apellido = na.value; pintar(); return false; } },
+      { t: 'Aspecto aleatorio', cls: 'btn-sec', queda: true, fn: () => { const a = M().personaje.aleatorio(); ['piel', 'pelo', 'peloColor', 'barba', 'gafas', 'ropa', 'complexion', 'accesorio', 'tatuaje', 'cara', 'zapas', 'ojos', 'pendientes', 'reloj', 'cadena', 'mangas'].forEach(k => { pj[k] = a[k]; }); pj.nombre = ni.value; pj.apellido = na.value; pintar(); return false; } },
       { t: 'Cancelar', cls: 'btn-sec' }], { alta: true });
   }
   function perfilModal() {

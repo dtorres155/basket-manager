@@ -22,13 +22,14 @@
     const { MODELOS, PIEL, PELO, coche, perro } = K();
     const club = st.equipos[st.clubId], ciu = (st.ciudad && st.ciudad[st.clubId]) || { aficion: 50 }, afi = ciu.aficion || 50, partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa;
     const n = Math.round(((partido ? 50 : 42) + (!GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal' ? 14 : 0)) * (GM.campus && GM.campus.factorGente ? GM.campus.factorGente() : 1)), r = rnd(U.hash(st.fecha + 'vecinos')), c1 = club.colores[0], c2 = club.colores[1] || '#222', alta = !GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal';
-    const cat = c => (GM.catalogo ? GM.catalogo.generar(r, { pais: club.pais || club.paisCod || '', mes: +String(st.fecha).slice(5, 7), club, hincha: c }) : null);
+    const cat = c => (GM.catalogo ? GM.catalogo.generar(r, { pais: club.pais || club.paisCod || '', mes: +String(st.fecha).slice(5, 7), temp: S.clima && S.clima.temp, club, hincha: c, rol: !c && GM.vecinos ? GM.vecinos.rolPara(r) : '' }) : null);
     const crear = () => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6), cg = cat(hincha); if (cg) return M.personaje(cg).then(p => { p.hincha = hincha; return p; }); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [c1, c2] : null }).then(p => { p.hincha = hincha; return p; }); };
     const PRIMEROS = 18, lista = await Promise.all(Array.from({ length: Math.min(n, PRIMEROS) }, crear));   // los primeros vecinos salen ya; el resto se va creando por lotes mientras se juega (la carga baja de 2 s a menos de 1)
     const sitio = () => { let q = S.paseo[(r() * S.paseo.length) | 0]; for (let i = 0; i < 3; i++) { const o = S.paseo[(r() * S.paseo.length) | 0]; if (r() < 0.65 && Math.hypot(o[0], o[1]) < Math.hypot(q[0], q[1])) q = o; } return q; };
     const colocar = (p, k) => {
       const q = sitio(); p.obj.position.set(q[0] + (r() - 0.5), 0, q[1] + (r() - 0.5) * 0.6);
       Object.assign(p, { peaton: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino de ' + club.ciudad, r: rnd(U.hash(st.fecha + 'p' + k)), espera: r() * 3 });
+      if (GM.vecinos) GM.vecinos.asignar(S, st, p, k);
       p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p);
       // algunos van con bolsas de la compra; tres corren
       if (k % 4 === 1 && !p.hincha) { const sc = p.obj.scale.x || 1, bolsa = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.32, 0.12), new THREE.MeshStandardMaterial({ color: ['#c0392b', '#f4efe3', '#2f6f9e', '#2e7d32'][k % 4 === 1 ? (k >> 2) % 4 : 0], roughness: 0.8 })); bolsa.scale.setScalar(1 / sc); bolsa.position.set(0.32 / sc, 0.8 / sc, 0.04 / sc); p.obj.add(bolsa); p.rol = 'Vecino con la compra'; }
@@ -152,7 +153,7 @@
     let mejor = null; (S.vias || []).forEach(v => { let L = 0; const ac = [0]; for (let i = 0; i + 1 < v.p.length; i++) { L += Math.hypot(v.p[i + 1][0] - v.p[i][0], v.p[i + 1][1] - v.p[i][1]); ac.push(L); } if (L < 70) return; const vi = { v, L, acum: ac }; for (let s = 0; s <= L; s += 4) { const q = punto(vi, s), d = Math.hypot(q[0] - px, q[1] - pz); if (!mejor || d < mejor.d) mejor = { vi, s, d }; } });
     if (!mejor || mejor.d > 40) return; const obj = K().autobusEquipo(club); S.mundo.add(obj); S.busEquipo = { obj, vi: mejor.vi, s: Math.max(0, mejor.s - 70), parar: mejor.s, fase: 'llega', t: 0, jugadores: [] };
     const jug = club.plantilla.map(i => st.jugadores[i]).filter(p => p && p.id !== 'yo').sort((a, b) => b.ovr - a.ovr).slice(0, 6);
-    S.busEquipo.jugadores = await Promise.all(jug.map((j, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][k % 3], altura: j.altura || 198, piel: PIEL[(U.hash(j.id) >>> 2) % 5], pelo: PELO[(U.hash(j.id) >>> 5) % 6], ropa: [c1, c2] }).then(p => { p.oculto = true; p.obj.visible = false; p.fijo = true; p.rol = 'Jugador del ' + club.siglas; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); S.gente.push(p); return p; })));
+    S.busEquipo.jugadores = await Promise.all(jug.map((j, k) => M.personaje({ modelo: ['h-casual_hoodie', 'h-casual_2', 'h-beach'][k % 3], altura: j.altura || 198, piel: PIEL[(U.hash(j.id) >>> 2) % 5], pelo: PELO[(U.hash(j.id) >>> 5) % 6], ropa: [c1, c2], escudo: { siglas: club.siglas, c1, c2, num: 2 + (U.hash(j.id) % 30) } }).then(p => { p.oculto = true; p.obj.visible = false; p.fijo = true; p.rol = 'Jugador del ' + club.siglas; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); S.gente.push(p); return p; })));
     if (GM.ui && GM.ui.toast) GM.ui.toast('Llega el autobús del equipo al pabellón');
   }
   function moverPartido(S, M, dt) {

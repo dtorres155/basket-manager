@@ -25,8 +25,8 @@
 
   function generar(r, c) {
     c = c || {};
-    const edad = c.edad || pesada(r, ['nino', 'joven', 'adulto', 'mayor'], [0.12, 0.3, 0.38, 0.2]);
-    const sexo = c.sexo || (r() < 0.5 ? 'h' : 'm'), est = estacion(c.mes, c.pais), calido = CALIDOS.test(c.pais || ''), norte = NORDICOS.test(c.pais || '');
+    const edad = c.edad || (c.rol && c.rol !== 'turista' ? 'adulto' : null) || pesada(r, ['nino', 'joven', 'adulto', 'mayor'], [0.12, 0.3, 0.38, 0.2]);
+    const sexo = c.sexo || (r() < 0.5 ? 'h' : 'm'), est = c.temp === undefined || c.temp === null ? estacion(c.mes, c.pais) : c.temp <= 11 ? 'invierno' : c.temp <= 18 ? 'otono' : 'verano', calido = CALIDOS.test(c.pais || ''), norte = NORDICOS.test(c.pais || '');
     const modelo = pick(r, sexo === 'h' ? HOMBRE : MUJER);
     const piel = pesada(r, PIEL, norte ? [3, 4, 2, 1, 1, 0.6, 0.4] : calido ? [1, 3, 4, 3, 1.2, 0.6, 0.4] : [2, 3, 3, 2, 1.5, 1, 0.6]);
     let pelo = pesada(r, PELO, norte ? [1, 1.5, 2, 2, 1.5, 2, 2, 0.6, 0.2, 0.1] : [4, 3, 2, 1, 1, 0.5, 0.2, 0.3, 0.1, 0.05]);
@@ -40,6 +40,10 @@
     // ropa: del club si es hincha; si no, paleta de la estación
     if (c.hincha && c.club && c.club.colores) o.ropa = [c.club.colores[0], c.club.colores[1] || '#222'];
     else if (c.rol === 'trabajador') o.ropa = ['#2f5d8a', '#2b2b2b'];
+    else if (c.rol === 'policia') { o.ropa = ['#1f3550', '#16202f']; o.modelo = sexo === 'h' ? 'h-suit' : 'm-suit'; }
+    else if (c.rol === 'repartidor') { o.ropa = ['#f2a900', '#2b2b2b']; o.modelo = sexo === 'h' ? 'h-worker' : 'm-worker'; }
+    else if (c.rol === 'comerciante') o.ropa = pick(r, [['#8a6a3a', '#e8e2d0'], ['#3f6f5a', '#e8e2d0'], ['#9a3d3d', '#d8d2c0']]);
+    else if (c.rol === 'turista') o.ropa = pick(r, VERANO);
     else o.ropa = pick(r, est === 'verano' ? VERANO : est === 'invierno' ? INVIERNO : OTONO);
     // complementos
     if (edad !== 'nino') {
@@ -58,12 +62,21 @@
     }
     if (edad === 'nino' || (edad === 'joven' && r() < 0.4)) { if (r() < 0.6) o.mochila = pick(r, ['#c0392b', '#2d4a8a', '#2d8a4a', '#d8b46a', '#444']); }
     else if (r() < 0.2) o.bolso = pick(r, ['#5a3920', '#1a1a1a', '#8a2d2d']);
-    o.edad = edad; o.sexo = sexo; o.estacion = est;
+    if (c.rol === 'policia') { o.gorra = '#1f3550'; delete o.barba; delete o.tatuaje; delete o.bufanda; delete o.gorro; delete o.mochila; delete o.bolso; }
+    if (c.rol === 'repartidor') { o.mochila = '#f2a900'; delete o.bolso; delete o.gorro; }
+    if (c.rol === 'turista') { o.gorra = o.gorra || pick(r, ['#ffffff', '#d8b46a', '#c0392b']); o.gafas = o.gafas || 1; o.mochila = o.mochila || '#2d4a8a'; delete o.gorro; delete o.bufanda; }
+    // cuerpo: de muy delgado a robusto; niños con piernas y brazos más cortos; faldas y abrigos
+    o.ancho = pesada(r, [0.88, 0.94, 1, 1.07, 1.16], edad === 'mayor' ? [1, 2, 3, 3, 2] : [1.2, 2.5, 3, 2, 1]); delete o.complexion;
+    if (edad === 'nino') { o.proporcion = 'nino'; delete o.cabeza; o.ancho = 0.9 + r() * 0.1; }
+    if (sexo === 'm' && edad !== 'nino' && !c.rol && est !== 'invierno' && r() < 0.32) { o.falda = o.ropa[1]; o.faldaLarga = r() < 0.5; }
+    if (est === 'invierno' && !c.hincha && !c.rol && r() < 0.7) o.abrigo = pick(r, ['#2b2f3a', '#5a4636', '#3a4a3f', '#6b2f2f', '#8a8478', '#1f2a44']);
+    else if (est === 'otono' && !c.hincha && !c.rol && r() < 0.3) o.abrigo = pick(r, ['#4a5a6a', '#6a5a3a', '#3a3a3a']);
+    o.edad = edad; o.sexo = sexo; o.estacion = est; if (c.rol) o.rolV = c.rol;
     return o;
   }
 
   // Firma corta de una persona: sirve para comprobar que dos vecinos a la vista no son iguales
-  const firma = o => [o.modelo, o.piel, o.pelo, o.ropa && o.ropa[0], o.ropa && o.ropa[1], Math.round((o.altura || 0) / 6), o.gorra || '', o.gorro || '', o.bufanda || '', o.mochila || '', o.bolso || '', o.barba || '', o.gafas || ''].join('|');
+  const firma = o => [o.modelo, o.piel, o.pelo, o.ropa && o.ropa[0], o.ropa && o.ropa[1], Math.round((o.altura || 0) / 6), o.gorra || '', o.gorro || '', o.bufanda || '', o.mochila || '', o.bolso || '', o.barba || '', o.gafas || '', o.abrigo || '', o.falda ? 1 : '', o.ancho || ''].map(String).join('|');
   // Lote de n personas distintas entre sí (reintenta los repetidos)
   function lote(r, n, c) { const vistas = new Set(), res = []; for (let i = 0; i < n; i++) { let o, t = 0; do { o = generar(r, c); t++; } while (vistas.has(firma(o)) && t < 12); vistas.add(firma(o)); res.push(o); } return res; }
 

@@ -10,7 +10,7 @@
       obj.scale.setScalar((o.altura || 178) / 100 / g.altoBase);
       // Rendimiento: todas las piezas (piel, pelo, ropa, ojos...) se funden en UNA malla con el color en los vértices.
       // Antes eran ~11 mallas por persona (y el doble con sombras). Se guardan los tramos de ropa para los petos.
-      const color = n => { const nm = n.material.name || ''; if (o.piel && /^Skin/.test(nm)) return o.piel; if (o.pelo && /Hair|Eyebrows|Moustache/.test(nm)) return o.pelo; if (o.ropa && /^(Purple|Red_Dark|LightBrown)$/.test(nm)) return o.ropa[0]; if (o.ropa && /^(LightBlue)$/.test(nm)) return o.ropa[1]; return '#' + n.material.color.getHexString(); };
+      const color = n => { const nm = n.material.name || ''; if (o.piel && /^Skin/.test(nm)) return o.piel; if (o.pelo && /Hair|Eyebrows|Moustache/.test(nm)) return o.pelo; if (o.ojos && /^Eye$/.test(nm)) return o.ojos; if (o.ropa && /^(Purple|Red_Dark|LightBrown)$/.test(nm)) return o.ropa[0]; if (o.ropa && /^(LightBlue)$/.test(nm)) return o.ropa[1]; return '#' + n.material.color.getHexString(); };
       const piezas = []; obj.traverse(n => { if (n.isSkinnedMesh) piezas.push(n); });
       const pies = new Set(); if (o.zapas && piezas[0]) piezas[0].skeleton.bones.forEach((b, i) => { if (/^(Foot|PT)/.test(b.name)) pies.add(i); });
       const ccZ = new THREE.Color(o.zapas || '#ffffff');
@@ -42,15 +42,18 @@
       const mixer = new THREE.AnimationMixer(obj), acc = {};
       Object.keys(ANIM).forEach(k => { const c = an.animations.find(a => a.name === ANIM[k]); if (c) acc[k] = mixer.clipAction(c); });
       const B = {}; obj.traverse(n => { if (n.isBone) B[n.name] = n; });
+      if (GM.animCodigo) GM.animCodigo.instalar({ mixer, acc, obj }, o.modelo, an, ANIM);
       if (GM.campus && GM.campus.config.calidad !== 'alta') { // sombra pintada bajo los pies
         if (!_mSombra) { const t = textura('sombra-pies', 64, (x, n) => { const g2 = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2); g2.addColorStop(0, 'rgba(0,0,0,0.45)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g2; x.fillRect(0, 0, n, n); }); _mSombra = new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false }); }
         const sb = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9).rotateX(-Math.PI / 2), _mSombra); sb.position.y = 0.02 / obj.scale.x; sb.scale.setScalar(1 / obj.scale.x); sb.renderOrder = 1; obj.add(sb);
       }
+      if (o.ancho) { obj.scale.x *= o.ancho; obj.scale.z *= o.ancho; }
+      if (o.proporcion === 'nino') { ['UpperLegL', 'UpperLegR'].forEach(b => B[b] && B[b].scale.setScalar(0.84)); ['UpperArmL', 'UpperArmR'].forEach(b => B[b] && B[b].scale.setScalar(0.88)); if (B.Head) B.Head.scale.multiplyScalar(1.16); }
       if (o.complexion !== undefined) { const k = [0.93, 1, 1.08][o.complexion] || 1; obj.scale.x *= k; obj.scale.z *= k; }
       if (o.cara && B.Head) { const e = [null, [1.07, 0.95, 1.04], [0.94, 1.07, 0.98], [1.09, 1.0, 1.03]][o.cara]; if (e) B.Head.scale.set(e[0], e[1], e[2]); }
       if (o.cabeza && B.Head) B.Head.scale.multiplyScalar(o.cabeza);
       complementos(obj, B, o);
-      return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa, ropa: o.ropa };
+      return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa, ropa: o.ropa, edad: o.edad, sexo: o.sexo, rolV: o.rolV };
     }
     return personaje;
   };
