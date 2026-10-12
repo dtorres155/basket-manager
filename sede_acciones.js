@@ -101,6 +101,7 @@
   }
   // ---------- Rueda de prensa ----------
   function ruedaPrensa(st) {
+    if (M().prensa) return M().prensa.conferencia(st);   // con memoria: recuerda promesas y provocaciones (prensa.js)
     const C = M().competiciones, g = C && C.proximoPartido(st, st.clubId), riv = g ? st.equipos[g.local === st.clubId ? g.visitante : g.local] : null;
     const ult = (st.calendario || []).filter(x => x.resultado && (x.local === st.clubId || x.visitante === st.clubId)).pop();
     let pregunta, contexto;
@@ -116,6 +117,7 @@
   }
   function responder(st, i) {
     if (espera(st, 'rueda', 7)) return { ok: false, motivo: 'Ya hubo rueda de prensa esta semana.' };
+    if (M().prensa) { const r = M().prensa.responder(st, i); if (r.ok) usos(st).rueda = st.fecha; return r; }
     const rp = ruedaPrensa(st), r = rp._r[i]; if (!r) return { ok: false, motivo: 'Respuesta no válida.' };
     const e = r[1], out = []; usos(st).rueda = st.fecha;
     if (e.moral) { plantilla(st).forEach(p => subir(p, 'moral', e.moral)); out.push('ánimo ' + (e.moral > 0 ? '+' : '') + e.moral); }

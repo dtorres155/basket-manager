@@ -288,6 +288,10 @@
     tomar('estacion', b => b.cl === 13 && acc(b), b => b.dc, 13);
     tomar('campus', b => acc(b) && b.ar > 500 && [0, 9, 3].indexOf(b.cl) >= 0 && b.dc > 150 && b.dc < 265, b => -b.dc, 9) || sint('campus', 9, 150, 250, 22, 12, 2);
     tomar('bus', b => acc(b) && b.ar > 80 && b.dc > 130 && b.dc < 230, b => Math.abs(b.dc - 190), undefined) || sint('bus', 0, 130, 230, 9, 7, 2);
+    // hitos de la ciudad que crece (crecimiento.js): el hotel y el museo ocupan edificios cerca del pabellón
+    const crH = GM.mods.crecimiento && st.ciudad && st.ciudad[st.clubId] && st.ciudad[st.clubId].crec ? st.ciudad[st.clubId].crec.hitos : {};
+    if (crH.hotel && crH.hotel.estado === 'hecho') tomar('hotel', b => acc(b) && b.ar > 250 && b.ar < 1800 && [0, 1, 3, 8].indexOf(b.cl) >= 0 && b.dc > 40 && b.dc < 190, b => Math.abs(b.dc - 90) + (b.lv >= 4 ? 0 : 30), 8) || sint('hotel', 8, 40, 170, 22, 14, 6);
+    if (crH.museo && crH.museo.estado === 'hecho') tomar('museo', b => acc(b) && b.ar > 200 && b.ar < 1500 && [0, 1, 3, 6].indexOf(b.cl) >= 0 && b.dc > 40 && b.dc < 190 && !b.rol, b => Math.abs(b.dc - 70), 6) || sint('museo', 6, 40, 160, 18, 12, 3);
     // tus viviendas
     const vivs = GM.mods.hogar && GM.mods.hogar.viviendas ? GM.mods.hogar.viviendas(st) : [];
     vivs.forEach((v, k) => {
@@ -348,7 +352,10 @@
     SALAS.pabellon = { id: 'pabellon', nombre: club.pabellon.nombre, accion: 'Taquillas y estado del pabellón', destino: { todos: 'club' } };
     if (R.sede) { const p = poner('sede', R.sede, club.nombre.toUpperCase(), c1, '#ffffff', { ancho: 8, y: 3.6 }); S.spawnCalle = { x: p.x, z: p.z, ry: p.ry }; entrada('sede', p); SALAS.sede = { id: 'sede_calle', nombre: 'Sede del club', accion: 'Volver a las instalaciones', destino: {}, irA: 'sede', boton: 'Entrar en la sede' }; }
     else { const p = puntoPuerta(R.pabellon, X, G, 5); S.spawnCalle = { x: p.x, z: p.z, ry: p.ry }; }
-    if (R.tienda) { poner('tienda', R.tienda, 'TIENDA OFICIAL ' + club.siglas, '#14181d', '#ffffff', { ancho: 6.2 }); SALAS.tienda = { id: 'tienda', nombre: 'Tienda oficial', accion: 'Camisetas, bufandas y aficionados', destino: {} }; }
+    const crM = st.ciudad && st.ciudad[st.clubId] && st.ciudad[st.clubId].crec ? st.ciudad[st.clubId].crec.hitos : {}, hecho = id => !!(crM[id] && crM[id].estado === 'hecho');
+    if (R.hotel) { poner('hotel', R.hotel, 'HOTEL ' + club.siglas, '#1f2f4a', '#f2d27a', { ancho: 7, y: 4.2 }); SALAS.hotel = { id: 'hotel', nombre: 'Hotel ' + club.siglas, accion: 'El hotel del club: llena los fines de semana de partido', destino: {} }; }
+    if (R.museo) { poner('museo', R.museo, 'MUSEO DEL ' + club.siglas, c1, '#ffffff', { ancho: 7, y: 4 }); SALAS.museo = { id: 'museo', nombre: 'Museo del club', accion: 'Copas, camisetas históricas y un paseo por la historia del club', destino: {} }; }
+    if (R.tienda) { poner('tienda', R.tienda, (hecho('tienda') ? 'MEGATIENDA ' : 'TIENDA OFICIAL ') + club.siglas, '#14181d', '#ffffff', { ancho: hecho('tienda') ? 8 : 6.2 }); SALAS.tienda = { id: 'tienda', nombre: 'Tienda oficial', accion: 'Camisetas, bufandas y aficionados', destino: {} }; }
     if (R.pena) { const p = poner('pena', R.pena, 'BAR LA PEÑA', '#5a3b26', '#f2d27a', { ancho: 5.5 }); S.ptoPena = [p.x, p.z]; SALAS.pena = { id: 'pena', nombre: 'Bar La Peña', accion: 'Donde se reúne la afición', destino: {} }; }
     if (R.ayuntamiento) { poner('ayuntamiento', R.ayuntamiento, 'AYUNTAMIENTO DE ' + club.ciudad.toUpperCase(), '#1d4f91', '#ffffff', { ancho: 9, y: 4.4 }); SALAS.ayuntamiento = { id: 'ayuntamiento', nombre: 'Ayuntamiento de ' + club.ciudad, accion: 'Convenios y relación con la ciudad', destino: { todos: 'ciudad' } }; }
     if (R.kiosco) { poner('kiosco', R.kiosco, 'PRENSA', '#2a2f35', '#ffffff', { ancho: 3 }); SALAS.kiosco = { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {} }; }
@@ -407,7 +414,7 @@
   // ---------- Metro y bicis compartidas ----------
   function transporte(S, M, X, G, W, c, SALAS, zonas, paseo, bar) {
     const T = { letrero: (txt, fondo, letra, clave) => M.textura('letrero-' + clave + txt, 512, (x, n) => { x.fillStyle = fondo; x.fillRect(0, 0, n, n / 4); x.fillStyle = letra; let fs = 64; x.font = 'bold ' + fs + 'px sans-serif'; while (x.measureText(txt).width > n * 0.92 && fs > 20) { fs -= 4; x.font = 'bold ' + fs + 'px sans-serif'; } x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, n / 2, n / 8); }) };
-    const base = S.paseoBase || muestreoAceras(X, G), U3 = GM.urbano, nom = { oeste: bar[3] || 'Oeste', este: bar[4] || 'Este', norte: bar[1] || 'Norte', centro: bar[0] || c.club.ciudad };
+    const base = S.paseoBase || muestreoAceras(X, G), U3 = GM.urbano, hechoM = st => { const h = st.ciudad && st.ciudad[st.clubId] && st.ciudad[st.clubId].crec ? st.ciudad[st.clubId].crec.hitos : {}; return !!(h.metro && h.metro.estado === 'hecho'); }, nom = { oeste: bar[3] || 'Oeste', este: bar[4] || 'Este', norte: bar[1] || 'Norte', centro: hechoM(S.st || {}) ? c.club.nombre : (bar[0] || c.club.ciudad) };
     const OBJ = [['centro', 0, 70], ['oeste', -170, 10], ['este', 170, 10], ['norte', 10, -170]], elegidas = [];
     OBJ.forEach(([k, tx, tz]) => {
       const L = base.map(q => [Math.hypot(q[0] - tx, q[1] - tz), q]).sort((a, b) => a[0] - b[0]);

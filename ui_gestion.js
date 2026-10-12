@@ -42,6 +42,7 @@
       h('button', { class: 'btn', onclick: () => { const r = M().mercado.vender(st, id, o.equipoId); if (r.ok) { cerrarModales(); toast('Traspaso cerrado'); refrescar(); } else toast(r.motivo); } }, 'Vender')))) : h('p', { class: 'muted' }, 'Ningún club está interesado ahora mismo.')), [{ t: 'Cerrar', cls: 'btn-sec' }]);
   }
   function dialogoContrato(id, tipo) {
+    if (M().negociacion && GM.ui._.dialogoNegociacion) return GM.ui._.dialogoNegociacion(id, tipo);   // negociación con agente, cláusulas, opciones y bonus (ui_extra.js)
     const st = S(), p = st.jugadores[id], Mm = M().mercado, club = st.clubId;
     const pedido = Mm.salarioPedido(st, id, club), ren = tipo === 'renovar';
     const min = Math.round(pedido * 0.7 / 10000) * 10000, max = Math.round(pedido * 1.8 / 10000) * 10000;
@@ -71,7 +72,8 @@
         h('span', { class: 'pos' }, p.pos), h('span', { class: 'ct' }, h('b', null, clip(p.nombre, 22)), h('span', { class: 'muted' }, p.edad + ' años' + (p.estado.lesion ? ', lesionado' : ''))), sel.indexOf(p.id) >= 0 ? chip('Titular', 'ok') : null, h('span', { class: 'ovr ' + clsOvr(p.ovr) }, p.ovr)))));
       const seg = (tit, key, ops) => h('div', { class: 'ajuste' }, h('b', null, tit), h('div', { class: 'seg' }, ops.map(o => h('button', { class: 'tab' + (t[key] === o[0] ? ' on' : ''), onclick: () => { t[key] = o[0]; draw(); } }, o[1]))));
       cont.append(seccion('Estilo', seg('Ritmo', 'ritmo', [[1, 'Muy lento'], [2, 'Lento'], [3, 'Normal'], [4, 'Rápido'], [5, 'Muy rápido']]), seg('Defensa', 'defensa', [['hombre', 'Individual'], ['zona', 'Zona'], ['mixta', 'Mixta']]), seg('Foco ofensivo', 'foco', [['interior', 'Interior'], ['equilibrado', 'Equilibrado'], ['exterior', 'Exterior']])));
-      cont.append(h('div', { class: 'par' }, h('button', { class: 'btn', onclick: () => { if (t.quinteto.length !== 5) { toast('Elige 5 titulares'); return; } st.equipos[club].tactica = { quinteto: t.quinteto.slice(), ritmo: t.ritmo, defensa: t.defensa, foco: t.foco }; toast('Táctica guardada'); } }, 'Guardar táctica'),
+      cont.append(seccion('Sistema de juego', seg('Esquema de ataque', 'ataque', [['equilibrado', 'Equilibrado'], ['pick', 'Pick and roll'], ['aislamiento', 'Aislamientos'], ['movimiento', 'Mover el balón'], ['poste', 'Poste']]), seg('Presión defensiva', 'presion', [['ninguna', 'Ninguna'], ['media', 'Media'], ['alta', 'Alta']]), seg('Rebote', 'rebote', [['equilibrado', 'Equilibrado'], ['ofensivo', 'Ofensivo'], ['retorno', 'Volver a defender']]), seg('Rotación', 'rotacion', [['corta', 'Corta'], ['normal', 'Normal'], ['larga', 'Larga']]), h('p', { class: 'muted' }, 'Cada ajuste tiene un coste: la presión cansa, la rotación corta fatiga a tus mejores y los esquemas rinden más con un buen ayudante (pestaña Cuerpo técnico).')));
+      cont.append(h('div', { class: 'par' }, h('button', { class: 'btn', onclick: () => { if (t.quinteto.length !== 5) { toast('Elige 5 titulares'); return; } st.equipos[club].tactica = { quinteto: t.quinteto.slice(), ritmo: t.ritmo, defensa: t.defensa, foco: t.foco, ataque: t.ataque || 'equilibrado', presion: t.presion || 'ninguna', rebote: t.rebote || 'equilibrado', rotacion: t.rotacion || 'normal' }; toast('Táctica guardada'); } }, 'Guardar táctica'),
         h('button', { class: 'btn btn-sec', onclick: () => { t = Object.assign({}, P.tacticaAuto(st, club)); draw(); } }, 'Automática')));
     };
     el.append(cont); draw();
@@ -88,7 +90,8 @@
   function plantilla(el, st) {
     if (lectura() && !tacticaOn() && ui.tab.plantilla === 'tactica') ui.tab.plantilla = 'plantilla';
     if ((carrera() || entr()) && ui.tab.plantilla === 'cantera') ui.tab.plantilla = 'plantilla';
-    el.append(pestanas(carrera() ? [['plantilla', 'Plantilla']] : entr() ? [['plantilla', 'Plantilla'], ['tactica', 'Táctica']] : pres() ? [['plantilla', 'Plantilla'], ['cantera', 'Cantera']] : [['plantilla', 'Plantilla'], ['tactica', 'Táctica'], ['cantera', 'Cantera']], ui.tab.plantilla, t => { ui.tab.plantilla = t; refrescar(true); }));
+    el.append(pestanas((carrera() ? [['plantilla', 'Plantilla']] : entr() ? [['plantilla', 'Plantilla'], ['tactica', 'Táctica']] : pres() ? [['plantilla', 'Plantilla'], ['cantera', 'Cantera']] : [['plantilla', 'Plantilla'], ['tactica', 'Táctica'], ['cantera', 'Cantera']]).concat(GM.ui.tabsExtra('plantilla', st)), ui.tab.plantilla, t => { ui.tab.plantilla = t; refrescar(true); }));
+    const ex = GM.ui.tabExtra('plantilla', ui.tab.plantilla); if (ex) { ex.render(el, st); return; }
     ({ plantilla: tabPlantilla, tactica: tabTactica, cantera: tabCantera })[ui.tab.plantilla](el, st);
   }
 
@@ -98,7 +101,8 @@
   }
   function mercado(el, st) {
     const Mm = M().mercado, club = st.clubId, tp = Mm.topeSalarial(st, club);
-    el.append(pestanas([['libres', 'Libres'], ['clubes', 'Otros clubes'], ['contratos', 'Contratos']], ui.tab.mercado, t => { ui.tab.mercado = t; refrescar(true); }));
+    el.append(pestanas([['libres', 'Libres'], ['clubes', 'Otros clubes'], ['contratos', 'Contratos']].concat(GM.ui.tabsExtra('mercado', st)), ui.tab.mercado, t => { ui.tab.mercado = t; refrescar(true); }));
+    { const ex = GM.ui.tabExtra('mercado', ui.tab.mercado); if (ex) { ex.render(el, st); return; } }
     el.append(h('div', { class: 'resumen' }, h('span', null, 'Masa salarial'), h('b', null, U.eur(tp.masa) + ' / ' + U.eur(tp.tope)), barra(tp.masa, tp.tope, tp.margen < 0 ? 'rojo' : 'verde'), h('span', { class: 'muted' }, tp.tipo + ', plantilla ' + st.equipos[club].plantilla.length + '/15')));
     if (ui.tab.mercado === 'libres') {
       const ls = Mm.libres(st).slice(0, 40);
@@ -150,7 +154,8 @@
     const esCont = id => conts.indexOf(id) >= 0, nombreComp = id => esCont(id) ? st.continental[id].nombre : st.ligas[id].nombre;
     if (!ui.comp || ligas.indexOf(ui.comp) < 0) ui.comp = GM.ligasDe(st, club)[0] || ligas[0];
     if (carrera() && st.carrera.fase === 'ncaa' && ui.tab.calendario === 'partidos') ui.tab.calendario = 'tabla';
-    el.append(pestanas([['partidos', 'Partidos'], ['tabla', 'Clasificación'], ['playoffs', 'Playoffs'], ['copas', 'Copas y derbis'], ['lideres', 'Líderes']], ui.tab.calendario, t => { ui.tab.calendario = t; refrescar(true); }));
+    el.append(pestanas([['partidos', 'Partidos'], ['tabla', 'Clasificación'], ['playoffs', 'Playoffs'], ['copas', 'Copas y derbis'], ['lideres', 'Líderes']].concat(GM.ui.tabsExtra('calendario', st)), ui.tab.calendario, t => { ui.tab.calendario = t; refrescar(true); }));
+    { const ex = GM.ui.tabExtra('calendario', ui.tab.calendario); if (ex) { ex.render(el, st); return; } }
     if (ui.tab.calendario === 'copas') { copasPantalla(el, st); return; }
     if (ui.tab.calendario !== 'partidos') el.append(h('div', { class: 'seg compacto' }, ligas.map(l => h('button', { class: 'tab' + (ui.comp === l ? ' on' : ''), onclick: () => { ui.comp = l; refrescar(); } }, CORTO[l] || l))));
     const t = ui.tab.calendario;
@@ -193,7 +198,8 @@
   // ---------- Pantalla: Club (3D) ----------
   function club(el, st) {
     desmontar();
-    el.append(pestanas([['cd', 'Ciudad deportiva'], ['est', 'Estadio']], ui.tab.club, t => { ui.tab.club = t; refrescar(true); }));
+    el.append(pestanas([['cd', 'Ciudad deportiva'], ['est', 'Estadio']].concat(GM.ui.tabsExtra('club', st)), ui.tab.club, t => { ui.tab.club = t; refrescar(true); }));
+    { const ex = GM.ui.tabExtra('club', ui.tab.club); if (ex) { ex.render(el, st); return; } }
     const cont = h('div', { class: 'club3d' }); el.append(cont);
     const m = ui.tab.club === 'cd' ? M().ciudadDeportiva : M().estadio;
     if (m && m.mount) m.mount(cont, st); else cont.append(aviso('Módulo no disponible.', 'mal'));

@@ -246,6 +246,33 @@
       if (pos.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); const me = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide })); me.userData = { banderines: true }; W.add(me);
         inst(new THREE.CylinderGeometry(0.07, 0.09, 6.4, 8).translate(0, 3.2, 0), mat(0x2a2f35), polos.map(p => ({ x: p[0], z: p[1] })), 'mastiles'); polos.forEach(p => bloquea(p[0], p[1], 0.25)); }
     }
+    // ---------- La ciudad que crece (crecimiento.js): fan zone, plaza, estatua y obras en curso junto al pabellón ----------
+    { const cr = st.ciudad && st.ciudad[st.clubId] && st.ciudad[st.clubId].crec, pto = S.ptoPab;
+      if (cr && pto && GM.mods.crecimiento) {
+        const U3 = GM.urbano, hs = GM.mods.crecimiento.hitos(st).filter(x => x.estado === 'hecho' || x.estado === 'obra'), usadosH = [];
+        const hueco = (w, dd) => { for (const r of [4, 8, 12, 16, 22, 30, 40, 52, 64]) for (let a = 0; a < 6.28; a += 0.4) { const x = pto[0] + Math.cos(a) * r, z = pto[1] + Math.sin(a) * r; if (usadosH.some(q => Math.hypot(q[0] - x, q[1] - z) < 9)) continue; if (U3.libre(G, x - w / 2, z - dd / 2, x + w / 2, z + dd / 2)) { usadosH.push([x, z]); return [x, z]; } } return null; };
+        const c1h = c.c1, c2h = c.c2 === '#ffffff' ? '#f1c40f' : c.c2;
+        hs.forEach(h => {
+          if (h.estado === 'obra' && ['hotel', 'museo', 'fanzone', 'plaza', 'estatua', 'tienda', 'pistas'].indexOf(h.id) >= 0) {
+            const p = hueco(10, 8); if (!p) return; const [x, z] = p, g = new THREE.Group(); g.position.set(x, 0, z); const val = mat(0xe8e2d4, { roughness: 0.9 });
+            for (const [w, dd, ox, oz] of [[10, 0.2, 0, -4], [10, 0.2, 0, 4], [0.2, 8, -5, 0], [0.2, 8, 5, 0]]) g.add(new THREE.Mesh(new THREE.BoxGeometry(w, 1.8, dd).translate(ox, 0.9, oz), val));
+            const fase = Math.max(1, Math.round(h.progreso * 3)); for (let k = 0; k < fase; k++) g.add(new THREE.Mesh(new THREE.BoxGeometry(6, 0.3, 4).translate(0, 0.4 + k * 2.2, 0), mat(0xa7adb2)), ...[-2.5, 2.5].flatMap(px => [-1.5, 1.5].map(pz => new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.2, 0.35).translate(px, 1.5 + k * 2.2, pz), mat(0xb8bcc0)))));
+            const mastil = new THREE.Mesh(new THREE.BoxGeometry(0.4, 12, 0.4).translate(-4, 6, -3), mat(0xf1c40f)), pluma = new THREE.Group(); pluma.position.set(-4, 12, -3); const br = new THREE.Mesh(new THREE.BoxGeometry(11, 0.4, 0.4).translate(4, 0, 0), mat(0xf1c40f)); pluma.add(br); pluma.userData = { anim: t => { pluma.rotation.y = Math.sin(t * 0.15 + x) * 1.1; } }; g.add(mastil, pluma);
+            g.userData = { obraCiudad: h.id }; W.add(g); bloquea(x, z, 5.2); I.cartel(W, M, ('OBRAS: ' + h.nombre).toUpperCase().slice(0, 28), '#f39c12', '#1d2024', x, 2.6, z + 4.25, 0, 6);
+          }
+          if (h.estado !== 'hecho') return;
+          if (h.id === 'fanzone') { const p = hueco(12, 8); if (!p) return; const [x, z] = p, g = new THREE.Group(); g.position.set(x, 0, z);
+            g.add(new THREE.Mesh(new THREE.BoxGeometry(7, 0.5, 3.5).translate(0, 0.25, -2.5), mat(0x2a2f35)), new THREE.Mesh(new THREE.BoxGeometry(6.4, 3.6, 0.2).translate(0, 2.8, -4), mat(0x101418, { emissive: 0x335a99, emissiveIntensity: 0.7 })));
+            [-5, -1.7, 1.7, 5].forEach((px, k) => { g.add(new THREE.Mesh(new THREE.BoxGeometry(2, 2, 1.4).translate(px, 1, 2.2), mat(k % 2 ? c1h : c2h)), new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 1.9).translate(px, 2.2, 2.1), mat(k % 2 ? c2h : c1h))); });
+            g.userData = { fanzone: true }; W.add(g); bloquea(x, z, 6); I.cartel(W, M, 'FAN ZONE ' + club.siglas, c1h, '#ffffff', x, 5.2, z - 3.85, 0, 6); }
+          else if (h.id === 'plaza') { const p = hueco(6, 6); if (!p) return; const [x, z] = p, g = new THREE.Group(); g.position.set(x, 0, z); g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3, 8).translate(0, 1.5, 0), mat(0x2a2f35)), new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 0.04, 24).translate(0, 0.02, 0), mat(0xd8cfb8)));
+            for (const a of [0.8, 3.9]) g.add(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 0.5).translate(Math.cos(a) * 2.8, 0.25, Math.sin(a) * 2.8), mat(0x5a4630)));
+            g.userData = { plaza: true }; W.add(g); bloquea(x, z, 1); I.cartel(W, M, ('PLAZA ' + club.nombre).toUpperCase().slice(0, 26), '#1d4f91', '#ffffff', x, 3.3, z + 0.12, 0, 3.4); }
+          else if (h.id === 'estatua') { const p = hueco(5, 5); if (!p) return; const [x, z] = p, g = new THREE.Group(), bronce = mat(0x6a4a2a, { metalness: 0.6, roughness: 0.4 }); g.position.set(x, 0, z);
+            g.add(new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 2).translate(0, 0.6, 0), mat(0xbdb6a6)), new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.1, 4, 8).translate(0, 2.2, 0), bronce), new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10).translate(0, 3.2, 0), bronce), new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.2, 6).rotateZ(0.5).translate(0.55, 3.2, 0), bronce), new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8).translate(1.05, 3.55, 0), mat(0xd9692b)));
+            g.userData = { estatua: true }; W.add(g); bloquea(x, z, 1.3); I.cartel(W, M, 'LEYENDA DEL ' + club.siglas, '#3a3f45', '#f2d27a', x, 0.8, z + 1.06, 0, 1.8); }
+        });
+      } }
     S.mapaVec && (S.mapaVec.N = X.N.map(n => ({ t: n.t, nom: n.nom, x: n.x, z: n.z })));
   }
   GM.register('calleRealDetalle', { detallar });

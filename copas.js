@@ -65,7 +65,7 @@
   });
   GM.bus.on('temporada:nueva', function () { const st = GM.state; if (st && st.copas) iniciar(st); });
 
-  GM.compNombre = (st, comp) => st.ligas[comp] ? st.ligas[comp].nombre : (st.copas && st.copas[comp] ? st.copas[comp].nombre : comp);
+  GM.compNombre = (st, comp) => comp === 'AMISTOSO' ? 'Pretemporada' : st.ligas[comp] ? st.ligas[comp].nombre : (st.copas && st.copas[comp] ? st.copas[comp].nombre : comp);
   function estado(st) { return st.copas || {}; }
   function copa(st, id) {
     const c = st.copas[id]; if (!c) return null;

@@ -213,6 +213,7 @@
       if (st._directo) delete st._directo[g.id];
       const mio = g.local === st.clubId || g.visitante === st.clubId;
       g.resultado = mio ? sim : { local: sim.local, visitante: sim.visitante, ot: sim.ot, cuartos: sim.cuartos };
+      if (g.fase === 'amistoso') { GM.bus.emit('amistoso:jugado', { partido: g }); return; }   // los amistosos no cuentan para estadísticas, taquilla ni clasificación (pretemporada.js)
       for (const pid in sim.stats) {
         const s = sim.stats[pid], t = st.estadisticas[pid] || (st.estadisticas[pid] = { pj: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fal: 0 });
         t.pj++; t.min += s.min; t.pts += s.pts; t.reb += s.reb; t.ast += s.ast; t.stl += s.stl; t.blk += s.blk; t.tov += s.tov; t.fal += s.fal;

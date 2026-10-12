@@ -47,7 +47,9 @@
   }
   function tacticaAuto(state, eqId) {
     const q = mejorQuinteto(plantilla(state, eqId));
-    return { quinteto: q.map(p => p.id), ritmo: 2 + (U.hash(eqId) % 3), defensa: 'hombre', foco: 'equilibrado' };
+    // La IA tiene un estilo propio (según el club): unos juegan el pick and roll, otros mueven el balón, aprietan la defensa o van al poste. Sirve para que el informe del rival tenga sentido.
+    const e = U.hash(eqId + 'estilo') % 12, ataque = e <= 1 ? 'pick' : e === 2 ? 'movimiento' : e === 3 ? 'aislamiento' : e === 4 ? 'poste' : 'equilibrado', presion = e === 5 || e === 6 ? 'media' : 'ninguna';
+    return { quinteto: q.map(p => p.id), ritmo: 2 + (U.hash(eqId) % 3), defensa: 'hombre', foco: 'equilibrado', ataque, presion, rebote: 'equilibrado', rotacion: 'normal' };
   }
   function tacticaValida(state, eqId) {
     let t = state.equipos[eqId].tactica;
@@ -64,6 +66,7 @@
   }
 
   const FRAC = [0.80, 0.78, 0.74, 0.70, 0.66, 0.55, 0.46, 0.36, 0.24, 0.12, 0.05];
+  const FRAC_CORTA = [0.86, 0.84, 0.80, 0.75, 0.70, 0.58, 0.46, 0.30, 0.15, 0.06, 0.02], FRAC_LARGA = [0.74, 0.72, 0.68, 0.65, 0.62, 0.56, 0.50, 0.44, 0.34, 0.22, 0.12];
   function mkTeam(state, eqId, tac, gmin) {
     const pl = plantilla(state, eqId);
     const byId = {}; pl.forEach(p => { byId[p.id] = p; });
@@ -73,11 +76,15 @@
     const n = Math.min(lista.length, FRAC.length);
     let sum = 0; for (let i = 0; i < n; i++) sum += FRAC[i];
     const sc = 5 / sum;
+    const rt = tac.rotacion === 'corta' ? FRAC_CORTA : tac.rotacion === 'larga' ? FRAC_LARGA : FRAC;
+    sum = 0; for (let i = 0; i < n; i++) sum += rt[i]; const sc2 = 5 / sum;
+    const eq = state.equipos[eqId], coh = eq && typeof eq.cohesion === 'number' ? eq.cohesion : 55, fq = (0.985 + 0.0003 * coh) * (tac.presion === 'alta' ? 0.985 : tac.presion === 'media' ? 0.994 : 1);
     const rot = lista.map((p, i) => ({
-      p, f: effF(p), played: 0, jit: 0, target: (i < n ? Math.min(0.92, FRAC[i] * sc) : 0.02) * gmin,
+      p, f: effF(p) * fq, played: 0, jit: 0, target: (i < n ? Math.min(0.92, rt[i] * sc2) : 0.02) * gmin,
       s: { min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fal: 0 }
     }));
-    return { id: eqId, tac, rot, score: 0, rm: 1 + (tac.ritmo - 3) * 0.035 };
+    const st = state.staff, mio = eqId === state.clubId && st ? st : null;
+    return { id: eqId, tac, rot, score: 0, rm: 1 + (tac.ritmo - 3) * 0.035, bonus: { ataque: mio ? mio.ataque || 0 : 0, defensa: mio ? mio.defensa || 0 : 0 } };
   }
   function elige(team, first) {
     const rot = team.rot;
@@ -99,8 +106,8 @@
     fix(esG, 1); fix(esB, 1);
     return L;
   }
-  function agg(L, tac) {
-    const a = { L, t3: 0, t2: 0, tl: 0, pase: 0, bote: 0, reb: 0, dI: 0, dP: 0, fis: 0, wUse: [], wTov: [], wAst: [], wReb: [], wStl: [], wBlk: [], wFou: [], tac };
+  function agg(L, tac, bonus) {
+    const a = { bonus: bonus || { ataque: 0, defensa: 0 }, L, t3: 0, t2: 0, tl: 0, pase: 0, bote: 0, reb: 0, dI: 0, dP: 0, fis: 0, wUse: [], wTov: [], wAst: [], wReb: [], wStl: [], wBlk: [], wFou: [], tac };
     L.forEach(e => {
       const at = e.p.att, f = e.f;
       a.t3 += at.tiro3 * f / 5; a.t2 += at.tiro2 * f / 5; a.tl += at.tl * f / 5; a.pase += at.pase * f / 5; a.bote += at.bote * f / 5;
@@ -110,6 +117,7 @@
       a.wAst.push(Math.pow(at.pase * f, 2)); a.wReb.push(Math.pow((at.reb * 0.7 + at.fisico * 0.3) * f, 2.2));
       a.wStl.push(Math.pow(at.defPer * f, 3) / 1e3); a.wBlk.push(Math.pow(at.defInt * f, 3) / 1e3); a.wFou.push(at.fisico + at.defInt + 20);
     });
+    a.idxUso = a.wUse.indexOf(Math.max.apply(null, a.wUse));
     return a;
   }
   function wp(ws, skip) {
@@ -122,7 +130,7 @@
   // Una posesión de O contra D. Devuelve puntos.
   function posesion(O, D, c) {
     const cf = c.cf;
-    const pTov = U.clamp(0.125 + (D.dP - 60) / 950 - ((O.bote + O.pase) / 2 - 60) / 1100 + (D.tac.defensa === 'mixta' ? 0.012 : 0), 0.08, 0.2);
+    const pTov = U.clamp(0.125 + (D.dP - 60) / 950 - ((O.bote + O.pase) / 2 - 60) / 1100 + (D.tac.defensa === 'mixta' ? 0.012 : 0) + (D.tac.presion === 'alta' ? 0.02 * (1 + 0.2 * D.bonus.defensa) : D.tac.presion === 'media' ? 0.009 * (1 + 0.2 * D.bonus.defensa) : 0), 0.08, 0.2);
     if (R() < pTov) {
       const ti = wp(O.wTov); O.L[ti].s.tov++;
       let rob = null; if (R() < 0.55) { const si = wp(D.wStl); D.L[si].s.stl++; rob = D.L[si].p.id; }
@@ -134,6 +142,7 @@
       const si = wp(O.wUse), sh = O.L[si], at = sh.p.att, f = sh.f;
       let p3 = cf.p3 + (at.tiro3 - at.tiro2) / 300; if (c.triple) p3 = 0.9;   // perdiendo de 3 al final: a por el triple
       if (O.tac.foco === 'exterior') p3 += 0.06; else if (O.tac.foco === 'interior') p3 -= 0.06;
+      if (O.tac.ataque === 'poste') p3 -= 0.05;
       if (D.tac.defensa === 'zona') p3 += 0.025;
       const is3 = R() < U.clamp(p3, 0.12, 0.55);
       const pFoul = U.clamp(0.105 + (at.fisico * f - D.fis) / 1000, 0.06, 0.17);
@@ -153,11 +162,17 @@
         pm += (O.pase - 62) / 1400 + c.ha;
         if (D.tac.defensa === 'zona') pm += is3 ? 0.008 : -0.012;
         if (O.tac.ritmo >= 4) pm -= 0.006;
+        { const at = O.tac.ataque, k = 1 + 0.25 * O.bonus.ataque;
+          if (at === 'pick') pm += ((O.pase >= 64 && O.bote >= 60) ? 0.010 : -0.004) * k;
+          else if (at === 'aislamiento') pm += (si === O.idxUso ? 0.012 : -0.004) * k;
+          else if (at === 'movimiento') pm += ((O.pase - 62) / 1500 + 0.003) * k;
+          else if (at === 'poste' && !is3) pm += (0.008 + (O.reb - 55) / 2500) * k;
+          if (D.tac.presion === 'alta') pm += 0.004; }
         pm = U.clamp(pm, 0.22, 0.72);
         if (R() < pm) {
           const v = is3 ? 3 : 2;
           pts += v; sh.s.pts += v;
-          let ast = null; if (R() < cf.ast) { const ai = wp(O.wAst, si); O.L[ai].s.ast++; ast = O.L[ai].p.id; }
+          let ast = null; if (R() < cf.ast + (O.tac.ataque === 'movimiento' ? 0.04 : 0)) { const ai = wp(O.wAst, si); O.L[ai].s.ast++; ast = O.L[ai].p.id; }
           if (c.ev) c.last = { r: 'ok', v, jug: sh.p.id, ast };
           return pts;
         }
@@ -165,7 +180,7 @@
         if (c.ev) c.last = { r: 'fallo', v: is3 ? 3 : 2, jug: sh.p.id, tap };
       }
       // tiro fallado o último tiro libre fallado: rebote
-      const pOff = U.clamp(0.255 + (O.reb - D.reb) / 1600, 0.17, 0.34);
+      const pOff = U.clamp(0.255 + (O.reb - D.reb) / 1600 + (O.tac.rebote === 'ofensivo' ? 0.03 : O.tac.rebote === 'retorno' ? -0.03 : 0) + (D.tac.rebote === 'ofensivo' ? 0.01 : 0), 0.17, 0.36);
       if (R() < pOff) { const ri = wp(O.wReb); O.L[ri].s.reb++; if (c.ev && c.last) c.last.oreb = O.L[ri].p.id; continue; }
       const ri = wp(D.wReb); D.L[ri].s.reb++; if (c.ev && c.last) c.last.reb = D.L[ri].p.id;
       return pts;
@@ -185,7 +200,7 @@
     const jugarStint = (first, minutos, nPos, base, dur, evs) => {
       const LA = elige(A, first), LB = elige(B, first);
       D.enPista.A = LA.map(e => e.p.id); D.enPista.B = LB.map(e => e.p.id);
-      const aA = agg(LA, A.tac), aB = agg(LB, B.tac);
+      const aA = agg(LA, A.tac, A.bonus), aB = agg(LB, B.tac, B.bonus);
       LA.forEach(e => { e.played += minutos; e.s.min += minutos; });
       LB.forEach(e => { e.played += minutos; e.s.min += minutos; });
       const cA = { cf, ha: cf.ha, ev: !!evs, last: null }, cB = { cf, ha: -cf.ha, ev: !!evs, last: null };
@@ -234,6 +249,7 @@
       if (o.ritmo) { T.tac = Object.assign({}, T.tac, { ritmo: U.clamp(o.ritmo, 1, 5) }); T.rm = 1 + (T.tac.ritmo - 3) * 0.035; }
       if (o.defensa) T.tac = Object.assign({}, T.tac, { defensa: o.defensa });
       if (o.foco) T.tac = Object.assign({}, T.tac, { foco: o.foco });
+      ['presion', 'ataque', 'rebote'].forEach(k => { if (o[k]) T.tac = Object.assign({}, T.tac, { [k]: o[k] }); });
       if (o.meter) { const e = T.rot.find(x => x.p.id === o.meter); if (e) e.target = e.played + 8; }
       if (o.sacar) { const e = T.rot.find(x => x.p.id === o.sacar); if (e) e.target = e.played - 8; }
     };

@@ -14,6 +14,7 @@
   function ciudad(el, st) {
     desmontar();
     const car = carrera(), tabs = car ? [['mapa', 'Mapa 3D'], ['casa', 'Mi casa'], ['pueblo', 'Mi pueblo'], ['vivienda', 'Vivienda'], ['vida', 'Estilo de vida'], ['social', 'Vida social']] : entr() ? [['casa', 'Mi casa']] : [['resumen', 'Resumen'], ['mapa', 'Mapa 3D'], ['aficion', 'Afición'], ['identidad', 'Identidad'], ['casa', 'Mi casa']];
+    tabs.push(...GM.ui.tabsExtra('ciudad', st));
     if (!tabs.some(t => t[0] === ui.tab.ciudad)) ui.tab.ciudad = tabs[0][0];
     el.append(pestanas(tabs, ui.tab.ciudad, t => { ui.tab.ciudad = t; refrescar(true); }));
     const t = ui.tab.ciudad;
@@ -26,6 +27,7 @@
     else if (t === 'aficion') aficionTab(el, st);
     else if (t === 'identidad') identidadTab(el, st);
     else if (t === 'vivienda') viviendaTab(el, st);
+    else if (GM.ui.tabExtra('ciudad', t)) GM.ui.tabExtra('ciudad', t).render(el, st);
     else if (t === 'social') socialTab(el, st);
     else vidaTab(el, st);
   }

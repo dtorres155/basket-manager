@@ -92,6 +92,21 @@
     GM.noticia(st, 'Renovación: ' + p.nombre + ' continúa hasta ' + p.contrato.hasta + '.');
     return { ok: true };
   }
+  // Firma un contrato ya pactado en una negociación (negociacion.js): no hay azar, solo las reglas salariales. Lleva cláusula, opción y bonus.
+  function firmar(st, jugId, o, renov) {
+    const p = st.jugadores[jugId], club = st.clubId; if (!p) return { ok: false, motivo: 'Jugador desconocido.' };
+    const salario = Math.round(o.salario), anos = U.clamp(o.anos || 1, 1, 4), extra = { clausula: o.clausula || 0, opcion: o.opcion || null, bonus: o.bonus || [] };
+    if (renov) {
+      if (p.equipoId !== club) return { ok: false, motivo: 'Solo puedes renovar a jugadores de tu plantilla.' };
+      const nope = motivoNoAnadir(st, club, salario, 'renovar', p.contrato.salario); if (nope) return { ok: false, motivo: nope };
+      p.contrato = Object.assign({ salario, hasta: Math.max(p.contrato.hasta, yearOf(st) + 1) + anos }, extra); p.estado.moral = U.clamp(p.estado.moral + 8, 0, 100);
+      GM.noticia(st, 'Renovación: ' + p.nombre + ' continúa hasta ' + p.contrato.hasta + '.'); return { ok: true };
+    }
+    if (!p.libre) return { ok: false, motivo: 'Tiene contrato con otro club.' };
+    const nope = motivoNoAnadir(st, club, salario, 'fichaje'); if (nope) return { ok: false, motivo: nope };
+    ficha(st, p, club, salario, anos); Object.assign(p.contrato, extra);
+    GM.noticia(st, 'Fichaje: ' + p.nombre + ' (' + p.ovr + ') firma por ' + anos + (anos === 1 ? ' temporada.' : ' temporadas.')); GM.bus.emit('fichaje:hecho', { jugadorId: p.id, de: null, a: club }); return { ok: true };
+  }
   function liberar(st, jugId) {
     const p = st.jugadores[jugId], club = st.clubId;
     if (!p || p.equipoId !== club) return { ok: false, motivo: 'No es de tu plantilla.' };
@@ -317,6 +332,7 @@
 
   // Se llama al empezar la nueva temporada: se marchan los del club que no se hayan renovado.
   function cerrarContratos(st) {
+    if (GM.mods.negociacion) GM.mods.negociacion.aplicarOpciones(st);
     if ((st.modo === 'carrera' || st.modo === 'entrenador')) {
       if (st.modo === 'entrenador' && GM.mods.entrenador) GM.mods.entrenador.cerrar(st);
       expiran(st, st.clubId).filter(p => !p.esYo).forEach(p => { if (GM.rng.chance(p.ovr >= 62 ? 0.8 : 0.4)) p.contrato = { salario: salarioPedido(st, p.id, st.clubId), hasta: yearOf(st) + 1 + GM.rng.int(1, 3) }; else sacar(st, p); });
@@ -333,5 +349,5 @@
     const a = { ovr: 90, pot: 90, edad: 27 }, b = { ovr: 70, pot: 70, edad: 27 };
     return valorJugador(a) > valorJugador(b) * 4 && valorJugador(b) > 1e6 && valorJugador({ ovr: 70, pot: 70, edad: 36 }) < valorJugador(b);
   }
-  GM.register('mercado', { claseDraft, sacar, valorJugador, salarioPedido, topeSalarial, evaluarOferta, ofertar, renovar, liberar, precioMinimo, comprar, ofertasVenta, vender, traspasar, draft, expiran, libres, buscar, cerrarContratos, nuevaPartida, selfTest, ligaDe, MAXP });
+  GM.register('mercado', { firmar, claseDraft, sacar, valorJugador, salarioPedido, topeSalarial, evaluarOferta, ofertar, renovar, liberar, precioMinimo, comprar, ofertasVenta, vender, traspasar, draft, expiran, libres, buscar, cerrarContratos, nuevaPartida, selfTest, ligaDe, MAXP });
 })();

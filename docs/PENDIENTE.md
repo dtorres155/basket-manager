@@ -230,7 +230,9 @@
 - 27. Niveles de detalle para edificios lejanos y rendimiento en móvil de la ciudad real y del pueblo.
 - 30. Fachadas completas por toda la calle inventada (la ciudad real ya las tiene).
 - 34 a 38. Personas más variadas; más animaciones (sentarse, gesticular, celebrar); animaciones de baloncesto en el directo; muebles reales que faltan; pabellones reconocibles que faltan.
-- 39 a 53. Encargos en el mapa real; minijuegos en la ciudad; coleccionables; coche propio; gente con nombre y móvil; pretemporada y selección; All-Star; ojeadores; negociaciones; rivalidades; prensa con memoria; modo entrenador; ciudad que crece; más ligas; narración.
+- 39 a 43. Encargos en el mapa real; minijuegos en la ciudad; coleccionables; coche propio; gente con nombre y móvil.
+- 44 a 51: hechos (ver más abajo «Bloque 44 a 51»), con las partes que quedan en 79 a 90.
+- 52 y 53. Más ligas; narración del partido.
 - 54 a 62. Transiciones y sonidos de interfaz; ajustes completos; catalán e inglés; pulido de textos e iconos; registro de errores; novedades visibles; modo construcción en más salas; decisión sobre Godot; distribución.
 **Ciudad real (partes que han quedado a medias)**
 - 63. Detalle de edificios: faltan ropa tendida, escaleras exteriores, rótulos luminosos y persianas con más variedad.
@@ -250,3 +252,28 @@
 - 76. Fallo intermitente de `t_flow entrenador`: no reproducido (seis ejecuciones limpias); vigilar si vuelve.
 - 77. Recorte alrededor del personaje: ahora es más limpio, pero sigue habiendo un agujero con trama; valorar otra solución (paredes que bajan o se vuelven translúcidas por edificio).
 - 78. Mapa 3D de Ciudad: la ciudad real se ve oscura (iluminación distinta); ajustar luz y color.
+
+**Bloque 44 a 51 (hecho, con lo que queda a medias)**
+- ~~44 Pretemporada y selección~~ (`pretemporada.js`): cuatro amistosos y torneo de verano al empezar cada verano (fase 'amistoso': no cuentan para estadísticas ni clasificación), plan ligero, normal o duro con química y riesgo de lesión; ventanas de selecciones (Mundial 2027, Juegos 2028, Eurobasket 2029…) con grupos y eliminatorias, convocados de tu club con cansancio, lesión y ánimo, y tu jugador de carrera si está entre los 12 mejores de su país.
+- ~~45 All-Star~~ (`allstar.js`): NBA (14 feb), Euroliga y ACB (finales de enero): 24 elegidos por producción, partido, concurso de triples y de mates por rondas, invitaciones para tu jugador de carrera.
+- ~~46 Ojeadores~~ (`ojeadores.js`, modos gestor y presidente): hasta tres ojeadores con nivel y especialidad, zona (liga, agentes libres o draft), informes con rangos que se afinan al repetir y joyas ocultas (talento tardío de cantera.js), seguimiento.
+- ~~47 Negociaciones~~ (`negociacion.js`, `mercado.firmar`): agente duro, razonable o conciliador, hasta tres rondas, cláusula de rescisión (la paga la IA y la cobras), opción del jugador o del club en el último año (decisión al empezar la temporada) y bonus por objetivos que se pagan al acabar la temporada.
+- ~~48 Rivalidades con historia~~ (`rivalidades.js`): rachas, recuerdos de finales, palizas, prórrogas, victorias ajustadas y rachas cortadas, ambiente del clásico de 0 a 3 y previa con recuerdo.
+- ~~49 Prensa con memoria~~ (`prensa.js`): ruedas de prensa por contexto con promesas que se recuerdan, se cumplen o se rompen (credibilidad), provocaciones al rival y hemeroteca mensual.
+- ~~50 Modo entrenador más profundo~~ (`tactica.js`, `partidos.js`): presión, esquema de ataque, rebote y rotación en el simulador (cada club de la IA tiene su estilo), plan de la semana, cohesión, cuerpo técnico (analista, ayudantes de ataque y defensa), informe del rival con recomendación y charla antes del partido.
+- ~~51 La ciudad crece~~ (`crecimiento.js`): ocho hitos urbanos con requisitos y obras, efectos permanentes y presencia en la ciudad real (fan zone, plaza, estatua, megatienda, hotel, museo, metro con el nombre del club y obras con grúa).
+- 79. Selecciones: falta que tu jugador de carrera decida si acepta la convocatoria y jugar sus partidos con minutos y estadísticas propios; las medallas no aparecen en el salón de la fama.
+- 80. All-Star: los concursos se resuelven solos; falta jugarlos con el minijuego de triples (pueblo_juego.js) y el partido en directo del All-Star; solo hay All-Star de NBA, Euroliga y ACB.
+- 81. Pretemporada: los amistosos no se pueden jugar en directo con su propio ambiente ni se cobra taquilla; el torneo siempre es de cuatro equipos.
+- 82. Ojeadores: no hay ojeadores en carrera y entrenador; falta enviarlos a países concretos o a canteras de otros clubes y compararlos con el ojeo de cantera.
+- 83. Negociaciones: no hay negociación en los traspasos entre clubes ni para jugadores de otro club; los agentes no recuerdan negociaciones anteriores.
+- 84. Rivalidades: el ambiente especial del clásico no cambia todavía el directo ni la calle (más aficionados, cánticos); los recuerdos no aparecen en la sala de trofeos.
+- 85. Prensa: faltan promesas del modo carrera sobre el futuro (renovación, traspaso), preguntas sobre el mercado y reacciones de los otros vestuarios a lo que dices.
+- 86. Entrenador: faltan jugadas concretas en la pizarra, entrenamientos individuales, ajustes de la IA al plan que enseñas y charla del descanso en el directo.
+- 87. Ciudad que crece: los hitos de otras ciudades (la IA) no se ven; faltan hitos de pueblo, más variantes por país y una animación de la obra por fases.
+- 88. Pantallas nuevas: faltan versiones más compactas para móvil en las listas largas (informes, hitos) y probar con lector de pantalla.
+- 89. La nueva `partidos.js` (presión, esquemas y rebote) conviene recalibrarla con `node tools/calibrar.js` cada vez que se toque.
+- 90. Migración 5 a 6 probada con `t_aserciones`; falta una prueba que cargue una partida antigua real y recorra una temporada completa.
+
+## HOJA DE RUTA NUEVA (desde el 1)
+Desde el 12 oct 2026 la lista numerada vigente es **`docs/HOJA_DE_RUTA.md`** (84 puntos en 11 fases, con pautas, orden de arranque y qué no hacer). Sustituye a la numeración antigua (27 a 90); cada punto antiguo indica en la hoja su equivalencia («antes N»).

@@ -341,12 +341,17 @@
     try {
       const pm = new THREE.PMREMGenerator(r); let tex;
       if (interior && THREE.RoomEnvironment) tex = pm.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
-      else if (THREE.Sky) { const sky = new THREE.Sky(), u = sky.material.uniforms, sc = new THREE.Scene(); sky.scale.setScalar(1000); u.turbidity.value = 5; u.rayleigh.value = 1.4; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.8; u.sunPosition.value.setFromSphericalCoords(1, THREE.MathUtils.degToRad(58), THREE.MathUtils.degToRad(205)); sc.add(sky); tex = pm.fromScene(sc).texture; }
+      else if (THREE.Sky) { const sky = new THREE.Sky(), u = sky.material.uniforms, sc = new THREE.Scene(); sky.scale.setScalar(1000); u.turbidity.value = 5; u.rayleigh.value = 1.4; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.8; const el = Math.max(0.3, S.solElev == null ? 0.55 : S.solElev); S.envElev = el; u.sunPosition.value.setFromSphericalCoords(1, Math.PI / 2 - el, S.solAzim == null ? 3.5 : Math.PI - S.solAzim); sc.add(sky); tex = pm.fromScene(sc).texture; }
       pm.dispose(); if (!tex) return; if (S.scene.environment) S.scene.environment.dispose(); S.scene.environment = tex; S.envK = k; S.envBase = interior ? 0.4 : 0.3; S.scene.environmentIntensity = S.envBase;
     } catch (e) { S.envK = k; }
   }
   // Tono de cada ciudad: más cálido y luminoso en el Mediterráneo, más frío y neutro en el centro de Europa, nítido en EE. UU.
   const TONOS = { med: { sol: 0xffecc8, cielo: 0xe2e9f2, exp: 0.95 }, centro: { sol: 0xf1f3ff, cielo: 0xd0dbe8, exp: 0.88 }, us: { sol: 0xfff4e4, cielo: 0xdfe9f5, exp: 0.92 } };
+  // Al cambiar la altura del sol más de 0,1 rad se recalcula el cielo de reflejos (un PMREM pequeño, solo en exteriores)
+  function actualizarCielo() {
+    if (!S.scene.environment || S.envK !== 'ext' || S.envElev == null || Math.abs(Math.max(0.3, S.solElev) - S.envElev) < 0.1 || S.noche > 0.6) return;
+    const antes = S.scene.environment; S.envK = null; entorno(); if (S.scene.environment !== antes) { antes.dispose(); S.scene.environmentIntensity = S.envBase; } else S.envK = 'ext';
+  }
   function tonoCiudad(st) { const p = (st.equipos[st.clubId] || {}).pais; return TONOS[p === 'US' ? 'us' : ['DE', 'LT', 'RS', 'FR'].indexOf(p) >= 0 ? 'centro' : 'med']; }
   async function construir(st) {
     entorno();
@@ -929,15 +934,16 @@
   function mezcla(a, b, t) { return _cA.setHex(a).lerp(_cB.setHex(b), Math.max(0, Math.min(1, t))).getHex(); }
   function aplicarAmbiente() {
     if (!S.luces || !S.dia) return;
-    const h = S.hora || 9, tarde = Math.max(0, Math.min(1, (h - 17.5) / 2.5)), noche = Math.max(0, Math.min(1, (h - 19.5) / 1.5)), triste = S.dia.tipo === 'derrota' ? 0.72 : S.dia.tipo === 'victoria' ? 1.08 : 1;
+    const h = S.hora || 9, SO = GM.mods.sol, hs = SO ? SO.horaSolar(S.st, h) : h, sp = SO ? SO.salidaPuesta(SO.latitud(S.st), S.st.fecha) : { sale: 7, pone: 20 }, tarde = Math.max(0, Math.min(1, (hs - (sp.pone - 2.5)) / 2.5)), noche = Math.max(0, Math.min(1, Math.max((hs - (sp.pone - 0.5)) / 1.5, (sp.sale + 0.5 - hs) / 1.2))), triste = S.dia.tipo === 'derrota' ? 0.72 : S.dia.tipo === 'victoria' ? 1.08 : 1;
     S.noche = noche;
-    S.luces.sol.intensity = (2.6 * (1 - noche) + 0.7 * noche) * triste;
+    { const pz = SO ? SO.posicion(SO.latitud(S.st), S.st.fecha, hs) : null; S.solElev = pz ? pz.elev : 0.9; S.solAzim = pz ? pz.azim : null; }   // altura real del sol: baja en invierno y al caer la tarde
+    S.luces.sol.intensity = (2.6 * (1 - noche) + 0.7 * noche) * triste * (SO ? Math.max(0.55, Math.min(1, (S.solElev + 0.04) / 0.45)) : 1);
     const T0 = tonoCiudad(S.st);
     S.luces.sol.color.setHex(noche > 0 ? mezcla(0xffa060, 0x8fa6d6, noche) : mezcla(S.dia.tipo === 'derrota' ? 0xd9e2f0 : T0.sol, 0xffa060, tarde));
     S.luces.cielo.intensity = ((S.scene.environment ? 0.55 : 1.1) * (1 - noche) + 0.5 * noche) * triste;
     S.luces.cielo.color.setHex(mezcla(T0.cielo, 0x5a6c9a, noche)); if (S.escena === 'pueblo') { S.luces.sol.intensity *= 1.25; S.luces.cielo.intensity *= 0.8; }
-    S.renderer.toneMappingExposure = T0.exp * (1 - noche * 0.12);
-    if (S.scene.environment) S.scene.environmentIntensity = (S.envBase || 0.5) * (1 - noche * 0.75) * triste;
+    S.expObj = T0.exp * (1 - noche * 0.12) * (S.solElev < 0.15 && !noche ? 1 + (0.15 - S.solElev) * 0.5 : 1);   // el ojo se adapta: la exposición se acerca poco a poco a este valor
+    actualizarCielo(); if (S.scene.environment) S.scene.environmentIntensity = (S.envBase || 0.5) * (1 - noche * 0.75) * triste;
     if (S.bloom) { S.bloom.enabled = noche > 0.05; S.bloom.strength = noche * 0.5; S.bloom.threshold = 2.4 - noche * 1.5; }
     if (S.escena === 'calle' || S.escena === 'pueblo') { const f = noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0xb2cce2, 0xf0a46a, tarde); S.scene.background = new THREE.Color(f); if (S.scene.fog) S.scene.fog.color.setHex(f); }
     else S.scene.background = new THREE.Color(noche > 0 ? mezcla(0xf0a46a, 0x101a2e, noche) : mezcla(0x9fb8c8, 0xf0a46a, tarde));
@@ -1151,6 +1157,7 @@
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
       S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente(); }
+      if (S.expObj) { const ex = S.renderer.toneMappingExposure; S.renderer.toneMappingExposure = Math.abs(ex - S.expObj) < 0.002 ? S.expObj : ex + (S.expObj - ex) * Math.min(1, dt * 1.5); }
       if (S.gente.length && S.escena === 'sede') actualizarGrupo(dt);
       if (S.escena === 'calle' && GM.calle) GM.calle.actualizar(S, motor(), dt);
       if (S.escena === 'interior' && GM.interiores && GM.interiores.actualizar) GM.interiores.actualizar(S, motor(), dt);
@@ -1158,7 +1165,7 @@
       if (S.lluviaObj || S.nubesObj) moverClima(dt);
       if (S.escena === 'deportiva' && GM.deportivaMundo && GM.deportivaMundo.actualizar) GM.deportivaMundo.actualizar(S, motor(), dt);
       if (S.escena === 'pueblo' && GM.puebloMundo) GM.puebloMundo.actualizar(S, motor(), dt);
-      { const sol = S.luces.sol; sol.position.set(S.foco.x - 14, 26, S.foco.z + 12); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
+      { const sol = S.luces.sol, SO = GM.mods.sol, d = SO && S.st ? SO.direccion(SO.latitud(S.st), S.st.fecha, SO.horaSolar(S.st, S.hora || 9), 0.3) : { x: -0.45, y: 0.84, z: 0.39 }; sol.position.set(S.foco.x + d.x * 31, d.y * 31, S.foco.z + d.z * 31); sol.target.position.set(S.foco.x, 0, S.foco.z); sol.target.updateMatrixWorld(); }
       S.gente.forEach(n => {
         if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
         const dP = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z); if (S.nivelRend >= 2) n.obj.visible = dP < (S.nivelRend >= 3 ? 20 : 28);   // ahorro de CPU: los muy lejanos no se dibujan

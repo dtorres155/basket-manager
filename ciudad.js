@@ -56,6 +56,7 @@
       const k = CONVENIOS.find(x => x.id === v.id);
       if (k) for (const e in k.efecto) m[e] += k.efecto[e];
     });
+    if (GM.mods.crecimiento && clubId === st.clubId) { const e = GM.mods.crecimiento.efectos(st, clubId); m.ingresos += e.ingresos; m.asistencia += e.asistencia; m.cantera += e.cantera; }   // la ciudad crece con el club (crecimiento.js)
     const cd = GM.mods.ciudadDeportiva;
     if (cd && cd.efectos) m.asistencia += cd.efectos(st, clubId).ciudad - 1;
     return m;

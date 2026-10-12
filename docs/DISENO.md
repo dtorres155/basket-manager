@@ -22,3 +22,14 @@ Límite actual: todo son primitivas procedurales y se ha afinado sin ver el resu
 - Nivel de vida (0-5) según fase y éxito: desbloquea tipos de vivienda y muebles.
 - Progresión del jugador deliberadamente lenta (con el máximo potencial: 58 de nivel a los 18, 65 a los 20, 73 a los 23).
 - **Potencial dinámico (carrera):** lo que haces mueve tu potencial como mucho ±8 puntos sobre el de partida, hasta los 27 años (`carrera.js`, `ajustarPot`, `c.potencial`). Suben: entrenar intenso, constancia de foco, buen ánimo, el mentor y jugar minutos de joven. Bajan: lesiones, cansancio, noches de fiesta y no jugar. Simulado en 4 temporadas: disciplinado +3, normal 0, juerguista −4 (`tools/sim_potencial.js`). La ficha del jugador muestra los motivos del mes.
+
+## Dirección de arte del mundo 3D (punto 3 de la hoja de ruta)
+- **Luz:** suave, cotidiana, de tarde y cálida; sol con sombras largas y blandas, cielo azul lechoso, nunca contrastes duros ni saturación de videojuego. Noche: pocas luces, cálidas (2700 K), con charcos de luz bajo las farolas; ventanas encendidas sin que lo estén todas.
+- **Paleta:** tierras, ocres, grises cálidos, verdes apagados; el color vivo solo en rótulos, ropa, coches y el club. Nada de blanco ni negro puros.
+- **Materiales:** siempre con rugosidad y relieve (nada plano y brillante); variación a gran escala (manchas, desgaste) para romper repeticiones; suciedad en las esquinas, humedad en la base de los muros.
+- **Escala:** 1 unidad = 1 m real. Puertas de 2,1 m, aceras de 2 a 4 m, plantas de 3 m; personas de su altura real.
+- **Vida:** ningún espacio vacío; todo sitio tiene huellas de uso (bolsas, bicis, carteles, plantas, ropa tendida). Interiores con desorden cotidiano.
+- **Tono:** realista y cotidiano; humor suave, nada épico ni de maqueta.
+- **Sí / No:** sí un portal con buzones y una bici atada; no una caja blanca con puerta. Sí asfalto con parches y marcas gastadas; no gris uniforme.
+- **Referencias por escena** (a reunir en `docs/referencias/`, 15 por tipo): calle, plaza, interior de vivienda, pueblo, pabellón.
+- **Juez:** `node tools/banco.js` produce siempre las mismas vistas para comparar antes y después.

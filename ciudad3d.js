@@ -402,7 +402,7 @@
   }
   function escena(st) {
     // la ciudad real se carga por red: mientras llega se ve el mapa de siempre
-    if (V.modo !== 'calles' && GM.mods.calleReal && !GM.mods.calleReal.cargado(st.clubId)) GM.calle.preparar(st).then(d => { if (d && V.vista) { V.claveMapa = null; escena(st); camara(V.modo); } });
+    if (V.modo !== 'calles' && GM.mods.calleReal && !GM.mods.calleReal.cargado(st.clubId)) GM.calle.preparar(st).then(d => { if (d && V && V.vista) { V.claveMapa = null; escena(st); camara(V.modo); } });
     if (V.modo === 'calles') escenaCalles(st); else if (paseable()) { try { mapaPaseable(st); } catch (e) { console.warn('ciudad paseable en el mapa', e); V.claveMapa = null; escenaMapa(st); } } else escenaMapa(st); }
   function camara(modo) {
     const v = V.vista; if (!v) return;

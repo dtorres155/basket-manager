@@ -1,7 +1,7 @@
 // recursos/osm/<id>.json (crudo, de tools/osm_descargar.js) -> vendor/osm/<id>.json (compacto; build.js los copia a dist/osm).
 // Datos © colaboradores de OpenStreetMap (ODbL). Coordenadas en decímetros enteros alrededor del pabellón (x al este, z al sur).
 // Con recursos/osm/<id>.poi.json (tools/osm_descargar2.js) añade: n (comercios y sitios con nombre: [tipo, nombre, x, z]), t (árboles [x, z]), pt (puntos de calle [clase, x, z]: 0 parada de bus, 1 semáforo, 2 paso de peatones, 3 farola, 4 banco, 5 papelera, 6 aparcabicis, 7 contenedores, 8 otros), k (aparcamientos), u (usos del suelo [tipo, ...]), v (vías de tren), f (vallas y muros [tipo, ...])
-// Formato: { s: [textos], e: [[plantas, clase, nombre, color, techoYmaterial, x0, z0, x1, z1, ...]],   (color: índice en s del color del edificio o -1; techoYmaterial = forma del tejado (0 sin dato, 1 plano, 2 dos aguas, 3 cuatro aguas, 4 cúpula, 5 pirámide) + 10 por el material (1 ladrillo, 2 piedra, 3 cristal o metal)) c: [[clase, nombre, sentidoUnico, x0, z0, ...]], a: [[tipo, x0, z0, ...]], p: [[tipo, x0, z0, ...]] }
+// Formato: { s: [textos], g: [latitud, longitud del centro], e: [[plantas, clase, nombre, color, techoYmaterial, x0, z0, x1, z1, ...]],   (color: índice en s del color del edificio o -1; techoYmaterial = forma del tejado (0 sin dato, 1 plano, 2 dos aguas, 3 cuatro aguas, 4 cúpula, 5 pirámide) + 10 por el material (1 ladrillo, 2 piedra, 3 cristal o metal)) c: [[clase, nombre, sentidoUnico, x0, z0, ...]], a: [[tipo, x0, z0, ...]], p: [[tipo, x0, z0, ...]] }
 // clase de edificio: 0 otro, 1 vivienda, 2 comercio, 3 oficina, 4 colegio, 5 hospital, 6 ayuntamiento/público, 7 iglesia, 8 hotel, 9 industrial, 10 deporte, 11 quiosco, 12 restauración, 13 estación
 // clase de calle: 0 autovía, 1 principal, 2 secundaria, 3 terciaria, 4 residencial, 5 peatonal, 6 servicio
 const fs = require('fs'), path = require('path');
@@ -43,7 +43,7 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
   const k = 110574, kx = 111320 * Math.cos(j.lat * Math.PI / 180);
   const pr = g => g.map(q => [(q.lon - j.lon) * kx, -(q.lat - j.lat) * k]);
   const S = [], SI = new Map(), nom = n => { if (!n) return -1; n = String(n).slice(0, 40); if (!SI.has(n)) { SI.set(n, S.length); S.push(n); } return SI.get(n); };
-  const r = { s: S, e: [], c: [], a: [], p: [] };
+  const r = { s: S, g: [+j.lat.toFixed(3), +j.lon.toFixed(3)], e: [], c: [], a: [], p: [] };
   for (const w of j.el) {
     if (!w.geometry || w.geometry.length < 3 && !w.tags.highway) continue;
     const t = w.tags || {};

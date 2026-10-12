@@ -105,6 +105,12 @@
   }
   function cerrarModales() { ui.modales.slice().forEach(f => f()); }
   function registerScreen(id, def) { screens[id] = def; GM.ui.screens[id] = def; }
+  // Pestañas que añaden otros módulos a una pantalla (ui_extra.js): addTab(pantalla, id, título, render(el, st), visible(st)), tabsExtra(pantalla, st) y tabExtra(pantalla, id)
+  const extras = {};
+  function addTab(pantalla, id, titulo, render, visible) { (extras[pantalla] = extras[pantalla] || []).push({ id, titulo, render, visible }); }
+  function tabsExtra(pantalla, st) { return (extras[pantalla] || []).filter(e => !e.visible || e.visible(st)).map(e => [e.id, e.titulo]); }
+  function tabExtra(pantalla, id) { return (extras[pantalla] || []).find(e => e.id === id) || null; }
+  GM.ui.addTab = addTab; GM.ui.tabsExtra = tabsExtra; GM.ui.tabExtra = tabExtra;
 
   // ---------- Arranque y menú ----------
   // Filas desplazables (.tabs, .seg.compacto): la clase «mas» difumina el borde derecho mientras quede contenido por ver
@@ -397,6 +403,9 @@
     const st = S(), M_ = M(), exp = carrera() ? [] : M_.mercado.expiran(st, st.clubId);
     if (entr() && st.entrenador.ofertas.length) { modal(h('div', null, h('h3', null, 'Tu futuro sigue abierto'), h('p', null, 'Tienes ' + st.entrenador.ofertas.length + ' ofertas. Si no decides, la directiva actual decidirá por ti.')), [{ t: 'Ver ofertas', fn: () => { setTimeout(() => navegar('junta'), 0); } }, { t: 'Seguir como estoy', cls: 'btn-sec', fn: () => { M_.competiciones.nuevaTemporada(st); ui.comp = null; refrescar(true); toast('Empieza la temporada ' + st.temporada); } }]); return; }
     if (carrera() && (st.carrera.fase !== 'ncaa' || st.carrera.etapa === 'cantera') && st.carrera.ofertas.length) { modal(h('div', null, h('h3', null, 'Tu futuro sigue abierto'), h('p', null, 'Tu representante tiene ' + st.carrera.ofertas.length + ' ofertas. Si no decides, cerrará él un contrato por ti.')), [{ t: 'Ver ofertas', fn: () => { setTimeout(() => navegar('agente'), 0); } }, { t: 'Que decida mi representante', cls: 'btn-sec', fn: () => { M_.competiciones.nuevaTemporada(st); ui.comp = null; refrescar(true); toast('Empieza la temporada ' + st.temporada); } }]); return; }
+    { const op = M_.negociacion && !carrera() && !entr() ? M_.negociacion.opcionesClub(st) : [];
+      if (op.length) { const p = st.jugadores[op[0].jugId]; modal(h('div', null, h('h3', null, 'Opción del club: ' + p.nombre), h('p', null, 'Su contrato acaba y tienes una opción para un año más a ' + U.eur(p.contrato.salario) + '. ' + (op.length > 1 ? 'Quedan ' + (op.length - 1) + ' decisiones más.' : ''))),
+        [{ t: 'Ejercer la opción', fn: () => { M_.negociacion.decidirOpcionClub(st, p.id, true); setTimeout(nuevaTemporada, 0); } }, { t: 'No ejercerla', cls: 'btn-sec', fn: () => { M_.negociacion.decidirOpcionClub(st, p.id, false); setTimeout(nuevaTemporada, 0); } }]); return; } }
     const go = () => { M_.competiciones.nuevaTemporada(st); ui.comp = null; refrescar(true); toast('Empieza la temporada ' + st.temporada); };
     if (exp.length) modal(h('div', null, h('h3', null, 'Contratos sin renovar'), h('p', null, 'Estos jugadores se marcharán al empezar la temporada: ' + exp.map(p => p.nombre).join(', ') + '.')), [{ t: 'Empezar igualmente', fn: go }, { t: 'Volver y renovar', cls: 'btn-sec' }]); else go();
   }
@@ -493,6 +502,6 @@
     return ok;
   }
   // Utilidades compartidas con los archivos de pantallas (ui_gestion.js, ui_ciudad.js, ui_presidente.js, ui_carrera.js, ui_entrenador.js)
-  GM.ui._ = { accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
+  GM.ui._ = { addTab, tabsExtra, tabExtra, accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
   GM.register('ui', { start, navegar, refrescar, toast, modal, registerScreen, selfTest });
 })();
