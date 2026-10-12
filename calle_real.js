@@ -11,7 +11,34 @@
   function cargar(id) {
     if (id in CACHE) return Promise.resolve(CACHE[id]);
     if (typeof fetch !== 'function' || typeof location === 'undefined' || !/^(https?|app|file):$/.test(location.protocol || '')) return Promise.resolve(CACHE[id] = null);
-    return fetch('osm/' + id + '.json').then(r => r.ok ? r.json() : null).catch(() => null).then(d => (CACHE[id] = d && d.e && d.c && ((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30) ? d : null));
+    return fetch('osm/' + id + '.json').then(r => r.ok ? r.json() : null).catch(() => null).then(d => (CACHE[id] = d && d.e && d.c && ((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30) ? casasSinteticas(d, id) : null));
+  }
+  // Zonas poco edificadas (pabellones aislados, con poco más que aparcamiento): se añaden casas sintéticas a ambos lados de las calles, sin pisar edificios, parques, agua, aparcamientos, usos del suelo ni otras calles.
+  // Entran en el mismo formato que los edificios de OpenStreetMap (clase 1 vivienda o 0 bloque), así que reciben fachadas, tejados y papeles como los reales; `d.sint` guarda cuántas hay.
+  function casasSinteticas(d, id) {
+    if (!d || d.sint || d.e.length >= 90) return d;
+    const r = rnd(GM.util.hash('casas' + id)), RAD = 2900, segs = [], poli = [], cajas = [];
+    d.c.forEach(c => { for (let i = 3; i + 3 < c.length; i += 2) segs.push([c[i], c[i + 1], c[i + 2], c[i + 3], c[0]]); });
+    const areas = (L, desde, ok) => (L || []).forEach(a => { if (ok && !ok(a)) return; const p = []; for (let i = desde; i + 1 < a.length; i += 2) p.push([a[i], a[i + 1]]); if (p.length >= 3) poli.push(p); });
+    areas(d.p, 1); areas(d.a, 1, a => a[0] === 0); areas(d.k, 1); areas(d.u, 1, a => a[0] !== 2 && a[0] !== 3 && a[0] !== 4); d.e.forEach(b => { const p = []; for (let i = 5; i + 1 < b.length; i += 2) p.push([b[i], b[i + 1]]); if (p.length >= 3) { poli.push(p); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; p.forEach(q => { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }); cajas.push([x0 - 70, z0 - 70, x1 + 70, z1 + 70]); } });
+    const dentro = (x, z) => poli.some(p => { let c = false; for (let i = 0, j = p.length - 1; i < p.length; j = i++) if ((p[i][1] > z) !== (p[j][1] > z) && x < (p[j][0] - p[i][0]) * (z - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0]) c = !c; return c; });
+    const dSeg = (x, z, s) => { const dx = s[2] - s[0], dz = s[3] - s[1], l2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - s[0]) * dx + (z - s[1]) * dz) / l2)); return Math.hypot(x - s[0] - t * dx, z - s[1] - t * dz); };
+    const nuevos = []; let intentos = 0;
+    for (const sg of segs) {
+      const clase = sg[4]; if (clase === 0 || clase === 5) continue; const L = Math.hypot(sg[2] - sg[0], sg[3] - sg[1]); if (L < 180) continue;
+      const ux = (sg[2] - sg[0]) / L, uz = (sg[3] - sg[1]) / L;
+      for (let t = 90 + r() * 120; t < L - 90; t += 160 + r() * 90) for (const lado of [-1, 1]) {
+        if (nuevos.length >= 150 || intentos++ > 4000) break; if (r() < 0.2) continue;
+        const ancho = 100 + r() * 70, fondo = 90 + r() * 40, off = (ANCHO[clase] || 6) * 5 + ACERA * 10 + 12 + fondo / 2;
+        const cx = sg[0] + ux * t - uz * lado * off, cz = sg[1] + uz * t + ux * lado * off;
+        if (Math.hypot(cx, cz) > RAD) continue;
+        if (cajas.some(b => cx > b[0] && cx < b[2] && cz > b[1] && cz < b[3]) || dentro(cx, cz)) continue;
+        if (segs.some(o => dSeg(cx, cz, o) < (ANCHO[o[4]] || 6) * 5 + ACERA * 10 + fondo / 2 + 5)) continue;
+        const bloque = r() < 0.3, hx = ancho / 2, hz = fondo / 2, pts = [[-hx, -hz], [hx, -hz], [hx, hz], [-hx, hz]].map(q => [Math.round(cx + q[0] * ux - q[1] * uz), Math.round(cz + q[0] * uz + q[1] * ux)]);
+        nuevos.push([bloque ? 3 + Math.floor(r() * 3) : 2 + Math.floor(r() * 2), bloque ? 0 : 1, -1, -1, bloque ? 1 : 2].concat(...pts)); cajas.push([cx - ancho / 2 - 70, cz - ancho / 2 - 70, cx + ancho / 2 + 70, cz + ancho / 2 + 70]);
+      }
+    }
+    d.e = d.e.concat(nuevos); d.sint = nuevos.length; return d;
   }
   const datos = id => CACHE[id] || null;
   const rnd = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };

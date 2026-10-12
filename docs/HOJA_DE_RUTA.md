@@ -205,3 +205,16 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 - **9d hecho:** con una esfera espejo (`tools/esfera_hdri.js`) se comprobó que el signo del giro estaba al revés; corregido en `sede_luz.js`. La comprobación es aproximada (error de unos 0,15 rad).
 - **5d hecho:** `sede3d.js` baja de 1.224 a 966 líneas (se sacan `decorar`, `construir` y `personaje`). Pendiente 5e: lo que queda (controles, paneles, tiro, grupos) se puede partir en otra tanda; el resto de archivos no pasan de 520 líneas.
 - **Ciudades:** las 120 usan ya el plano real (umbral relajado a 6 tramos de calle con 10 edificios, o 30 tramos en total). Pendiente 4b: las ciudades de pabellón aislado (mucho aparcamiento y pocas casas) se pueden enriquecer con relleno sintético.
+
+### Estado (12 oct 2026, sexta tanda: 7e, 5e, 4b y el punto 11)
+- **7e hecho:** los cuatro modelos tercos (silla de bar, mesa de centro 02, armario y enciclopedia) bajan a 6 a 7 mil triángulos con simplificación «sloppy» de meshoptimizer (`tools/modelos_sloppy.mjs`, se ejecuta desde `recursos/herramientas`). La sede queda en 0,37 M de triángulos.
+- **5e hecho:** `sede3d.js` baja a 758 líneas (de 1.224): salen `sede_tiro.js`, `sede_paneles.js`, `sede_hud.js` y `sede_grupo.js`. Probado con `tools/sede_capturas.js`, `sede_vida.js` y `escenas_todas.js`.
+- **4b hecho:** las ciudades con pocos edificios (menos de 90 en OpenStreetMap) reciben casas sintéticas a ambos lados de las calles (Philadelphia 1 a 81 edificios, Zalgiris 4 a 44, Unicaja 17 a 67, Merkezefendi 69 a 219), sin pisar edificios, parques, agua, aparcamientos ni calles.
+- **11 hecho en parte:**
+  - GTAO afinado: media resolución, solo en interiores y Ultra (ya del tramo anterior), con radio e intensidad mayores en Ultra.
+  - Neblina atmosférica: la niebla se cierra al amanecer y al caer la tarde (y con tiempo gris).
+  - Modo foto: botones **Desenfoque** (profundidad de campo con BokehPass, enfoca al personaje; comprobada a ojo) y **Rayos de luz** (resplandor solar y desenfoque radial; el pase compila y funciona, pero **no se ha podido comprobar a ojo un resultado vistoso**). Los botones de la barra de foto eran ilegibles (texto oscuro sobre fondo oscuro): arreglado.
+  - Sombras: la cercana a medio ritmo (cada fotograma en Ultra) y la lejana a un cuarto.
+  - **Pendiente 11b:** afinar los rayos de luz en una escena abierta con cielo despejado (umbral, fuerza, tamaño del resplandor).
+  - **Pendiente 11c:** reflejos en pantalla solo para charcos y cristales: no se hacen; los reflejos de cristales y suelo mojado salen del cielo HDRI. Un SSR costaría más de 6 ms; solo se haría si se ve que falta.
+  - **Pendiente 11d:** Ultra sigue caro (hasta 40 ms en el peor caso medido con sombras en cada fotograma); en el juego real las sombras van a ritmo reducido, pero hay que medir fps reales en Ultra.

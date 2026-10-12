@@ -12,7 +12,7 @@ const club = process.argv[2] || 'joventut-badalona', esc = process.argv[3] || 'c
     await sleep(esc === 'calle' ? 15000 : 9000);
     const r = await p.evaluate(() => {
       const S = GM.sede._estado(), gl = S.renderer.getContext(), dibuja = () => (S.composer ? S.composer.render(0.016) : S.renderer.render(S.scene, S.camera));
-      S.pausa = true; S.renderer.shadowMap.autoUpdate = true; const med = (sombras) => { for (const l of [S.luces.sol, S.luces.sol2]) if (l) l.castShadow = sombras; S.scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); });
+      S.pausa = true; for (const l of [S.luces.sol, S.luces.sol2]) if (l) l.shadow.autoUpdate = true; const med = (sombras) => { for (const l of [S.luces.sol, S.luces.sol2]) if (l) l.castShadow = sombras; S.scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.needsUpdate = true; }); });
         for (let i = 0; i < 8; i++) dibuja(); gl.finish(); const t = performance.now(); for (let i = 0; i < 40; i++) dibuja(); gl.finish(); return (performance.now() - t) / 40; };
       const con = med(true), sin = med(false), i = S.renderer.info.render; return { conSombras: +con.toFixed(2), sinSombras: +sin.toFixed(2), costeSombras: +(con - sin).toFixed(2), llamadas: i.calls, tri: i.triangles, composer: !!S.composer, calidad: GM.campus.config.nivel };
     });

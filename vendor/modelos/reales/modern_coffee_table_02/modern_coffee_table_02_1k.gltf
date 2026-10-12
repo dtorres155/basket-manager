@@ -7,21 +7,21 @@
     {
       "type": "SCALAR",
       "componentType": 5123,
-      "count": 8958,
+      "count": 4314,
       "bufferView": 0,
       "byteOffset": 0
     },
     {
       "type": "SCALAR",
       "componentType": 5123,
-      "count": 26874,
+      "count": 15213,
       "bufferView": 0,
-      "byteOffset": 17916
+      "byteOffset": 8628
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 5788,
+      "count": 728,
       "max": [
         0.6005420684814453,
         0.3674314022064209,
@@ -38,30 +38,30 @@
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 5788,
+      "count": 728,
       "bufferView": 1,
       "byteOffset": 12
     },
     {
       "type": "VEC2",
       "componentType": 5126,
-      "count": 5788,
+      "count": 728,
       "bufferView": 1,
       "byteOffset": 24
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 17824,
+      "count": 2530,
       "max": [
-        0.4494684934616089,
+        0.4493102729320526,
         0.36905208230018616,
         0.6023358702659607
       ],
       "min": [
         -0.5985692739486694,
-        0.0669964849948883,
-        -0.4451645016670227
+        0.0671529471874237,
+        -0.4450060725212097
       ],
       "bufferView": 2,
       "byteOffset": 0
@@ -69,14 +69,14 @@
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 17824,
+      "count": 2530,
       "bufferView": 2,
       "byteOffset": 12
     },
     {
       "type": "VEC2",
       "componentType": 5126,
-      "count": 17824,
+      "count": 2530,
       "bufferView": 2,
       "byteOffset": 24
     }
@@ -85,20 +85,20 @@
     {
       "buffer": 0,
       "byteOffset": 0,
-      "byteLength": 71664,
+      "byteLength": 39056,
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteOffset": 71664,
-      "byteLength": 185216,
+      "byteOffset": 39056,
+      "byteLength": 23296,
       "byteStride": 32,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 256880,
-      "byteLength": 570368,
+      "byteOffset": 62352,
+      "byteLength": 80960,
       "byteStride": 32,
       "target": 34962
     }
@@ -172,7 +172,7 @@
   "buffers": [
     {
       "uri": "modern_coffee_table_02.bin",
-      "byteLength": 827248
+      "byteLength": 143312
     }
   ],
   "materials": [

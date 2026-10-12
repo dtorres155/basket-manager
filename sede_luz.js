@@ -75,7 +75,12 @@
         if (gris) { const gn = gris * (1 - noche * 0.6), gc = new THREE.Color(0x8f99a4).lerp(new THREE.Color(0x283040), noche); S.luces.sol.intensity *= 1 - gn * 0.72; S.luces.cielo.color.lerp(new THREE.Color(0xa3acb6), gn * 0.6); if (S.scene.background && S.scene.background.isColor) S.scene.background.lerp(gc, gn * 0.85); if (S.scene.fog) { S.scene.fog.color.lerp(gc, gn * 0.85); if (!S.fogBase) S.fogBase = S.scene.fog.far; S.scene.fog.far = S.fogBase * (1 - gn * 0.35); } if (S.scene.environment) S.scene.environmentIntensity *= 1 - gn * 0.3; }
         if (GM.texturas && GM.texturas.mojadoU) GM.texturas.mojadoU.value = ext ? (C.tipo === 'lluvia' ? 1 : C.ayer ? 0.35 : 0) : 0;
         if (S.chipDia && S.dia && S.clima) S.chipDia.textContent = S.dia.texto + (ext ? '. ' + S.clima.texto : '');
-        if (GM.sonido) { const pc = !!(S.dia && S.dia.tipo === 'partido' && S.dia.casa); GM.sonido.estado({ hora: h, clima: C.tipo, partido: pc && h >= 20.4 && h < 22.3, previa: pc && h >= 16 && h < 20.5 }); } }
+        if (S.scene.fog) {   // neblina atmosférica: más cerrada al amanecer y al caer la tarde, y con tiempo gris
+        const fg = S.scene.fog; if (!S.fogBase) S.fogBase = fg.far; if (!S.fogNear0) S.fogNear0 = fg.near;
+        const alba = Math.max(0, Math.min(1, (sp.sale + 1.5 - hs) / 1.5)), bruma = Math.max(tarde * 0.6, alba) * (1 - noche * 0.5), gn2 = gris ? gris * (1 - noche * 0.6) : 0;
+        fg.far = S.fogBase * (1 - gn2 * 0.35) * (1 - 0.3 * bruma); fg.near = S.fogNear0 * (1 - 0.4 * bruma);
+      }
+      if (GM.sonido) { const pc = !!(S.dia && S.dia.tipo === 'partido' && S.dia.casa); GM.sonido.estado({ hora: h, clima: C.tipo, partido: pc && h >= 20.4 && h < 22.3, previa: pc && h >= 16 && h < 20.5 }); } }
       if (S.luces.sol2) { const l2 = S.luces.sol2; l2.color.copy(S.luces.sol.color); l2.intensity = S.luces.sol.intensity * 0.4; S.luces.sol.intensity *= 0.6; }
       if (S.chipHora) { const hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 15) * 15; S.chipHora.textContent = hh + ':' + String(mm).padStart(2, '0'); }
     }

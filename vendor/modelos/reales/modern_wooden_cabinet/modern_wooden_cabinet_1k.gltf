@@ -83,37 +83,37 @@
     {
       "type": "SCALAR",
       "componentType": 5123,
-      "count": 11898,
+      "count": 7923,
       "bufferView": 1,
       "byteOffset": 0
     },
     {
       "type": "SCALAR",
       "componentType": 5123,
-      "count": 9732,
+      "count": 4608,
       "bufferView": 1,
-      "byteOffset": 23796
+      "byteOffset": 15848
     },
     {
       "type": "SCALAR",
       "componentType": 5123,
-      "count": 9732,
+      "count": 6288,
       "bufferView": 1,
-      "byteOffset": 43260
+      "byteOffset": 25064
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 5586,
+      "count": 1291,
       "max": [
         1.2194938659667969,
         0.680159330368042,
-        0.24995402991771698
+        0.24994546175003052
       ],
       "min": [
-        -1.219717264175415,
+        -1.219473123550415,
         0.000016823410987854004,
-        -0.2697320282459259
+        -0.26968371868133545
       ],
       "bufferView": 2,
       "byteOffset": 0
@@ -121,21 +121,21 @@
     {
       "type": "VEC2",
       "componentType": 5126,
-      "count": 5586,
+      "count": 1291,
       "bufferView": 2,
       "byteOffset": 12
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 5586,
+      "count": 1291,
       "bufferView": 2,
       "byteOffset": 20
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 7032,
+      "count": 753,
       "max": [
         1.1797165870666504,
         0.4763185381889343,
@@ -144,7 +144,7 @@
       "min": [
         -0.010000068694353104,
         -2.2930717324953775e-9,
-        -0.34221288561820984
+        -0.34090283513069153
       ],
       "bufferView": 3,
       "byteOffset": 0
@@ -152,21 +152,21 @@
     {
       "type": "VEC2",
       "componentType": 5126,
-      "count": 7032,
+      "count": 753,
       "bufferView": 3,
       "byteOffset": 12
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 7032,
+      "count": 753,
       "bufferView": 3,
       "byteOffset": 20
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 7032,
+      "count": 1064,
       "max": [
         1.179332971572876,
         0.4763185381889343,
@@ -183,14 +183,14 @@
     {
       "type": "VEC2",
       "componentType": 5126,
-      "count": 7032,
+      "count": 1064,
       "bufferView": 4,
       "byteOffset": 12
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 7032,
+      "count": 1064,
       "bufferView": 4,
       "byteOffset": 20
     }
@@ -204,27 +204,27 @@
     {
       "buffer": 0,
       "byteOffset": 11160,
-      "byteLength": 62724,
+      "byteLength": 37640,
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteOffset": 73884,
-      "byteLength": 178752,
+      "byteOffset": 48800,
+      "byteLength": 41312,
       "byteStride": 32,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 252636,
-      "byteLength": 225024,
+      "byteOffset": 90112,
+      "byteLength": 24096,
       "byteStride": 32,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 477660,
-      "byteLength": 225024,
+      "byteOffset": 114208,
+      "byteLength": 34048,
       "byteStride": 32,
       "target": 34962
     }
@@ -271,7 +271,7 @@
   "buffers": [
     {
       "uri": "modern_wooden_cabinet.bin",
-      "byteLength": 702684
+      "byteLength": 148256
     }
   ],
   "materials": [

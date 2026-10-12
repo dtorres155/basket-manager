@@ -7,22 +7,22 @@
     {
       "type": "SCALAR",
       "componentType": 5123,
-      "count": 43116,
+      "count": 20493,
       "bufferView": 0,
       "byteOffset": 0
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 29090,
+      "count": 2983,
       "max": [
-        0.24440668523311615,
+        0.24362826347351074,
         0.7505773305892944,
         0.2544180750846863
       ],
       "min": [
         -0.2415890246629715,
-        0.000028868282242910936,
+        0.000028909929824294522,
         -0.2287321239709854
       ],
       "bufferView": 1,
@@ -31,14 +31,14 @@
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 29090,
+      "count": 2983,
       "bufferView": 1,
       "byteOffset": 12
     },
     {
       "type": "VEC2",
       "componentType": 5126,
-      "count": 29090,
+      "count": 2983,
       "bufferView": 1,
       "byteOffset": 24
     }
@@ -47,13 +47,13 @@
     {
       "buffer": 0,
       "byteOffset": 0,
-      "byteLength": 86232,
+      "byteLength": 40988,
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteOffset": 86232,
-      "byteLength": 930880,
+      "byteOffset": 40988,
+      "byteLength": 95456,
       "byteStride": 32,
       "target": 34962
     }
@@ -100,7 +100,7 @@
   "buffers": [
     {
       "uri": "bar_chair_round_01.bin",
-      "byteLength": 1017112
+      "byteLength": 136444
     }
   ],
   "materials": [
