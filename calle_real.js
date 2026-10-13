@@ -198,6 +198,11 @@
     const bloquearPoli = (p, margen) => {
       const x0 = Math.min(...p.map(q => q[0])) - margen, x1 = Math.max(...p.map(q => q[0])) + margen, z0 = Math.min(...p.map(q => q[1])) - margen, z1 = Math.max(...p.map(q => q[1])) + margen;
       const [ia, ja] = G.celda(x0, z0), [ib, jb] = G.celda(x1, z1);
+      if ((ib - ia + 1) * (jb - ja + 1) > 30000) {   // polígono enorme (lago, mar): relleno por líneas de barrido en vez de probar cada celda
+        const n = p.length; for (let j = Math.max(0, ja); j <= Math.min(G.H - 1, jb); j++) { const z = G.centro(0, j)[1], xs = []; for (let k = 0; k < n; k++) { const a = p[k], b = p[(k + 1) % n]; if ((a[1] > z) !== (b[1] > z)) xs.push(a[0] + (z - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); } xs.sort((u, v) => u - v);
+          for (let m = 0; m + 1 < xs.length; m += 2) { const i0 = Math.max(0, G.celda(xs[m] - margen, z)[0]), i1 = Math.min(G.W - 1, G.celda(xs[m + 1] + margen, z)[0]); for (let i = i0; i <= i1; i++) G.b[G.idx(i, j)] = 1; } }
+        return;
+      }
       for (let j = Math.max(0, ja); j <= Math.min(G.H - 1, jb); j++) for (let i = Math.max(0, ia); i <= Math.min(G.W - 1, ib); i++) {
         const [x, z] = G.centro(i, j); let b = pip(x, z, p);
         if (!b && margen > 0) for (let k = 0; k < p.length && !b; k++) if (dSeg(x, z, p[k], p[(k + 1) % p.length]) < margen) b = true;
@@ -511,6 +516,8 @@
     if (GM.interiores) [['pabellon', 'Entrar al pabellón'], ['tienda', 'Entrar en la tienda'], ['pena', 'Entrar en el bar'], ['ayuntamiento', 'Entrar en el ayuntamiento']].forEach(([k, bt]) => {
       if (!SALAS[k]) return; SALAS[k] = Object.assign({}, SALAS[k], { irA: 'interior:' + k, boton: bt }); const p = R[k] && R[k].puerta; if (p && k !== 'pabellon') entrada('interior:' + k, p);
     });
+    // Interiores de los edificios con puerta de la ciudad (punto 49): hospital, colegio, estación, hotel, museo, mercado, heladería y ciudad deportiva
+    if (GM.interiores) [['lugar_hospital', 'hospital', 'hospital', 'Entrar en el hospital'], ['lugar_colegio', 'colegio', 'colegio', 'Entrar en el colegio'], ['lugar_estacion', 'estacion', 'estacion', 'Entrar en la estación'], ['hotel', 'hotel', 'hotel_ciudad', 'Entrar en el hotel'], ['museo', 'museo', 'museo', 'Entrar en el museo'], ['mercado', 'mercado', 'mercado', 'Entrar en el mercado'], ['heladeria', 'heladeria', 'heladeria', 'Entrar en la heladería'], ['lugar_campus', 'campus', 'campus', 'Entrar en la ciudad deportiva']].forEach(([sid, rol, tipo, bt]) => { const b = R[rol]; if (!SALAS[sid] || !b || !b.puerta) return; SALAS[sid] = Object.assign({}, SALAS[sid], { irA: 'interior:' + tipo, boton: bt }); entrada('interior:' + tipo, b.puerta); });
     // Autobús a tu pueblo
     if (st.modo === 'carrera' && st.carrera && st.carrera.pueblo && R.bus) {
       const P = st.carrera.pueblo, carr = (P.edificios.find(b => b.tipo === 'carretera') || {}).nivel || 0, p = puntoPuerta(R.bus, X, G, 2.2);

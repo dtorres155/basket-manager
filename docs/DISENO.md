@@ -33,3 +33,10 @@ Límite actual: todo son primitivas procedurales y se ha afinado sin ver el resu
 - **Sí / No:** sí un portal con buzones y una bici atada; no una caja blanca con puerta. Sí asfalto con parches y marcas gastadas; no gris uniforme.
 - **Referencias por escena** (a reunir en `docs/referencias/`, 15 por tipo): calle, plaza, interior de vivienda, pueblo, pabellón.
 - **Juez:** `node tools/banco.js` produce siempre las mismas vistas para comparar antes y después.
+
+## Guía de interiores (punto 47)
+- **Luz:** cálida y suave (focos de techo y lámparas con `PointLight` baratas, ventanas con luz de fuera), sombras de contacto bajo los muebles y rebote de color en el suelo. Nada de una sola luz blanca uniforme.
+- **Desorden cotidiano:** cada sala lleva su capa de objetos pequeños (`interiores_vida.js`, `GM.interioresVida.decorar`): tazas, libros, plantas, ropa, mando de la tele en el salón; botellas y toallas en el vestuario; papeles y bandejas en hospital, colegio y estación. Se reparte con semilla fija por sala y sin tapar puertas ni caminos.
+- **Gente:** cada tipo tiene su `GENTE` (personal y público) con rutina por hora; ninguna sala con puerta queda vacía.
+- **Plantilla:** `TIPOS` en `interiores_pueblo.js` (suelo, muro, piso, anexos por `lista()`, sala principal por `principal()`); el pabellón añade vestuarios, gimnasio, fisio, prensa y VIP.
+- **Comprobación:** `node tools/interiores_ciudad.js <club> <tipos>` falla si un interior sale con pocas mallas o sin gente, y deja capturas en `capturas/interiores_ciudad/`.

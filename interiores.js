@@ -16,8 +16,9 @@
   if (GM.interioresPueblo) Object.assign(TIPOS, GM.interioresPueblo.TIPOS);   // escuela, biblioteca, cine, hotel… (interiores_pueblo.js)
   const pueblo = st => (st.carrera && st.carrera.pueblo) || { nombre: 'tu pueblo' };
   const NOMBRE = { pabellon: c => c.pabellon.nombre, tienda: c => 'Tienda oficial del ' + c.siglas, pena: () => 'Bar La Peña', ayuntamiento: c => 'Ayuntamiento de ' + c.ciudad, bar_pueblo: (c, st) => 'Bar de la peña de ' + pueblo(st).nombre, casa_padres: () => 'Casa de tus padres', casa_pueblo: (c, st) => 'Tu casa en ' + pueblo(st).nombre, restaurante: c => 'Restaurante El Tapón', gimnasio_barrio: () => 'Gimnasio del barrio', barberia: () => 'Barbería Paco', casa_amigos: () => 'Casa de tus amigos' };
+  Object.assign(NOMBRE, { hospital: (c) => 'Hospital de ' + c.ciudad, colegio: (c) => 'Colegio de ' + c.ciudad, hotel_ciudad: (c) => 'Hotel ' + c.siglas, campus: (c) => (c.ciudadDeportiva && c.ciudadDeportiva.nombre) || 'Ciudad deportiva', museo: (c) => 'Museo del ' + c.siglas, estacion: (c) => 'Estación de ' + c.ciudad, mercado: (c) => 'Mercado de ' + c.ciudad, heladeria: () => 'Heladería La Ola' });
   Object.assign(NOMBRE, { escuela: (c, st) => 'Escuela de baloncesto de ' + pueblo(st).nombre, biblioteca: (c, st) => 'Biblioteca de ' + pueblo(st).nombre, tienda_pueblo: (c, st) => 'Tienda de deportes de ' + pueblo(st).nombre, ambulatorio: (c, st) => 'Centro de salud de ' + pueblo(st).nombre, polideportivo: (c, st) => 'Polideportivo de ' + pueblo(st).nombre, hotel: (c, st) => 'Hotel de ' + pueblo(st).nombre, cine: (c, st) => 'Cine de ' + pueblo(st).nombre, centrodia: (c, st) => 'Centro de día de ' + pueblo(st).nombre, panaderia: (c, st) => 'Panadería de ' + pueblo(st).nombre, taller: (c, st) => 'Taller de ' + pueblo(st).nombre, restaurante_pueblo: (c, st) => 'Restaurante de ' + pueblo(st).nombre, industrial: (c, st) => 'Polígono industrial de ' + pueblo(st).nombre, pabellon_pueblo: (c, st) => 'Pabellón ' + st.jugadores.yo.nombre.split(' ').pop(), cine_ciudad: c => 'Cine de ' + c.ciudad, bolera: () => 'Bolera Strike' });
-  const LUGAR = { pabellon: 'pabellon', pena: 'pena', ayuntamiento: 'ayuntamiento', tienda: 'comercio' };
+  const LUGAR = { pabellon: 'pabellon', pena: 'pena', ayuntamiento: 'ayuntamiento', tienda: 'comercio', hospital: 'hospital', colegio: 'colegio', estacion: 'estacion', campus: 'campus', mercado: 'comercio' };
   function construir(S, M, st, tipo) {
     tipo = TIPOS[tipo] ? tipo : 'pena'; const W = S.mundo, club = st.equipos[st.clubId], c1 = club.colores[0] === '#000000' ? '#222222' : club.colores[0], c2 = club.colores[1] || '#ffffff';
     const { w, d } = TIPOS[tipo], x0 = -w / 2, x1 = w / 2, z0 = -d / 2, z1 = d / 2;
@@ -121,7 +122,7 @@
         G.bloquea(-2.2, 1.0, 1.2, 2.2); G.bloquea(2.0, -1.9, 4.8, -0.5); G.bloquea(-1.8, z0, 0.8, z0 + 1.2); luz(0, 0, 4.5);
         zonas.push([sala, 3.2, 2.6]); S.puntosInt = [[3.4, 0.6], [-3.6, -2.5], [2.8, 2.6]];
       }
-    } else if (IPm && (tipo === 'cine_ciudad' || tipo === 'bolera')) {   // locales de ocio de la ciudad (interiores_pueblo.js)
+    } else if (IPm && (tipo === 'cine_ciudad' || tipo === 'bolera' || IPm.CIUDAD.indexOf(tipo) >= 0)) {   // locales de ocio de la ciudad (interiores_pueblo.js)
       const acc = IPm.principal(tipo, { W, G, S, M, st, club, c1, c2, x0, x1, z0, z1, w, d, alto }); luz(0, 0, 6); luz(-6, 3, 4); luz(6, 3, 4); zonas.push([sala, acc[0], acc[1]]);
     } else if (tipo === 'restaurante') {   // comedor con mesas vestidas, barra, cocina vista y vinoteca
       caja(W, 6, 1.1, 0.9, '#5a3b26', x1 - 4, 0, z0 + 2.2); caja(W, 6.2, 0.08, 1.1, '#2a2018', x1 - 4, 1.1, z0 + 2.2); G.bloquea(x1 - 7.2, z0 + 1.6, x1 - 0.8, z0 + 2.8);
@@ -172,7 +173,9 @@
     const nueva = async (o, rol, fijo) => { const p = await M.personaje(Object.assign({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 160 + r() * 28, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 5) | 0] }, o)); p.rol = rol; p.fijo = !!fijo; p.r = r; p.espera = r() * 4; p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); return p; };
     const crea = async sp => { const mov = sp.anim === 'walk', p = await nueva({ modelo: sp.modelo }, sp.rol, !mov); p.obj.position.set(sp.x, 0, sp.z); p.obj.rotation.y = sp.ry || 0; if (sp.sentado) { p.asiento = sp.asiento || 0.45; M.anim(p, 'sit'); } else if (!mov) M.anim(p, sp.anim || 'idle'); return p; };
     // muebles de Kenney del bar (taburetes, mesas, sillas)
+    const listaMuebles = S.mueblesPend ? S.mueblesPend.slice() : [];
     if (S.mueblesPend) { await Promise.all(S.mueblesPend.map(async ([m, x, z, ry]) => { try { const o = await M.mueble(m); o.position.set(x, 0, z); o.rotation.y = ry * Math.PI / 180; S.mundo.add(o); } catch (e) { } })); S.mueblesPend = null; }
+    if (GM.interioresVida) { try { GM.interioresVida.decorar(S, M, st, tipo, listaMuebles); } catch (e) { console.error("interioresVida", e); } }
     if (tipo === 'pabellon') {
       const partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa, cols = [c1, c2, '#f2f2f2', '#2f3a46'], lleno = partido ? 0.85 : 0.08;
       const fans = (S.gradas || []).filter(() => r() < lleno).map(g => Object.assign({}, g, { ropa: cols[(r() * 4) | 0], piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 5) | 0] }));

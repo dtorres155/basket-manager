@@ -5,12 +5,12 @@
    Se activa con el primer gesto del usuario (los navegadores lo exigen). Preferencia en el dispositivo: gm1:sonido ('1' o '0').
    Expone: escena(tipo, arg), estado({ hora, clima, partido, previa }), alternar(), activo(), selfTest. */
 (function () {
-  let ctx = null, maestro = null, ruido = null, capas = {}, esc = null, arg = null, est = { hora: 9, clima: 'sol', partido: false, previa: false }, temporizadores = [], ultimaHora = -1;
+  let ctx = null, maestro = null, analizador = null, ruido = null, capas = {}, esc = null, arg = null, est = { hora: 9, clima: 'sol', partido: false, previa: false }, temporizadores = [], ultimaHora = -1;
   const pref = () => { try { return localStorage.getItem('gm1:sonido') !== '0'; } catch (e) { return true; } };
   function iniciar() {
     if (ctx || typeof window === 'undefined' || !(window.AudioContext || window.webkitAudioContext)) return !!ctx;
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return false; }
-    maestro = ctx.createGain(); maestro.gain.value = pref() ? 0.9 : 0; maestro.connect(ctx.destination);
+    maestro = ctx.createGain(); maestro.gain.value = pref() ? 0.9 : 0; maestro.connect(ctx.destination); analizador = ctx.createAnalyser(); analizador.fftSize = 2048; maestro.connect(analizador);
     const n = ctx.sampleRate * 3, b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0); let ult = 0;
     for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; ult = (ult + 0.02 * w) / 1.02; d[i] = w * 0.6 + ult * 2.4; }   // ruido blanco con algo de «marrón»
     ruido = b; montarCapas(); return true;
@@ -85,5 +85,7 @@
   }
   function selfTest() { return typeof escena === 'function' && typeof estado === 'function'; }
   function pais(p) { Object.assign(paisaje, p || {}); if (ctx) mezclar(); }
-  GM.sonido = { paisaje: pais, _mezcla: () => ultimaMezcla, _paisaje: () => paisaje, escena, estado, alternar, activo, selfTest, _ctx: () => ctx };
+  // Análisis de lo que suena (para las pruebas): nivel RMS y energía en graves (<300 Hz), medios y agudos (>2 kHz)
+  function analisis() { if (!ctx || !analizador) return null; const t = new Float32Array(analizador.fftSize); analizador.getFloatTimeDomainData(t); let r = 0; for (let i = 0; i < t.length; i++) r += t[i] * t[i]; const f = new Uint8Array(analizador.frequencyBinCount); analizador.getByteFrequencyData(f); const hz = ctx.sampleRate / analizador.fftSize, b = [0, 0, 0]; f.forEach((v, i) => { const fr = i * hz; b[fr < 300 ? 0 : fr < 2000 ? 1 : 2] += v * v; }); const tot = b[0] + b[1] + b[2] || 1; return { rms: Math.sqrt(r / t.length), graves: b[0] / tot, medios: b[1] / tot, agudos: b[2] / tot }; }
+  GM.sonido = { analisis, paisaje: pais, _mezcla: () => ultimaMezcla, _paisaje: () => paisaje, escena, estado, alternar, activo, selfTest, _ctx: () => ctx };
 })();

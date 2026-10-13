@@ -370,3 +370,10 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 - 39b: los viajes en metro, bus, taxi y VTC se ven con cámara que sigue el camino por las calles (3 a 9 s con botón «Saltar») mientras el reloj avanza lo que dura el trayecto; hay itinerario «Metro y autobús» con transbordo.
 - 40b: aplicación de movilidad en el móvil (reserva de patinete o moto durante 10 minutos, bici reservada con desbloqueo gratis, taxi y VTC, tarjeta, gastos, tu coche y multas).
 - 41b: choques con otros coches (daños, parte amistoso de 150 € si vas rápido), peatones que se apartan y multa por conducción temeraria, reparación en el taller o junto a casa, y garaje de casa para guardar y sacar el coche.
+
+## Estado tras la vigesimoquinta tanda (release 0.9.106): puntos 46 a 49 y pendientes
+- 46 barrido de ciudades (`tools/barrido_ciudades.js`): abre cada club, mide 15 comprobaciones y escribe `docs/BARRIDO_CIUDADES.md`; guarda 10 vistas al azar en `capturas/barrido/`. Mejora de rendimiento hallada: `bloquearPoli` rellena por líneas de barrido (Cleveland de 168 s a 11 s).
+- 47 dirección de interiores: guía en `docs/DISENO.md` y capa de desorden cotidiano (`interiores_vida.js`).
+- 48 biblioteca de objetos (`tools/ingesta.js`: descargar, simplificar, escalar, etiquetar, `reindexar`, `informe` -> `docs/OBJETOS.md`): 428 objetos en el catálogo, aún por debajo de los 500 previstos; solo los marcados `incluir` viajan en `dist/`.
+- 49 interiores de ciudad: hospital, colegio, hotel, campus, museo, estación, mercado y heladería, y anexos del pabellón; `tools/interiores_ciudad.js` los comprueba. Siguen sin interior propio kioscos, terrazas y viviendas ajenas.
+- Pendiente: el hospital se ve algo vacío (vestíbulo grande), faltan 70 objetos para llegar a 500, y las descargas OSM de partes de edificio y plazas cubren solo parte de las ciudades.
