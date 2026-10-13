@@ -40,7 +40,7 @@
     function controles(cv) {
       const ray = new THREE.Raycaster(), suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ptrs = new Map(); let pinza = 0;
       const toque = (cx, cy) => {
-        if (!S.yo) return; const r = cv.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), S.camera);
+        if (!S.yo) return; const r = cv.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), S.camera); ray.ray.origin.y -= (S.hF || 0);
         if (S.construccion && GM.casa) { const pc = new THREE.Vector3(); if (ray.ray.intersectPlane(suelo, pc)) GM.casa.toque(S, motor(), pc, ray); return; }
         const npcs = S.gente.map(n => n.obj), hit = ray.intersectObjects(npcs, true)[0];
         if (hit) { let o = hit.object; while (o && !(o.userData && o.userData.npc !== undefined)) o = o.parent; if (o) { const n = S.gente[o.userData.npc]; fichaJugador(n); const yo = S.yo.obj.position; if (!n.fijo && n.camino) { n.camino = null; anim(n, 'idle'); n.espera = 6; } n.obj.lookAt(yo.x, 0, yo.z); return; } }

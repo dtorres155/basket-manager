@@ -602,7 +602,7 @@
     });
     S.tOcl = (S.tOcl || 0) - dt;
     if (S.oclusores && S.yo && S.tOcl <= 0) {
-      S.tOcl = 0.1; const ojo = S.camera.position, obj = S.yo.obj.position.clone().setY(1.0), dir = obj.clone().sub(ojo), dist = dir.length();
+      S.tOcl = 0.1; const ojo = S.camera.position.clone().setY(S.camera.position.y - (S.hF || 0)), obj = S.yo.obj.position.clone().setY(1.0), dir = obj.clone().sub(ojo), dist = dir.length();
       _ray.set(ojo, dir.normalize()); _ray.far = dist; const set = new Set(S.oclusores), tapan = new Set(_ray.intersectObjects(S.oclusores, true).map(h => { let o = h.object; while (o && !set.has(o)) o = o.parent; return o; }));
       S.oclusores.forEach(g => { const meta = tapan.has(g) ? 0.2 : 1; g.traverse(m => { if (!m.isMesh) return; const mt = m.material; if (!tapan.has(g) && mt.opacity === 1) return; mt.transparent = true; mt.opacity += (meta - mt.opacity) * 0.6; if (Math.abs(mt.opacity - 1) < 0.02) { mt.opacity = 1; mt.transparent = false; } mt.depthWrite = mt.opacity > 0.95; mt.needsUpdate = true; }); });
     }

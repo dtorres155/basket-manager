@@ -43,7 +43,7 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
   const k = 110574, kx = 111320 * Math.cos(j.lat * Math.PI / 180);
   const pr = g => g.map(q => [(q.lon - j.lon) * kx, -(q.lat - j.lat) * k]);
   const S = [], SI = new Map(), nom = n => { if (!n) return -1; n = String(n).slice(0, 40); if (!SI.has(n)) { SI.set(n, S.length); S.push(n); } return SI.get(n); };
-  const r = { s: S, g: [+j.lat.toFixed(3), +j.lon.toFixed(3)], e: [], c: [], cx: [], a: [], p: [] };
+  const r = { s: S, g: [+j.lat.toFixed(3), +j.lon.toFixed(3)], e: [], ex: [], c: [], cx: [], a: [], p: [] };
   for (const w of j.el) {
     if (!w.geometry || w.geometry.length < 3 && !w.tags.highway) continue;
     const t = w.tags || {};
@@ -54,13 +54,14 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
       p = dp(p.concat([p[0]]), 0.9).slice(0, -1); if (p.length < 3) continue;
       if (p.length > 18) p = p.filter((_, i) => i % Math.ceil(p.length / 18) === 0);
       const pl = +t['building:levels'] || (t.height ? Math.max(1, Math.round(+t.height / 3.1)) : 0);
+      { const sd = parseInt(String(t.start_date || t['building:start_date'] || '').slice(0, 4)) || 0, mt = String(t['building:material'] || t['building:facade:material'] || t.material || '').toLowerCase(), mc = /brick|ladrillo/.test(mt) ? 1 : /stone|sandstone|granite|limestone|marble/.test(mt) ? 2 : /concrete|cement/.test(mt) ? 3 : /glass/.test(mt) ? 4 : /wood|timber/.test(mt) ? 5 : /metal|steel|aluminium/.test(mt) ? 6 : /plaster|stucco/.test(mt) ? 7 : 0; r.ex.push([sd >= 1000 ? Math.floor(sd / 10) : 0, mc, t.heritage || t['heritage:operator'] || t.historic ? 1 : 0]); }
       r.e.push([Math.min(pl, 60) || 0, claseEdificio(t), nom(t.name), nom(colorDe(t['building:colour'] || t['building:facade:colour'])), techoDe(t)].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
     } else if (t.highway) {
       if (t.tunnel && t.tunnel !== 'no') continue;
       p = dp(p, 1.2); r.c.push([CALLE[t.highway] === undefined ? 6 : CALLE[t.highway], nom(t.name), t.oneway === 'yes' ? 1 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
       // datos de la vía (punto 31): carriles, firme, puente, carril bici, carril bus, acera, alumbrado y límite de velocidad, en el mismo orden que r.c
       { const ci = v => v && v !== 'no' && v !== 'none', sf = (t.surface || '').toLowerCase(), cic = ci(t.cycleway) || ci(t['cycleway:left']) || ci(t['cycleway:right']) || ci(t['cycleway:both']), bus = ci(t.busway) || ci(t['busway:left']) || ci(t['busway:right']) || /bus/.test(t['lanes:bus'] || '') || t['bus:lanes'] !== undefined || (t.oneway && /psv|bus/.test(t['cycleway:right'] || '')),
-          flags = (ci(t.bridge) ? 1 : 0) | (cic ? 2 : 0) | (bus ? 4 : 0) | (ci(t.sidewalk) ? 8 : 0) | (t.lit === 'yes' ? 16 : 0);
+          flags = (ci(t.bridge) ? 1 : 0) | (cic ? 2 : 0) | (bus ? 4 : 0) | (ci(t.sidewalk) ? 8 : 0) | (t.lit === 'yes' ? 16 : 0) | (t.junction === 'roundabout' ? 32 : 0);
         r.cx.push([Math.min(+t.lanes || 0, 8), /paving|sett|cobble|brick/.test(sf) ? 1 : /concrete/.test(sf) ? 2 : /unpaved|gravel|dirt|ground|sand|grass/.test(sf) ? 3 : 0, flags, Math.round((parseInt(t.maxspeed) || 0) / 10)]); }
     } else if (t.natural === 'water' || t.waterway) {
       p = dp(p, 1.8); r.a.push([t.waterway ? 1 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
@@ -106,6 +107,8 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
     }
     r.l = L;
   }
+  const tf = path.join(DIR, j.id + '.tr.json'); if (fs.existsSync(tf)) { const TRJ = JSON.parse(fs.readFileSync(tf, 'utf8')); r.tr = TRJ.el.map(w => [w.t].concat(...dp(w.g.map(q => [q[0] / 10, q[1] / 10]), 1.5).map(q => [ent(q[0]), ent(q[1])]))); }
+  const pf2 = path.join(DIR, j.id + '.pl.json'); if (fs.existsSync(pf2)) { const PJ = JSON.parse(fs.readFileSync(pf2, 'utf8')); r.pl = PJ.el.map(w => { const p = dp(w.g.map(q => [q[0] / 10, q[1] / 10]), 1.2); return [w.t].concat(...p.map(q => [ent(q[0]), ent(q[1])])); }).filter(a => a.length >= 7); }
   const df = path.join(DIR, j.id + '.dem.json'); if (fs.existsSync(df)) { const DM = JSON.parse(fs.readFileSync(df, 'utf8')); r.h = { n: DM.n, p: DM.paso, v: DM.h.map(v => Math.round(v)) }; }
   const s = JSON.stringify(r); fs.writeFileSync(path.join(OUT, j.id + '.json'), s);
   total++; bytes += s.length;

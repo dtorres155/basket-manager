@@ -382,7 +382,7 @@
   function motor() { return { mueble: mueble3, personaje, anim, irA, rejilla, textura, etiqueta, zona, bocadillo: (t, o) => bocadillo(t, o) }; }
   // Cambiar entre la sede y la calle con un fundido
   async function cambiarEscena(dest) {
-    if (!S || S.cambiando) return; S.cambiando = true; const de = S.escena; S.rend = null;
+    if (!S || S.cambiando) return; if (GM.relieve) GM.relieve.fijar(null); S.cambiando = true; const de = S.escena; S.rend = null;
     if (S.yo && S.yo.bici && GM.ciudadBarrios) GM.ciudadBarrios.bici(false);
     S.mascota = null;
     if (S.construccion && GM.casa) await GM.casa.activar(S, motor(), false);
@@ -477,7 +477,7 @@
     const r = S.renderer.domElement.getBoundingClientRect(), v = new THREE.Vector3();
     S.flotantes = S.flotantes.filter(f => {
       f.t += dt; if (f.t > (f.dura || 1.8)) { f.el.remove(); return false; }
-      v.copy(f.obj.position); v.y += (f.alto || 2.2) + (f.fijo ? 0 : f.t * 0.6); v.project(S.camera);
+      v.copy(f.obj.position); v.y += (f.alto || 2.2) + (f.fijo ? 0 : f.t * 0.6) + (GM.relieve ? GM.relieve.altura(v.x, v.z) : 0); v.project(S.camera);
       f.el.style.left = (v.x + 1) / 2 * r.width + 'px'; f.el.style.top = (1 - v.y) / 2 * r.height + 'px'; f.el.style.opacity = String(f.fijo ? Math.min(1, (f.dura - f.t) * 3, f.t * 6) : Math.min(1, 2.2 - f.t * 1.2)); return true;
     });
   }
@@ -778,7 +778,7 @@
 
   // ---------- Bucle, cámara y controles ----------
   function abrir(st, escena) {
-    if (S) cerrar();
+    if (S) cerrar(); if (GM.relieve) GM.relieve.fijar(null);
     const escArg = escena && String(escena).split(':'); escena = escArg && escArg[0]; const argEsc = escArg && escArg[1] || null;   // 'casa:<id>', 'interior:pabellon'
     const h = GM.h, raiz = h('div', { class: 'sede' }), lienzo = h('div', { class: 'sede-3d' });
     raiz.append(lienzo); document.body.append(raiz);
@@ -858,7 +858,8 @@
       { const sol = S.luces.sol, SO = GM.mods.sol, d = SO && S.st ? SO.direccion(SO.latitud(S.st), S.st.fecha, SO.horaSolar(S.st, S.hora || 9), 0.3) : { x: -0.45, y: 0.84, z: 0.39 }; // la sombra cubre lo que se ve (crece con el zoom) y el foco se redondea al texel para que no tiemble al caminar
       const mitad = Math.max(22, Math.min(58, S.zoom * 1.1 + 6)), q = 2 * mitad / sol.shadow.mapSize.x * 4, fx = Math.round(S.foco.x / q) * q, fz = Math.round(S.foco.z / q) * q;
       if (Math.abs(mitad - (S.sombraMitad || 0)) > 1.5) { S.sombraMitad = mitad; const c = sol.shadow.camera; c.left = -mitad; c.right = mitad; c.top = mitad * 0.8; c.bottom = -mitad * 0.8; c.updateProjectionMatrix(); }
-      sol.position.set(fx + d.x * 31, d.y * 31, fz + d.z * 31); sol.target.position.set(fx, 0, fz); sol.target.updateMatrixWorld();
+      const hF = S.hF || 0;   // relieve: el sol y la cámara suben con el terreno bajo el personaje
+      sol.position.set(fx + d.x * 31, d.y * 31 + hF, fz + d.z * 31); sol.target.position.set(fx, hF, fz); sol.target.updateMatrixWorld();
         const l2 = S.luces.sol2; if (l2) { const q2 = 260 / 2048 * 8, gx = Math.round(S.foco.x / q2) * q2, gz = Math.round(S.foco.z / q2) * q2; l2.position.set(gx + d.x * 120, d.y * 120, gz + d.z * 120); l2.target.position.set(gx, 0, gz); l2.target.updateMatrixWorld(); } }
       S.gente.forEach(n => {
         if (n.agregado) { if (performance.now() / 1000 >= n.agregado.t) { n.obj.position.set(n.agregado.x, 0, n.agregado.z); n.agregado = null; n.espera = 0.4; const f = n.alLlegar; n.alLlegar = null; anim(n, 'idle'); if (f) f(); } else return; }
@@ -884,7 +885,7 @@
         if (S.scene.fog && !S._fogFoto) { S._fogFoto = [S.fogBase, S.fogNear0]; S.fogBase = 1250; S.fogNear0 = 260; S.scene.fog.near = 260; S.scene.fog.far = 1250; }   // en el modo foto con cámara libre se ve hasta el anillo lejano
       } else {
       if (S._fogFoto && S.scene.fog) { S.fogBase = S._fogFoto[0]; S.fogNear0 = S._fogFoto[1]; if (S.fogBase) { S.scene.fog.far = S.fogBase; S.scene.fog.near = S.fogNear0; } S._fogFoto = null; }
-      const inc = S.inc || 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z); camera.far = 200; }
+      S.hF = GM.relieve && GM.relieve.activo() ? GM.relieve.altura(S.foco.x, S.foco.z) : 0; const inc = S.inc || 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d + (S.hF || 0), S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6 + (S.hF || 0), S.foco.z); camera.far = 200; }
       // el mapa de sombras se refresca un fotograma de cada dos (la sombra es lo más caro del dibujo); en Ultra, cada uno
       if (renderer.shadowMap.enabled) { S.nSombra = ((S.nSombra || 0) + 1) % 4; const l1 = S.luces.sol.shadow, l2 = S.luces.sol2 && S.luces.sol2.shadow; l1.autoUpdate = false; l1.needsUpdate = nv === 'ultra' || S.nSombra % 2 === 0; if (l2) { l2.autoUpdate = false; l2.needsUpdate = S.nSombra === 0; } }   // sombra cercana a medio ritmo (cada fotograma en Ultra) y la lejana a un cuarto
       if (S.enFoto && S.composer) {   // modo foto: enfoque al personaje y rayos desde el sol
