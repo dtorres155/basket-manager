@@ -487,7 +487,7 @@
     anclasVida(S, X, G);
     S.zonas = Object.keys(SALAS).filter(k => zonas[k]).map(k => M.zona(W, SALAS[k], zonas[k][0], zonas[k][1], club));
     S.paseo = S.paseoBase.concat(paseo); S.portales = S.paseoBase.filter((_, i) => i % 6 === 0);
-    S.calles = X.C.filter(cc => cc.nom && cc.k <= 5); S.vias = X.C.filter(cc => cc.k >= 1 && cc.k <= 4);
+    S.calles = X.C.filter(cc => cc.nom && cc.k <= 5); S.vias = X.C.filter(cc => cc.k >= 1 && cc.k <= 4); S.callesTodas = X.C.filter(cc => cc.p && cc.p.length > 1);
     S.calleNombre = nombreCalle(R.sede || R.pabellon) || ('Calle de ' + club.ciudad);
     mobiliario(S, M, X, G, W, c);
     S.cielo = true; S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xa9c6dc, 60, 170);

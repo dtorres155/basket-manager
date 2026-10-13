@@ -73,7 +73,7 @@
     S.musico = null; S.perros = []; S.chavales = null;
     if (S.musicoPos) { const mu = await M.personaje({ modelo: 'h-punk', altura: 176, piel: PIEL[1], pelo: PELO[0] }); mu.fijo = true; mu.rol = 'Músico callejero'; mu.obj.position.set(S.musicoPos[0], 0, S.musicoPos[1]); mu.obj.userData = { npc: S.gente.length }; M.anim(mu, 'idle'); S.mundo.add(mu.obj); S.gente.push(mu); }
     // Vecinos con perro
-    S.gente.filter(p => p.peaton && !p.hincha && !p.nino).slice(0, 3).forEach((p, k) => { const d = perro(['#c8a06a', '#3a2a1a', '#f2efe8'][k]); S.mundo.add(d); S.perros.push({ d, dueno: p, fase: k }); p.rol = 'Vecino paseando al perro'; });
+    S.gente.filter(p => p.peaton && !p.hincha && !p.nino && !p.sigue && !p.miembros && !p.rolEsp || p.rolEsp === 'jubilado').slice(0, alta ? 8 : 4).forEach((p, k) => { const d = perro(['#c8a06a', '#3a2a1a', '#f2efe8', '#8a8a8a', '#b5651d'][k % 5]); S.mundo.add(d); S.perros.push({ d, dueno: p, fase: k }); p.rol = 'Vecino paseando al perro'; });
     // Chavales en la canasta del parque
     if (S.parqueReal && S.aroParque) {
       const ch = await Promise.all([0, 1, 2].map(k => M.personaje({ modelo: ['h-casual_hoodie', 'm-casual', 'h-beach'][k], altura: 138 + k * 6, piel: PIEL[k + 1], pelo: PELO[k], ropa: k === 1 ? null : [c1, c2] })));
@@ -87,6 +87,9 @@
       const vi = vias[i % Math.min(vias.length, 14)], uno = !!vi.v.uno, dir = uno ? 1 : (i % 2 ? 1 : -1), obj = coche(COLORES[i % COLORES.length]); faros(obj); S.mundo.add(obj);
       S.coches.push({ obj, vi, dir, pos: r() * vi.L, vel: 0, len: 4.2, lane: ANCHO[vi.v.k] / 4 });
     }
+    if (GM.nav && GM.nav.grafo && S.vias && S.vias.length) { const t0 = performance.now(); try { S.grafo = GM.nav.grafo(S.callesTodas && S.callesTodas.length > S.vias.length ? S.callesTodas : S.vias); S.grafoMs = performance.now() - t0; } catch (e) { S.grafo = null; } }
+    // conductores: los primeros coches llevan a alguien al volante (sentado, con las manos en el volante)
+    if (GM.animCodigo && !S.rua) { const cs = S.coches.filter(c => c.len === 4.2 && !c.bus).slice(0, alta ? 8 : 3); await Promise.all(cs.map(async (c, i) => { const cg = GM.catalogo ? GM.catalogo.generar(r, { pais: club.pais || '', mes: +String(st.fecha).slice(5, 7), temp: S.clima && S.clima.temp, edad: 'adulto' }) : { modelo: MODELOS[i % MODELOS.length] }; delete cg.gorra; delete cg.gorro; delete cg.mochila; delete cg.bolso; delete cg.abrigo; delete cg.falda; const p = await M.personaje(Object.assign(cg, { altura: 168 })); M.anim(p, 'sit'); GM.animCodigo.pose(p, 'conducir', 0); p.obj.position.set(0.4, 0.1, 0.12); p.obj.scale.multiplyScalar(0.8); p.obj.userData.conductor = true; c.obj.add(p.obj); c.conductor = p; })); }
     // motos que adelantan y furgoneta de reparto que se para a descargar
     if (!S.rua && GM.urbano && GM.urbano.moto && vias.length) {
       const cols = ['#2f8f7a', '#c0392b', '#e8e2d4', '#2f6f9e', '#f1c40f'];

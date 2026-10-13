@@ -97,5 +97,35 @@
       cerrar() { vivo = false; pend.forEach(f => f(null)); pend.clear(); try { w.terminate(); } catch (e) { } }
     };
   }
-  GM.nav = { crear };
+  // ---- Grafo de calles (punto 21d): nodos en los cruces y extremos de las calles reales, aristas a lo largo de cada calle ----
+  // grafo(vias): vias = [{ p: [[x, z], ...] }]. rutaGrafo(g, desde, hasta) -> lista de puntos [x, z] (A* sobre el grafo, un par de ms para una ruta de 1 km)
+  function grafo(vias) {
+    const nodos = [], ady = [], H = new Map(), C = 40, SNAP = 1.5;
+    const clave = (x, z) => Math.floor(x / C) + ',' + Math.floor(z / C);
+    const nodo = (x, z) => {   // reutiliza un nodo a menos de SNAP metros
+      const cx = Math.floor(x / C), cz = Math.floor(z / C); for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const l = H.get((cx + i) + ',' + (cz + j)); if (l) for (const k of l) if (Math.hypot(nodos[k][0] - x, nodos[k][1] - z) < SNAP) return k; }
+      const k = nodos.length; nodos.push([x, z]); ady.push([]); const kk = clave(x, z); if (!H.has(kk)) H.set(kk, []); H.get(kk).push(k); return k;
+    };
+    const segs = []; vias.forEach((v, vi) => { for (let i = 0; i + 1 < v.p.length; i++) segs.push({ vi, i, ax: v.p[i][0], az: v.p[i][1], bx: v.p[i + 1][0], bz: v.p[i + 1][1], cortes: [] }); });
+    // cruces entre calles distintas: cada segmento se compara con los de su celda
+    const G2 = new Map(); segs.forEach((sg, k) => { const x0 = Math.floor(Math.min(sg.ax, sg.bx) / C), x1 = Math.floor(Math.max(sg.ax, sg.bx) / C), z0 = Math.floor(Math.min(sg.az, sg.bz) / C), z1 = Math.floor(Math.max(sg.az, sg.bz) / C); for (let i = x0; i <= x1; i++) for (let j = z0; j <= z1; j++) { const kk = i + ',' + j; if (!G2.has(kk)) G2.set(kk, []); G2.get(kk).push(k); } });
+    const visto = new Set();
+    G2.forEach(l => { for (let p = 0; p < l.length; p++) for (let q = p + 1; q < l.length; q++) { const A = segs[l[p]], B = segs[l[q]]; if (A.vi === B.vi) continue; const id = l[p] < l[q] ? l[p] + '_' + l[q] : l[q] + '_' + l[p]; if (visto.has(id)) continue; visto.add(id);
+      const rx = A.bx - A.ax, rz = A.bz - A.az, sx = B.bx - B.ax, sz = B.bz - B.az, den = rx * sz - rz * sx; if (Math.abs(den) < 1e-9) continue; const t = ((B.ax - A.ax) * sz - (B.az - A.az) * sx) / den, u = ((B.ax - A.ax) * rz - (B.az - A.az) * rx) / den;
+      if (t > 0.001 && t < 0.999 && u > 0.001 && u < 0.999) { const x = A.ax + rx * t, z = A.az + rz * t; A.cortes.push([t, x, z]); B.cortes.push([u, x, z]); } } });
+    // aristas: a lo largo de cada segmento pasando por sus cortes; los extremos de calles que se tocan se unen por SNAP
+    const arista = (a, b) => { if (a === b) return; const d = Math.hypot(nodos[a][0] - nodos[b][0], nodos[a][1] - nodos[b][1]); ady[a].push([b, d]); ady[b].push([a, d]); };
+    segs.forEach(sg => { let prev = nodo(sg.ax, sg.az); sg.cortes.sort((x, y) => x[0] - y[0]).forEach(c => { const k = nodo(c[1], c[2]); arista(prev, k); prev = k; }); arista(prev, nodo(sg.bx, sg.bz)); });
+    return { nodos, ady, H, C };
+  }
+  function nodoCercano(g, x, z) { let m = -1, d = 1e12; const cx = Math.floor(x / g.C), cz = Math.floor(z / g.C); for (let r = 0; r <= 6 && m < 0; r++) { for (let i = -r; i <= r; i++) for (let j = -r; j <= r; j++) { if (Math.max(Math.abs(i), Math.abs(j)) !== r) continue; const l = g.H.get((cx + i) + ',' + (cz + j)); if (l) for (const k of l) { const dd = (g.nodos[k][0] - x) ** 2 + (g.nodos[k][1] - z) ** 2; if (dd < d) { d = dd; m = k; } } } } return m; }
+  function rutaGrafo(g, desde, hasta) {
+    const a = nodoCercano(g, desde[0], desde[1]), b = nodoCercano(g, hasta[0], hasta[1]); if (a < 0 || b < 0) return null; if (a === b) return [g.nodos[a]];
+    const N = g.nodos.length, gs = new Float64Array(N).fill(Infinity), de = new Int32Array(N).fill(-1), cerrado = new Uint8Array(N), h = k => Math.hypot(g.nodos[k][0] - g.nodos[b][0], g.nodos[k][1] - g.nodos[b][1]), pila = [[h(a), a]]; gs[a] = 0;
+    const push = e => { pila.push(e); let i = pila.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (pila[p][0] <= pila[i][0]) break; [pila[p], pila[i]] = [pila[i], pila[p]]; i = p; } };
+    const pop = () => { const t = pila[0], u = pila.pop(); if (pila.length) { pila[0] = u; let i = 0; for (;;) { let l = 2 * i + 1, r = l + 1, m = i; if (l < pila.length && pila[l][0] < pila[m][0]) m = l; if (r < pila.length && pila[r][0] < pila[m][0]) m = r; if (m === i) break; [pila[m], pila[i]] = [pila[i], pila[m]]; i = m; } } return t; };
+    while (pila.length) { const [, k] = pop(); if (cerrado[k]) continue; cerrado[k] = 1; if (k === b) break; for (const [j, d] of g.ady[k]) { const ng = gs[k] + d; if (ng < gs[j]) { gs[j] = ng; de[j] = k; push([ng + h(j), j]); } } }
+    if (de[b] < 0) return null; const out = []; for (let k = b; k >= 0; k = de[k]) out.push(g.nodos[k]); return out.reverse();
+  }
+  GM.nav = { crear, grafo, rutaGrafo };
 })();

@@ -68,6 +68,7 @@
     // cuerpo: de muy delgado a robusto; niños con piernas y brazos más cortos; faldas y abrigos
     o.ancho = pesada(r, [0.88, 0.94, 1, 1.07, 1.16], edad === 'mayor' ? [1, 2, 3, 3, 2] : [1.2, 2.5, 3, 2, 1]); delete o.complexion;
     if (edad === 'nino') { o.proporcion = 'nino'; delete o.cabeza; o.ancho = 0.9 + r() * 0.1; }
+    if (edad === 'mayor' && r() < 0.3) o.baston = pick(r, ['#5a3920', '#2b2b2b', '#8a6a3a']);
     if (sexo === 'm' && edad !== 'nino' && !c.rol && est !== 'invierno' && r() < 0.32) { o.falda = o.ropa[1]; o.faldaLarga = r() < 0.5; }
     if (est === 'invierno' && !c.hincha && !c.rol && r() < 0.7) o.abrigo = pick(r, ['#2b2f3a', '#5a4636', '#3a4a3f', '#6b2f2f', '#8a8478', '#1f2a44']);
     else if (est === 'otono' && !c.hincha && !c.rol && r() < 0.3) o.abrigo = pick(r, ['#4a5a6a', '#6a5a3a', '#3a3a3a']);
@@ -76,7 +77,7 @@
   }
 
   // Firma corta de una persona: sirve para comprobar que dos vecinos a la vista no son iguales
-  const firma = o => [o.modelo, o.piel, o.pelo, o.ropa && o.ropa[0], o.ropa && o.ropa[1], Math.round((o.altura || 0) / 6), o.gorra || '', o.gorro || '', o.bufanda || '', o.mochila || '', o.bolso || '', o.barba || '', o.gafas || '', o.abrigo || '', o.falda ? 1 : '', o.ancho || ''].map(String).join('|');
+  const firma = o => [o.modelo, o.piel, o.pelo, o.ropa && o.ropa[0], o.ropa && o.ropa[1], Math.round((o.altura || 0) / 6), o.gorra || '', o.gorro || '', o.bufanda || '', o.mochila || '', o.bolso || '', o.barba || '', o.gafas || '', o.baston || '', o.abrigo || '', o.falda ? 1 : '', o.ancho || ''].map(String).join('|');
   // Lote de n personas distintas entre sí (reintenta los repetidos)
   function lote(r, n, c) { const vistas = new Set(), res = []; for (let i = 0; i < n; i++) { let o, t = 0; do { o = generar(r, c); t++; } while (vistas.has(firma(o)) && t < 12); vistas.add(firma(o)); res.push(o); } return res; }
 

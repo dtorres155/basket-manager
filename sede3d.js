@@ -120,7 +120,9 @@
     if (o.escudo && B.Chest) { const e = o.escudo, mk = (id, fn) => ctxTex(id, fn); const fr = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.09), new THREE.MeshBasicMaterial({ map: mk('cr-' + e.siglas + e.c1 + e.c2, (x, n) => { x.fillStyle = e.c2; x.beginPath(); x.arc(n / 2, n / 2, n * 0.46, 0, 6.3); x.fill(); x.fillStyle = e.c1; x.beginPath(); x.arc(n / 2, n / 2, n * 0.38, 0, 6.3); x.fill(); x.fillStyle = e.c2; x.font = 'bold ' + n * 0.3 + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(e.siglas).slice(0, 3), n / 2, n / 2 + 2); }), transparent: true, depthWrite: false })); pega(B.Chest, fr, 0.075, 0.04, 0.14);
       const bk = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.16), new THREE.MeshBasicMaterial({ map: mk('dr-' + e.num + e.c2, (x, n) => { x.fillStyle = e.c2; x.font = 'bold ' + n * 0.75 + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(e.num), n / 2, n / 2 + 4); }), transparent: true, depthWrite: false })); bk.rotation.y = Math.PI; pega(B.Chest, bk, 0, -0.03, -0.14); }
     if (o.abrigo) { const ab = matC(o.abrigo), tr = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.235, 0.62, 14, 1, true), ab); tr.scale.z = 0.62; ab.side = THREE.DoubleSide; pega(B.Torso, tr, 0, 0.0, 0); ['UpperArmL', 'UpperArmR', 'LowerArmL', 'LowerArmR'].forEach(a => pega(B[a], new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.046, a[0] === 'U' ? 0.26 : 0.25, 10, 1, true), ab), 0, a[0] === 'U' ? 0.12 : 0.11, 0)); }
-    if (o.falda) { const fl = matC(o.falda); fl.side = THREE.DoubleSide; pega(B.Hips, new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.3, o.faldaLarga ? 0.62 : 0.4, 16, 1, true), fl), 0, -0.1, 0); }
+    if (o.falda) { const fl = matC(o.falda); fl.side = THREE.DoubleSide; pega(B.Hips, new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.25, o.faldaLarga ? 0.62 : 0.4, 16, 1, true), fl), 0, -0.1, 0); }
+    if (o.baston) { const bs = matC(o.baston); pega(B.WristR, new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.01, 0.8, 6), bs), 0, 0.4, 0.02); pega(B.WristR, new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.01, 6, 10, Math.PI), bs), 0, -0.005, 0.02); }
+    if (o.rostro && B.Head) { const ns = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.034, 6), matC(o.piel || '#e0ac85')); ns.rotation.x = Math.PI / 2; pega(B.Head, ns, 0, 0.083, 0.14); pega(B.Head, new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.007, 0.01), matC('#8a3a3a')), 0, 0.045, 0.121); }
     if (o.tatuaje === 3) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.03, 12, 1, true), new THREE.MeshStandardMaterial({ color: '#25303b', transparent: true, opacity: 0.5 })); pega(B.Neck, m, 0, 0.03, 0); }
   }
   // Opciones del modelo de tu personaje a partir de su aspecto (st.personaje) y del modo de juego
@@ -134,7 +136,7 @@
       ropa: jugador || ropa === 3 ? [c1, c2 === c1 ? '#222' : c2] : null, complexion: pj.complexion, gafas: pj.gafas || 0, barba: mujer ? 0 : pj.barba || 0,
       cinta: acc === 1 || acc === 3 ? c2 : null, munequeras: acc === 2 || acc === 3 ? c1 : null, tatuaje: pj.tatuaje || 0, cara: pj.cara || 0,
       zapas: (GM.mods.personaje.ZAPAS || [])[pj.zapas || 0] || c1, ojos: (GM.mods.personaje.OJOS || [])[pj.ojos || 0], pendientes: pj.pendientes || 0, reloj: pj.reloj || 0, cadena: pj.cadena || 0, mangas: pj.mangas ? c2 : null,
-      escudo: jugador ? { siglas: club.siglas, c1, c2, num: GM.ui && GM.ui._ && GM.ui._.dorsal ? GM.ui._.dorsal(st) : 7 } : null };
+      rostro: true, escudo: jugador ? { siglas: club.siglas, c1, c2, num: GM.ui && GM.ui._ && GM.ui._.dorsal ? GM.ui._.dorsal(st) : 7 } : null };
   }
   // Persona real para las escenas antiguas (campus, mapa de la ciudad, casa): devuelve un grupo al momento, con la figura de cajas
   // si se pasa, y la sustituye por el modelo cuando carga. alto: altura en unidades de esa escena. El movimiento se pone en
@@ -267,6 +269,7 @@
   // ---------- Personajes que caminan ----------
   function anim(p, nombre) {
     if (p.bici && p.huesos && (nombre === 'walk' || nombre === 'sprint' || nombre === 'idle')) nombre = 'bici';
+    if (p.patinete && (nombre === 'walk' || nombre === 'sprint')) nombre = 'patinete';
     if (p.actual === nombre) return;
     if (nombre === 'sit') {
       // Postura sentada fija: primer fotograma de estar de pie, se doblan las piernas una vez y el mezclador se detiene
@@ -279,7 +282,16 @@
     a.reset(); a.timeScale = 1; a.fadeIn(0.2).play(); if (p.accion) p.accion.fadeOut(0.2); p.accion = a; p.actual = nombre;
   }
   // Las personas del mundo piden su camino a un Worker (nav_worker.js) y esperan la respuesta (uno o dos fotogramas); el jugador sigue con la búsqueda síncrona.
-  function irA(p, x, z, alLlegar) {
+  // Distancia a pie entre dos puntos: por el grafo de calles si hay, y si no la recta con un 25 % de rodeo
+  function distanciaCalles(ax, az, bx, bz) { const rec = Math.hypot(bx - ax, bz - az); if (S.grafo && GM.nav && GM.nav.rutaGrafo) { const wp = GM.nav.rutaGrafo(S.grafo, [ax, az], [bx, bz]); if (wp && wp.length > 1) { let L = Math.hypot(wp[0][0] - ax, wp[0][1] - az) + Math.hypot(bx - wp[wp.length - 1][0], bz - wp[wp.length - 1][1]); for (let k = 1; k < wp.length; k++) L += Math.hypot(wp[k][0] - wp[k - 1][0], wp[k][1] - wp[k - 1][1]); return Math.max(rec, L); } } return rec * 1.25; }
+  function irA(p, x, z, alLlegar, _enCadena) {
+    // Simulación agregada: quien está lejos del jugador y va a un sitio lejano no calcula camino: tarda lo que tardaría y aparece allí
+    if (p !== S.yo && S.yo && !p.fijo && !p.bici && !p.sigue && !p.sentado) { const yp = S.yo.obj.position, dp = Math.hypot(p.obj.position.x - yp.x, p.obj.position.z - yp.z), dq = Math.hypot(x - yp.x, z - yp.z); if (dp > 150 && dq > 150) { p.camino = []; p.agregado = { x, z, t: performance.now() / 1000 + distanciaCalles(p.obj.position.x, p.obj.position.z, x, z) / (p.rapido ? 4.2 : 2.1) }; p.alLlegar = alLlegar || null; p.espera = 99999; S.nAgregados = (S.nAgregados || 0) + 1; return true; } }
+    // Rutas largas: se calcula la ruta por el grafo de calles (cruces y tramos) y se va de punto en punto; la rejilla solo resuelve cada tramo corto
+    if (!_enCadena && p !== S.yo && S.grafo && GM.nav && GM.nav.rutaGrafo && !p.fijo && Math.hypot(x - p.obj.position.x, z - p.obj.position.z) > 140) {
+      const wp = GM.nav.rutaGrafo(S.grafo, [p.obj.position.x, p.obj.position.z], [x, z]);
+      if (wp && wp.length > 2) { const pts = []; let ult = [p.obj.position.x, p.obj.position.z]; wp.forEach(q => { if (Math.hypot(q[0] - ult[0], q[1] - ult[1]) >= 55) { pts.push(q); ult = q; } }); pts.push([x, z]); const escena = S, paso = i => { if (S !== escena) return; if (i >= pts.length) { if (alLlegar) alLlegar(); return; } if (!irA(p, pts[i][0], pts[i][1], () => paso(i + 1), true)) { p.alLlegar = null; p.espera = 0.5; } }; return irA(p, pts[0][0], pts[0][1], () => paso(1), true); }
+    }
     if (p !== S.yo && S.G && GM.nav && !window.__sinNavWorker) {
       if (S.navG !== S.G) { if (S.nav) S.nav.cerrar(); S.nav = GM.nav.crear(S.G); S.navG = S.G; }
       if (S.nav && S.nav.activo()) {
@@ -302,7 +314,7 @@
   }
   function moverPaso(p, dt) {
     if (!p.camino || !p.camino.length) return;
-    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * (p.bici ? (p.velBici || 2.5) : 1) * (p.lento ? 0.7 : 1) * dt;
+    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * (p.bici ? (p.velBici || 2.5) : 1) * (p.lento ? 0.7 : 1) * (p.patinete ? 1.5 : 1) * dt;
     if ((p.actual === 'walk' || p.actual === 'sprint') && p.accion && dt > 0) p.accion.timeScale = Math.min(1.8, Math.max(0.5, v / dt / (p.actual === 'sprint' ? 2.7 : 1.3)));   // el paso va al ritmo del movimiento: los pies no patinan
     if (d < v) { o.x = tx; o.z = tz; p.camino.shift(); if (!p.camino.length) { anim(p, 'idle'); const f = p.alLlegar; p.alLlegar = null; if (f) f(); } return; }
     o.x += dx / d * v; o.z += dz / d * v; girar(p, Math.atan2(dx, dz), dt);
@@ -824,6 +836,7 @@
       sol.position.set(fx + d.x * 31, d.y * 31, fz + d.z * 31); sol.target.position.set(fx, 0, fz); sol.target.updateMatrixWorld();
         const l2 = S.luces.sol2; if (l2) { const q2 = 260 / 2048 * 8, gx = Math.round(S.foco.x / q2) * q2, gz = Math.round(S.foco.z / q2) * q2; l2.position.set(gx + d.x * 120, d.y * 120, gz + d.z * 120); l2.target.position.set(gx, 0, gz); l2.target.updateMatrixWorld(); } }
       S.gente.forEach(n => {
+        if (n.agregado) { if (performance.now() / 1000 >= n.agregado.t) { n.obj.position.set(n.agregado.x, 0, n.agregado.z); n.agregado = null; n.espera = 0.4; const f = n.alLlegar; n.alLlegar = null; anim(n, 'idle'); if (f) f(); } else return; }
         if (!n.fijo) { if (n.grupo) { if (n.camino && n.camino.length) moverPaso(n, dt); } else if (n.camino && n.camino.length) moverPaso(n, dt); else if ((n.espera -= dt) <= 0) siguienteActividad(n); }
         const dP = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z); if (S.nivelRend >= 2) n.obj.visible = dP < (S.nivelRend >= 3 ? 20 : 28);   // ahorro de CPU: los muy lejanos no se dibujan
         if (!n.sentado && n.obj.visible) { n.dtAcum = (n.dtAcum || 0) + dt; const cada = dP <= (S.nivelRend >= 2 ? 8 : 12) ? 1 : S.nivelRend >= 2 ? 3 : 2; if (cada === 1 || S.cuadro % cada === n.obj.id % cada) { n.mixer.update(n.dtAcum); n.dtAcum = 0; } } if (n.tiro) actualizarTiro(n, dt); if (n.grupoBrazos) brazos(n, n.grupoBrazos, _b.set(Math.sin(n.obj.rotation.y), 0, Math.cos(n.obj.rotation.y)));
@@ -842,8 +855,10 @@
         let av = (T.w || T.arrowup ? 1 : 0) - (T.s || T.arrowdown ? 1 : 0), la = (T.d || T.arrowright ? 1 : 0) - (T.a || T.arrowleft ? 1 : 0), su = (T.e ? 1 : 0) - (T.q ? 1 : 0);
         { const gp = navigator.getGamepads && [...navigator.getGamepads()].find(q => q && q.connected); if (gp) { const z = a => Math.abs(a) < 0.15 ? 0 : a; av += -z(gp.axes[1] || 0); la += z(gp.axes[0] || 0); L.yaw -= z(gp.axes[2] || 0) * dt * 1.8; L.pitch = Math.max(-1.4, Math.min(1.4, L.pitch - z(gp.axes[3] || 0) * dt * 1.4)); su += ((gp.buttons[7] && gp.buttons[7].value) || 0) - ((gp.buttons[6] && gp.buttons[6].value) || 0); } }
         L.pos.x += (fx * av + rx * la) * v; L.pos.z += (fz * av + rz * la) * v; L.pos.y = Math.max(0.4, Math.min(120, L.pos.y + su * v));
-        camera.position.copy(L.pos); camera.rotation.order = 'YXZ'; camera.rotation.set(L.pitch, L.yaw, 0); camera.far = 600;
+        camera.position.copy(L.pos); camera.rotation.order = 'YXZ'; camera.rotation.set(L.pitch, L.yaw, 0); camera.far = 1500;
+        if (S.scene.fog && !S._fogFoto) { S._fogFoto = [S.fogBase, S.fogNear0]; S.fogBase = 1250; S.fogNear0 = 260; S.scene.fog.near = 260; S.scene.fog.far = 1250; }   // en el modo foto con cámara libre se ve hasta el anillo lejano
       } else {
+      if (S._fogFoto && S.scene.fog) { S.fogBase = S._fogFoto[0]; S.fogNear0 = S._fogFoto[1]; if (S.fogBase) { S.scene.fog.far = S.fogBase; S.scene.fog.near = S.fogNear0; } S._fogFoto = null; }
       const inc = S.inc || 0.95, d = S.zoom; camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d, S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d); camera.lookAt(S.foco.x, 0.6, S.foco.z); camera.far = 200; }
       // el mapa de sombras se refresca un fotograma de cada dos (la sombra es lo más caro del dibujo); en Ultra, cada uno
       if (renderer.shadowMap.enabled) { S.nSombra = ((S.nSombra || 0) + 1) % 4; const l1 = S.luces.sol.shadow, l2 = S.luces.sol2 && S.luces.sol2.shadow; l1.autoUpdate = false; l1.needsUpdate = nv === 'ultra' || S.nSombra % 2 === 0; if (l2) { l2.autoUpdate = false; l2.needsUpdate = S.nSombra === 0; } }   // sombra cercana a medio ritmo (cada fotograma en Ultra) y la lejana a un cuarto

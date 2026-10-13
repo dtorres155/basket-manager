@@ -12,6 +12,15 @@
   const pick = (r, a) => a[(r() * a.length) | 0];
   const vivo = n => !n.oculto && !n.enCasa && !n.dentro;
 
+  // Patinete: tabla, vástago, manillar y dos ruedas bajo los pies de quien lo monta
+  let _mp = null;
+  function patineteMesh(k) {
+    const g = new THREE.Group(), m = _mp || (_mp = { metal: new THREE.MeshStandardMaterial({ color: '#cfd4da', metalness: 0.7, roughness: 0.35 }), tabla: new THREE.MeshStandardMaterial({ color: '#d9531e', roughness: 0.6 }), goma: new THREE.MeshStandardMaterial({ color: '#16181b', roughness: 0.9 }) });
+    const caja = (w, h, d, mat, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); o.position.set(x, y, z); g.add(o); return o; };
+    caja(0.14, 0.025, 0.62, m.tabla, 0, 0.09, 0.0); const v = caja(0.025, 0.95, 0.025, m.metal, 0, 0.55, 0.3); v.rotation.x = -0.12; caja(0.5, 0.025, 0.025, m.metal, 0, 1.02, 0.32);
+    [[0.33], [-0.3]].forEach(([z]) => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.04, 14), m.goma); w.rotation.z = Math.PI / 2; w.position.set(0, 0.075, z); g.add(w); });
+    g.scale.setScalar(k); g.position.z = 0.12 * k; return g;
+  }
   function asignar(S, st, p, k) {
     const club = st.equipos[st.clubId], h = U.hash(st.fecha + 'vn' + k);
     p.nombre = GM.nombreAleatorio(club.pais, h); p.pers = PERS[(h >>> 5) % PERS.length]; p.idV = 'v' + h;
@@ -19,11 +28,12 @@
     if (esp) { p.rolEsp = esp; if (ETQ[esp] && !p.hincha) p.rol = ETQ[esp]; }
     if (p.edad === 'nino') p.nino = true;
     if (p.rolEsp === 'jubilado') p.lento = true;
+    if (p.edad === 'joven' && !p.rolEsp && !p.hincha && k % 9 === 4) { p.patinete = true; p.rol = 'Chaval en patinete'; const sc = p.obj.scale.x || 1; p.obj.add(patineteMesh(1 / sc)); }
     if (p.rolEsp === 'comerciante') p.puestoIdx = h % 97;
     // grupos: cada tercer vecino camina con el anterior (pareja, amigos o familia con un niño)
     const prev = S._gprev;
     if (prev && !p.rolEsp && !prev.rolEsp && !prev.sigue && k % 3 === 1 && prev.peaton) {
-      p.sigue = prev; (prev.grupo = prev.grupo || [prev]).push(p);
+      p.sigue = prev; (prev.miembros = prev.miembros || [prev]).push(p);
       if (prev.edad === 'adulto' && p.edad === 'nino') { p.rol = 'Hijo de vecinos'; p.nino = false; p.familia = true; } else if (p.nino && prev.edad !== 'adulto') p.nino = false;
       p.hincha = p.hincha || prev.hincha;
     }
@@ -32,7 +42,7 @@
 
   // Actividad al llegar a un sitio: animación según lo que se hace allí
   function actividad(n, cat, M) {
-    const r = n.r, g = n.grupo || n.sigue;
+    const r = n.r, g = n.miembros || n.sigue;
     if (g && r() < 0.7) return r() < 0.5 ? 'hablar' : 'hablar2';
     switch (cat) {
       case 'compras': return r() < 0.5 ? 'movil' : n.rolEsp === 'jubilado' ? 'bolsas' : 'esperar';
@@ -58,7 +68,7 @@
       if (d > 2.3) { n.rapido = !!l.rapido || d > 7; n.lento = l.lento; const a = r() * 6.28, q = [l.obj.position.x + Math.cos(a) * 1.1, l.obj.position.z + Math.sin(a) * 1.1]; if (M.irA(n, q[0], q[1], () => { n.espera = 0.6; })) { n.espera = 0.9; return true; } n.espera = 1; return true; }
       mira(n, l.obj.position.x, l.obj.position.z); M.anim(n, n.familia ? 'esperar' : (r() < 0.6 ? 'escuchar' : 'hablar')); n.espera = 1.5 + r() * 2.5; return true;
     }
-    if (n.grupo && vivo(n)) { const f = n.grupo.find(x => x !== n && x.sigue === n && vivo(x) && dist(x, n) > 6); if (f) { M.anim(n, 'esperar'); mira(n, f.obj.position.x, f.obj.position.z); n.espera = 1.5; return true; } }
+    if (n.miembros && vivo(n)) { const f = n.miembros.find(x => x !== n && x.sigue === n && vivo(x) && dist(x, n) > 6); if (f) { M.anim(n, 'esperar'); mira(n, f.obj.position.x, f.obj.position.z); n.espera = 1.5; return true; } }
     const ir = (q, alLlegar, rapido) => { n.rapido = !!rapido; return M.irA(n, q[0] + (r() - 0.5) * 1.4, q[1] + (r() - 0.5) * 1.0, alLlegar); };
     const esp = n.rolEsp;
     // --- Reacciones al clima (la mitad de los vecinos busca cobijo o un helado)
@@ -119,5 +129,12 @@
     M.bocadillo(tono(base[(Math.random() * base.length) | 0]), p.obj); M.anim(p, 'saludar'); p.espera = Math.max(p.espera || 0, 2.5);
   }
 
-  GM.vecinos = { rolPara, asignar, siguiente, actualizar, actividad, memoria, ETQ, PERS };
+  // Metro: quien va a una boca de metro baja la escalera (animación de escaleras) y desaparece un rato; sale por otra boca
+  function metro(S, M, n, q, h) {
+    const z = (S.zonas || []).find(o => /^metro/.test(o.sala.id) && Math.hypot(o.obj.position.x - q[0], o.obj.position.z - q[1]) < 6); if (!z || n.nino || n.rolEsp === 'policia' || n.r() > 0.55) return false;
+    const x = z.obj.position.x, zz = z.obj.position.z; n.rapido = false; n.camino = [[x, zz - 1.2], [x, zz - 3.4]]; M.anim(n, 'escaleras'); if (n.accion) n.accion.timeScale = 1.1;
+    n.alLlegar = () => { n.oculto = true; n.dentro = true; n.hasta = h + 0.4 + n.r() * 1.5; n.espera = 4; const otras = (S.zonas || []).filter(o => /^metro/.test(o.sala.id) && o !== z); if (otras.length) { const o = otras[(n.r() * otras.length) | 0]; n.obj.position.set(o.obj.position.x, 0, o.obj.position.z + 1.5); } };
+    return true;
+  }
+  GM.vecinos = { metro, rolPara, asignar, siguiente, actualizar, actividad, memoria, ETQ, PERS };
 })();

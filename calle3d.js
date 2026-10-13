@@ -506,6 +506,7 @@
     const L = D[cat] && D[cat].length ? D[cat] : S.paseo, q = L[(n.r() * L.length) | 0];
     n.rapido = !!n.corredor || (!!n.nino && n.r() < 0.5); n.destino = cat;
     const ok = M.irA(n, q[0] + (n.r() - 0.5) * 1.6, q[1] + (n.r() - 0.5) * 1.2, () => {
+      if (cat === 'trabajo' && GM.vecinos && GM.vecinos.metro(S, M, n, q, h)) return;
       if (cat === 'colegio' && h < 14) { n.oculto = true; n.dentro = true; n.hasta = 14 + n.r(); n.espera = 4; return; }
       if (cat === 'trabajo' && n.r() < 0.6) { n.oculto = true; n.dentro = true; n.hasta = h + 2 + n.r() * 5; n.espera = 4; return; }
       if (cat === 'casa') { n.oculto = true; n.enCasa = true; n.hasta = h + 3; n.espera = 8; return; }

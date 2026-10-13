@@ -1,7 +1,7 @@
 // Tercera pasada de OpenStreetMap: el anillo lejano (de 300 a 480 m del pabellón) con edificios, calles principales y agua, para que la ciudad no acabe en seco.
 // Usa el centro de recursos/osm/<id>.json. Uso: node tools/osm_descargar3.js [id-club ...]   -> recursos/osm/<id>.ring.json
 const fs = require('fs'), path = require('path');
-const DIR = path.join(__dirname, '..', 'recursos', 'osm'), UA = 'basket-manager-personal/1.0 (uso personal)', R = 480;
+const DIR = path.join(__dirname, '..', 'recursos', 'osm'), UA = 'basket-manager-personal/1.0 (uso personal)', R = +process.env.RADIO || 480;
 const dormir = ms => new Promise(r => setTimeout(r, ms));
 async function consulta(q) {
   for (const ep of ['https://overpass.kumi.systems/api/interpreter', 'https://overpass-api.de/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']) {

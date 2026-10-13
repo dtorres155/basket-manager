@@ -80,10 +80,11 @@
           if (cp && ya >= cp.t0 && ya < cp.t0 + cp.dur && o.p.acc[cp.nombre]) { S0.animar(o.p, cp.nombre); if (o.p.accion) o.p.accion.timeScale = cp.esc; return; }
           if (cp && ya >= cp.t0 + cp.dur) o.clip = null;
           const att = ES.ataca === k, c = ES.celebra;
-          if (c && c.k === k && ya >= c.t0 && ya - c.t0 < 1.4 && v < 1.5) { S0.animar(o.p, 'celebrar'); if (o.p.accion) o.p.accion.timeScale = 1; return; }
+          if (c && c.k === k && ya >= c.t0 && ya - c.t0 < 1.4 && v < 1.5) { S0.animar(o.p, c.v || 'celebrar'); if (o.p.accion) o.p.accion.timeScale = 1; return; }
           const n = att && i === 0 ? (v > 2.5 ? 'boteCorriendo' : v > 0.4 ? 'walk' : 'bote') : !att && ES.ataca && v < 0.6 ? 'defensa' : v > 2.5 ? 'sprint' : v > 0.4 ? 'walk' : 'idle';
           S0.animar(o.p, n); if (o.p.accion) o.p.accion.timeScale = n === 'walk' || n === 'sprint' ? Math.min(1.8, Math.max(0.6, v / (n === 'sprint' ? 2.7 : 1.3))) : 1;
         };
+        const _hb = new THREE.Vector3();
         V.anim = function (tm) {
           const dt = 0.033;
           ['A', 'B'].forEach(k => jug[k].forEach(o => { const dx = (o.tx - o.x) * 0.12, dz = (o.tz - o.z) * 0.12; o.x += dx; o.z += dz; o.g.position.set(o.x, 0, o.z); const v = Math.hypot(dx, dz) / dt;
@@ -99,6 +100,9 @@
             let u = (ahora - a.t0) / a.dur; if (ES.pausa) { a.t0 += dt; u = (ahora - a.t0) / a.dur; }
             if (u >= 1) { balon.position.set(a.fin[0], a.fin[1], a.fin[2]); ES.anim = null; if (a.cb) a.cb(); }
             else { const n = a.keys.length - 1, s = Math.min(n - 1, Math.floor(u * n)), v = u * n - s, p0 = a.keys[s], p1 = a.keys[s + 1], arco = a.arco && s === n - 1 ? Math.sin(v * Math.PI) * 2.2 : Math.sin(v * Math.PI) * 0.2; balon.position.set(p0[0] + (p1[0] - p0[0]) * v, p0[1] + (p1[1] - p0[1]) * v + arco, p0[2] + (p1[2] - p0[2]) * v); }
+          } else if (ES.fase === 'jugando' || ES.libres) {   // sin jugada en el aire: el balón va en la mano de quien lo lleva (botando si bota)
+            const mp = ES.balonDe || (ES.ataca && jug[ES.ataca][0]), B = mp && mp.p && mp.p.huesos && mp.p.huesos.WristR;
+            if (B) { mp.p.obj.updateMatrixWorld(true); B.getWorldPosition(_hb); const act = mp.p.actual, drib = act === 'bote' || act === 'boteCorriendo', k = drib && mp.p.accion ? 0.5 + 0.5 * Math.sin(mp.p.accion.time / (mp.p.accion.getClip().duration || 1) * 4 * Math.PI) : 1; balon.position.set(_hb.x, 0.25 + Math.max(0, _hb.y - 0.3) * Math.pow(k, 0.8), _hb.z); }
           }
         };
       } catch (e) { V = null; }
@@ -126,25 +130,35 @@
       if (!V || ES.vel >= 16) return;
       const sh = posJug(k, ev.jug), hoop = [dir * HX, 3.0, 0], pase = () => { const o = jug[k][Math.floor(Math.random() * 5)]; return [o.tx, 1.4, o.tz]; };
       const pts = ev.r === 'ok' || ev.r === 'fallo' ? (ev.v === 3 ? 7 : 3.5) : 2;
-      const mate = !!sh && ev.r === 'ok' && ev.v === 2 && ES.vel < 16 && Math.random() < 0.3 && !!sh.p && !!sh.p.acc.mate, ang = (Math.random() - 0.5) * 2.2, sp = mate ? [dir * (HX - 1.5), 0, (Math.random() - 0.5) * 1.4] : sh ? [dir * (HX - pts * Math.cos(ang)), 0, pts * Math.sin(ang)] : [dir * 3, 0, 0];
+      ES.libres = null; ES.balonDe = null;
+      const cerca2 = !!sh && (ev.r === 'ok' || ev.r === 'fallo') && ev.v === 2 && ES.vel < 16 && !!sh.p, r0 = Math.random(), mate = cerca2 && ev.r === 'ok' && r0 < 0.3 && !!sh.p.acc.mate, bandeja = cerca2 && !mate && r0 > 0.62 && !!sh.p.acc.bandeja, ang = (Math.random() - 0.5) * 2.2, sp = mate ? [dir * (HX - 1.5), 0, (Math.random() - 0.5) * 1.4] : bandeja ? [dir * (HX - 1.4), 0, (Math.random() - 0.5) * 2] : sh ? [dir * (HX - pts * Math.cos(ang)), 0, pts * Math.sin(ang)] : [dir * 3, 0, 0];
       if (sh) { sh.tx = sp[0]; sh.tz = sp[2]; }
       const m0 = jug[k][0], keys = [[m0.x, 1.2, m0.z], pase(), pase(), [sp[0], 1.5, sp[2]]];
       if (ev.r === 'tov') keys.push([jug[otro][0].tx, 1.2, jug[otro][0].tz]);
       else if (ev.r === 'falta') keys.push([sp[0], 1.4, sp[2]]);
       else keys.push(hoop);
+      const libres = ev.r === 'falta' && !!sh && !!sh.p && !!sh.p.acc.libre && ES.vel < 8 && ev.v > 0; if (libres) { sh.tx = dir * (HX - 4.6); sh.tz = 0; keys[keys.length - 1] = [sh.tx, 1.4, 0]; }
       const dur = Math.max(0.25, Math.min(1.6, 14 / ES.vel * 0.12));
       { const ahora = performance.now() / 1000, tramo = dur / (keys.length - 1), clips = !!(sh && sh.p && sh.p.acc.tiro);
         [1, 2].forEach(j => { const pasador = jug[k].reduce((b, o) => { const dd = Math.hypot(o.tx - keys[j - 1][0], o.tz - keys[j - 1][2]); return dd < b.d ? { o, d: dd } : b; }, { o: null, d: 9 }).o; if (pasador) { if (pasador.p && pasador.p.acc.pase) pasador.clip = { nombre: 'pase', t0: ahora + tramo * (j - 1), dur: tramo * 0.95, esc: 0.7 / (tramo * 0.95) }; else pasador.gesto = { t0: ahora + tramo * (j - 1), dur: tramo * 0.9, w: 0.55 }; } });
         if (sh && (ev.r === 'ok' || ev.r === 'fallo')) {
           sh.g.rotation.y = Math.atan2(hoop[0] - sp[0], hoop[2] - sp[2]);
-          if (clips) { const dp = mate ? Math.max(0.6, tramo * 1.6) : Math.max(0.5, tramo * 1.5), cl = mate ? 1.5 : 1.2, f = mate ? 0.85 : 0.55, suelta = ahora + tramo * (keys.length - 2); sh.clip = { nombre: mate ? 'mate' : 'tiro', t0: suelta - f * dp, dur: dp * 1.1, esc: cl / dp }; }
+          if (clips) { const dp = mate ? Math.max(0.6, tramo * 1.6) : Math.max(0.5, tramo * 1.5), cl = mate ? 1.5 : bandeja ? 1 : 1.2, f = mate ? 0.85 : 0.55, suelta = ahora + tramo * (keys.length - 2); sh.clip = { nombre: mate ? 'mate' : bandeja ? 'bandeja' : 'tiro', t0: suelta - f * dp, dur: dp * 1.1, esc: cl / dp }; }
           else sh.gesto = { t0: ahora + tramo * (keys.length - 2.6), dur: Math.max(0.45, tramo * 1.4), w: 1, salto: true };
         }
         const rb = ev.r === 'fallo' && (ev.reb || ev.oreb) ? posJug(ev.reb ? otro : k, ev.reb || ev.oreb) : null;
         if (rb && rb.p && rb.p.acc.rebote) { rb.tx = hoop[0] - dir * 1.6; rb.tz = (Math.random() - 0.5) * 2; rb.clip = { nombre: 'rebote', t0: ahora + dur * 0.85, dur: 1, esc: 1.2 }; }
         if (ev.r === 'falta' && ES.arbitros && ES.arbitros[0]) ES.arbitros[0].clip = { nombre: 'arbitro', t0: ahora + dur * 0.6, dur: 2, esc: 1 };
-        if (ev.r === 'ok') ES.celebra = { k: k, t0: ahora + dur }; }
-      ES.anim = { t0: performance.now() / 1000, dur, keys, arco: ev.r === 'ok' || ev.r === 'fallo', fin: ev.r === 'fallo' ? [hoop[0] - dir * 1.2, 0.3, (Math.random() - 0.5) * 3] : keys[keys.length - 1] };
+        if (ev.tap) { const dfn = posJug(otro, ev.tap); if (dfn && dfn.p && dfn.p.acc.tapon) { dfn.tx = sp[0] + dir * 0.9; dfn.tz = sp[2]; dfn.clip = { nombre: 'tapon', t0: ahora + tramo * (keys.length - 2) - 0.18, dur: 0.9, esc: 1 }; } }
+        if (ev.rob && ev.r === 'tov') { const rb2 = posJug(otro, ev.rob); if (rb2 && rb2.p && rb2.p.acc.robo) rb2.clip = { nombre: 'robo', t0: ahora + dur * 0.75, dur: 0.6, esc: 1 }; }
+        if (ev.r === 'ok') ES.celebra = { k: k, t0: ahora + dur, v: Math.random() < 0.5 ? 'celebrar' : 'celebrar2' }; }
+      ES.anim = { t0: performance.now() / 1000, dur, keys, arco: ev.r === 'ok' || ev.r === 'fallo', fin: ev.r === 'fallo' ? (ev.tap ? [hoop[0] - dir * 3, 0.3, (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 2)] : [hoop[0] - dir * 1.2, 0.3, (Math.random() - 0.5) * 3]) : keys[keys.length - 1] };
+      if (libres) {   // tiros libres: el lanzador se coloca en la línea y tira uno a uno (el balón espera en su mano hasta soltarlo)
+        const tok = ES.libres = {};
+        const lanza = i => { if (ES.libres !== tok || !V || i >= ev.v) { if (ES.libres === tok) ES.balonDe = null; return; } ES.balonDe = sh; const hecho = i < ev.ok, T = Math.max(0.6, Math.min(1.4, 4 / ES.vel)); sh.g.rotation.y = Math.atan2(hoop[0] - sh.x, hoop[2] - sh.z); sh.clip = { nombre: 'libre', t0: performance.now() / 1000, dur: 1.7, esc: 1 };
+          setTimeout(() => { if (ES.libres !== tok) return; ES.balonDe = null; ES.anim = { t0: performance.now() / 1000, dur: T, keys: [[sh.x + dir * 0.3, 2.0, 0], hoop], arco: true, fin: hecho ? [hoop[0], 0.3, 0] : [hoop[0] - dir * 1.2, 0.3, (Math.random() - 0.5) * 2], cb: () => setTimeout(() => lanza(i + 1), 600) }; }, 790); };
+        ES.anim.cb = () => lanza(0);
+      }
     }
     let reloj = 0;
     function tick1() {

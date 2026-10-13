@@ -74,8 +74,13 @@
       return Object.assign(agachar(ag), brazos([0.3, mezcla(0.9 * arr + (-0.5) * (1 - arr), 0.1, pecho), mezcla(0.1, 0.5, pecho)], [0.3, mezcla(arr, -0.3, pecho), mezcla(0.1, 0.8, pecho)], [0.3, mezcla(0.9 * arr + (-0.5) * (1 - arr), 0.1, pecho), mezcla(0.1, 0.5, pecho)], [0.3, mezcla(arr, -0.3, pecho), mezcla(0.1, 0.8, pecho)]), { Head: [-0.2 * arr, 0, 0], _dy: -(1 - C(ag)) + salto });
     } },
     pase: { dur: 0.7, lazo: false, base: 'idle', f: (t, u) => { const a = suave(rampa(t, 0, 0.25)), b = suave(rampa(t, 0.25, 0.4)), c = suave(rampa(t, 0.5, 0.7)); const x = mezcla(mezcla(0.2, 0.05, a), 0.12, b), z = mezcla(mezcla(0.5, 0.2, a), 1, b); return Object.assign(brazos([0.3, -0.5, mezcla(0.5, 0.9, b) * (1 - c) + 0.2 * c], [x + 0.1, mezcla(-0.2, 0.05, b), z], [0.3, -0.5, mezcla(0.5, 0.9, b) * (1 - c) + 0.2 * c], [x + 0.1, mezcla(-0.2, 0.05, b), z]), { Chest: [mezcla(0.1, -0.08, b), 0, 0] }); } },
+    tapon: { dur: 0.9, lazo: false, base: 'idle', f: (t, u) => { const ag = suave(rampa(t, 0, 0.2)) * (1 - suave(rampa(t, 0.2, 0.3))) * 0.5 + 0.2 * suave(rampa(t, 0.75, 0.9)), salto = Math.sin(PI * rampa(t, 0.25, 0.8)) * 0.3, up = suave(rampa(t, 0.25, 0.45)) * (1 - suave(rampa(t, 0.62, 0.8))), sw = Math.sin(PI * rampa(t, 0.45, 0.7)); return Object.assign(agachar(ag), brazos([0.2, -0.9, 0.2], [0.2, -0.8, 0.3], [0.2, mezcla(-0.9, 0.95, up), mezcla(0.1, 0.3, up)], [0.1, mezcla(-0.5, 0.9, up), mezcla(0.3, 0.4 + 0.5 * sw, up)]), { Chest: [-0.12 * up, 0, 0], _dy: -(1 - C(ag)) + salto }); } },
+    robo: { dur: 0.6, lazo: false, base: 'idle', f: (t, u) => { const k = Math.sin(PI * rampa(t, 0.1, 0.5)); return Object.assign(agachar(0.35 * k), brazos([0.2, -0.9, 0.2], [0.2, -0.8, 0.3], [0.2, mezcla(-0.9, -0.1, k), mezcla(0.1, 0.9, k)], [0.1, mezcla(-0.5, -0.3, k), mezcla(0.3, 1, k)]), { Chest: [0.25 * k, 0, 0] }); } },
+    bandeja: { dur: 1, lazo: false, base: 'idle', f: (t, u) => { const arr = suave(rampa(t, 0.2, 0.5)) * (1 - suave(rampa(t, 0.7, 0.95))), salto = Math.sin(PI * rampa(t, 0.25, 0.8)) * 0.28, ag = 0.3 * suave(rampa(t, 0, 0.2)) * (1 - suave(rampa(t, 0.2, 0.3))); return Object.assign(agachar(ag), brazos([0.25, -0.5, 0.5], [0.2, 0.2, 0.8], [0.2, mezcla(-0.5, 0.95, arr), mezcla(0.5, 0.1, arr)], [0.1, mezcla(0.3, 1, arr), 0.2]), { UpperLegR: [-ag - 1.1 * arr, 0, 0], LowerLegR: [2 * ag + 1.2 * arr, 0, 0], Chest: [0.1 - 0.1 * arr, 0, 0], _dy: -(1 - C(ag)) + salto }); } },
+    celebrar2: { dur: 1.2, base: 'idle', f: (t, u) => { const w = u * 2 * PI * 2, h = Math.abs(S(w * 0.5)); return Object.assign(brazos([0.25, 0.95, 0.1], [0.2, 1, 0.2 * S(w)], [0.15, -0.9, 0.1], [0.1, -0.7, 0.4]), { Head: [-0.2, 0.15 * S(w), 0], Chest: [-0.1, 0.15 * S(w), 0], _dy: 0.05 * h }); } },
     arbitro: { dur: 2, lazo: false, base: 'idle', f: (t, u) => { const a = suave(rampa(t, 0, 0.3)) * (1 - suave(rampa(t, 1.5, 1.9))); return brazos(REPOSO_L.concat(), [0.1, -0.9, 0.25], [mezcla(0.1, 0.4, a), mezcla(-0.95, 0.9, a), mezcla(0.1, 0.1, a)], [mezcla(0.1, 0.1, a), mezcla(-0.5, 1, a), mezcla(0.4, 0.15, a)]); } }
   };
+  DEFS.libre = { dur: 2, lazo: false, base: 'idle', f: (t, u) => { const p = DEFS.tiro.f(Math.min(1.2, t * 0.7), u); p._dy *= 0.2; return p; } };
   const nombres = Object.keys(DEFS);
 
   function clipDe(modelo, nombre, R, an, ANIM) {
@@ -95,5 +100,7 @@
     nombres.forEach(nm => { let a = null; Object.defineProperty(p.acc, nm, { configurable: true, enumerable: true, get() { if (!a) { a = p.mixer.clipAction(clipDe(modelo, nm, R, an, ANIM)); if (DEFS[nm].lazo === false) { a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = true; } } return a; } }); });
     ['saludar', 'abrirPuerta'].forEach(nm => { const src = nm === 'saludar' ? 'emote-yes' : 'interact-right'; if (!(nm in p.acc)) p.acc[nm] = p.acc[src]; });
   }
-  GM.animCodigo = { instalar, nombres: nombres.concat(['saludar', 'abrirPuerta']), VEL, DEFS, _reposo: reposo, _evaluar: evaluar };
+  // Aplica una pose fija (sin los huesos de las piernas) a una persona ya creada: conductores y gente sentada con los brazos en su sitio
+  function pose(p, nombre, t) { const R = cacheReposo[p.modelo], d = DEFS[nombre]; if (!R || !d) return; const out = evaluar(R, d.f(t || 0, (t || 0) / (d.dur || 1))); for (const nm in out) if (!/Leg|Foot|PT|Hips|Body|Root/.test(nm) && p.huesos[nm]) p.huesos[nm].quaternion.copy(out[nm]); }
+  GM.animCodigo = { pose, instalar, nombres: nombres.concat(['saludar', 'abrirPuerta']), VEL, DEFS, _reposo: reposo, _evaluar: evaluar };
 })();
