@@ -8,10 +8,13 @@
   const U = GM.util, R = 300, CELDA = 0.75;
   const ANCHO = [16, 12, 10, 8.5, 7, 5.5, 4], ACERA = 2.3;
   const CACHE = {};
-  function cargar(id) {
+  function cargar(id, st) {
     if (id in CACHE) return Promise.resolve(CACHE[id]);
+    // sin datos de OpenStreetMap (o sin conexión) se genera una ciudad con el mismo formato (calle_sintetica.js); en las pruebas de Node sigue la calle antigua
+    const sint = () => { const c = st && st.equipos && st.equipos[id]; return GM.calleSintetica && typeof location !== 'undefined' ? casasSinteticas(GM.calleSintetica.plano(id, c && c.pais, c && c.ciudad), id) : null; };
+    if (typeof window !== 'undefined' && window.__sinOSM && typeof location !== 'undefined') return Promise.resolve(CACHE[id] = sint());
     if (typeof fetch !== 'function' || typeof location === 'undefined' || !/^(https?|app|file):$/.test(location.protocol || '')) return Promise.resolve(CACHE[id] = null);
-    return fetch('osm/' + id + '.json').then(r => r.ok ? r.json() : null).catch(() => null).then(d => (CACHE[id] = d && d.e && d.c && ((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30) ? casasSinteticas(d, id) : null));
+    return fetch('osm/' + id + '.json').then(r => r.ok ? r.json() : null).catch(() => null).then(d => (CACHE[id] = d && d.e && d.c && ((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30) ? casasSinteticas(d, id) : sint()));
   }
   // Zonas poco edificadas (pabellones aislados, con poco más que aparcamiento): se añaden casas sintéticas a ambos lados de las calles, sin pisar edificios, parques, agua, aparcamientos, usos del suelo ni otras calles.
   // Entran en el mismo formato que los edificios de OpenStreetMap (clase 1 vivienda o 0 bloque), así que reciben fachadas, tejados y papeles como los reales; `d.sint` guarda cuántas hay.

@@ -620,6 +620,6 @@
   // La ciudad real (calle_real.js) sustituye a la calle inventada en los clubes con datos de OpenStreetMap
   const esReal = st => !!(GM.mods.calleReal && GM.mods.calleReal.datos(st.clubId));
   function construir(S, M, st) { return esReal(st) ? GM.mods.calleReal.construir(S, M, st) : construirAntigua(S, M, st); }
-  const preparar = st => GM.mods.calleReal ? GM.mods.calleReal.cargar(st.clubId) : Promise.resolve(null);
+  const preparar = st => GM.mods.calleReal ? GM.mods.calleReal.cargar(st.clubId, st) : Promise.resolve(null);
   GM.calle = { moverPalomas, partidoFase: true, construir, construirAntigua, poblar, siguiente, actualizar, LIM, real: esReal, preparar, util: { MODELOS, PIEL, PELO, coche, perro, autobusRua, autobus, autobusEquipo } };
 })();

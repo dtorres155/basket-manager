@@ -172,7 +172,13 @@
     else if (B.fase === 'bajan') { B.jugadores.forEach((p, k) => { if (B.t > k * 1.2 && !p.bajado) { p.bajado = true; p.oculto = false; p.obj.visible = true; p.obj.position.set(B.pos[0] + 2.2, 0, B.pos[1] + 1.6); M.irA(p, S.ptoPab[0] + (k - 2.5) * 0.7, S.ptoPab[1], () => { p.oculto = true; p.obj.visible = false; }); } }); if (B.t > 9) { B.fase = 'se_va'; B.s = B.parar; } }
     else if (B.fase === 'se_va') { B.s += dt * 7; const [x, z, ux, uz] = punto(B.vi, Math.min(B.s, B.vi.L)), off = ANCHO[B.vi.v.k] / 4; B.obj.position.set(x - uz * off, 0, z + ux * off); B.obj.rotation.y = Math.atan2(ux, uz); if (B.s >= B.vi.L - 1) { S.mundo.remove(B.obj); B.obj = null; B.fase = 'fuera'; } }
   }
+  // Horario de los comercios (punto 37): abierto o con la persiana bajada según la hora, el día de la semana y el país
+  function abierto(tipo, h, dow, pais) {
+    if (tipo === 'bar' || tipo === 'pub') return dow !== 1 && (h >= 8 && h < 24.5 || h < 1.5); if (tipo === 'cafe') return h >= 7.5 && h < 22; if (tipo === 'restaurant') return (h >= 12.5 && h < 16.5) || (h >= 19.5 && h < 24);
+    if (dow === 0 && pais !== 'US') return false; const siesta = pais === 'ES' || pais === 'IT' || pais === 'GR';
+    if (pais === 'US') return h >= 9 && h < 21.5; if (pais === 'DE') return h >= 8 && h < 20; if (pais === 'FR') return (h >= 9 && h < 12.5) || (h >= 14 && h < 19.5); return siesta ? (h >= 9 && h < 14) || (h >= 17 && h < 20.5) : h >= 9 && h < 21; }
   function actualizar(S, M, dt) {
+    if (S.tiendas && S.tiendas.length && S.st) { S.tTienda = (S.tTienda || 0) - dt; if (S.tTienda <= 0) { S.tTienda = 1; const h = S.hora || 12, dow = new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay(), pais = (S.st.equipos[S.st.clubId] || {}).pais; S.tiendas.forEach(t => { const ab = abierto(t.tipo, h, dow, pais); t.pr.visible = !ab; t.v.visible = ab || true; }); const luz = 0.1 + 0.9 * Math.min(1, Math.max(0, S.noche || 0)); (S.matsTienda || []).forEach(m => { m.emissiveIntensity = luz; }); } }
     if (S.multGPU) S.multGPU.actualizar(performance.now() / 1000, S.foco, S.hora);
     if (S.chunks) S.chunks.paso([[S.foco.x, S.foco.z], [S.camera.position.x, S.camera.position.z]], 4);   // ciudad por trozos: construye y descarta celdas de edificios según la distancia
     const t = performance.now() / 1000;
