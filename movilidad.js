@@ -202,6 +202,8 @@
   }
   function concesionario(S, M, st) {
     const club = st.equipos[st.clubId], base = (S.paseoBase || []).filter(q => { const d = Math.hypot(q[0], q[1]); return d > 70 && d < (S.RW || 300) - 60; }); let sitio = null;
+    // si el paseo no ofrece un solar libre (ciudades con pocos datos), se busca en una rejilla alrededor del centro
+    for (let rad = 80; rad < (S.RW || 300) - 40; rad += 24) for (let k = 0; k < 16; k++) base.push([Math.cos(k / 16 * Math.PI * 2) * rad, Math.sin(k / 16 * Math.PI * 2) * rad]);
     for (const q of base) { let ok = true; for (let i = -9; i <= 9 && ok; i += 0.75) for (let j = -2; j <= 8 && ok; j += 0.75) { const [a, b] = S.G.celda(q[0] + i, q[1] + j); if (!S.G.libre(a, b)) ok = false; } if (ok && (!S.zonas || !S.zonas.some(z => dist2(z.obj.position.x, z.obj.position.z, q[0], q[1]) < 14))) { sitio = q; break; } }
     if (!sitio) return; const [x, z] = sitio, g = new THREE.Group(); g.position.set(x, 0, z); S.mundo.add(g);
     const sol = new THREE.Mesh(new THREE.PlaneGeometry(18, 10).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x8e8e90, roughness: 0.9 })); sol.position.set(0, 0.03, 3); g.add(sol); if (GM.kit && GM.kit.coche) ['turismo', 'compacto', 'todoterreno'].forEach((t, i) => { const o = GM.kit.coche(COLORES[i * 2 % 6], t); o.position.set(-5.5 + i * 5.5, 0.04, 4.5); o.rotation.y = 0.5 - i * 0.4; g.add(o); });

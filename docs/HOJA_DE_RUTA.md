@@ -377,3 +377,10 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 - 48 biblioteca de objetos (`tools/ingesta.js`: descargar, simplificar, escalar, etiquetar, `reindexar`, `informe` -> `docs/OBJETOS.md`): 428 objetos en el catálogo, aún por debajo de los 500 previstos; solo los marcados `incluir` viajan en `dist/`.
 - 49 interiores de ciudad: hospital, colegio, hotel, campus, museo, estación, mercado y heladería, y anexos del pabellón; `tools/interiores_ciudad.js` los comprueba. Siguen sin interior propio kioscos, terrazas y viviendas ajenas.
 - Pendiente: el hospital se ve algo vacío (vestíbulo grande), faltan 70 objetos para llegar a 500, y las descargas OSM de partes de edificio y plazas cubren solo parte de las ciudades.
+
+## Estado tras la vigesimosexta tanda (release 0.9.107): cierre de los pendientes de la 25
+- Hospital con vestíbulo habitado (sillas de espera, camillas con cortina, máquina expendedora, silla de ruedas y líneas de colores en el suelo); colegio con pupitres y estación con maletas y panel de salidas (`interiores_vida.js`).
+- Interiores nuevos: quiosco de prensa (tipo `kiosco`), café de la terraza (reutiliza `bar_pueblo`) y dos pisos de vecinos con portal (reutilizan `casa_amigos`), enlazados desde `calle_real.js`. Siguen sin interior las viviendas que no son tuyas ni vecinas.
+- Biblioteca de objetos: 755 en el catálogo (Poly Haven más los kits CC0 de Kenney de comida y supervivencia, `tools/ingesta.js reindexar`).
+- Concesionario con respaldo en rejilla cuando el paseo no ofrece solar (Manresa). Comprobaciones del barrido ajustadas: pocas calles solo si hay más de 150 edificios, metro no se exige en EE UU y el pabellón puede estar a 220 m.
+- Descargas OSM de plazas completas (120 de 120, salvo Mykonos, sin plazas en OSM) y limpieza de archivos duplicados de `recursos/osm`. Mykonos y Manresa tienen pocos datos de calles en OpenStreetMap (es un límite del origen, no del juego).
