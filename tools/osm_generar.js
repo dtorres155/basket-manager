@@ -38,7 +38,7 @@ const NOMBRES_COLOR = { white: '#f2efe8', grey: '#9a9a96', gray: '#9a9a96', red:
 const colorDe = v => { if (!v) return ''; v = String(v).toLowerCase().trim(); if (/^#[0-9a-f]{6}$/.test(v)) return v; return NOMBRES_COLOR[v] || ''; };
 const techoDe = t => ({ flat: 1, gabled: 2, hipped: 3, 'half-hipped': 3, gambrel: 2, dome: 4, pyramidal: 5, skillion: 2 }[t['roof:shape']] || 0) + 10 * ({ brick: 1, stone: 2, sandstone: 2, limestone: 2, concrete: 0, glass: 3, metal: 3, steel: 3 }[t['building:material']] || 0);
 let total = 0, bytes = 0;
-for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem)\.json$/.test(n)).sort()) {
+for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem|tr|pl|ex)\.json$/.test(n)).sort()) {
   const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
   const k = 110574, kx = 111320 * Math.cos(j.lat * Math.PI / 180);
   const pr = g => g.map(q => [(q.lon - j.lon) * kx, -(q.lat - j.lat) * k]);
@@ -109,6 +109,14 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
   }
   const tf = path.join(DIR, j.id + '.tr.json'); if (fs.existsSync(tf)) { const TRJ = JSON.parse(fs.readFileSync(tf, 'utf8')); r.tr = TRJ.el.map(w => [w.t].concat(...dp(w.g.map(q => [q[0] / 10, q[1] / 10]), 1.5).map(q => [ent(q[0]), ent(q[1])]))); }
   const pf2 = path.join(DIR, j.id + '.pl.json'); if (fs.existsSync(pf2)) { const PJ = JSON.parse(fs.readFileSync(pf2, 'utf8')); r.pl = PJ.el.map(w => { const p = dp(w.g.map(q => [q[0] / 10, q[1] / 10]), 1.2); return [w.t].concat(...p.map(q => [ent(q[0]), ent(q[1])])); }).filter(a => a.length >= 7); }
+  // partes de edificio y rutas de autobús (tools/osm_extra.js)
+  const xf = path.join(DIR, j.id + '.ex.json');
+  if (fs.existsSync(xf)) { const XJ = JSON.parse(fs.readFileSync(xf, 'utf8')), ROOF = { flat: 0, gabled: 1, hipped: 2, pyramidal: 3, dome: 4, skillion: 5, round: 4 };
+    r.bp = (XJ.bp || []).map(q => { const p = dp(q.g.map(a => [a[0] / 10, a[1] / 10]), 0.8); if (p.length > 1 && p[0][0] === p[p.length - 1][0] && p[0][1] === p[p.length - 1][1]) p.pop(); const h = q.h || (q.lv ? q.lv * 3.1 : 0), mh = q.mh || (q.mlv ? q.mlv * 3.1 : 0); if (p.length < 3 || p.length > 24 || !h) return null; return [Math.round(h * 10), Math.round(mh * 10), nom(colorDe(q.col)), ROOF[q.roof] === undefined ? 0 : ROOF[q.roof]].concat(...p.map(a => [ent(a[0]), ent(a[1])])); }).filter(Boolean);
+    // cada ruta de autobús: los tramos de sus vías encadenados por los extremos
+    r.rb = (XJ.rb || []).map(rt => { const ways = rt.ways.map(w => w.map(a => [a[0] / 10, a[1] / 10])), usado = new Set(); if (!ways.length) return null; let ch = ways[0].slice(); usado.add(0); const cerca = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) < 3;
+      for (let it = 0; it < ways.length; it++) { let hecho = false; for (let i = 0; i < ways.length; i++) { if (usado.has(i)) continue; const w = ways[i], fin = ch[ch.length - 1], ini = ch[0]; if (cerca(fin, w[0])) { ch = ch.concat(w.slice(1)); } else if (cerca(fin, w[w.length - 1])) { ch = ch.concat(w.slice().reverse().slice(1)); } else if (cerca(ini, w[w.length - 1])) { ch = w.slice(0, -1).concat(ch); } else if (cerca(ini, w[0])) { ch = w.slice().reverse().slice(0, -1).concat(ch); } else continue; usado.add(i); hecho = true; } if (!hecho) break; }
+      let s2 = dp(ch, 3); const dentro = s2.map(q => Math.hypot(q[0], q[1]) < 650); s2 = s2.filter((q, i) => dentro[i] || dentro[i - 1] || dentro[i + 1]); return s2.length >= 2 && s2.some((q, i) => i && Math.hypot(q[0], q[1]) < 650) ? [nom(rt.ref || rt.nom)].concat(...s2.map(a => [ent(a[0]), ent(a[1])])) : null; }).filter(Boolean).filter((a, i, l) => l.findIndex(b => b[0] === a[0]) === i).slice(0, 10); }
   const df = path.join(DIR, j.id + '.dem.json'); if (fs.existsSync(df)) { const DM = JSON.parse(fs.readFileSync(df, 'utf8')); r.h = { n: DM.n, p: DM.paso, v: DM.h.map(v => Math.round(v)) }; }
   const s = JSON.stringify(r); fs.writeFileSync(path.join(OUT, j.id + '.json'), s);
   total++; bytes += s.length;

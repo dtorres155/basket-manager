@@ -160,7 +160,7 @@
     const C = D.c.map((c, i) => { const x = (D.cx && D.cx[i]) || [0, 0, 0, 0], lanes = x[0], w = lanes ? Math.min(22, Math.max(4.2, lanes * 3.05 + 0.4)) : 0; return { k: c[0], nom: c[1] >= 0 ? D.s[c[1]] : '', uno: c[2], p: pts(c, 3), lanes, w, sup: x[1], puente: !!(x[2] & 1), bici: !!(x[2] & 2), bus: !!(x[2] & 4), rot: !!(x[2] & 32), acera: !!(x[2] & 8), vel: x[3] * 10 }; }).filter(c => c.p.length > 1);
     const lista = (v, h) => (v || []).map(a => ({ t: a[0], p: pts(a, h) })).filter(a => a.p.length >= 2), punto = (v, i, j) => (v || []).map(a => ({ t: a[0], x: a[i] / 10, z: a[j] / 10 }));
     return { B, C, A: D.a.map(a => ({ t: a[0], p: pts(a, 1) })), P: D.p.map(a => ({ t: a[0], p: pts(a, 1) })),
-      PL: (D.pl || []).map(a => ({ t: a[0], p: pts(a, 1) })).filter(a => a.p.length >= 3), H: D.h || null, TR: (D.tr || []).map(a => ({ t: a[0], p: pts(a, 1) })).filter(a => a.p.length >= 2), L: D.l || null, N: (D.n || []).map(a => ({ t: a[0], nom: a[1] >= 0 ? D.s[a[1]] : '', x: a[2] / 10, z: a[3] / 10 })).filter(a => a.nom), T: (D.t || []).map(a => [a[0] / 10, a[1] / 10]), PT: punto(D.pt, 1, 2),
+      BP: (D.bp || []).map(a => ({ h: a[0] / 10, mh: a[1] / 10, color: a[2] >= 0 ? D.s[a[2]] : '', roof: a[3], p: pts(a, 4) })).filter(a => a.p.length >= 3), RB: (D.rb || []).map(a => ({ ref: a[0] >= 0 ? D.s[a[0]] : '', p: pts(a, 1) })).filter(a => a.p.length >= 2), PL: (D.pl || []).map(a => ({ t: a[0], p: pts(a, 1) })).filter(a => a.p.length >= 3), H: D.h || null, TR: (D.tr || []).map(a => ({ t: a[0], p: pts(a, 1) })).filter(a => a.p.length >= 2), L: D.l || null, N: (D.n || []).map(a => ({ t: a[0], nom: a[1] >= 0 ? D.s[a[1]] : '', x: a[2] / 10, z: a[3] / 10 })).filter(a => a.nom), T: (D.t || []).map(a => [a[0] / 10, a[1] / 10]), PT: punto(D.pt, 1, 2),
       K: lista(D.k, 1).filter(a => a.p.length >= 3), U: lista(D.u, 1).filter(a => a.p.length >= 3), V: lista(D.v, 1), F: lista(D.f, 1) };
   }
 
@@ -188,7 +188,7 @@
     let RW = R; if (X.L) { let mx = 0; X.L.e.forEach(e => { for (let i = 1; i + 1 < e.length; i += 2) mx = Math.max(mx, Math.hypot(e[i], e[i + 1])); }); RW = Math.max(R, Math.min(1000, Math.floor(mx - 12))); }
     // relieve real (Copernicus DEM, cuadrícula de 125 m): S.altura(x, z) da los metros sobre el pabellón; todavía no se aplica al suelo (punto 32)
     S.relieve = X.H || null; if (GM.relieve) { GM.relieve.fijar(X.H || null); S.altura = GM.relieve.altura; } else S.altura = (x, z) => { const H = X.H; if (!H) return 0; const n = H.n, p = H.p, fx = Math.min(n - 1.001, Math.max(0, x / p + (n - 1) / 2)), fz = Math.min(n - 1.001, Math.max(0, z / p + (n - 1) / 2)), i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, g = (a, b) => H.v[b * n + a], c0 = g((n - 1) / 2, (n - 1) / 2); return (g(i, j) * (1 - u) * (1 - v) + g(i + 1, j) * u * (1 - v) + g(i, j + 1) * (1 - u) * v + g(i + 1, j + 1) * u * v) - c0; };
-    S.edificiosDatos = X.B;
+    S.edificiosDatos = X.B; S.tranvia = X.TR; S.plazasDatos = X.PL;
     S.RW = RW; const G = M.rejilla({ limites: [-RW - 20, -RW - 20, RW + 20, RW + 20], CELDA }); S.G = G;
     // fuera del círculo de datos no se anda
     for (let j = 0; j < G.H; j++) for (let i = 0; i < G.W; i++) { const [x, z] = G.centro(i, j); if (x * x + z * z > (RW - 4) * (RW - 4)) G.b[G.idx(i, j)] = 1; }
@@ -228,6 +228,8 @@
       { const desp = (p, d) => p.map((q, i) => { const a = p[Math.max(0, i - 1)], b = p[Math.min(p.length - 1, i + 1)], ux = b[0] - a[0], uz = b[1] - a[1], l = Math.hypot(ux, uz) || 1; return [q[0] - uz / l * d, q[1] + ux / l * d]; }), BK = nuevo(), BS = nuevo();
         X.C.forEach(c => { if (c.k > 4) return; const w = c.w || ANCHO[c.k] || 4;
           if (c.lanes >= 2) { const n = c.lanes, uno = c.uno; for (let i = 1; i < n; i++) { const off = -w / 2 + i * w / n; if (!uno && i === n / 2) continue; let acum = 0; for (let j = 0; j + 1 < c.p.length; j++) { const a = c.p[j], b = c.p[j + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 1) continue; const ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l, ox = -uz * off, oz = ux * off; for (let s = (2 - (acum % 6) + 6) % 6; s + 2.5 < l; s += 6) cinta([[a[0] + ux * s + ox, a[1] + uz * s + oz], [a[0] + ux * (s + 2.5) + ox, a[1] + uz * (s + 2.5) + oz]], 0.12, 0, MK); acum += l; } } }
+          if (c.k >= 3 && c.k <= 5 && !(c.lanes > 2) && c.p.length >= 2) { let Lc = 0; for (let j = 0; j + 1 < c.p.length; j++) Lc += Math.hypot(c.p[j + 1][0] - c.p[j][0], c.p[j + 1][1] - c.p[j][1]);
+            if (Lc > 25) for (const lado of [1, -1]) { const off = lado * (w / 2 - 2.1); cinta(desp(c.p, off), 0.1, 0, MK); let acum = 0; for (let j = 0; j + 1 < c.p.length; j++) { const a = c.p[j], b = c.p[j + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 1) continue; const ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l, nx = -uz, nz = ux; for (let s = 6.2 - (acum % 6.2); s < l - 1; s += 6.2) { const x = a[0] + ux * s, z = a[1] + uz * s; cinta([[x + nx * off, z + nz * off], [x + nx * lado * (w / 2) , z + nz * lado * (w / 2)]], 0.1, 0, MK); } acum += l; } } }
           if (c.bici) cinta(desp(c.p, w / 2 - 0.95), 1.3, 0, BK); if (c.bus) cinta(desp(c.p, -(w / 2 - 1.5)), 2.8, 0, BS); });
         const mdec = (color, n) => { const m = new THREE.MeshStandardMaterial({ color, roughness: 0.85, side: THREE.DoubleSide }); m.polygonOffset = true; m.polygonOffsetFactor = -n; m.polygonOffsetUnits = -n; return m; };
         const mb = malla(BK, mdec(0x2f9a57, 4), 'carrilbici'); if (mb) { mb.receiveShadow = false; W.add(mb); } const ms = malla(BS, mdec(0xa5473a, 4), 'carrilbus'); if (ms) { ms.receiveShadow = false; W.add(ms); } }
@@ -262,7 +264,7 @@
       if (Math.floor((b.tm || 0) / 10) === 1 && b.cl !== 10) return col(['#9c5a45', '#8f4f3c', '#a8664c', '#7d4636'][U.hash(club.id + 'br' + b.i) % 4]);
       if (b.cl === 10) return col(c1).lerp(col('#e8e8ea'), 0.5);
       if (b.cl === 5) return col('#e4e9ee'); if (b.cl === 4) return col('#d9b08a'); if (b.cl === 7) return col('#d9d0bd'); if (b.cl === 9) return col('#b7b9bb'); if (b.cl === 3 && b.lv > 4) return col('#aeb9c4');
-      const h = U.hash(club.id + 'c' + b.i); if (b.mat === 2) return col(['#cfc6b4', '#bdb29c', '#d8cfbd'][h % 3]); if (b.mat === 3) return col('#b9b6b0'); if (b.mat === 7) return col(['#efe9dc', '#e8d9c0'][h % 2]); if (b.tipo && PAL_TIPO[b.tipo] && !(club.pais === 'US' && b.tipo !== 'nave')) { const pp = PAL_TIPO[b.tipo]; return col(pp[h % pp.length]).offsetHSL(0, 0, (((h >>> 8) % 100) / 100 - 0.5) * 0.06); } return pal[h % pal.length].clone().offsetHSL(0, 0, (((h >>> 8) % 100) / 100 - 0.5) * 0.07);
+      const h = U.hash(club.id + 'c' + b.i); if (b.mat === 2) return col(['#cfc6b4', '#bdb29c', '#d8cfbd'][h % 3]); if (b.mat === 3) return col('#b9b6b0'); if (b.mat === 7) return col(['#efe9dc', '#e8d9c0'][h % 2]); if (b.tipo && PAL_TIPO[b.tipo] && !(club.pais === 'US' && b.tipo !== 'nave' && !(PAL_PAIS.US[b.tipo]))) { const pp = (PAL_PAIS[club.pais] && PAL_PAIS[club.pais][b.tipo]) || PAL_TIPO[b.tipo]; return col(pp[h % pp.length]).offsetHSL(0, 0, (((h >>> 8) % 100) / 100 - 0.5) * 0.06); } return pal[h % pal.length].clone().offsetHSL(0, 0, (((h >>> 8) % 100) / 100 - 0.5) * 0.07);
     };
     // Tipología del edificio (punto 35): decide la fachada, el color y los detalles. Por plantas, superficie, uso y distancia al centro
     const tipo = b => { if (typeof window !== 'undefined' && window.__sinTipos) return 'singular'; const lv = b.lv || 3, ar = b.ar, k = U.hash(club.id + 'ty' + b.i) % 100;
@@ -271,6 +273,10 @@
       if (b.era && b.era < 193 && lv >= 3 && lv <= 9) return 'ensanche'; if (b.era >= 195 && b.era <= 199 && lv >= 4) return 'bloque'; if (b.mat === 4 && lv >= 3) return 'oficinas';
       if (lv >= 4 && lv <= 7 && ar <= 700 && b.dc < 280) return 'ensanche'; if (lv <= 3) return 'casa'; return k < 50 ? 'ensanche' : 'bloque'; };
     const PAL_TIPO = { ensanche: ['#d9c4a0', '#cdb48e', '#e3d3b4', '#c9a98a', '#d8cbb0'], bloque: ['#c9b9a6', '#b5a799', '#a68f7e', '#9c6f55', '#bdb3a4'], casa: ['#efe9dc', '#e8d9c0', '#f0e2c8', '#d9c7a8', '#e6d3c4'], nave: ['#b7bec5', '#a9b3bb', '#c4c9ce'], oficinas: ['#aeb9c4', '#9fb0c0', '#bcc6cf'], torre: ['#a8b6c4', '#b8c2cc'] };
+    // variación por país: casas de madera pintada en EE UU, calles encaladas en Grecia y Turquía, revoques pastel en Alemania y el norte
+    const PAL_PAIS = { US: { casa: ['#c9b79c', '#a9b8c4', '#d9c5a0', '#8f9b7a', '#cdbfae'], ensanche: ['#8a5a46', '#a06a50', '#7d4f3e', '#95664d'], bloque: ['#9c5a45', '#8f4f3c', '#a8664c'] },
+      GR: { casa: ['#f2efe8', '#efe9dc', '#e8e2d2'], ensanche: ['#efe6d2', '#e6dcc4', '#f2efe8'], bloque: ['#e9e3d4', '#dcd6c6', '#f0ece2', '#cfc9ba'] }, TR: { casa: ['#efe0c8', '#e6cfae', '#f0e6d4'], ensanche: ['#e3cfae', '#d9c3a0'], bloque: ['#e2d3b8', '#d8c6a4', '#cdbd9c'] },
+      DE: { casa: ['#ecdcc0', '#d9e0c8', '#e8cfc0', '#dcd2b4'], ensanche: ['#e6d5a8', '#d9c3a0', '#c9d4c0', '#e8c9b0'], bloque: ['#d3cdc0', '#c4c1b8', '#bdb7aa'] } };
     const estilo = b => { const k = U.hash(club.id + 'e' + b.i) % 100; if (b.tipo === 'ensanche') return 3; if (b.tipo === 'bloque') return 4; if (b.tipo === 'nave') return 5; if (b.tipo === 'torre' || b.tipo === 'oficinas') return 2; return b.cl === 3 || b.cl === 8 ? (k < 70 ? 2 : 0) : b.cl === 5 || b.cl === 4 ? 2 : ['ES', 'IT', 'GR', 'TR'].indexOf(club.pais) >= 0 ? (k < 52 ? 1 : 0) : (k < 25 ? 1 : 0); };
     const pared = (b, h, k) => {
       const c = b.col, est = b.estilo = estilo(b), oscuro = c.clone().multiplyScalar(0.78), tienda = b.cl === 2 || b.cl === 12 || b.cl === 11, A = ch(b), p = b.p; let u = 0;
@@ -530,6 +536,8 @@
     S.zonas = Object.keys(SALAS).filter(k => zonas[k]).map(k => M.zona(W, SALAS[k], zonas[k][0], zonas[k][1], club));
     S.paseo = S.paseoBase.concat(paseo); S.portales = S.paseoBase.filter((_, i) => i % 6 === 0);
     S.calles = X.C.filter(cc => cc.nom && cc.k <= 5); S.vias = X.C.filter(cc => cc.k >= 1 && cc.k <= 4); S.callesTodas = X.C.filter(cc => cc.p && cc.p.length > 1);
+    // rutas reales de autobús: el tramo más largo de cada ruta que cabe en la ciudad pasa a ser una vía más (el autobús elige la que más paradas tiene)
+    (X.RB || []).slice().sort((a, b) => b.p.length - a.p.length).slice(0, 6).forEach(rt => { let mejor = [], run = []; const den = []; rt.p.forEach((q, i) => { if (i) { const o = rt.p[i - 1], l = Math.hypot(q[0] - o[0], q[1] - o[1]), n = Math.max(1, Math.ceil(l / 8)); for (let k = 1; k < n; k++) den.push([o[0] + (q[0] - o[0]) * k / n, o[1] + (q[1] - o[1]) * k / n]); } den.push(q); }); den.forEach(q => { if (Math.hypot(q[0], q[1]) < 282) run.push(q); else { if (run.length > mejor.length) mejor = run; run = []; } }); if (run.length > mejor.length) mejor = run; if (mejor.length >= 3) S.vias.unshift({ k: 3, nom: 'Línea ' + rt.ref, uno: false, p: mejor, ruta: rt.ref }); });
     S.calleNombre = nombreCalle(R.sede || R.pabellon) || ('Calle de ' + club.ciudad);
     mobiliario(S, M, X, G, W, c);
     S.cielo = true; S.scene.background = new THREE.Color(0xa9c6dc); S.scene.fog = new THREE.Fog(0xa9c6dc, 60, 170);

@@ -2,7 +2,7 @@
 // Después: node tools/osm_generar.js (guarda `tr` en vendor/osm/<id>.json: [tipo (0 tranvía, 1 tren ligero, 2 metro en superficie), x0, z0, ...] en décimas de metro)
 const fs = require('fs'), path = require('path'); const DIR = path.join(__dirname, '..', 'recursos', 'osm'), UA = 'basket-manager-personal/1.0 (uso personal)', R = 1000;
 const dormir = ms => new Promise(r => setTimeout(r, ms));
-async function consulta(q) { for (const ep of ['https://overpass-api.de/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']) { try { const r = await fetch(ep, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(80000) }); if (r.ok) return await r.json(); } catch (e) { /* siguiente */ } await dormir(1500); } return null; }
+async function consulta(q) { for (const ep of ['https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'https://overpass-api.de/api/interpreter']) { try { const r = await fetch(ep, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(80000) }); if (r.ok) return await r.json(); } catch (e) { /* siguiente */ } await dormir(1500); } return null; }
 (async () => {
   const sel = process.argv.slice(2), ids = fs.readdirSync(DIR).filter(f => f.endsWith('.json') && !/\.(poi|ring|dem|tr)\.json$/.test(f) && f !== 'clubes.json' && f !== 'centros.json').map(f => f.replace('.json', ''));
   for (const id of ids) {
