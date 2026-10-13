@@ -25,7 +25,7 @@
     const cat = c => (GM.catalogo ? GM.catalogo.generar(r, { pais: club.pais || club.paisCod || '', mes: +String(st.fecha).slice(5, 7), temp: S.clima && S.clima.temp, club, hincha: c, rol: !c && GM.vecinos ? GM.vecinos.rolPara(r) : '' }) : null);
     const crear = () => { const hincha = r() * 100 < afi * (partido ? 1.4 : 0.6), cg = cat(hincha); if (cg) return M.personaje(cg).then(p => { p.hincha = hincha; return p; }); return M.personaje({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 158 + r() * 30, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], ropa: hincha ? [c1, c2] : null }).then(p => { p.hincha = hincha; return p; }); };
     const PRIMEROS = 18, lista = await Promise.all(Array.from({ length: Math.min(n, PRIMEROS) }, crear));   // los primeros vecinos salen ya; el resto se va creando por lotes mientras se juega (la carga baja de 2 s a menos de 1)
-    const sitio = () => { let q = S.paseo[(r() * S.paseo.length) | 0]; for (let i = 0; i < 3; i++) { const o = S.paseo[(r() * S.paseo.length) | 0]; if (r() < 0.65 && Math.hypot(o[0], o[1]) < Math.hypot(q[0], q[1])) q = o; } return q; };
+    const sitio = () => { if (S.demo && GM.demografia) { const q0 = GM.demografia.elegir(S, S.paseo, S.hora || 9, r, S.festivo ? 0 : 3); if (q0) return q0; } let q = S.paseo[(r() * S.paseo.length) | 0]; for (let i = 0; i < 3; i++) { const o = S.paseo[(r() * S.paseo.length) | 0]; if (r() < 0.65 && Math.hypot(o[0], o[1]) < Math.hypot(q[0], q[1])) q = o; } return q; };
     const colocar = (p, k) => {
       const q = sitio(); p.obj.position.set(q[0] + (r() - 0.5), 0, q[1] + (r() - 0.5) * 0.6);
       Object.assign(p, { peaton: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino de ' + club.ciudad, r: rnd(U.hash(st.fecha + 'p' + k)), espera: r() * 3 });
@@ -109,7 +109,8 @@
       if (vi) { const obj = K().autobus(club); S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 10.5, lane: ANCHO[vi.v.k] / 4, vmax: 6, bus: true, paradas, tParada: 0, ultima: -1, pasajeros: [] }); } }
     // ciclistas por el borde de la calzada
     if (!S.rua && GM.urbano && GM.urbano.bici && vias.length) for (let i = 0; i < (alta ? 5 : 2); i++) { const vi = vias[(i + 2) % Math.min(vias.length, 10)], obj = GM.urbano.bici(['#d62d2d', '#2f6f9e', '#e9e5da', '#2e7d32'][i % 4]); const pil = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color: ['#1d2024', '#5a1020', '#2f4a6a'][i % 3] })); pil.position.set(0, 1.05, -0.05); obj.add(pil); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 1.8, lane: ANCHO[vi.v.k] / 2 - 0.9, vmax: 4.2, bici: true }); }
-    S.viasCoche = vias; if (GM.movilidad) { try { GM.movilidad.poblar(S, M, st); } catch (e) { console.error('movilidad', e); } }
+    S.viasCoche = vias; S.punto = punto; if (GM.ciudadDia) { try { await GM.ciudadDia.poblar(S, M, st); } catch (e) { console.error('ciudadDia', e); } }
+    if (GM.movilidad) { try { GM.movilidad.poblar(S, M, st); } catch (e) { console.error('movilidad', e); } }
     fp('taxis, policía, gatos, autobús y ciclistas'); // clientes sentados en las terrazas
     if (S.sitios && S.sitios.length) { const cl = await Promise.all(S.sitios.map((q, k) => M.personaje({ modelo: MODELOS[(k * 5 + 2) % MODELOS.length], altura: 160 + k * 4, piel: PIEL[k % 5], pelo: PELO[(k * 2) % 6] })));
       cl.forEach((p, k) => { const q = S.sitios[k]; if (k % 3 === 2) { p.obj.visible = false; p.oculto = true; return; } p.fijo = true; p.rol = 'Cliente de la terraza'; p.obj.position.set(q.x, 0, q.z); p.obj.rotation.y = q.ry; p.asiento = 0.45; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); M.anim(p, 'sit'); S.gente.push(p); }); }
@@ -136,6 +137,12 @@
     const vi = vias[(Math.random() * vias.length) | 0], obj = GM.kit.coche('#ffffff', 'furgoneta'), l1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.16, 0.2), new THREE.MeshStandardMaterial({ color: 0xff3030, emissive: 0xff2020, emissiveIntensity: 0.1 })), l2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.16, 0.2), new THREE.MeshStandardMaterial({ color: 0x3060ff, emissive: 0x2050ff, emissiveIntensity: 0.1 }));
     l1.position.set(-0.4, 2.35, 1.2); l2.position.set(0.4, 2.35, 1.2); const cruz = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.35, 0.02), new THREE.MeshStandardMaterial({ color: 0xc0392b })); cruz.position.set(0, 1.1, 0); obj.add(l1, l2, cruz); S.mundo.add(obj);
     S.coches.push({ obj, vi, dir: 1, pos: 0, vel: 6, len: 5.6, lane: ANCHO[vi.v.k] / 4, vmax: 12, amb: true, lucesA: [l1, l2], reparto: true, unaVez: true });
+  }
+  // Camión de bomberos: rojo, con escalera y luces, cruza la calle con prioridad como la ambulancia
+  function bomberos(S, M) {
+    if (!S.coches.length || !GM.movilidad) return; const vias = [...new Set(S.coches.filter(c => !c.bici && !c.bus).map(c => c.vi))]; if (!vias.length) return; const vi = vias[(Math.random() * vias.length) | 0], obj = GM.movilidad.camion('#c0392b');
+    const l1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.16, 0.2), new THREE.MeshStandardMaterial({ color: 0x2255ff, emissive: 0x2244ff, emissiveIntensity: 0.1 })), l2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.16, 0.2), new THREE.MeshStandardMaterial({ color: 0xff3030, emissive: 0xff2020, emissiveIntensity: 0.1 })); l1.position.set(-0.5, 2.9, 2.6); l2.position.set(0.5, 2.9, 2.6); const esc = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 6.2), new THREE.MeshStandardMaterial({ color: 0xcfd3d6, metalness: 0.5 })); esc.position.set(0, 3.5, -1); obj.add(l1, l2, esc); S.mundo.add(obj);
+    S.coches.push({ obj, vi, dir: 1, pos: 0, vel: 6, len: 8.2, lane: ANCHO[vi.v.k] / 4, vmax: 11, amb: true, lucesA: [l1, l2], reparto: true, unaVez: true, tipo: 'bomberos' });
   }
   // Fases del día de partido en casa: la cola en las taquillas y los grupos cantando junto a la peña (previa), el autobús del equipo y la salida del público
   async function fasePartido(S, M, st) {
@@ -186,13 +193,13 @@
     c.vi = q.v; c.pos = q.s; c.dir = q.v.v.uno ? 1 : dir; c.lane = ANCHO[q.v.v.k] / 4; return true;
   }
   function actualizar(S, M, dt) {
-    if (S.tiendas && S.tiendas.length && S.st) { S.tTienda = (S.tTienda || 0) - dt; if (S.tTienda <= 0) { S.tTienda = 1; const h = S.hora || 12, dow = new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay(), pais = (S.st.equipos[S.st.clubId] || {}).pais; S.tiendas.forEach(t => { const ab = abierto(t.tipo, h, dow, pais); t.pr.visible = !ab; t.v.visible = ab || true; }); const luz = 0.1 + 0.9 * Math.min(1, Math.max(0, S.noche || 0)); (S.matsTienda || []).forEach(m => { m.emissiveIntensity = luz; }); } }
+    if (S.tiendas && S.tiendas.length && S.st) { S.tTienda = (S.tTienda || 0) - dt; if (S.tTienda <= 0) { S.tTienda = 1; const h = S.hora || 12, dow = S.festivo ? 0 : new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay(), pais = (S.st.equipos[S.st.clubId] || {}).pais; S.tiendas.forEach(t => { const ab = abierto(t.tipo, h, dow, pais); t.pr.visible = !ab; t.v.visible = ab || true; }); const luz = 0.1 + 0.9 * Math.min(1, Math.max(0, S.noche || 0)); (S.matsTienda || []).forEach(m => { m.emissiveIntensity = luz; }); } }
     if (S.multGPU) S.multGPU.actualizar(performance.now() / 1000, S.foco, S.hora);
     if (S.chunks) S.chunks.paso([[S.foco.x, S.foco.z], [S.camera.position.x, S.camera.position.z]], 4);   // ciudad por trozos: construye y descarta celdas de edificios según la distancia
     const t = performance.now() / 1000;
     if (S.partidoCasa) { S.tFase = (S.tFase || 0) - dt; if (S.tFase <= 0) { S.tFase = 1; fasePartido(S, M, S.st); busEquipo(S, M, S.st); } }
     moverPartido(S, M, dt);
-    S.tAmb = (S.tAmb || 80) - dt; if (S.tAmb <= 0) { S.tAmb = 90 + Math.random() * 120; if (Math.random() < 0.6) ambulancia(S, M); }
+    S.tAmb = (S.tAmb || 80) - dt; if (S.tAmb <= 0) { S.tAmb = 90 + Math.random() * 120; if (Math.random() < 0.6) { if (Math.random() < 0.3) bomberos(S, M); else ambulancia(S, M); } }
     if (GM.calleVida) { GM.calleVida.actualizar(S, M, dt); (S.puebloAnim || []).forEach(f => f(t)); }
     if (GM.arquitectura && GM.arquitectura.aguaMover) GM.arquitectura.aguaMover(t);
     if (S.yo && S.rec) { S.rec.p.value.set(S.yo.obj.position.x, 1.1, S.yo.obj.position.z); S.rec.c.value.copy(S.camera.position); }
@@ -225,11 +232,22 @@
     }
     if (S.multitud) { S.tMult = (S.tMult || 0) - dt; if (S.tMult <= 0) { S.tMult = 0.12; S.multitud.colocar(i => { const v = Math.sin(t * 3 + i * 1.7); return v > 0.72 ? { salto: (v - 0.72) * 0.6, brazos: 1 } : null; }); } }
     if (!S.coches) return;
-    if (GM.movilidad) GM.movilidad.actualizar(S, M, dt);
+    if (GM.movilidad) GM.movilidad.actualizar(S, M, dt); if (GM.ciudadDia) GM.ciudadDia.actualizar(S, M, dt);
+    S.tSon = (S.tSon || 0) - dt; if (GM.sonido && S.yo && S.tSon <= 0) { S.tSon = 0.6; const px = S.yo.obj.position.x, pz = S.yo.obj.position.z, hh0 = S.hora || 12, cerca = (x, z, r) => Math.max(0, 1 - Math.hypot(px - x, pz - z) / r), P = {};
+      const cc = GM.movilidad && GM.movilidad.calleCercana ? GM.movilidad.calleCercana(S, px, pz) : null; P.avenida = cc ? Math.max(0, 1 - cc.d / 38) * (cc.c.k <= 1 ? 1 : cc.c.k === 2 ? 0.8 : cc.c.k === 3 ? 0.5 : 0.25) : 0;
+      let n = 0; S.gente.forEach(g => { if (!g.oculto && g.obj.visible && Math.hypot(g.obj.position.x - px, g.obj.position.z - pz) < 14) n++; }); P.gente = Math.min(1, n / 9);
+      P.fuente = Math.max(0, ...(S.plazas || []).map(q => cerca(q[0], q[1], q[2] + 22))); P.plaza = P.fuente > 0.5 ? 1 : 0;
+      P.obras = S.cvObras ? cerca(S.cvObras.x, S.cvObras.z, 50) : 0; P.mercado = S.mercadillo && hh0 >= 9 && hh0 < 14 && S.cvPuestos && S.cvPuestos.length ? Math.max(...S.cvPuestos.map(q => cerca(q.x, q.z, 40))) : 0;
+      const zc = re => Math.max(0, ...(S.zonas || []).filter(z => re.test(z.sala.id)).map(z => cerca(z.obj.position.x, z.obj.position.z, 26))); P.terraza = hh0 >= 8 && hh0 < 24 ? zc(/terraza|restaurante|heladeria/) : 0; P.musica = hh0 >= 19 || hh0 < 2 ? zc(/pena|local_bar|local_restaurante/) : 0;
+      const fiesta = (S.eventosHoy || []).find(e => (e.e.id === 'patronal' || e.e.id === 'concierto') && e.g.visible); P.fiesta = fiesta ? Math.max(0, ...(S.plazas || []).slice(0, 1).map(q => cerca(q[0], q[1], 90))) : 0;
+      P.tranvia = S.tram && S.tram.obj.visible ? cerca(S.tram.obj.position.x, S.tram.obj.position.z, 70) : 0;
+      P.iglesia = Math.max(0, ...(S.edificiosDatos || []).filter(b => b.cl === 7).map(b => cerca(b.cx, b.cz, 160))); const amb = S.coches.find(c => c.amb && c.obj.visible); P.sirena = amb ? cerca(amb.obj.position.x, amb.obj.position.z, 90) : 0;
+      P.colegio = (hh0 >= 10.7 && hh0 < 11.4) || (hh0 >= 13.8 && hh0 < 14.3) ? zc(/colegio/) : 0; GM.sonido.paisaje(P); }
     const gente = S.gente.concat(S.yo && !S.yo.oculto ? [S.yo] : []).concat(S.conduciendo && S.cond ? [{ obj: { position: { x: S.cond.x, z: S.cond.z } } }] : []);
-    const MV = GM.movilidad, hh = S.hora || 12, dd = S.st ? new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay() : 3, dens = MV ? MV.densidad(hh, dd) : 1, fvel = MV ? MV.factorVel(hh, dd) : 1;
+    const MV = GM.movilidad, hh = S.hora || 12, dd = S.festivo ? 0 : S.st ? new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay() : 3, dens = MV ? MV.densidad(hh, dd) : 1, fvel = MV ? MV.factorVel(hh, dd) : 1;
     if (S.coches.some(c => c.borrar)) S.coches = S.coches.filter(c => !c.borrar);
     S.coches.forEach(c => {
+      if (c.vi.cerrada) { c.obj.visible = false; c.vel = 0; c.cerradoPor = true; return; } else if (c.cerradoPor) { c.cerradoPor = false; c.obj.visible = true; }
       if (c.k !== undefined) { const act = c.k <= dens; if (c.obj.visible !== act) c.obj.visible = act; if (!act) { c.vel = 0; return; } }
       const [x, z, ux, uz] = punto(c.vi, c.pos), tx = ux * c.dir, tz = uz * c.dir, ox = -tz * c.lane, oz = tx * c.lane;
       let objetivo = (c.vmax || 7) * (c.bici ? 1 : fvel);
@@ -237,10 +255,12 @@
       if (c.reparto) { if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else { c.tSig -= dt; if (c.tSig <= 0) { c.tParada = 6; c.tSig = 22; } } }
       for (const p of gente) { const o = p.obj.position, ax = o.x - (x + ox), az = o.z - (z + oz), lon = ax * tx + az * tz - c.len / 2, lat = Math.abs(-ax * tz + az * tx); if (lat < 1.3 && lon > -0.3 && lon < 6.5 && !p.oculto) objetivo = Math.min(objetivo, Math.max(0, (lon - 1.4) * 1.5)); }
       if (S.semaforos && S.semaforos.length && !c.reparto) for (const sm of S.semaforos) { if (sm.fase === S.semFase) continue; if (tx * sm.ax + tz * sm.az < 0.8) continue; const ax = sm.x - (x + ox), az = sm.z - (z + oz), lon = ax * tx + az * tz - c.len / 2, lat = Math.abs(-ax * tz + az * tx); if (lat < 7 && lon > -0.3 && lon < 9) objetivo = Math.min(objetivo, Math.max(0, (lon - 0.8) * 1.2)); }
+      if (!c.bici && !c.unaVez) { const fx = x + ox + tx * 4, fz = z + oz + tz * 4; for (const o of S.coches) { if (o === c || o.vi === c.vi || o.bici || o.obj.visible === false || o.vel < 0.3) continue; const dx = o.obj.position.x - fx, dz = o.obj.position.z - fz, d = Math.hypot(dx, dz); if (d > 5.5) continue; const ot = punto(o.vi, o.pos), otx = ot[2] * o.dir, otz = ot[3] * o.dir, cruza = Math.abs(otx * tx + otz * tz) < 0.7; if (!cruza) continue; const pri = o.vi.v.k < c.vi.v.k || (o.vi.v.k === c.vi.v.k && (o.obj.position.x - x - ox) * (-tz) + (o.obj.position.z - z - oz) * tx > 0); if (pri) { objetivo = Math.min(objetivo, Math.max(0, (d - 2.5) * 0.9)); c.cede = true; } } }
       for (const o of S.coches) { if (o === c || o.vi !== c.vi || o.dir !== c.dir || o.obj.visible === false) continue; const gap = c.dir * (o.pos - c.pos) - c.len; if (gap > 0 && gap < 6) objetivo = Math.min(objetivo, Math.max(0, gap - 1.5)); }
       if (c.bus && c.paradas) {
         if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else for (const sp of c.paradas) { const dd = c.dir * (sp - c.pos); if (dd > 0 && dd < 14) objetivo = Math.min(objetivo, Math.max(0.5, dd * 0.5)); if (dd > -0.4 && dd < 1 && c.vel < 1.5 && c.ultima !== sp) { c.tParada = 6; c.ultima = sp; parada(S, M, c, sp); } }
       }
+      if (c.paraAleatorio && ANCHO[c.vi.v.k] >= 5.5) { if (c.base === undefined || c.baseVi !== c.vi) { c.base = c.lane; c.baseVi = c.vi; } const meta = c.tParada > 0 ? ANCHO[c.vi.v.k] / 2 - 1.15 : c.base; c.lane += (meta - c.lane) * Math.min(1, dt * 1.2); }
       c.vel += Math.max(-9 * dt, Math.min(3 * dt, objetivo - c.vel)); c.pos += c.dir * c.vel * dt;
       if (c.bici && c.obj.userData.ruedas) c.obj.userData.ruedas.forEach(w => { w.rotation.x += c.vel * dt / 0.34; });
       if (c.amb) { c.obj.userData.sirena = (c.obj.userData.sirena || 0) + dt; const f = Math.sin(c.obj.userData.sirena * 14) > 0; if (c.lucesA) { c.lucesA[0].material.emissiveIntensity = f ? 3 : 0.1; c.lucesA[1].material.emissiveIntensity = f ? 0.1 : 3; } }

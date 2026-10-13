@@ -64,6 +64,7 @@
     const lista = () => {
       cuerpo.innerHTML = ''; const cs = Mv.chats(st);
       cuerpo.append(h('div', { class: 'movil-cab' }, h('b', null, 'Mensajes'), h('span', { class: 'muted' }, U.fecha(st.fecha))));
+      if (GM.movilidad) cuerpo.append(h('button', { class: 'btn btn-sec peq', style: { margin: '4px 0 8px' }, onclick: () => GM.movilidad.app(cuerpo, st, lista) }, 'Aplicación de movilidad'));
       if (!cs.length) cuerpo.append(h('p', { class: 'muted' }, 'Aún no tienes mensajes.'));
       cs.forEach(c => cuerpo.append(h('button', { class: 'movil-chat', onclick: () => ver(c.id) }, h('span', { class: 'movil-av' }, ini(c.nombre)),
         h('div', { class: 'ct' }, h('b', null, c.nombre), h('span', { class: 'muted' }, clip(c.ultimo, 46))),

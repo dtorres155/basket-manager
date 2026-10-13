@@ -561,3 +561,4 @@ body{background:var(--bg)}
 .mov-chip{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(20,24,30,.92);color:#fff;padding:7px 12px;border-radius:12px;z-index:25;font-size:13px}
 .mov-cond{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);display:flex;gap:14px;align-items:center;background:rgba(20,24,30,.92);color:#fff;padding:8px 14px;border-radius:14px;z-index:25;font-size:14px}
 .mov-cond .mov-vel{font-size:26px;min-width:100px}.mov-ex{color:#ff7a5c;font-weight:700}
+.dia-chip{position:absolute;left:14px;top:74px;max-width:min(420px,70vw);background:rgba(20,24,30,.9);color:#fff;padding:7px 12px;border-radius:12px;z-index:22;font-size:13px;line-height:1.35}

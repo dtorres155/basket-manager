@@ -20,10 +20,13 @@
   function montarCapas() {
     capas.trafico = capaRuido('lowpass', 320, 0.5); capas.viento = capaRuido('bandpass', 520, 0.4); capas.lluvia = capaRuido('highpass', 1100, 0.3); capas.lluviaB = capaRuido('lowpass', 700, 0.5);
     capas.grada = capaRuido('bandpass', 950, 0.6); capas.murmullo = capaRuido('bandpass', 480, 0.9);
+    capas.gente = capaRuido('bandpass', 760, 0.8); capas.fuente = capaRuido('highpass', 2800, 0.5); capas.musica = tonal(); capas.sirena = tonal(true);
     // olas lentas de tráfico (coches que pasan) y rachas de viento
     const lfo = (capa, f, a) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f; g.gain.value = a; o.connect(g); g.connect(capa.g.gain); o.start(); capa.lfo = g; };
     lfo(capas.trafico, 0.13, 0); lfo(capas.viento, 0.07, 0); lfo(capas.grada, 0.21, 0);
   }
+  // Capa tonal (música lejana de bares y fiestas: acorde de tres triangulares; o sirena: onda que sube y baja)
+  function tonal(sirena) { const g = ctx.createGain(), f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = sirena ? 2400 : 900; g.gain.value = 0; f.connect(g); g.connect(maestro); const os = (sirena ? [700] : [220, 277.2, 329.6]).map(fr => { const o = ctx.createOscillator(); o.type = sirena ? 'sawtooth' : 'triangle'; o.frequency.value = fr; o.connect(f); o.start(); return o; }); if (sirena) { const lf = ctx.createOscillator(), lg = ctx.createGain(); lf.frequency.value = 0.8; lg.gain.value = 280; lf.connect(lg); lg.connect(os[0].frequency); lf.start(); } return { g: { gain: g.gain }, os, lfo: { gain: { value: 0 } } }; }
   const suave = (p, v, t) => { if (!ctx) return; p.cancelScheduledValues(ctx.currentTime); p.setTargetAtTime(v, ctx.currentTime, t || 0.8); };
   // ---------- sonidos sueltos ----------
   function pio(t0, f0) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f0 * 1.6, t0 + 0.05); o.frequency.exponentialRampToValueAtTime(f0 * 1.1, t0 + 0.09); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.05, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0008, t0 + 0.1); o.connect(g); g.connect(maestro); o.start(t0); o.stop(t0 + 0.12); }
@@ -37,6 +40,8 @@
   function clic() { if (!ctx || !pref()) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 1300; g.gain.setValueAtTime(0.03, t); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.04); o.connect(g); g.connect(maestro); o.start(t); o.stop(t + 0.05); }
   // ---------- programación según la escena ----------
   const repetir = (fn, min, max) => { const t = () => { if (!ctx) return; try { fn(); } catch (e) { } temporizadores.push(setTimeout(t, (min + Math.random() * (max - min)) * 1000)); }; temporizadores.push(setTimeout(t, Math.random() * min * 1000)); };
+  // Paisaje sonoro por zona (punto 44): la calle del juego calcula cuánto de cada cosa hay cerca del jugador (0 a 1) y aquí se mezcla; _mezcla guarda lo último para las pruebas
+  let paisaje = {}, ultimaMezcla = {};
   function mezclar() {
     if (!ctx) return; const ext = ['calle', 'pueblo', 'deportiva'].indexOf(esc) >= 0, dentro = !!esc && !ext, h = est.hora || 9, noche = h >= 21 || h < 7, llueve = est.clima === 'lluvia';
     const bar = esc === 'interior' && /pena|bar_pueblo|restaurante/.test(arg || ''), pab = esc === 'interior' && arg === 'pabellon';
@@ -45,7 +50,17 @@
     suave(capas.lluvia.g.gain, llueve ? (ext ? 0.16 : 0.0) : 0); suave(capas.lluviaB.g.gain, llueve ? (ext ? 0.12 : 0.05) : 0);
     const grada = pab ? (est.partido ? 0.2 : 0.03) : esc === 'calle' && est.previa ? 0.09 : 0; suave(capas.grada.g.gain, grada); capas.grada.lfo.gain.value = grada * 0.5;
     suave(capas.murmullo.g.gain, bar ? 0.06 : esc === 'interior' && /tienda|ayuntamiento|gimnasio/.test(arg || '') ? 0.02 : 0);
+    const P = esc === 'calle' ? paisaje : {}, v = k => Math.max(0, Math.min(1, P[k] || 0)), mc = Math.max(v('terraza'), v('mercado'), v('fiesta'));
+    if (esc === 'calle') {
+      const trafico = (noche ? 0.03 : 0.045) + 0.17 * v('avenida') * (1 - 0.75 * v('plaza')), gente = 0.012 + 0.11 * v('gente') + 0.09 * v('colegio') + 0.05 * v('fiesta'), fuente = 0.085 * v('fuente'), murmullo = 0.012 + 0.07 * mc, musica = 0.05 * Math.max(v('musica'), v('fiesta')) * (noche ? 1 : 0.6), sirena = 0.05 * v('sirena');
+      suave(capas.trafico.g.gain, trafico); capas.trafico.lfo.gain.value = 0.07 * v('avenida'); suave(capas.gente.g.gain, gente); suave(capas.fuente.g.gain, fuente); suave(capas.murmullo.g.gain, murmullo); suave(capas.musica.g.gain, musica); suave(capas.sirena.g.gain, sirena, 0.3);
+      ultimaMezcla = { trafico, gente, fuente, murmullo, musica, sirena, obras: v('obras'), tranvia: v('tranvia'), iglesia: v('iglesia') };
+    } else { suave(capas.gente.g.gain, 0); suave(capas.fuente.g.gain, 0); suave(capas.musica.g.gain, 0); suave(capas.sirena.g.gain, 0); ultimaMezcla = {}; }
   }
+  function golpeObra() { const t = ctx.currentTime, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = ruido; f.type = 'bandpass'; f.frequency.value = 1900; f.Q.value = 3; for (let i = 0; i < 5; i++) { g.gain.setValueAtTime(0.0001, t + i * 0.07); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.18 * (paisaje.obras || 0)), t + i * 0.07 + 0.005); g.gain.exponentialRampToValueAtTime(0.0003, t + i * 0.07 + 0.06); } s.connect(f); f.connect(g); g.connect(maestro); s.start(t); s.stop(t + 0.5); }
+  function pregon() { const t = ctx.currentTime, o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(190 + Math.random() * 90, t); o.frequency.linearRampToValueAtTime(150 + Math.random() * 60, t + 0.7); f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 4; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.06 * (paisaje.mercado || 0), t + 0.12); g.gain.linearRampToValueAtTime(0, t + 0.8); o.connect(f); f.connect(g); g.connect(maestro); o.start(t); o.stop(t + 0.9); }
+  function timbreTranvia() { const t = ctx.currentTime; [0, 0.32].forEach((d, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i ? 880 : 1175; g.gain.setValueAtTime(Math.max(0.0002, 0.12 * (paisaje.tranvia || 0)), t + d); g.gain.exponentialRampToValueAtTime(0.0005, t + d + 0.3); o.connect(g); g.connect(maestro); o.start(t + d); o.stop(t + d + 0.35); }); }
+  function claxon() { const t = ctx.currentTime; [330, 415].forEach(fr => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'square'; o.frequency.value = fr; g.gain.setValueAtTime(Math.max(0.0002, 0.03 * (paisaje.avenida || 0)), t); g.gain.setValueAtTime(0.0001, t + 0.35); o.connect(g); g.connect(maestro); o.start(t); o.stop(t + 0.4); }); }
   function programar() {
     temporizadores.forEach(clearTimeout); temporizadores = []; if (!ctx || !esc) return; const ext = ['calle', 'pueblo', 'deportiva'].indexOf(esc) >= 0;
     if (ext) repetir(() => { const h = est.hora || 9; if (h >= 7 && h < 20.5 && est.clima !== 'lluvia') pajaro(); }, 1.5, 5);
@@ -53,11 +68,12 @@
     if (esc === 'sede' || esc === 'deportiva' || (esc === 'interior' && /pabellon|gimnasio/.test(arg || ''))) repetir(() => bote(), 0.45, 1.3);
     if ((esc === 'interior' && arg === 'pabellon') || esc === 'calle') repetir(() => { if (esc === 'calle' ? est.previa : est.partido || Math.random() < 0.2) cantico(esc === 'calle' ? 0.05 : 0.09); }, 6, 11);
     if (esc === 'interior' && /pena|bar_pueblo|restaurante/.test(arg || '')) repetir(() => vaso(), 1.5, 4);
+    if (esc === 'calle') { repetir(() => { if ((paisaje.obras || 0) > 0.08 && !(est.hora < 8 || est.hora >= 19)) golpeObra(); }, 0.9, 2.4); repetir(() => { if ((paisaje.mercado || 0) > 0.08) pregon(); }, 2, 5); repetir(() => { if ((paisaje.terraza || 0) > 0.1) vaso(); }, 1.2, 3.5); repetir(() => { if ((paisaje.tranvia || 0) > 0.1) timbreTranvia(); }, 9, 18); repetir(() => { if ((paisaje.avenida || 0) > 0.5 && Math.random() < 0.4) claxon(); }, 6, 14); }
   }
-  function escena(tipo, a) { if (!iniciar()) { esc = tipo; arg = a; return; } esc = tipo || null; arg = a || null; ultimaHora = -1; mezclar(); programar(); if (!tipo) ['trafico', 'viento', 'lluvia', 'lluviaB', 'grada', 'murmullo'].forEach(k => suave(capas[k].g.gain, 0, 0.3)); }
+  function escena(tipo, a) { if (!iniciar()) { esc = tipo; arg = a; return; } esc = tipo || null; arg = a || null; ultimaHora = -1; mezclar(); programar(); if (!tipo) ['trafico', 'viento', 'lluvia', 'lluviaB', 'grada', 'murmullo', 'gente', 'fuente', 'musica', 'sirena'].forEach(k => suave(capas[k].g.gain, 0, 0.3)); }
   function estado(o) {
     Object.assign(est, o || {}); if (!ctx) return; mezclar();
-    const h = Math.floor(est.hora || 9); if (esc === 'pueblo' && ultimaHora >= 0 && h !== ultimaHora && h >= 8 && h <= 22) campana(((h - 1) % 12) + 1); ultimaHora = h;
+    const h = Math.floor(est.hora || 9); if (esc === 'calle' && ultimaHora >= 0 && h !== ultimaHora && h >= 8 && h <= 21 && (paisaje.iglesia || 0) > 0.15) campana(((h - 1) % 12) + 1); if (esc === 'pueblo' && ultimaHora >= 0 && h !== ultimaHora && h >= 8 && h <= 22) campana(((h - 1) % 12) + 1); ultimaHora = h;
   }
   function activo() { return pref(); }
   function alternar() { const on = !pref(); try { localStorage.setItem('gm1:sonido', on ? '1' : '0'); } catch (e) { } iniciar(); if (maestro) suave(maestro.gain, on ? 0.9 : 0, 0.15); return on; }
@@ -68,5 +84,6 @@
     document.addEventListener('click', e => { if (e.target && e.target.closest && e.target.closest('button')) clic(); }, true);
   }
   function selfTest() { return typeof escena === 'function' && typeof estado === 'function'; }
-  GM.sonido = { escena, estado, alternar, activo, selfTest, _ctx: () => ctx };
+  function pais(p) { Object.assign(paisaje, p || {}); if (ctx) mezclar(); }
+  GM.sonido = { paisaje: pais, _mezcla: () => ultimaMezcla, _paisaje: () => paisaje, escena, estado, alternar, activo, selfTest, _ctx: () => ctx };
 })();

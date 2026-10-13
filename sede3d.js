@@ -899,7 +899,7 @@
     })();
   }
   function zonaCercana() {
-    if (S.conduciendo) return;
+    if (S.conduciendo || S.viajando) return;
     const p = S.yo.obj.position; let mejor = null; S.zonas && S.zonas.forEach(z => { if (Math.hypot(z.obj.position.x - p.x, z.obj.position.z - p.z) < 1.3) mejor = z; }); mostrarAviso(mejor);
   }
   // Calidad adaptable: tras 3 s de escena se mide la fluidez real cada 2 s. Si no llega a 30 fps se baja un escalón

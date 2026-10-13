@@ -503,7 +503,7 @@
     let cat;
     if (n.nino) cat = h < 9 ? 'colegio' : h < 14 ? 'colegio' : h < 20 ? 'parque' : 'casa';
     else cat = n.corredor ? 'paseo' : elegir(n, PESOS[FRANJA(h)]);
-    const L = D[cat] && D[cat].length ? D[cat] : S.paseo, q = L[(n.r() * L.length) | 0];
+    const L = D[cat] && D[cat].length ? D[cat] : S.paseo, dow0 = S.festivo ? 0 : new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay(), q = S.demo && cat !== 'casa' && GM.demografia ? GM.demografia.elegir(S, L, h, n.r, dow0) : L[(n.r() * L.length) | 0];
     n.rapido = !!n.corredor || (!!n.nino && n.r() < 0.5); n.destino = cat;
     const ok = M.irA(n, q[0] + (n.r() - 0.5) * 1.6, q[1] + (n.r() - 0.5) * 1.2, () => {
       if (cat === 'trabajo' && GM.vecinos && GM.vecinos.metro(S, M, n, q, h)) return;

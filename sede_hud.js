@@ -40,7 +40,7 @@
     function controles(cv) {
       const ray = new THREE.Raycaster(), suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ptrs = new Map(); let pinza = 0;
       const toque = (cx, cy) => {
-        if (!S.yo || S.conduciendo) return; const r = cv.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), S.camera); ray.ray.origin.y -= (S.hF || 0);
+        if (!S.yo || S.conduciendo || S.viajando) return; const r = cv.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), S.camera); ray.ray.origin.y -= (S.hF || 0);
         if (S.construccion && GM.casa) { const pc = new THREE.Vector3(); if (ray.ray.intersectPlane(suelo, pc)) GM.casa.toque(S, motor(), pc, ray); return; }
         const npcs = S.gente.map(n => n.obj), hit = ray.intersectObjects(npcs, true)[0];
         if (hit) { let o = hit.object; while (o && !(o.userData && o.userData.npc !== undefined)) o = o.parent; if (o) { const n = S.gente[o.userData.npc]; fichaJugador(n); const yo = S.yo.obj.position; if (!n.fijo && n.camino) { n.camino = null; anim(n, 'idle'); n.espera = 6; } n.obj.lookAt(yo.x, 0, yo.z); return; } }
@@ -62,7 +62,7 @@
       window.addEventListener('keydown', S.onKey); window.addEventListener('keyup', S.onKey);
     }
     function teclado(dt) {
-      if (S.conduciendo) return;
+      if (S.conduciendo || S.viajando) return;
       const k = S.teclas, J = S.joy; let ax = (k.d || k.arrowright ? 1 : 0) - (k.a || k.arrowleft ? 1 : 0), az = (k.s || k.arrowdown ? 1 : 0) - (k.w || k.arrowup ? 1 : 0), corre = !!k.shift, fuerza = 1;
       if (J && J.activo && Math.hypot(J.x, J.y) > 0.15) { ax = J.x; az = J.y; fuerza = Math.min(1, Math.hypot(J.x, J.y)); corre = fuerza > 0.92; }
       if (!ax && !az) { if (S.yo.teclado) { S.yo.teclado = false; anim(S.yo, 'idle'); } return; }
