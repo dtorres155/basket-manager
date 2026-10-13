@@ -168,7 +168,7 @@
     { let pun = X.PT.filter(p => p.t === 0).map(p => [p.x, p.z]); if (pun.length < 3) pun = base.filter(pp => { const m = mirar(pp[0], pp[1]); return m && m.k <= 3 && Math.hypot(pp[0], pp[1]) < 230; }).filter((pp, i, A) => A.slice(0, i).every(o => Math.hypot(o[0] - pp[0], o[1] - pp[1]) > 130)).slice(0, 8);
       const cristal = mat(0xbfdcee, { transparent: true, opacity: 0.35, roughness: 0.1 }), met = mat(0x2a2f35, { metalness: 0.5 });
       const marquesina = (x, z, ryCalle) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ryCalle + Math.PI; const t = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 1.4).translate(0, 2.5, 0), met), f = new THREE.Mesh(new THREE.BoxGeometry(3, 2.2, 0.04).translate(0, 1.3, -0.65), cristal), b = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 0.4).translate(0, 0.5, -0.4), met); g.add(t, f, b); for (const sx of [-1.45, 1.45]) g.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.5, 0.06).translate(sx, 1.25, 0.6), met)); g.userData = { marquesina: true }; W.add(g); bloquea(x, z, 1.4); (S.paradas = S.paradas || []).push([x, z]); };
-      S.crearMarquesina = marquesina;
+      S.crearMarquesina = marquesina; S.paradas = pun.slice(0, 14);
       pun.slice(0, 14).forEach(([x, z]) => { if (!libre(x, z) || (S.zonas || []).some(zz => Math.hypot(zz.obj.position.x - x, zz.obj.position.z - z) < 5.5)) return; const m = mirar(x, z); if (!m) return; marquesina(x, z, m.ry); }); }
     // coches aparcados a los lados de las calles pequeñas y en los aparcamientos reales
     const carroceria = fundir([caja(1.8, 0.55, 4.3, 0, 0.55, 0), caja(1.55, 0.5, 2.3, 0, 1.08, -0.2), caja(1.82, 0.12, 0.3, 0, 0.35, 1.9), caja(1.82, 0.12, 0.3, 0, 0.35, -1.9)]);

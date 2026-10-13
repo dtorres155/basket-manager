@@ -136,5 +136,5 @@
     n.alLlegar = () => { n.oculto = true; n.dentro = true; n.hasta = h + 0.4 + n.r() * 1.5; n.espera = 4; const otras = (S.zonas || []).filter(o => /^metro/.test(o.sala.id) && o !== z); if (otras.length) { const o = otras[(n.r() * otras.length) | 0]; n.obj.position.set(o.obj.position.x, 0, o.obj.position.z + 1.5); } };
     return true;
   }
-  GM.vecinos = { metro, rolPara, asignar, siguiente, actualizar, actividad, memoria, ETQ, PERS };
+  GM.vecinos = { patineteMesh, metro, rolPara, asignar, siguiente, actualizar, actividad, memoria, ETQ, PERS };
 })();

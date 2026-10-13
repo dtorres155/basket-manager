@@ -191,7 +191,7 @@
     let RW = R; if (X.L) { let mx = 0; X.L.e.forEach(e => { for (let i = 1; i + 1 < e.length; i += 2) mx = Math.max(mx, Math.hypot(e[i], e[i + 1])); }); RW = Math.max(R, Math.min(1000, Math.floor(mx - 12))); }
     // relieve real (Copernicus DEM, cuadrícula de 125 m): S.altura(x, z) da los metros sobre el pabellón; todavía no se aplica al suelo (punto 32)
     S.relieve = X.H || null; if (GM.relieve) { GM.relieve.fijar(X.H || null); S.altura = GM.relieve.altura; } else S.altura = (x, z) => { const H = X.H; if (!H) return 0; const n = H.n, p = H.p, fx = Math.min(n - 1.001, Math.max(0, x / p + (n - 1) / 2)), fz = Math.min(n - 1.001, Math.max(0, z / p + (n - 1) / 2)), i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, g = (a, b) => H.v[b * n + a], c0 = g((n - 1) / 2, (n - 1) / 2); return (g(i, j) * (1 - u) * (1 - v) + g(i + 1, j) * u * (1 - v) + g(i, j + 1) * (1 - u) * v + g(i + 1, j + 1) * u * v) - c0; };
-    S.edificiosDatos = X.B; S.tranvia = X.TR; S.plazasDatos = X.PL;
+    S.edificiosDatos = X.B; S.gasolineras = X.N.filter(n => n.t === 'fuel').map(n => ({ x: n.x, z: n.z })); S.tranvia = X.TR; S.plazasDatos = X.PL;
     S.RW = RW; const G = M.rejilla({ limites: [-RW - 20, -RW - 20, RW + 20, RW + 20], CELDA }); S.G = G;
     // fuera del círculo de datos no se anda
     for (let j = 0; j < G.H; j++) for (let i = 0; i < G.W; i++) { const [x, z] = G.centro(i, j); if (x * x + z * z > (RW - 4) * (RW - 4)) G.b[G.idx(i, j)] = 1; }

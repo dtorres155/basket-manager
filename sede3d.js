@@ -339,7 +339,7 @@
   }
   function moverPaso(p, dt) {
     if (!p.camino || !p.camino.length) return;
-    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1) * (p.bici ? (p.velBici || 2.5) : 1) * (p.lento ? 0.7 : 1) * (p.patinete ? 1.5 : 1) * dt;
+    const [tx, tz] = p.camino[0], o = p.obj.position, dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz), v = (p === S.yo && S.real ? (p.rapido ? 3.2 : 1.5) : (p.rapido ? 4.2 : p.cabizbajo ? 1.45 : 2.1)) * (p.bici ? (p.velBici || 2.5) : 1) * (p.lento ? 0.7 : 1) * (p.patinete ? (p.velPat || 1.5) : 1) * dt;   // el jugador anda a 1,5 m/s en la ciudad real (escala 1:1)
     if ((p.actual === 'walk' || p.actual === 'sprint') && p.accion && dt > 0) p.accion.timeScale = Math.min(1.8, Math.max(0.5, v / dt / (p.actual === 'sprint' ? 2.7 : 1.3)));   // el paso va al ritmo del movimiento: los pies no patinan
     if (d < v) { o.x = tx; o.z = tz; p.camino.shift(); if (!p.camino.length) { anim(p, 'idle'); const f = p.alLlegar; p.alLlegar = null; if (f) f(); } return; }
     o.x += dx / d * v; o.z += dz / d * v; girar(p, Math.atan2(dx, dz), dt);
@@ -841,7 +841,7 @@
       if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); else if (S.yo.bici && S.yo.actual === 'bici') pedalear(S.yo, dt); if (!S.construccion) S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
-      if (!S.enFoto) S.hora = Math.min(23, (S.hora || 9) + dt / 40); S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente();
+      if (!S.enFoto) { const mueve = S.real && S.yo && (S.conduciendo || S.yo.teclado || (S.yo.camino && S.yo.camino.length)); S.hora = Math.min(23, (S.hora || 9) + (mueve ? dt / 3600 : dt / 40)); } S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente();
         if (S.nav && (S.tNav = (S.tNav || 0) + 0.5) >= 20) { S.tNav = 0; S.G.sucia = true; S.nav.sincronizar(); }   // la rejilla se reenvía al Worker cada 20 s por si algo ha cambiado
         if (S.lamparas && S.farolasPos && S.noche > 0.02) { const ord = S.farolasPos.map(q => [Math.hypot(q[0] - S.foco.x, q[1] - S.foco.z), q]).sort((a, b) => a[0] - b[0]); S.lamparas.forEach((l, i) => { const q = ord[i] && ord[i][1]; if (q) l.position.set(q[0], 4.3, q[1]); }); } }
       // fundido entre cielos HDRI: baja la luz de reflejos, cambia de cielo y vuelve a subirla
@@ -899,6 +899,7 @@
     })();
   }
   function zonaCercana() {
+    if (S.conduciendo) return;
     const p = S.yo.obj.position; let mejor = null; S.zonas && S.zonas.forEach(z => { if (Math.hypot(z.obj.position.x - p.x, z.obj.position.z - p.z) < 1.3) mejor = z; }); mostrarAviso(mejor);
   }
   // Calidad adaptable: tras 3 s de escena se mide la fluidez real cada 2 s. Si no llega a 30 fps se baja un escalón
@@ -959,5 +960,5 @@
   ({ abrirSala, pintarPanel, pintarFicha, refrescarSala, reaccion } = GM.sedePaneles({ S: () => S, U, anim, cambiarEscena, destino, ejecutar, flotar, barra, avanzar, entrarClasica, repoblar }));
   ({ hud, controles, teclado } = GM.sedeHud({ S: () => S, U, mapa, anim, irA, girar, motor, modoFoto, avanzar, entrar, fichaJugador, estadoDia, abrir, cerrar }));
   ({ actualizarGrupo } = GM.sedeGrupo({ S: () => S, ARO, anim, CENTRO, crearGrupo, peto, disolver, entrenadorDice, manosDe, mirar, lanzar, irDirecto }));
-  GM.sede = { arbolesReales, modeloReal: (id, ruta) => cargar(ruta || 'modelos/reales/' + id + '/' + id + '_1k.gltf').then(g => g.scene), _clima: tipo => { if (!S) return null; S.clima = Object.assign(climaDe(S.st), { tipo, ayer: false, texto: tipo === 'nieve' ? 'Nieve' : tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado', nieve: tipo === 'nieve' ? 1 : 0 }); montarClima(); aplicarAmbiente(); return S.clima; }, pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
+  GM.sede = { distancia: (ax, az, bx, bz) => distanciaCalles(ax, az, bx, bz), arbolesReales, modeloReal: (id, ruta) => cargar(ruta || 'modelos/reales/' + id + '/' + id + '_1k.gltf').then(g => g.scene), _clima: tipo => { if (!S) return null; S.clima = Object.assign(climaDe(S.st), { tipo, ayer: false, texto: tipo === 'nieve' ? 'Nieve' : tipo === 'lluvia' ? 'Lluvia' : tipo === 'nubes' ? 'Nublado' : 'Soleado', nieve: tipo === 'nieve' ? 1 : 0 }); montarClima(); aplicarAmbiente(); return S.clima; }, pistaTex: c => pistaTex(c), motor: () => motor(), aspecto, figura, modeloMueble: n => mueble(n), brazo: (p, l, a, b, w) => brazo(p, l, a, b, w), personaje: o => personaje(o), animar: (p, n) => anim(p, n), brazos: (p, w, d) => brazos(p, w, d), abrir, cerrar, volver, activa: () => !!S, _estado: () => S, _anim: (p, n) => anim(p, n), _tiro: n => empezarTiro(n), _grupo: () => { S.tGrupo = 0; }, _escena: d => cambiarEscena(d), _motor: () => motor(), _personaje: o => personaje(o), aEstrella, rejilla };
 })();

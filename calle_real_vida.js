@@ -109,6 +109,7 @@
       if (vi) { const obj = K().autobus(club); S.mundo.add(obj); S.coches.push({ obj, vi, dir: 1, pos: r() * vi.L, vel: 0, len: 10.5, lane: ANCHO[vi.v.k] / 4, vmax: 6, bus: true, paradas, tParada: 0, ultima: -1, pasajeros: [] }); } }
     // ciclistas por el borde de la calzada
     if (!S.rua && GM.urbano && GM.urbano.bici && vias.length) for (let i = 0; i < (alta ? 5 : 2); i++) { const vi = vias[(i + 2) % Math.min(vias.length, 10)], obj = GM.urbano.bici(['#d62d2d', '#2f6f9e', '#e9e5da', '#2e7d32'][i % 4]); const pil = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color: ['#1d2024', '#5a1020', '#2f4a6a'][i % 3] })); pil.position.set(0, 1.05, -0.05); obj.add(pil); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 1.8, lane: ANCHO[vi.v.k] / 2 - 0.9, vmax: 4.2, bici: true }); }
+    S.viasCoche = vias; if (GM.movilidad) { try { GM.movilidad.poblar(S, M, st); } catch (e) { console.error('movilidad', e); } }
     fp('taxis, policía, gatos, autobús y ciclistas'); // clientes sentados en las terrazas
     if (S.sitios && S.sitios.length) { const cl = await Promise.all(S.sitios.map((q, k) => M.personaje({ modelo: MODELOS[(k * 5 + 2) % MODELOS.length], altura: 160 + k * 4, piel: PIEL[k % 5], pelo: PELO[(k * 2) % 6] })));
       cl.forEach((p, k) => { const q = S.sitios[k]; if (k % 3 === 2) { p.obj.visible = false; p.oculto = true; return; } p.fijo = true; p.rol = 'Cliente de la terraza'; p.obj.position.set(q.x, 0, q.z); p.obj.rotation.y = q.ry; p.asiento = 0.45; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); M.anim(p, 'sit'); S.gente.push(p); }); }
@@ -177,6 +178,13 @@
     if (tipo === 'bar' || tipo === 'pub') return dow !== 1 && (h >= 8 && h < 24.5 || h < 1.5); if (tipo === 'cafe') return h >= 7.5 && h < 22; if (tipo === 'restaurant') return (h >= 12.5 && h < 16.5) || (h >= 19.5 && h < 24);
     if (dow === 0 && pais !== 'US') return false; const siesta = pais === 'ES' || pais === 'IT' || pais === 'GR';
     if (pais === 'US') return h >= 9 && h < 21.5; if (pais === 'DE') return h >= 8 && h < 20; if (pais === 'FR') return (h >= 9 && h < 12.5) || (h >= 14 && h < 19.5); return siesta ? (h >= 9 && h < 14) || (h >= 17 && h < 20.5) : h >= 9 && h < 21; }
+  // Giro en el cruce: al llegar al final de la calle el coche sigue por otra que pasa a menos de 5 m de ese punto (eligiendo al azar)
+  function giro(S, c) {
+    const fin = c.pos > c.vi.L ? c.vi.L : 0, [ex, ez] = punto(c.vi, fin), cand = [];
+    (S.viasCoche || []).forEach(v => { if (v === c.vi) return; let mejor = { d: 1e9, s: 0 }; for (let i = 0; i + 1 < v.v.p.length; i++) { const a = v.v.p[i], b = v.v.p[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], l2 = dx * dx + dz * dz || 1e-9, u = Math.max(0, Math.min(1, ((ex - a[0]) * dx + (ez - a[1]) * dz) / l2)), d = Math.hypot(ex - a[0] - u * dx, ez - a[1] - u * dz); if (d < mejor.d) mejor = { d, s: v.acum[i] + u * Math.sqrt(l2) }; } if (mejor.d < 5) cand.push({ v, s: mejor.s }); });
+    if (!cand.length) return false; const q = cand[(Math.random() * cand.length) | 0], dir = q.s < 3 ? 1 : q.s > q.v.L - 3 ? -1 : (Math.random() < 0.5 ? 1 : -1);
+    c.vi = q.v; c.pos = q.s; c.dir = q.v.v.uno ? 1 : dir; c.lane = ANCHO[q.v.v.k] / 4; return true;
+  }
   function actualizar(S, M, dt) {
     if (S.tiendas && S.tiendas.length && S.st) { S.tTienda = (S.tTienda || 0) - dt; if (S.tTienda <= 0) { S.tTienda = 1; const h = S.hora || 12, dow = new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay(), pais = (S.st.equipos[S.st.clubId] || {}).pais; S.tiendas.forEach(t => { const ab = abierto(t.tipo, h, dow, pais); t.pr.visible = !ab; t.v.visible = ab || true; }); const luz = 0.1 + 0.9 * Math.min(1, Math.max(0, S.noche || 0)); (S.matsTienda || []).forEach(m => { m.emissiveIntensity = luz; }); } }
     if (S.multGPU) S.multGPU.actualizar(performance.now() / 1000, S.foco, S.hora);
@@ -217,15 +225,19 @@
     }
     if (S.multitud) { S.tMult = (S.tMult || 0) - dt; if (S.tMult <= 0) { S.tMult = 0.12; S.multitud.colocar(i => { const v = Math.sin(t * 3 + i * 1.7); return v > 0.72 ? { salto: (v - 0.72) * 0.6, brazos: 1 } : null; }); } }
     if (!S.coches) return;
-    const gente = S.gente.concat(S.yo ? [S.yo] : []);
+    if (GM.movilidad) GM.movilidad.actualizar(S, M, dt);
+    const gente = S.gente.concat(S.yo && !S.yo.oculto ? [S.yo] : []).concat(S.conduciendo && S.cond ? [{ obj: { position: { x: S.cond.x, z: S.cond.z } } }] : []);
+    const MV = GM.movilidad, hh = S.hora || 12, dd = S.st ? new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay() : 3, dens = MV ? MV.densidad(hh, dd) : 1, fvel = MV ? MV.factorVel(hh, dd) : 1;
     if (S.coches.some(c => c.borrar)) S.coches = S.coches.filter(c => !c.borrar);
     S.coches.forEach(c => {
+      if (c.k !== undefined) { const act = c.k <= dens; if (c.obj.visible !== act) c.obj.visible = act; if (!act) { c.vel = 0; return; } }
       const [x, z, ux, uz] = punto(c.vi, c.pos), tx = ux * c.dir, tz = uz * c.dir, ox = -tz * c.lane, oz = tx * c.lane;
-      let objetivo = c.vmax || 7;
+      let objetivo = (c.vmax || 7) * (c.bici ? 1 : fvel);
+      if (c.paraAleatorio && !c.bus) { if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else { c.tSig = (c.tSig === undefined ? 30 : c.tSig) - dt; if (c.tSig <= 0) { c.tParada = 6 + Math.random() * 6; c.tSig = 35 + Math.random() * 60; } } }
       if (c.reparto) { if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else { c.tSig -= dt; if (c.tSig <= 0) { c.tParada = 6; c.tSig = 22; } } }
       for (const p of gente) { const o = p.obj.position, ax = o.x - (x + ox), az = o.z - (z + oz), lon = ax * tx + az * tz - c.len / 2, lat = Math.abs(-ax * tz + az * tx); if (lat < 1.3 && lon > -0.3 && lon < 6.5 && !p.oculto) objetivo = Math.min(objetivo, Math.max(0, (lon - 1.4) * 1.5)); }
       if (S.semaforos && S.semaforos.length && !c.reparto) for (const sm of S.semaforos) { if (sm.fase === S.semFase) continue; if (tx * sm.ax + tz * sm.az < 0.8) continue; const ax = sm.x - (x + ox), az = sm.z - (z + oz), lon = ax * tx + az * tz - c.len / 2, lat = Math.abs(-ax * tz + az * tx); if (lat < 7 && lon > -0.3 && lon < 9) objetivo = Math.min(objetivo, Math.max(0, (lon - 0.8) * 1.2)); }
-      for (const o of S.coches) { if (o === c || o.vi !== c.vi || o.dir !== c.dir) continue; const gap = c.dir * (o.pos - c.pos) - c.len; if (gap > 0 && gap < 6) objetivo = Math.min(objetivo, Math.max(0, gap - 1.5)); }
+      for (const o of S.coches) { if (o === c || o.vi !== c.vi || o.dir !== c.dir || o.obj.visible === false) continue; const gap = c.dir * (o.pos - c.pos) - c.len; if (gap > 0 && gap < 6) objetivo = Math.min(objetivo, Math.max(0, gap - 1.5)); }
       if (c.bus && c.paradas) {
         if (c.tParada > 0) { c.tParada -= dt; objetivo = 0; } else for (const sp of c.paradas) { const dd = c.dir * (sp - c.pos); if (dd > 0 && dd < 14) objetivo = Math.min(objetivo, Math.max(0.5, dd * 0.5)); if (dd > -0.4 && dd < 1 && c.vel < 1.5 && c.ultima !== sp) { c.tParada = 6; c.ultima = sp; parada(S, M, c, sp); } }
       }
@@ -233,7 +245,7 @@
       if (c.bici && c.obj.userData.ruedas) c.obj.userData.ruedas.forEach(w => { w.rotation.x += c.vel * dt / 0.34; });
       if (c.amb) { c.obj.userData.sirena = (c.obj.userData.sirena || 0) + dt; const f = Math.sin(c.obj.userData.sirena * 14) > 0; if (c.lucesA) { c.lucesA[0].material.emissiveIntensity = f ? 3 : 0.1; c.lucesA[1].material.emissiveIntensity = f ? 0.1 : 3; } }
       if (c.unaVez && c.pos > c.vi.L - 2) { S.mundo.remove(c.obj); c.borrar = true; }
-      if (c.pos > c.vi.L) c.pos = 0; else if (c.pos < 0) c.pos = c.vi.L;
+      if ((c.pos > c.vi.L || c.pos < 0) && !c.bici && !c.unaVez && !c.reparto && !c.bus && giro(S, c)) { /* gira a otra calle */ } else if (c.pos > c.vi.L) c.pos = 0; else if (c.pos < 0) c.pos = c.vi.L;
       const [x2, z2, ux2, uz2] = punto(c.vi, c.pos), tx2 = ux2 * c.dir, tz2 = uz2 * c.dir;
       c.obj.position.set(x2 - tz2 * c.lane, -0.0, z2 + tx2 * c.lane); c.obj.rotation.y = Math.atan2(tx2, tz2);
     });

@@ -40,7 +40,7 @@
     function controles(cv) {
       const ray = new THREE.Raycaster(), suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ptrs = new Map(); let pinza = 0;
       const toque = (cx, cy) => {
-        if (!S.yo) return; const r = cv.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), S.camera); ray.ray.origin.y -= (S.hF || 0);
+        if (!S.yo || S.conduciendo) return; const r = cv.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), S.camera); ray.ray.origin.y -= (S.hF || 0);
         if (S.construccion && GM.casa) { const pc = new THREE.Vector3(); if (ray.ray.intersectPlane(suelo, pc)) GM.casa.toque(S, motor(), pc, ray); return; }
         const npcs = S.gente.map(n => n.obj), hit = ray.intersectObjects(npcs, true)[0];
         if (hit) { let o = hit.object; while (o && !(o.userData && o.userData.npc !== undefined)) o = o.parent; if (o) { const n = S.gente[o.userData.npc]; fichaJugador(n); const yo = S.yo.obj.position; if (!n.fijo && n.camino) { n.camino = null; anim(n, 'idle'); n.espera = 6; } n.obj.lookAt(yo.x, 0, yo.z); return; } }
@@ -62,11 +62,12 @@
       window.addEventListener('keydown', S.onKey); window.addEventListener('keyup', S.onKey);
     }
     function teclado(dt) {
+      if (S.conduciendo) return;
       const k = S.teclas, J = S.joy; let ax = (k.d || k.arrowright ? 1 : 0) - (k.a || k.arrowleft ? 1 : 0), az = (k.s || k.arrowdown ? 1 : 0) - (k.w || k.arrowup ? 1 : 0), corre = !!k.shift, fuerza = 1;
       if (J && J.activo && Math.hypot(J.x, J.y) > 0.15) { ax = J.x; az = J.y; fuerza = Math.min(1, Math.hypot(J.x, J.y)); corre = fuerza > 0.92; }
       if (!ax && !az) { if (S.yo.teclado) { S.yo.teclado = false; anim(S.yo, 'idle'); } return; }
       S.yo.camino = null; S.yo.teclado = true; anim(S.yo, corre ? 'sprint' : 'walk');
-      const c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = ax * c + az * s, dz = -ax * s + az * c, l = Math.hypot(dx, dz), v = (corre ? 4.2 : 2.1 * Math.max(0.5, fuerza)) * (S.yo.bici ? (S.yo.velBici || 2.5) : 1) * dt, o = S.yo.obj.position;
+      const c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = ax * c + az * s, dz = -ax * s + az * c, l = Math.hypot(dx, dz), v = (S.real ? (corre ? 3.2 : 1.5 * Math.max(0.5, fuerza)) : (corre ? 4.2 : 2.1 * Math.max(0.5, fuerza))) * (S.yo.bici ? (S.yo.velBici || 2.5) : 1) * (S.yo.patinete ? (S.yo.velPat || 1.5) : 1) * dt, o = S.yo.obj.position;
       const nx = o.x + dx / l * v, nz = o.z + dz / l * v, G = S.G, ok = (x, z) => { const [i, j] = G.celda(x, z); return G.libre(i, j); };
       if (ok(nx, nz)) { o.x = nx; o.z = nz; } else if (ok(nx, o.z)) o.x = nx; else if (ok(o.x, nz)) o.z = nz;
       girar(S.yo, Math.atan2(dx, dz), dt);
