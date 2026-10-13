@@ -135,10 +135,10 @@
       return { i, p, lv: e[0], cl: e[1], nom: e[2] >= 0 ? D.s[e[2]] : '', color: e[3] >= 0 ? D.s[e[3]] : '', tm: e[4] || 0, ar, bb: [x0, z0, x1, z1], cx: cx / p.length, cz: cz / p.length, dc: 0, rol: null };
     }).filter(b => Math.hypot(b.cx, b.cz) < R + 5);
     B.forEach(b => { b.dc = Math.hypot(b.cx, b.cz); });
-    const C = D.c.map(c => ({ k: c[0], nom: c[1] >= 0 ? D.s[c[1]] : '', uno: c[2], p: pts(c, 3) })).filter(c => c.p.length > 1);
+    const C = D.c.map((c, i) => { const x = (D.cx && D.cx[i]) || [0, 0, 0, 0], lanes = x[0], w = lanes ? Math.min(22, Math.max(4.2, lanes * 3.05 + 0.4)) : 0; return { k: c[0], nom: c[1] >= 0 ? D.s[c[1]] : '', uno: c[2], p: pts(c, 3), lanes, w, sup: x[1], puente: !!(x[2] & 1), bici: !!(x[2] & 2), bus: !!(x[2] & 4), acera: !!(x[2] & 8), vel: x[3] * 10 }; }).filter(c => c.p.length > 1);
     const lista = (v, h) => (v || []).map(a => ({ t: a[0], p: pts(a, h) })).filter(a => a.p.length >= 2), punto = (v, i, j) => (v || []).map(a => ({ t: a[0], x: a[i] / 10, z: a[j] / 10 }));
     return { B, C, A: D.a.map(a => ({ t: a[0], p: pts(a, 1) })), P: D.p.map(a => ({ t: a[0], p: pts(a, 1) })),
-      L: D.l || null, N: (D.n || []).map(a => ({ t: a[0], nom: a[1] >= 0 ? D.s[a[1]] : '', x: a[2] / 10, z: a[3] / 10 })).filter(a => a.nom), T: (D.t || []).map(a => [a[0] / 10, a[1] / 10]), PT: punto(D.pt, 1, 2),
+      H: D.h || null, L: D.l || null, N: (D.n || []).map(a => ({ t: a[0], nom: a[1] >= 0 ? D.s[a[1]] : '', x: a[2] / 10, z: a[3] / 10 })).filter(a => a.nom), T: (D.t || []).map(a => [a[0] / 10, a[1] / 10]), PT: punto(D.pt, 1, 2),
       K: lista(D.k, 1).filter(a => a.p.length >= 3), U: lista(D.u, 1).filter(a => a.p.length >= 3), V: lista(D.v, 1), F: lista(D.f, 1) };
   }
 
@@ -164,6 +164,8 @@
     const X = preparar(D), { B } = X;
     // Radio por el que se puede andar: los 300 m de datos completos y, si hay anillo lejano, hasta casi su borde (se anda entre los prismas del anillo)
     let RW = R; if (X.L) { let mx = 0; X.L.e.forEach(e => { for (let i = 1; i + 1 < e.length; i += 2) mx = Math.max(mx, Math.hypot(e[i], e[i + 1])); }); RW = Math.max(R, Math.min(1000, Math.floor(mx - 12))); }
+    // relieve real (Copernicus DEM, cuadrícula de 125 m): S.altura(x, z) da los metros sobre el pabellón; todavía no se aplica al suelo (punto 32)
+    S.relieve = X.H || null; S.altura = (x, z) => { const H = X.H; if (!H) return 0; const n = H.n, p = H.p, fx = Math.min(n - 1.001, Math.max(0, x / p + (n - 1) / 2)), fz = Math.min(n - 1.001, Math.max(0, z / p + (n - 1) / 2)), i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, g = (a, b) => H.v[b * n + a], c0 = g((n - 1) / 2, (n - 1) / 2); return (g(i, j) * (1 - u) * (1 - v) + g(i + 1, j) * u * (1 - v) + g(i, j + 1) * (1 - u) * v + g(i + 1, j + 1) * u * v) - c0; };
     S.RW = RW; const G = M.rejilla({ limites: [-RW - 20, -RW - 20, RW + 20, RW + 20], CELDA }); S.G = G;
     // fuera del círculo de datos no se anda
     for (let j = 0; j < G.H; j++) for (let i = 0; i < G.W; i++) { const [x, z] = G.centro(i, j); if (x * x + z * z > (RW - 4) * (RW - 4)) G.b[G.idx(i, j)] = 1; }
@@ -192,13 +194,20 @@
       X.A.forEach(a => { if (a.t === 0 && a.p.length >= 3) bloquearPoli(a.p, 0.2); else if (a.t === 1) for (let i = 0; i + 1 < a.p.length; i++) { const f = a.p[i], g = a.p[i + 1]; bloquearPoli([[f[0] - 3.5, f[1] - 3.5], [g[0] + 3.5, g[1] - 3.5], [g[0] + 3.5, g[1] + 3.5], [f[0] - 3.5, f[1] + 3.5]], 0); } });
     }
     { const PA = [nuevo(), nuevo(), nuevo()], PR = nuevo(), PR2 = nuevo(), PZ = nuevo(), MR = nuevo(), MK = nuevo();
-      X.C.forEach(c => { const w = ANCHO[c.k] || 4; if (c.k === 0) return; if (c.k <= 5) cinta(c.p, w + ACERA * 2, 0, c.k === 5 ? PZ : PA[(U.hash(club.id + (c.nom || 'x') + c.k) >>> 0) % 3]); if (c.k !== 5) cinta(c.p, w, 0, c.k >= 4 ? PR2 : PR); });   // principales: asfalto oscuro; residenciales y de servicio: asfalto gastado más claro; peatonales: adoquín de granito
+      X.C.forEach(c => { const w = c.w || ANCHO[c.k] || 4; if (c.k === 0) return; if (c.k <= 5) cinta(c.p, w + ACERA * 2, 0, c.k === 5 ? PZ : PA[(U.hash(club.id + (c.nom || 'x') + c.k) >>> 0) % 3]); if (c.k !== 5) cinta(c.p, w, 0, c.k >= 4 ? PR2 : PR); });   // principales: asfalto oscuro; residenciales y de servicio: asfalto gastado más claro; peatonales: adoquín de granito
       [mAcera, suelo('Tiles074', { escala: 1.2, tinte: 0xb9b4aa }, 0xb0aca2, 1), suelo('Concrete034', { escala: 1.8, tinte: 0xa8a59d }, 0x9a978f, 1)].forEach((m, i) => { const mp = malla(PA[i], m, 'aceras'); if (mp) W.add(mp); }); const ma = malla(PR, mAsf, 'calzadas'); if (ma) W.add(ma);
       { const mp2 = malla(PR2, suelo('Asphalt031', { escala: 4.5, tinte: 0x8e8e90 }, 0x55585c, 3), 'calzadas2'); if (mp2) W.add(mp2); const mz = malla(PZ, suelo('PavingStones150', { escala: 1.7, tinte: 0xb9b5ad }, 0xb0aca2, 1), 'plazas'); if (mz) W.add(mz); }
       // marcas viales: línea discontinua en el eje de las calles de doble sentido
       const mBl = new THREE.MeshStandardMaterial({ color: 0xf1efe8, roughness: 0.8, side: THREE.DoubleSide }); mBl.polygonOffset = true; mBl.polygonOffsetFactor = -5; mBl.polygonOffsetUnits = -5;
       X.C.forEach(c => { if (c.k > 4 || c.uno) return; let acum = 0; for (let i = 0; i + 1 < c.p.length; i++) { const a = c.p[i], b = c.p[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 1) continue; const ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l;
         for (let s = (3 - (acum % 5) + 5) % 5; s + 2 < l; s += 5) cinta([[a[0] + ux * s, a[1] + uz * s], [a[0] + ux * (s + 2), a[1] + uz * (s + 2)]], 0.14, 0, MK); acum += l; } });
+      // carriles reales (punto 31): separadores entre carriles, carril bici verde y carril bus rojizo, a partir de las etiquetas de OpenStreetMap
+      { const desp = (p, d) => p.map((q, i) => { const a = p[Math.max(0, i - 1)], b = p[Math.min(p.length - 1, i + 1)], ux = b[0] - a[0], uz = b[1] - a[1], l = Math.hypot(ux, uz) || 1; return [q[0] - uz / l * d, q[1] + ux / l * d]; }), BK = nuevo(), BS = nuevo();
+        X.C.forEach(c => { if (c.k > 4) return; const w = c.w || ANCHO[c.k] || 4;
+          if (c.lanes >= 2) { const n = c.lanes, uno = c.uno; for (let i = 1; i < n; i++) { const off = -w / 2 + i * w / n; if (!uno && i === n / 2) continue; let acum = 0; for (let j = 0; j + 1 < c.p.length; j++) { const a = c.p[j], b = c.p[j + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 1) continue; const ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l, ox = -uz * off, oz = ux * off; for (let s = (2 - (acum % 6) + 6) % 6; s + 2.5 < l; s += 6) cinta([[a[0] + ux * s + ox, a[1] + uz * s + oz], [a[0] + ux * (s + 2.5) + ox, a[1] + uz * (s + 2.5) + oz]], 0.12, 0, MK); acum += l; } } }
+          if (c.bici) cinta(desp(c.p, w / 2 - 0.95), 1.3, 0, BK); if (c.bus) cinta(desp(c.p, -(w / 2 - 1.5)), 2.8, 0, BS); });
+        const mdec = (color, n) => { const m = new THREE.MeshStandardMaterial({ color, roughness: 0.85, side: THREE.DoubleSide }); m.polygonOffset = true; m.polygonOffsetFactor = -n; m.polygonOffsetUnits = -n; return m; };
+        const mb = malla(BK, mdec(0x2f9a57, 4), 'carrilbici'); if (mb) { mb.receiveShadow = false; W.add(mb); } const ms = malla(BS, mdec(0xa5473a, 4), 'carrilbus'); if (ms) { ms.receiveShadow = false; W.add(ms); } }
       const mk = malla(MK, mBl, 'marcas'); if (mk) { mk.receiveShadow = false; W.add(mk); }
     }
     fase(S, 'suelo, aceras y calzadas');

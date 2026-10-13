@@ -38,12 +38,12 @@ const NOMBRES_COLOR = { white: '#f2efe8', grey: '#9a9a96', gray: '#9a9a96', red:
 const colorDe = v => { if (!v) return ''; v = String(v).toLowerCase().trim(); if (/^#[0-9a-f]{6}$/.test(v)) return v; return NOMBRES_COLOR[v] || ''; };
 const techoDe = t => ({ flat: 1, gabled: 2, hipped: 3, 'half-hipped': 3, gambrel: 2, dome: 4, pyramidal: 5, skillion: 2 }[t['roof:shape']] || 0) + 10 * ({ brick: 1, stone: 2, sandstone: 2, limestone: 2, concrete: 0, glass: 3, metal: 3, steel: 3 }[t['building:material']] || 0);
 let total = 0, bytes = 0;
-for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring)\.json$/.test(n)).sort()) {
+for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem)\.json$/.test(n)).sort()) {
   const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
   const k = 110574, kx = 111320 * Math.cos(j.lat * Math.PI / 180);
   const pr = g => g.map(q => [(q.lon - j.lon) * kx, -(q.lat - j.lat) * k]);
   const S = [], SI = new Map(), nom = n => { if (!n) return -1; n = String(n).slice(0, 40); if (!SI.has(n)) { SI.set(n, S.length); S.push(n); } return SI.get(n); };
-  const r = { s: S, g: [+j.lat.toFixed(3), +j.lon.toFixed(3)], e: [], c: [], a: [], p: [] };
+  const r = { s: S, g: [+j.lat.toFixed(3), +j.lon.toFixed(3)], e: [], c: [], cx: [], a: [], p: [] };
   for (const w of j.el) {
     if (!w.geometry || w.geometry.length < 3 && !w.tags.highway) continue;
     const t = w.tags || {};
@@ -58,6 +58,10 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
     } else if (t.highway) {
       if (t.tunnel && t.tunnel !== 'no') continue;
       p = dp(p, 1.2); r.c.push([CALLE[t.highway] === undefined ? 6 : CALLE[t.highway], nom(t.name), t.oneway === 'yes' ? 1 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
+      // datos de la vía (punto 31): carriles, firme, puente, carril bici, carril bus, acera, alumbrado y límite de velocidad, en el mismo orden que r.c
+      { const ci = v => v && v !== 'no' && v !== 'none', sf = (t.surface || '').toLowerCase(), cic = ci(t.cycleway) || ci(t['cycleway:left']) || ci(t['cycleway:right']) || ci(t['cycleway:both']), bus = ci(t.busway) || ci(t['busway:left']) || ci(t['busway:right']) || /bus/.test(t['lanes:bus'] || '') || t['bus:lanes'] !== undefined || (t.oneway && /psv|bus/.test(t['cycleway:right'] || '')),
+          flags = (ci(t.bridge) ? 1 : 0) | (cic ? 2 : 0) | (bus ? 4 : 0) | (ci(t.sidewalk) ? 8 : 0) | (t.lit === 'yes' ? 16 : 0);
+        r.cx.push([Math.min(+t.lanes || 0, 8), /paving|sett|cobble|brick/.test(sf) ? 1 : /concrete/.test(sf) ? 2 : /unpaved|gravel|dirt|ground|sand|grass/.test(sf) ? 3 : 0, flags, Math.round((parseInt(t.maxspeed) || 0) / 10)]); }
     } else if (t.natural === 'water' || t.waterway) {
       p = dp(p, 1.8); r.a.push([t.waterway ? 1 : 0].concat(...p.map(q => [ent(q[0]), ent(q[1])])));
     } else if (t.leisure) {
@@ -102,6 +106,7 @@ for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.json') && n !== 'cl
     }
     r.l = L;
   }
+  const df = path.join(DIR, j.id + '.dem.json'); if (fs.existsSync(df)) { const DM = JSON.parse(fs.readFileSync(df, 'utf8')); r.h = { n: DM.n, p: DM.paso, v: DM.h.map(v => Math.round(v)) }; }
   const s = JSON.stringify(r); fs.writeFileSync(path.join(OUT, j.id + '.json'), s);
   total++; bytes += s.length;
 }
