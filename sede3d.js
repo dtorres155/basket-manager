@@ -101,12 +101,36 @@
   // Gafas, cinta, muñequeras, barba y tatuajes (geometría sencilla pegada a los huesos; medidas en metros)
   const _mats = {}; const matC = c => _mats[c] || (_mats[c] = new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }));
   const ctxTex = (id, fn) => textura(id, 128, fn);
+  // Cabeza propia (personajes principales): elipsoide con mandíbula, nariz, orejas y una textura de cara pintada (ojos con iris, cejas, labios)
+  const cabezaTex = {};
+  function cabezaHD(o, B, pega) {
+    const piel = new THREE.Color(o.piel || '#e0ac85'), sombra = piel.clone().multiplyScalar(0.8), claro = piel.clone().lerp(new THREE.Color('#ffffff'), 0.12), hex = c => '#' + c.getHexString();
+    const lig = o.cabezaHD === 'n', claveT = 'cab' + hex(piel) + (o.ojos || '') + (o.pelo || '') + (lig ? 'n' : ''); let tx = cabezaTex[claveT];
+    if (!tx) {
+    const cv = document.createElement('canvas'); cv.width = lig ? 256 : 1024; cv.height = lig ? 128 : 512; const x = cv.getContext('2d'); if (!x) return; if (lig) x.scale(0.25, 0.25);
+    x.fillStyle = hex(piel); x.fillRect(0, 0, 1024, 512);
+    const g = x.createRadialGradient(256, 250, 20, 256, 250, 200); g.addColorStop(0, hex(claro)); g.addColorStop(1, hex(piel)); x.fillStyle = g; x.fillRect(0, 0, 1024, 512);
+    // la cara mira hacia u = 0.25 (x = 256 en el lienzo)
+    const cx = 256, cy = 235, ojos = o.ojos || '#2a1a10', pelo = o.pelo || '#2a1f18';
+    [-1, 1].forEach(s => { const ex = cx + s * 46, ey = cy - 8; x.fillStyle = '#f6f3ee'; x.beginPath(); x.ellipse(ex, ey, 24, 13, 0, 0, 6.3); x.fill(); x.fillStyle = ojos; x.beginPath(); x.arc(ex, ey, 11, 0, 6.3); x.fill(); x.fillStyle = '#0b0b0b'; x.beginPath(); x.arc(ex, ey, 5.5, 0, 6.3); x.fill(); x.fillStyle = '#ffffff'; x.beginPath(); x.arc(ex - 3, ey - 3, 2.2, 0, 6.3); x.fill();
+      x.strokeStyle = hex(sombra); x.lineWidth = 3; x.beginPath(); x.ellipse(ex, ey, 25, 14, 0, Math.PI * 1.05, Math.PI * 1.95); x.stroke();
+      x.strokeStyle = pelo; x.lineWidth = 8; x.lineCap = 'round'; x.beginPath(); x.moveTo(ex - s * 26, ey - 25 + s * 2); x.quadraticCurveTo(ex, ey - 38, ex + s * 24, ey - 26); x.stroke(); });
+    x.strokeStyle = hex(sombra); x.lineWidth = 4; x.beginPath(); x.moveTo(cx - 9, cy + 36); x.quadraticCurveTo(cx, cy + 44, cx + 9, cy + 36); x.stroke();
+    x.fillStyle = '#8a3a3a'; x.beginPath(); x.ellipse(cx, cy + 82, 26, 6.5, 0, 0, 6.3); x.fill(); x.strokeStyle = '#5a2020'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(cx - 26, cy + 82); x.quadraticCurveTo(cx, cy + 86, cx + 26, cy + 82); x.stroke();
+    tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4; cabezaTex[claveT] = tx;
+    }
+    const forma = (geo, k, dy) => { const P = geo.attributes.position; for (let i = 0; i < P.count; i++) { let vx = P.getX(i), vy = P.getY(i), vz = P.getZ(i); const jaw = vy < -0.15 ? 1 - (lig ? 0.16 : 0.34) * Math.pow((-vy - 0.15) / 0.85, 1.4) : 1; vx *= 0.086 * jaw * k; vz *= 0.1 * (vz < 0 ? 0.95 : 1) * (jaw > 0.7 ? 1 : 0.9 + 0.1 * jaw) * k; vy = vy * 0.112 * k + 0.092 + (dy || 0); P.setXYZ(i, vx, vy, vz); } geo.computeVertexNormals(); return geo; };
+    const kk = lig ? 0.84 : 0.93, geo = forma(new THREE.SphereGeometry(1, lig ? 18 : 36, lig ? 12 : 24), kk, 0);
+    if (o.barba) { const ini = o.barba === 1 ? 0.82 : 0.69, bg = forma(new THREE.SphereGeometry(1, 28, 14, Math.PI * (o.barba === 1 ? 0.33 : 0.0), Math.PI * (o.barba === 1 ? 0.34 : 2), Math.PI * ini, Math.PI * (1 - ini)), 0.96, o.barba === 3 ? -0.012 : 0); if (o.barba === 1) bg.translate(0.0, 0.0, 0.0); const bm = new THREE.Mesh(bg, matC(o.pelo || '#2a1f18')); if (o.barba === 3) bm.scale.y = 1.25; pega(B.Head, bm, 0, 0, 0.008); } const cab = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tx, roughness: 0.75 })); cab.castShadow = true; pega(B.Head, cab, 0, 0, 0.008);
+    const mp = matC(hex(piel)); const nariz = new THREE.Mesh(new THREE.ConeGeometry(0.017, 0.045, 8), mp); nariz.rotation.x = Math.PI / 2 + 0.25; pega(B.Head, nariz, 0, 0.083, 0.1 * kk + 0.022);
+    [-1, 1].forEach(s => { const oreja = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), mp); oreja.scale.set(0.4, 1.1, 0.8); pega(B.Head, oreja, s * (0.086 * kk + 0.002), 0.095, -0.005); });
+  }
   function complementos(obj, B, o) {
     const inv = 1 / obj.scale.y, pega = (hueso, malla, x, y, z) => { if (!hueso) return; malla.position.set(x * inv, y * inv, z * inv); malla.scale.setScalar(inv); hueso.add(malla); };
     if (o.gafas) { [-1, 1].forEach(sx => { const m = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.0045, 6, o.gafas === 1 ? 16 : 4), matC('#1d2630')); if (o.gafas === 2) m.rotation.z = Math.PI / 4; pega(B.Head, m, sx * 0.036, 0.108, 0.122); }); pega(B.Head, new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.005, 0.005), matC('#1d2630')), 0, 0.11, 0.124); }
     if (o.cinta) { const m = new THREE.Mesh(new THREE.TorusGeometry(0.098, 0.013, 6, 24), matC(o.cinta)); m.rotation.x = Math.PI / 2; pega(B.Head, m, 0, 0.17, 0.01); }
     if (o.munequeras) ['WristL', 'WristR'].forEach(w => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.06, 10), matC(o.munequeras)); m.rotation.z = Math.PI / 2; pega(B[w], m, 0, 0, 0); });
-    if (o.barba) { const t = [0, [0.03, 0.035, 0.02], [0.1, 0.05, 0.05], [0.11, 0.09, 0.06]][o.barba], m = new THREE.Mesh(new THREE.BoxGeometry(t[0], t[1], t[2]), matC(o.pelo || '#2a1f18')); pega(B.Head, m, 0, 0.035 - t[1] / 3, 0.085); }
+    if (o.barba && !o.cabezaHD) { const t = [0, [0.03, 0.035, 0.02], [0.1, 0.05, 0.05], [0.11, 0.09, 0.06]][o.barba], m = new THREE.Mesh(new THREE.BoxGeometry(t[0], t[1], t[2]), matC(o.pelo || '#2a1f18')); pega(B.Head, m, 0, 0.035 - t[1] / 3, 0.085); }
     if (o.tatuaje) (o.tatuaje === 2 ? ['LowerArmL', 'LowerArmR'] : o.tatuaje === 1 ? ['LowerArmR'] : []).forEach(a => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.07, 10, 1, true), new THREE.MeshStandardMaterial({ color: '#25303b', transparent: true, opacity: 0.55 })); pega(B[a], m, 0, 0.12, 0); });
     if (o.gorra) { const cp = new THREE.Mesh(new THREE.SphereGeometry(0.108, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), matC(o.gorra)); pega(B.Head, cp, 0, 0.158, 0.008); pega(B.Head, new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.008, 0.075), matC(o.gorra)), 0, 0.165, 0.125); }
     if (o.gorro) { const gr = new THREE.Mesh(new THREE.SphereGeometry(0.114, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.58), matC(o.gorro)); pega(B.Head, gr, 0, 0.15, 0.004); pega(B.Head, new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), matC(o.gorro)), 0, 0.266, 0.004); }
@@ -122,7 +146,8 @@
     if (o.abrigo) { const ab = matC(o.abrigo), tr = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.235, 0.62, 14, 1, true), ab); tr.scale.z = 0.62; ab.side = THREE.DoubleSide; pega(B.Torso, tr, 0, 0.0, 0); ['UpperArmL', 'UpperArmR', 'LowerArmL', 'LowerArmR'].forEach(a => pega(B[a], new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.046, a[0] === 'U' ? 0.26 : 0.25, 10, 1, true), ab), 0, a[0] === 'U' ? 0.12 : 0.11, 0)); }
     if (o.falda) { const fl = matC(o.falda); fl.side = THREE.DoubleSide; pega(B.Hips, new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.25, o.faldaLarga ? 0.62 : 0.4, 16, 1, true), fl), 0, -0.1, 0); }
     if (o.baston) { const bs = matC(o.baston); pega(B.WristR, new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.01, 0.8, 6), bs), 0, 0.4, 0.02); pega(B.WristR, new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.01, 6, 10, Math.PI), bs), 0, -0.005, 0.02); }
-    if (o.rostro && B.Head) { const ns = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.034, 6), matC(o.piel || '#e0ac85')); ns.rotation.x = Math.PI / 2; pega(B.Head, ns, 0, 0.083, 0.14); pega(B.Head, new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.007, 0.01), matC('#8a3a3a')), 0, 0.045, 0.121); }
+    if (o.cabezaHD && B.Head) cabezaHD(o, B, pega);
+    if (o.rostro && !o.cabezaHD && B.Head) { const ns = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.034, 6), matC(o.piel || '#e0ac85')); ns.rotation.x = Math.PI / 2; pega(B.Head, ns, 0, 0.083, 0.14); pega(B.Head, new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.007, 0.01), matC('#8a3a3a')), 0, 0.045, 0.121); }
     if (o.tatuaje === 3) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.03, 12, 1, true), new THREE.MeshStandardMaterial({ color: '#25303b', transparent: true, opacity: 0.5 })); pega(B.Neck, m, 0, 0.03, 0); }
   }
   // Opciones del modelo de tu personaje a partir de su aspecto (st.personaje) y del modo de juego
@@ -136,7 +161,7 @@
       ropa: jugador || ropa === 3 ? [c1, c2 === c1 ? '#222' : c2] : null, complexion: pj.complexion, gafas: pj.gafas || 0, barba: mujer ? 0 : pj.barba || 0,
       cinta: acc === 1 || acc === 3 ? c2 : null, munequeras: acc === 2 || acc === 3 ? c1 : null, tatuaje: pj.tatuaje || 0, cara: pj.cara || 0,
       zapas: (GM.mods.personaje.ZAPAS || [])[pj.zapas || 0] || c1, ojos: (GM.mods.personaje.OJOS || [])[pj.ojos || 0], pendientes: pj.pendientes || 0, reloj: pj.reloj || 0, cadena: pj.cadena || 0, mangas: pj.mangas ? c2 : null,
-      rostro: true, escudo: jugador ? { siglas: club.siglas, c1, c2, num: GM.ui && GM.ui._ && GM.ui._.dorsal ? GM.ui._.dorsal(st) : 7 } : null };
+      rostro: true, cabezaHD: true, escudo: jugador ? { siglas: club.siglas, c1, c2, num: GM.ui && GM.ui._ && GM.ui._.dorsal ? GM.ui._.dorsal(st) : 7 } : null };
   }
   // Persona real para las escenas antiguas (campus, mapa de la ciudad, casa): devuelve un grupo al momento, con la figura de cajas
   // si se pasa, y la sustituye por el modelo cuando carga. alto: altura en unidades de esa escena. El movimiento se pone en

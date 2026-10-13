@@ -67,7 +67,7 @@
     if (c.rol === 'turista') { o.gorra = o.gorra || pick(r, ['#ffffff', '#d8b46a', '#c0392b']); o.gafas = o.gafas || 1; o.mochila = o.mochila || '#2d4a8a'; delete o.gorro; delete o.bufanda; }
     // cuerpo: de muy delgado a robusto; niños con piernas y brazos más cortos; faldas y abrigos
     o.ancho = pesada(r, [0.88, 0.94, 1, 1.07, 1.16], edad === 'mayor' ? [1, 2, 3, 3, 2] : [1.2, 2.5, 3, 2, 1]); delete o.complexion;
-    if (edad === 'nino') { o.proporcion = 'nino'; delete o.cabeza; o.ancho = 0.9 + r() * 0.1; }
+    if (edad === 'nino') { o.proporcion = 'nino'; o.cabezaHD = 'n'; delete o.cabeza; o.ancho = 0.9 + r() * 0.1; }
     if (edad === 'mayor' && r() < 0.3) o.baston = pick(r, ['#5a3920', '#2b2b2b', '#8a6a3a']);
     if (sexo === 'm' && edad !== 'nino' && !c.rol && est !== 'invierno' && r() < 0.32) { o.falda = o.ropa[1]; o.faldaLarga = r() < 0.5; }
     if (est === 'invierno' && !c.hincha && !c.rol && r() < 0.7) o.abrigo = pick(r, ['#2b2f3a', '#5a4636', '#3a4a3f', '#6b2f2f', '#8a8478', '#1f2a44']);

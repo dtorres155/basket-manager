@@ -161,10 +161,12 @@
     const alta = !GM.campus || !GM.campus.config || GM.campus.config.calidad !== 'normal';
     S.real = true; S.ventanas = []; S.persianas = []; S.obrasRect = []; S.oclusores = []; S.distritos = null; S.reales = false;
     S.rec = { p: { value: new THREE.Vector3(0, 0, 0) }, c: { value: new THREE.Vector3(0, 50, 50) }, r: { value: 1.7 } };
-    const G = M.rejilla({ limites: [-R - 20, -R - 20, R + 20, R + 20], CELDA }); S.G = G;
     const X = preparar(D), { B } = X;
+    // Radio por el que se puede andar: los 300 m de datos completos y, si hay anillo lejano, hasta casi su borde (se anda entre los prismas del anillo)
+    let RW = R; if (X.L) { let mx = 0; X.L.e.forEach(e => { for (let i = 1; i + 1 < e.length; i += 2) mx = Math.max(mx, Math.hypot(e[i], e[i + 1])); }); RW = Math.max(R, Math.min(1000, Math.floor(mx - 12))); }
+    S.RW = RW; const G = M.rejilla({ limites: [-RW - 20, -RW - 20, RW + 20, RW + 20], CELDA }); S.G = G;
     // fuera del círculo de datos no se anda
-    for (let j = 0; j < G.H; j++) for (let i = 0; i < G.W; i++) { const [x, z] = G.centro(i, j); if (x * x + z * z > (R - 4) * (R - 4)) G.b[G.idx(i, j)] = 1; }
+    for (let j = 0; j < G.H; j++) for (let i = 0; i < G.W; i++) { const [x, z] = G.centro(i, j); if (x * x + z * z > (RW - 4) * (RW - 4)) G.b[G.idx(i, j)] = 1; }
     const bloquearPoli = (p, margen) => {
       const x0 = Math.min(...p.map(q => q[0])) - margen, x1 = Math.max(...p.map(q => q[0])) + margen, z0 = Math.min(...p.map(q => q[1])) - margen, z1 = Math.max(...p.map(q => q[1])) + margen;
       const [ia, ja] = G.celda(x0, z0), [ib, jb] = G.celda(x1, z1);
@@ -261,6 +263,7 @@
     // Los edificios se agrupan por celdas de 90 m: aquí solo se prepara el estilo y se bloquea el paso (la rejilla de navegación necesita toda la ciudad);
     // la geometría de cada celda se crea más abajo, por trozos, según la distancia al personaje y a la cámara
     const claveChunk = b => Math.floor(b.cx / 90) + ',' + Math.floor(b.cz / 90), porChunk = {};
+    if (X.L && RW > R) { X.L.e.forEach(e => { const p = []; for (let i = 1; i + 1 < e.length; i += 2) p.push([e[i], e[i + 1]]); if (p.length >= 3 && Math.hypot(p[0][0], p[0][1]) > R - 30) bloquearPoli(p, 0.3); }); X.L.a.forEach(a => { if (a[0] !== 1) return; const p = []; for (let i = 1; i + 1 < a.length; i += 2) p.push([a[i], a[i + 1]]); if (p.length >= 3) bloquearPoli(p, 0); }); }
     B.forEach(b => { b.estilo = estilo(b); bloquearPoli(b.p, 0.35); (porChunk[claveChunk(b)] = porChunk[claveChunk(b)] || []).push(b); });
     { const b = roles.pabellon, [x0, z0, x1, z1] = b.bb, hx = (x1 - x0) / 2, hz = (z1 - z0) / 2, alto = Math.min(9, Math.max(hx, hz) * 0.22);
       const cu = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 14, 0, Math.PI * 2, 0, Math.PI / 2), recortable(S, new THREE.MeshStandardMaterial({ map: M.textura('real-cupula', 512, (x, n) => { x.fillStyle = '#d6dadd'; x.fillRect(0, 0, n, n); x.strokeStyle = '#9aa1a8'; x.lineWidth = 2; for (let i = 0; i <= 24; i++) { x.beginPath(); x.moveTo(i * n / 24, 0); x.lineTo(i * n / 24, n); x.stroke(); } for (let j = 0; j <= 8; j++) { x.beginPath(); x.moveTo(0, j * n / 8); x.lineTo(n, j * n / 8); x.stroke(); } x.fillStyle = 'rgba(0,0,0,.06)'; for (let i = 0; i < 24; i += 2) x.fillRect(i * n / 24, 0, n / 24, n); }), color: 0xffffff, metalness: 0.4, roughness: 0.42 })));
