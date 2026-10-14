@@ -64,9 +64,11 @@
   }
   // Recorte: la pared, el techo y lo que hay entre la cámara y tu personaje se perfora (con borde difuminado) para no perderte detrás de un edificio
   function recortable(S, m) {
+    m.userData = m.userData || {}; if (m.userData.recortable) { m.userData.recS = S; return m; }   // un material compartido no se envuelve dos veces (cada vuelta guardaba la escena anterior)
+    m.userData.recortable = true; m.userData.recS = S;
     const previo = m.onBeforeCompile, clave = m.customProgramCacheKey ? m.customProgramCacheKey() : '';
     m.onBeforeCompile = sh => {
-      if (previo) previo(sh);
+      if (previo) previo(sh); const S = m.userData.recS;
       sh.uniforms.uRecP = S.rec.p; sh.uniforms.uRecC = S.rec.c; sh.uniforms.uRecR = S.rec.r;
       sh.vertexShader = 'varying vec3 vWp;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = 'varying vec3 vWp; uniform vec3 uRecP; uniform vec3 uRecC; uniform float uRecR;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n' +

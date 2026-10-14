@@ -7,7 +7,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = [], out = [];
-  p.on('pageerror', e => { errs.push(e.message); console.log('ERR', e.message.slice(0, 200)); }); p.on('console', m => { if (m.type() === 'error') errs.push(m.text().slice(0, 160)); });
+  p.on('pageerror', e => { errs.push(e.message); console.log('ERR', e.message.slice(0, 200)); }); p.on('console', m => { if (m.type() === 'warning' && /visita/.test(m.text())) console.log('W', m.text().slice(0, 300)); if (m.type() === 'error') { errs.push(m.text().slice(0, 160)); console.log('CE', m.text().slice(0, 300)); } });
   const ok = (n, c, extra) => { const l = (c ? 'ok    ' : 'FALLA ') + n + (extra ? ' ' + extra : ''); out.push(l); console.log(l); };
   await p.goto(process.env.URL || 'http://localhost:8080/'); await sleep(700);
   await p.evaluate(() => { localStorage.clear(); const pj = GM.mods.personaje.crear(); pj.nombre = 'Marc'; GM.newGame('joventut-badalona', undefined, { modo: 'carrera', personaje: pj, carrera: { pos: 'SG', perfil: 'tirador', nac: 'ES', origen: 'europa', agente: 'equilibrado', clubId: 'joventut-badalona' } }); const st = GM.state; st.carrera.dinero = 900; st.carrera.vivienda.actual = { id: 'vtest', barrio: 0, barrioNombre: 'Centro', tipo: 'mansion', modo: 'compra', precio: 2600, alquiler: 1, cuota: 1, ciudad: 'Badalona', desde: st.fecha, comodidad: 3, transporte: 3, ruido: 2, prestigio: 4 }; GM.ui.start(document.getElementById('app')); GM.sede.abrir(st); });
@@ -31,5 +31,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const r5 = await p.evaluate(() => { const S = GM.sede._estado(); return { ext: S.casaPlano.ext.map(r => r.id).join(','), obras: (S.casaObras || []).length }; });
   ok('la piscina nueva aparece en la casa y el jardín está en obras', /piscina/.test(r5.ext) && r5.obras >= 1, JSON.stringify(r5));
   await p.evaluate(() => { const S = GM.sede._estado(), r = S.casaPlano.ext[0]; S.yo.obj.position.set((r.x0 + r.x1) / 2, 0, r.z0 - 0.5); S.zoom = 13; }); await sleep(1800); await p.screenshot({ path: path.join(DIR, '4_piscina.png') });
+  await p.evaluate(() => { GM.casasProd.buscar(GM.state, 'vtest').prod.vecinos[0].rel = 75; }); await p.evaluate(() => GM.sede._escena('calle')); await sleep(9000); await p.evaluate(() => GM.sede._escena('casa:vtest')); await sleep(9000);
+  const r6 = await p.evaluate(() => { const S = GM.sede._estado(), v = GM.casasProd.buscar(GM.state, 'vtest').prod.vecinos[0]; return { visita: S.gente.some(g => g.rol === v.n), nombre: v.n }; });
+  ok('un vecino amigo te visita en el salón', r6.visita, JSON.stringify(r6)); await p.screenshot({ path: path.join(DIR, '5_visita.png') });
   console.log('errores: ' + (errs.length ? errs.slice(0, 6).join(' | ') : 'ninguno')); await b.close(); process.exit(errs.length || out.some(x => /^FALLA/.test(x)) ? 1 : 0);
 })();

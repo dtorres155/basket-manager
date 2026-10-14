@@ -5,6 +5,7 @@
    Modelos: Kenney Mini Characters y Furniture Kit (CC0) en dist/modelos. Caminos: A* sobre una cuadrícula de 0,5 m.
    Expone: abrir(st), cerrar(), volver(), activa(). Estado: solo state.sede.charlas (charlas con jugadores, 1 por semana). */
 (function () {
+  { const LM = THREE.DefaultLoadingManager; LM.onProgress = (u, n, total) => { if (LM.__prog) LM.__prog(u, n, total); }; }   // un solo manejador global, fuera de abrir() para no retener la primera escena
   const U = GM.util;
   let S = null; // escena activa
   let EXP_PREV = null;
@@ -454,7 +455,7 @@
     let ocultoUI = false; const fantasma = h('button', { class: 'sede-foto-fantasma', title: 'Mostrar la interfaz (H)', onclick: () => mostrar() }, '·');
     const ocultar = () => { ocultoUI = true; barra.style.display = 'none'; panel.style.display = 'none'; S.raiz.append(fantasma); }, mostrar = () => { ocultoUI = false; barra.style.display = ''; fantasma.remove(); };
     barra.insertBefore(h('button', { class: 'btn btn-sec peq', onclick: () => { panel.style.display = panel.style.display === 'none' ? '' : 'none'; } }, 'Ajustes'), barra.lastChild);
-    window.addEventListener('keydown', teclasFoto); window.addEventListener('keyup', teclasFoto);
+    window.addEventListener('keydown', teclasFoto); window.addEventListener('keyup', teclasFoto); S.teclasFoto = teclasFoto;
     S.raiz.append(vin, panel, pad, barra); GM.ui.toast('Modo foto: arrastra para girar, rueda o pellizco para acercar; «Ajustes» para hora, clima, exposición y más');
   }
   // ---------- Paneles de sala (menús dentro del mundo) ----------
@@ -818,7 +819,7 @@
     const CONSEJOS = ['Toca el reloj para pasar una hora y ver cómo cambia la ciudad.', 'Doble toque (o doble clic) para correr.', 'En el mapa, «Ir ya» te lleva al momento a los sitios que ya conoces.', 'Las palomas salen volando si pasas corriendo.', 'El día de partido en casa, a las 19:00 llega el autobús del equipo.', 'El botón Foto quita la interfaz para hacer capturas.', 'Cuando llueve hay menos gente por la calle y el suelo refleja.'];
     const barraC = h('div', { class: 'carga-barra' }, h('span')), consejo = h('p', { class: 'carga-consejo' }, CONSEJOS[(Date.now() / 1000 | 0) % CONSEJOS.length]);
     const cargando = h('div', { class: 'sede-hud sede-cargando' }, h('div', { class: 'carga-caja' }, h('b', null, S.escena === 'pueblo' ? 'Llegando al pueblo…' : S.escena === 'calle' ? 'Saliendo a la calle…' : S.escena === 'deportiva' ? 'Llegando a la ciudad deportiva…' : S.escena === 'casa' ? 'Entrando en casa…' : 'Abriendo la sede del club…'), barraC, consejo)); raiz.append(cargando);
-    { const LM = THREE.DefaultLoadingManager, previo = LM.onProgress; LM.onProgress = (u, n, total) => { const sp = barraC.firstChild; if (sp && total) sp.style.width = Math.round(n / total * 100) + '%'; if (previo) previo(u, n, total); }; }
+    { const LM = THREE.DefaultLoadingManager; LM.__prog = (u, n, total) => { const sp = barraC.firstChild; if (sp && total) sp.style.width = Math.round(n / total * 100) + '%'; }; }   // un solo manejador global: antes cada escena envolvía el anterior y no se liberaba ninguna
     const fm = n => { if (S && window.__medirFases) (S.fasesAbrir = S.fasesAbrir || []).push([n, +performance.now().toFixed(0)]); }; fm('abrir');
     // Mientras los trabajadores del navegador decodifican las texturas KTX2 (y el hilo principal espera), se adelanta la carga y el análisis de los modelos de personas y, en la sede, de los muebles
     try { const nombres = new Set(['animaciones']); Object.values(PERSONAS).forEach(v => (Array.isArray(v) ? v : [v]).forEach(x => x && nombres.add(x))); ((GM.calle && GM.calle.util && GM.calle.util.MODELOS) || []).forEach(x => nombres.add(x)); nombres.forEach(n => cargar('modelos/personas/' + n + '.glb').catch(() => { }));
@@ -944,10 +945,13 @@
     if (GM.ui && GM.ui.toast && e < 0.99 && !S.avisoRes) { S.avisoRes = true; GM.ui.toast('Resolución ajustada para que vaya más fluido'); }
   }
   function cerrar() {
-    if (!S) return; S.vivo = false; cancelAnimationFrame(S.raf); if (GM.sonido) GM.sonido.escena(null);
+    if (!S) return; if (THREE.DefaultLoadingManager) THREE.DefaultLoadingManager.__prog = null; S.vivo = false; cancelAnimationFrame(S.raf); if (GM.sonido) GM.sonido.escena(null);
     if (S.nav) { S.nav.cerrar(); S.nav = null; }
-    window.removeEventListener('resize', S.onResize); window.removeEventListener('keydown', S.onKey); window.removeEventListener('keyup', S.onKey);
-    S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); }); S.renderer.dispose(); S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
+    window.removeEventListener('resize', S.onResize); window.removeEventListener('keydown', S.onKey); window.removeEventListener('keyup', S.onKey); if (S.teclasFoto) { window.removeEventListener('keydown', S.teclasFoto); window.removeEventListener('keyup', S.teclasFoto); }
+    { const luces = []; S.scene.traverse(n => { if (n.isLight) luces.push(n); }); luces.forEach(l => { if (l.shadow && l.shadow.map) l.shadow.map.dispose(); l.removeFromParent(); if (l.target) l.target.removeFromParent(); }); }   // el renderer guarda las últimas luces y, por su padre, todo el mundo
+    const vistos = new Set(); S.scene.traverse(n => { if (n.geometry) n.geometry.dispose(); const ms = Array.isArray(n.material) ? n.material : n.material ? [n.material] : []; ms.forEach(m => { if (vistos.has(m)) return; vistos.add(m); if (m.userData && m.userData.recS) m.userData.recS = null; for (const k in m) { const v = m[k]; if (v && v.isTexture) v.dispose(); } m.dispose(); }); });   // los materiales y texturas compartidos (caché de coches, texturas) guardaban cada renderer anterior en sus «dispose»
+    { const sc = S.scene; [sc.environment, sc.background].forEach(t => { if (t && t.isTexture) { if (t.renderTarget && t.renderTarget.dispose) t.renderTarget.dispose(); t.dispose(); } }); } [S.composer, S.composerOff].forEach(c => { try { if (c && c.dispose) c.dispose(); } catch (e) { /* ya liberado */ } }); S.composer = S.composerOff = null;   // las pasadas de posprocesado comparten una geometría global y cada renderer dejaba su escucha
+    S.renderer.dispose(); try { S.renderer.forceContextLoss(); } catch (e) { /* sin contexto */ } S.raiz.remove(); if (S.volverBtn) S.volverBtn.remove(); S = null;
     if (GM.ui.refrescar) GM.ui.refrescar();
   }
   // Árboles reales (solo en la versión de escritorio, recursos/pesados): devuelve los modelos que se puedan cargar

@@ -67,6 +67,7 @@ node tools/locales_urbano.js              # mobiliario urbano y los locales nuev
 node tools/casa_editor_prueba.js         # editor de la casa: muros, puertas, ventanas, suelos, pedidos, deshacer, vistas, biblioteca y diseños
 node tools/interaccion_prueba.js          # tocar los muebles de una casa: dormir, tele, cocina, ducha, nevera, luz...
 node tools/casas_producto_prueba.js       # casas como producto: obras visibles, valor, averías y panel
+node tools/fuga_ciudades.js [n]           # abre n ciudades seguidas y mide heap, geometrías y texturas (detecta fugas de escena)
 node tools/escenas_todas.js               # entra en todas las escenas e interiores (gestor y carrera) y falla si alguno no carga
 node tools/sonido_prueba.js               # sonido ambiente: arranca con el primer clic, mezcla por escena y botón de silencio
 node tools/escritorio_escenas.js          # versión de escritorio: árboles reales en ciudad deportiva y pueblo, y persianas en la calle
@@ -158,3 +159,5 @@ Tanda 25: `interiores_vida.js` (`GM.interioresVida.decorar`, desorden cotidiano)
 Tanda 26: interiores `kiosco`, café (terraza → `bar_pueblo`) y pisos de vecinos (→ `casa_amigos`) enlazados en `asignar` de calle_real.js; el vestíbulo del hospital, el colegio y la estación se rellenan en `interiores_vida.js`; la biblioteca incluye los kits de Kenney de comida y supervivencia.
 
 Tanda 27: `casa_editor.js` (`GM.casaEditor`: muros, puertas, ventanas, suelos por habitación, deshacer, vistas, pedidos con entrega, diseños `CASA1:`; se engancha en casa3d.js con `GM.casa._i` y los ganchos `alConstruir`, `toque`, `hover`, `snap`), `interaccion.js` (`GM.interaccion.toque(S, M, p)` desde sede_hud.js; `S.interiorMuebles` lo rellena interiores.js; efectos con `hogar.aplicar`) y `casas_producto.js` (`GM.casasProd`: `p.prod` dentro de cada vivienda en `state.carrera.vivienda` o `state.hogar`; la venta de `carrera.gestionarPropiedad` delega aquí). `VERSION_ESTADO` 7. No llames `escape` a una función de un módulo (tapa el `escape` global). La biblioteca de objetos realistas va a la versión de escritorio con `node tools/ingesta.js incluir --pesado <id>` (recursos/pesados/modelos/objetos).
+
+Fugas de escena: al cerrar un mundo (`cerrar()` en sede3d.js) hay que soltar todo lo que un objeto global guarde del renderer: materiales y texturas compartidos (evento `dispose`), luces con su `target`, `EffectComposer`, `scene.environment` y el contexto GL; no envuelvas manejadores globales (`LoadingManager.onProgress`, `material.onBeforeCompile` compartido) dentro de `abrir()` sin quitarlos. Mídelo con `node tools/fuga_ciudades.js [n]` (el heap no debe crecer). No uses `Runtime.queryObjects` para contar: retiene lo que cuenta.

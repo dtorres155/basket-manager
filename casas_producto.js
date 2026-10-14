@@ -5,7 +5,7 @@
    - Reformas por fases con obras visibles en la casa (andamios, vallas y conos en la zona afectada): cocina, baño, fachada, jardín, piscina, garaje, aislamiento y estructura. Duran días y molestan mientras duran.
    - Mantenimiento mensual, desgaste y averías (fontanería, caldera, humedades, tejado, electricidad) que hay que reparar; si no, empeoran y bajan el valor.
    - Vecinos (3 por casa, con carácter): ruidosos, amables, aficionados y cotillas; un café los hace amigos y cambia su efecto.
-   GM.casasProd: panel(st, id, repintar) (modal), acciones(st, id) (panel de la casa en 3D), valor, vender, encargar, reparar, obraVisible, extrasHabs, fachadaColor, selfTest. Prueba: t_casas_producto.js. */
+   GM.casasProd: panel(st, id, repintar) (modal), acciones(st, id) (panel de la casa en 3D), valor, vender, encargar, reparar, obraVisible, visitaVecino, extrasHabs, fachadaColor, selfTest. Prueba: t_casas_producto.js. */
 (function () {
   const U = GM.util, modoCar = st => st.modo === 'carrera' && !!st.carrera;
   const euros = k => Math.round(k * 1000).toLocaleString('es-ES') + ' €', k1 = k => (Math.round(k * 10) / 10).toLocaleString('es-ES');
@@ -127,6 +127,13 @@
       W.add(g); S.casaObras = (S.casaObras || []).concat([g]); if (S.casaMuros && r.id !== 'puerta') S.casaMuros.push([r.x0 + 0.3, r.z0 + 0.3, r.x1 - 0.3, r.z1 - 0.3]);
     });
   }
+  // Un vecino con el que te llevas bien (relación de 60 o más) te visita en el salón: se sienta en el sofá y charla (con su nombre sobre la cabeza)
+  async function visitaVecino(S, M, st, viv, salon) {
+    const p = buscar(st, viv.id); if (!p || !p.prod || !esActual(st, p)) return; const v = p.prod.vecinos.find(x => x.rel >= 60); if (!v || !salon) return;
+    const MOD = ['h-casual_2', 'm-casual', 'h-casual_hoodie', 'm-formal'], h = U.hash(v.n), pe = await M.personaje({ modelo: MOD[h % MOD.length], altura: 158 + h % 28, piel: ['#f1c7a5', '#e0ac85', '#c68863'][h % 3], pelo: ['#1d1510', '#6a4425', '#8a8a8a'][(h >>> 3) % 3] });
+    pe.rol = v.n; pe.fijo = true; pe.espera = 0; pe.obj.userData = { npc: S.gente.length }; pe.obj.position.set(salon.x1 - 1.6, 0, (salon.z0 + salon.z1) / 2); pe.obj.rotation.y = -Math.PI / 2; M.anim(pe, 'idle'); S.mundo.add(pe.obj); S.gente.push(pe);
+    const et = M.etiqueta(v.n); et.scale.multiplyScalar(0.55); et.position.set(pe.obj.position.x, 2.2, pe.obj.position.z); et.userData = { etiqueta: true, rotulo: true }; S.mundo.add(et);
+  }
   const fachadaColor = (st, v) => { const p = v && buscar(st, v.id); return (p && p.prod && p.prod.fachada && p.prod.fachada.color) || '#f4efe3'; }, fachadaPropia = (st, v) => fachadaColor(st, v) !== '#f4efe3';
   // ---------- Interfaz ----------
   function ficha(st, p) {
@@ -163,6 +170,6 @@
     const p = st.hogar.casa, v0 = valor(st, p); if (!(v0 > 800 && v0 < 1000)) return false; st.fecha = '2028-10-01'; const v1 = valor(st, p); if (!(v1 > 500 && v1 < 1500) || v1 === v0) return false;
     st.fecha = '2026-10-01'; ini(st, p).estado = 40; const v2 = valor(st, p); return v2 < v0 && !motivoNo(st, p, 'cocina') && Object.keys(REFORMAS).every(k => REFORMAS[k].fases.length >= 3);
   }
-  GM.casasProd = { REFORMAS, COLORES, RASGOS, lista, buscar, ini, valor, ficha, vender, encargar, reparar, cafe, avance, coste, motivoNo, acciones, panel, obraVisible, extrasHabs, fachadaColor, fachadaPropia, mantenimiento, indice, dia, selfTest };
+  GM.casasProd = { REFORMAS, COLORES, RASGOS, lista, buscar, ini, valor, ficha, vender, encargar, reparar, cafe, avance, coste, motivoNo, acciones, panel, obraVisible, visitaVecino, extrasHabs, fachadaColor, fachadaPropia, mantenimiento, indice, dia, selfTest };
   GM.register && GM.register('casasProd', { selfTest });
 })();
