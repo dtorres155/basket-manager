@@ -3,17 +3,17 @@
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
 const DIR = path.join(__dirname, '..', 'capturas', process.argv[2] || 'interaccion'); fs.mkdirSync(DIR, { recursive: true });
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const { sleep, esperarEscena, irA } = require('./ayudas');
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = [], out = [];
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text().slice(0, 140)); });
   await p.goto(process.env.URL || 'http://localhost:8080/'); await sleep(700);
   await p.evaluate(() => { localStorage.clear(); const pj = GM.mods.personaje.crear(); pj.nombre = 'Marc'; GM.newGame('joventut-badalona', undefined, { modo: 'carrera', personaje: pj, carrera: { pos: 'SG', perfil: 'tirador', nac: 'ES', origen: 'europa', agente: 'equilibrado', clubId: 'joventut-badalona' } }); const st = GM.state; st.carrera.dinero = 500; st.carrera.vivienda.actual = { id: 'vtest', barrio: 0, barrioNombre: 'Centro', tipo: 'mansion', modo: 'compra', precio: 2600, alquiler: 1, cuota: 1, ciudad: 'Badalona', desde: st.fecha, comodidad: 3, transporte: 3, ruido: 2, prestigio: 4 }; GM.ui.start(document.getElementById('app')); GM.sede.abrir(st); });
-  await sleep(11000);
+  await esperarEscena(p);
   const PRUEBAS = [['kitchenFridge', 'cocina', 1.4, -1.0, 'nevera'], ['shower', 'dormitorio', 2.4, 1.0, 'ducha'], ['bedDouble', 'dormitorio', 0, 0, 'siesta'], ['loungeSofa', 'salon', -2.2, 0.8, 'sentar'], ['televisionModern', 'salon', 1.0, -1.2, 'tele'], ['kitchenStove', 'cocina', -1.4, -1.0, 'cocinar'], ['kitchenFridge', 'cocina', 1.4, -1.0, 'nevera'], ['desk', 'despacho', 0, -0.6, 'trabajar'], ['shower', 'dormitorio', 2.4, 1.0, 'ducha'], ['lampRoundFloor', 'salon', 3.4, -1.6, 'luz'], ['bench', 'gimnasio', 0, 0, 'sentar'], ['bookcaseClosedDoors', 'despacho', 1.8, -1.0, 'abrir']];
   const ok = await p.evaluate(P => { try { const st = GM.state, H = GM.mods.hogar, v = H.viviendas(st).find(x => x.actual), D = GM.casa.datos(st, v.id), PL = GM.casa.plano(v); D.muebles = P.map(([m, hab, dx, dz]) => { const r = PL.habs.concat(PL.ext).find(q => q.id === hab) || PL.habs[0]; return { m, x: Math.round(((r.x0 + r.x1) / 2 + dx) * 2) / 2, z: Math.round(((r.z0 + r.z1) / 2 + dz) * 2) / 2, r: 0, hab }; }); return D.muebles.length; } catch (e) { return e.stack; } }, PRUEBAS);
-  await p.evaluate(() => GM.sede._escena('calle')); await sleep(10000); await p.evaluate(() => GM.sede._escena('casa:vtest')); await sleep(9000);
+  await irA(p, 'calle'); await irA(p, 'casa:vtest');
   await p.evaluate(() => document.querySelectorAll('.sede-ayuda').forEach(e => e.style.display = 'none'));
   out.push('escena ' + await p.evaluate(() => GM.sede._estado().escena) + ', muebles ' + ok);
   for (const [m, hab, dx, dz, acc] of PRUEBAS) {

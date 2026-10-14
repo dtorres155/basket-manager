@@ -15,7 +15,8 @@ El objetivo es que el juego se vea y juegue lo mejor posible **en ordenador** (c
 ```
 npm install        # jsdom, three@0.186, esbuild, playwright y fuentes (solo para pruebas y build)
 npm run build      # genera dist/ (index.html, three.min.js, fonts/) a partir de los módulos (node build.js)
-npm test           # build + 27 pruebas (test_all.js, incluida t_aserciones.js con comprobaciones de valores); debe terminar con «Todas las pruebas pasan»
+npm run test:rapido  # unos 80 s: las pruebas sin los recorridos lentos (para cambios pequeños); también `node test_all.js --solo=hogar,casa [--sin-build]` y `--tiempos`
+npm test           # en paralelo (unos 5 min): build + 37 pruebas (test_all.js, incluida t_aserciones.js con comprobaciones de valores); debe terminar con «Todas las pruebas pasan»
 npm run test:visual # recorridos en Edge (sin red, sede, calle, barrio, casa); debe terminar con «Todas las pruebas visuales pasan»
 node tools/calibrar.js [semilla]          # medias del simulador por liga frente a las reales
 npm run serve      # sirve dist/ en http://localhost:8080 (por HTTP el móvil no puede instalar la PWA; solo para probar)
@@ -161,3 +162,8 @@ Tanda 26: interiores `kiosco`, café (terraza → `bar_pueblo`) y pisos de vecin
 Tanda 27: `casa_editor.js` (`GM.casaEditor`: muros, puertas, ventanas, suelos por habitación, deshacer, vistas, pedidos con entrega, diseños `CASA1:`; se engancha en casa3d.js con `GM.casa._i` y los ganchos `alConstruir`, `toque`, `hover`, `snap`), `interaccion.js` (`GM.interaccion.toque(S, M, p)` desde sede_hud.js; `S.interiorMuebles` lo rellena interiores.js; efectos con `hogar.aplicar`) y `casas_producto.js` (`GM.casasProd`: `p.prod` dentro de cada vivienda en `state.carrera.vivienda` o `state.hogar`; la venta de `carrera.gestionarPropiedad` delega aquí). `VERSION_ESTADO` 7. No llames `escape` a una función de un módulo (tapa el `escape` global). La biblioteca de objetos realistas va a la versión de escritorio con `node tools/ingesta.js incluir --pesado <id>` (recursos/pesados/modelos/objetos).
 
 Fugas de escena: al cerrar un mundo (`cerrar()` en sede3d.js) hay que soltar todo lo que un objeto global guarde del renderer: materiales y texturas compartidos (evento `dispose`), luces con su `target`, `EffectComposer`, `scene.environment` y el contexto GL; no envuelvas manejadores globales (`LoadingManager.onProgress`, `material.onBeforeCompile` compartido) dentro de `abrir()` sin quitarlos. Mídelo con `node tools/fuga_ciudades.js [n]` (el heap no debe crecer). No uses `Runtime.queryObjects` para contar: retiene lo que cuenta.
+
+## Ritmo de trabajo (acordado oct 2026)
+- **Pruebas por tamaño del cambio:** mientras desarrollas, `npm run test:rapido` o `node test_all.js --solo=...` y la prueba de navegador de lo que tocas. `npm test` completo, `escenas_todas.js` y `real_clubes.js` solo antes de publicar.
+- **Publicar por lotes:** commit y push cuando haya algo terminado y probado, pero la versión de escritorio (`npm run publicar`, con subida del instalador) solo cuando el usuario lo pida o al cerrar un lote de varios puntos; no una versión por punto. El barrido de ciudades (`barrido_ciudades.js`, unos 25 min) solo cuando cambian los datos de ciudades o el motor de la calle.
+- **Esperas en las pruebas de navegador:** usa `tools/ayudas.js` (`esperarEscena`, `irA`, `esperar`) en vez de `sleep` fijos.

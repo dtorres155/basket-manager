@@ -5,6 +5,7 @@
   "scripts": {
     "build": "node build.js",
     "test": "node test_all.js",
+    "test:rapido": "node test_all.js --rapido",
     "serve": "node serve.js",
     "vendor:three": "node tools/vendor_three.js",
     "test:visual": "node tools/test_visual.js"

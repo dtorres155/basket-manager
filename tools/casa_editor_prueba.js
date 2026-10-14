@@ -4,7 +4,7 @@
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
 const DIR = path.join(__dirname, '..', 'capturas', process.argv[2] || 'casa_editor'); fs.mkdirSync(DIR, { recursive: true });
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const { sleep, esperarEscena, irA } = require('./ayudas');
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = [], out = [];
@@ -12,7 +12,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const ok = (n, c, extra) => { const l = (c ? 'ok    ' : 'FALLA ') + n + (extra ? ' ' + extra : ''); out.push(l); console.log(l); };
   await p.goto(process.env.URL || 'http://localhost:8080/'); await sleep(700); await p.evaluate(() => { window.GM_PESADOS = true; });
   await p.evaluate(() => { localStorage.clear(); const pj = GM.mods.personaje.crear(); pj.nombre = 'Marc'; GM.newGame('joventut-badalona', undefined, { modo: 'carrera', personaje: pj, carrera: { pos: 'SG', perfil: 'tirador', nac: 'ES', origen: 'europa', agente: 'equilibrado', clubId: 'joventut-badalona' } }); const st = GM.state; st.carrera.dinero = 900; st.carrera.vivienda.actual = { id: 'vtest', barrio: 0, barrioNombre: 'Centro', tipo: 'mansion', modo: 'compra', precio: 2600, alquiler: 1, cuota: 1, ciudad: 'Badalona', desde: st.fecha, comodidad: 3, transporte: 3, ruido: 2, prestigio: 4 }; GM.ui.start(document.getElementById('app')); GM.sede.abrir(st); });
-  await sleep(11000); await p.evaluate(() => GM.sede._escena('calle')); await sleep(10000); await p.evaluate(() => GM.sede._escena('casa:vtest')); await sleep(9000);
+  await esperarEscena(p); await irA(p, 'calle'); await irA(p, 'casa:vtest');
   await p.evaluate(() => document.querySelectorAll('.sede-ayuda').forEach(e => e.style.display = 'none'));
   const ev = (f, a) => p.evaluate(f, a);
   await ev(async () => { const S = GM.sede._estado(); await GM.casa.activar(S, GM.sede.motor(), true); }); await sleep(2500);
