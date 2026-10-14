@@ -433,9 +433,9 @@
     vivs.forEach((v, k) => {
       const casa = ['casa', 'mansion'].indexOf({ residencia: 'bloque', loft: 'bloque', buhardilla: 'bloque', bloque: 'bloque', 'bloque-moderno': 'bloque', moderno: 'atico', rustico: 'atico', mediterranea: 'casa', piedra: 'casa', moderna: 'casa', clasica: 'mansion', 'mansion-moderna': 'mansion', villa: 'mansion' }[v.ext] || 'bloque') >= 0;
       const b = tomar('viv' + k, b => acc(b) && b.cl === 1 && b.dc > 50 + (v.actual ? 0 : 20) && (casa ? b.ar < 260 : b.ar >= 120), b => (casa ? b.dc * 0.6 + b.ar * 0.2 : -b.ar * 0.1 + b.dc * 0.5) + (v.actual ? 0 : rr() * 90), undefined) || tomar('viv' + k, b => acc(b) && b.dc > 40 && b.ar > 80 && [0, 1].indexOf(b.cl) >= 0, b => b.dc, undefined) || sint('viv' + k, 1, 50, 200, casa ? 10 : 16, casa ? 9 : 12, casa ? 2 : 5);
-      if (b) R.viviendas.push({ v, b });
+      if (b) { R.viviendas.push({ v, b }); if (GM.casasProd && GM.casasProd.fachadaPropia(st, v)) b.color = GM.casasProd.fachadaColor(st, v); }
     });
-    R.vecinos = []; for (let k = 0; k < 2; k++) { const vb = tomar('vecino' + k, b => acc(b) && b.cl === 1 && b.ar > 60 && b.dc > 45 && b.dc < 200, b => b.dc * (0.7 + rr() * 0.6), 1); if (vb) R.vecinos.push(vb); }
+    R.vecinos = []; for (let k = 0; k < 4; k++) { const vb = tomar('vecino' + k, b => acc(b) && b.cl === 1 && b.ar > 60 && b.dc > 45 && b.dc < 200, b => b.dc * (0.7 + rr() * 0.6), 1); if (vb) R.vecinos.push(vb); }
     // locales con interior
     if (GM.interiores) [['restaurante', 'RESTAURANTE EL TAPÓN', '#5a1020', 'Entrar en el restaurante', [12, 2, 0]], ['gimnasio_barrio', 'GIMNASIO', '#1d2024', 'Entrar en el gimnasio', [2, 0, 3]], ['cine_ciudad', 'CINE', '#7a1a22', 'Entrar en el cine', [2, 0]], ['bolera', 'BOLERA STRIKE', '#1d4f91', 'Entrar en la bolera', [2, 0, 9]], ['barberia', 'BARBERÍA PACO', '#1d4f91', 'Entrar en la barbería', [2, 12, 0]]].forEach(([tipo, txt, fondo, boton, cls], k) => {
       const b = tomar('local_' + tipo, b => acc(b) && cls.indexOf(b.cl) >= 0 && b.ar > 90 && b.ar < 1100 && b.dc > 30 && b.dc < 240, b => b.dc * (0.6 + rr() * 0.8) + k * 6, 2) || sint('local_' + tipo, 2, 30, 210, 11, 9, 2); if (b) R.locales.push({ tipo, txt, fondo, boton, b });
@@ -509,7 +509,7 @@
       salaLugar('lugar_campus', nom, 'campus'); if (GM.deportivaMundo) { Object.assign(SALAS.lugar_campus, { irA: 'deportiva', boton: 'Entrar en la ciudad deportiva' }); S.puertas.deportiva = { x: p.x + p.nx * 0.5, z: p.z + p.nz * 0.5, ry: p.ry }; }
     }
     R.viviendas.forEach(({ v, b }) => {
-      const id = 'casa_' + v.id.replace(/[^a-zA-Z0-9]/g, ''), p = poner(id, b, (v.nombre || 'Tu casa').toUpperCase().slice(0, 24), '#f4efe3', '#2a2a2a', { ancho: 3.6, y: 2.7 });
+      const id = 'casa_' + v.id.replace(/[^a-zA-Z0-9]/g, ''), p = poner(id, b, (v.nombre || 'Tu casa').toUpperCase().slice(0, 24), GM.casasProd ? GM.casasProd.fachadaColor(st, v) : '#f4efe3', '#2a2a2a', { ancho: 3.6, y: 2.7 });
       SALAS[id] = { id, nombre: v.nombre + (v.actual ? ' (vives aquí)' : ' (tuya)'), accion: v.barrioNombre ? 'Tu casa en ' + v.barrioNombre : 'Tu casa', destino: {}, irA: 'casa:' + v.id, boton: 'Entrar en casa' };
       entrada('casa:' + v.id, p); if (v.actual) S.puertas.casa = S.puertas['casa:' + v.id];
     });

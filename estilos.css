@@ -562,3 +562,29 @@ body{background:var(--bg)}
 .mov-cond{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);display:flex;gap:14px;align-items:center;background:rgba(20,24,30,.92);color:#fff;padding:8px 14px;border-radius:14px;z-index:25;font-size:14px}
 .mov-cond .mov-vel{font-size:26px;min-width:100px}.mov-ex{color:#ff7a5c;font-weight:700}
 .dia-chip{position:absolute;left:14px;top:74px;max-width:min(420px,70vw);background:rgba(20,24,30,.9);color:#fff;padding:7px 12px;border-radius:12px;z-index:22;font-size:13px;line-height:1.35}
+
+/* Interacción con los muebles (punto 51) */
+.inter-panel { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(380px, calc(100% - 24px)); display: flex; flex-direction: column; gap: 6px; padding: 10px; background: rgba(20, 24, 30, 0.92); border-radius: 14px; z-index: 30; }
+.inter-cab { display: flex; justify-content: space-between; align-items: center; color: #fff; }
+.inter-barra { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(360px, calc(100% - 24px)); display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(20, 24, 30, 0.92); border-radius: 14px; color: #fff; z-index: 31; }
+.inter-barra b { flex: 0 0 auto; max-width: 45%; font-size: 0.9rem; }
+.inter-pista { flex: 1; height: 10px; border-radius: 6px; background: rgba(255, 255, 255, 0.18); overflow: hidden; }
+.inter-pista i { display: block; height: 100%; width: 0; background: var(--club, #2ecc71); transition: width 0.1s linear; }
+.inter-sueno { position: absolute; inset: 0; background: #05070b; pointer-events: none; z-index: 20; }
+
+/* Editor de la casa (punto 50) */
+.ce-barra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+.ce-pres { margin-left: auto; font-size: 0.82rem; opacity: 0.85; }
+.ce-filtros { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.ce-filtros input[type=search], .ce-filtros select, .ce-fila input[type=text], .ce-fila select, .cc-reforma textarea { background: rgba(255, 255, 255, 0.08); color: inherit; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 6px 8px; font: inherit; }
+.ce-chk { font-size: 0.82rem; display: flex; align-items: center; gap: 4px; }
+.ce-fila { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0; }
+.ce-hab { min-width: 8rem; font-size: 0.85rem; }
+.ce-pedido span { font-size: 0.82rem; opacity: 0.85; margin-right: 8px; }
+.cc-reforma textarea { width: 100%; box-sizing: border-box; }
+.ce-barra .btn-sec { background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); }
+.ce-barra .btn:disabled { opacity: 0.4; }
+.casa-catalogo.cc-min .cc-cats, .casa-catalogo.cc-min .cc-items, .casa-catalogo.cc-min .cc-reformas, .casa-catalogo.cc-min .ce-filtros, .casa-catalogo.cc-min .cc-sel { display: none; }
+.cp-panel .sp-barra-mini span { white-space: nowrap; margin-right: 8px; }
+.cp-panel h4 { margin: 14px 0 6px; }
+.casa-catalogo { max-height: 56vh; overflow-y: auto; }

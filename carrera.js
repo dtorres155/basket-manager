@@ -578,6 +578,7 @@
     if (!p) return { ok: false, motivo: 'Propiedad no encontrada.' };
     if (accion === 'vender') {
       if (p.modo !== 'compra' && p.modo !== 'hipoteca') return { ok: false, motivo: 'Solo puedes vender lo que has comprado.' };
+      if (GM.casasProd) { const r = GM.casasProd.vender(st, id); return r.ok ? { ok: true, precio: Math.round(r.precio) } : r; }
       const precio = Math.round(p.precio * (0.9 + GM.rng.next() * 0.2) * (p.modo === 'hipoteca' ? 0.7 : 1)); c.dinero += precio;
       if (v.actual && v.actual.id === id) v.actual = null; else v.propiedades = v.propiedades.filter(x => x.id !== id);
       c.hitos.unshift({ fecha: st.fecha, texto: 'Vendes tu vivienda en ' + p.barrioNombre + ' por ' + precio + ' mil €.' }); return { ok: true, precio };

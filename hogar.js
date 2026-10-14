@@ -175,6 +175,14 @@
     else { const pl = club(st).plantilla.map(i => st.jugadores[i]).filter(Boolean); if (ef.moral) { pl.forEach(p => { p.estado.moral = U.clamp(p.estado.moral + ef.moral * 0.4, 20, 100); }); out.push('el vestuario lo nota'); } if (ef.xp) { pl.slice().sort((a, b) => a.edad - b.edad).slice(0, 3).forEach(p => { p.xp = (p.xp || 0) + ef.xp * 0.5; }); out.push('los jóvenes progresan'); } if (ef.conf && st.modo === 'entrenador' && st.entrenador && st.entrenador.fase === 'activo') { st.entrenador.confianza = U.clamp(st.entrenador.confianza + ef.conf, 0, 100); out.push('confianza +' + ef.conf); } if (ef.fat < 0) pl.forEach(p => { p.estado.fatiga = Math.max(0, p.estado.fatiga + ef.fat * 0.2); }); if (ef.fama && st.modo === 'presidente' && st.legado) st.legado.alma = U.clamp(st.legado.alma + ef.fama, 0, 100); }
     return { ok: true, texto: u[0], efectos: out };
   }
+  // Efectos de una interacción con un mueble (punto 51): { moral, fat, xp, conf, fama } sobre el jugador o sobre el club según el modo; devuelve { ok, texto }
+  function puede(st, coste) { if (coste && dinero(st) < coste) return { ok: false, motivo: 'No tienes ahorros para eso.' }; return { ok: true }; }
+  function aplicar(st, ef, coste) {
+    ef = ef || {}; const out = []; if (coste) { if (dinero(st) < coste) return { ok: false, motivo: 'No tienes ahorros para eso.' }; gastar(st, coste); }
+    if (modoCar(st)) { const c = C(st), p = st.jugadores.yo; if (ef.moral) { c.moral = U.clamp(c.moral + ef.moral, 0, 100); out.push('ánimo +' + ef.moral); } if (ef.fat) { p.estado.fatiga = U.clamp(p.estado.fatiga + ef.fat, 0, 100); out.push(ef.fat < 0 ? 'descansas' : 'te cansas un poco'); } if (ef.xp) { p.xp = (p.xp || 0) + ef.xp; out.push('progresión'); } if (ef.fama) c.fama = c.fama + ef.fama; }
+    else { const pl = club(st).plantilla.map(i => st.jugadores[i]).filter(Boolean); if (ef.moral) { pl.forEach(p => { p.estado.moral = U.clamp(p.estado.moral + ef.moral * 0.4, 20, 100); }); out.push('el vestuario lo nota'); } if (ef.xp) { pl.slice().sort((a, b) => a.edad - b.edad).slice(0, 3).forEach(p => { p.xp = (p.xp || 0) + ef.xp * 0.5; }); out.push('los jóvenes progresan'); } if (ef.conf && st.modo === 'entrenador' && st.entrenador && st.entrenador.fase === 'activo') { st.entrenador.confianza = U.clamp(st.entrenador.confianza + ef.conf, 0, 100); out.push('confianza +' + ef.conf); } if (ef.fat < 0) pl.forEach(p => { p.estado.fatiga = Math.max(0, p.estado.fatiga + ef.fat * 0.2); }); }
+    return { ok: true, texto: out.join(', ') };
+  }
   function muebles(st) { return lista(st, casaActual(st).id).slice(); }
   function efectos(st) {
     const tot = { moral: 0, recup: 0, xp: 0, conf: 0, fama: 0 };
@@ -216,5 +224,5 @@
     const ok = n >= 3 && r1.ok && !r2.ok && n >= 3 === !!r3.ok && r4.ok && quitar(st, 'salon', 'f-0-0').ok && habitaciones('mansion').length === 7 && efectos(st).moral >= 0;
     return ok && TIPOS.mansion.req === 5 && ITEMS.every(i => i.niv >= 0 && i.niv <= 5);
   }
-  GM.register('hogar', { viviendas, vivirEn, VARIANTES, varianteDe, dims, usoDe, usar, energiaCasa, nivel, etiquetaNivel, dinero, casaActual, tipos, mudarse, habitaciones, catalogo, colocar, quitar, colorear, muebles, efectos, trofeos, selfTest, TIPOS, ITEMS, HABS, NIVELES, EXT });
+  GM.register('hogar', { gastar, ingresar, aplicar, puede, viviendas, vivirEn, VARIANTES, varianteDe, dims, usoDe, usar, energiaCasa, nivel, etiquetaNivel, dinero, casaActual, tipos, mudarse, habitaciones, catalogo, colocar, quitar, colorear, muebles, efectos, trofeos, selfTest, TIPOS, ITEMS, HABS, NIVELES, EXT });
 })();

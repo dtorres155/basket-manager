@@ -36,7 +36,9 @@
     // La media sale de los atributos (datos_util.js): se ajustan los de los jugadores de partidas anteriores para que coincidan
     4: st => { Object.values(st.jugadores || {}).forEach(p => { if (p && p.att && p.pos && GM.ovrDe && GM.ovrDe(p.att, p.pos) !== p.ovr) { GM.ajustaAtt(p, p.ovr); GM.picoAtt(p); } }); },
     // Pretemporada, All-Star, ojeadores, negociaciones, prensa con memoria, táctica ampliada y ciudad que crece: se crea su estado (cada módulo lo hace con nuevaPartida)
-    5: st => { st.seq = st.seq || 0; ['pretemporada', 'allstar', 'ojeadores', 'negociacion', 'prensa', 'tactica', 'crecimiento'].forEach(n => { const m = GM.mods[n]; if (m && m.nuevaPartida && !st[{ pretemporada: 'pretemp', allstar: 'allstar', ojeadores: 'ojeadores', negociacion: 'negociacion', prensa: 'prensa', tactica: 'tactica', crecimiento: 'ciudad' }[n]]) m.nuevaPartida(st); }); if (st.rivalidades) { st.rivalidades.rachas = st.rivalidades.rachas || {}; st.rivalidades.mem = st.rivalidades.mem || []; } }
+    5: st => { st.seq = st.seq || 0; ['pretemporada', 'allstar', 'ojeadores', 'negociacion', 'prensa', 'tactica', 'crecimiento'].forEach(n => { const m = GM.mods[n]; if (m && m.nuevaPartida && !st[{ pretemporada: 'pretemp', allstar: 'allstar', ojeadores: 'ojeadores', negociacion: 'negociacion', prensa: 'prensa', tactica: 'tactica', crecimiento: 'ciudad' }[n]]) m.nuevaPartida(st); }); if (st.rivalidades) { st.rivalidades.rachas = st.rivalidades.rachas || {}; st.rivalidades.mem = st.rivalidades.mem || []; } },
+    // Editor de casa (muros, suelos por habitación, pedidos con entrega, diseños) y casas como producto (estado de la vivienda, obras): se rellenan los valores por defecto
+    6: st => { st.sede = st.sede || { charlas: {} }; st.sede.disenos = st.sede.disenos || {}; Object.keys(st.sede.casas || {}).forEach(id => { const d = st.sede.casas[id]; d.muros = d.muros || []; d.sueloHab = d.sueloHab || {}; }); }
   };
   function migrar(st) {
     if (!st.version) st.version = 1; if (!st.estadisticas) st.estadisticas = {}; if (!st.historial) st.historial = [];

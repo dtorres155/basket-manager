@@ -24,7 +24,7 @@
     const { w, d } = TIPOS[tipo], x0 = -w / 2, x1 = w / 2, z0 = -d / 2, z1 = d / 2;
     const IPm = GM.interioresPueblo, an = IPm ? IPm.anexos(tipo, st, w, d) : [], hu = IPm ? IPm.huecos(an) : { n: [], o: [], e: [] };   // estancias anexas y sus huecos de puerta
     S.anexoNpcs = [];
-    S.interiorTipo = tipo; S.interiorNombre = NOMBRE[tipo](club, st);
+    S.interiorTipo = tipo; S.interiorNombre = NOMBRE[tipo](club, st); const deCiudad = S.escenaOrigen === 'calle' && !!TIPOS[tipo].pueblo; if (deCiudad) S.interiorNombre = tipo === 'bar_pueblo' ? 'Café Central' : tipo === 'casa_amigos' ? 'Piso de un vecino' : S.interiorNombre;
     S.scene.background = new THREE.Color(0x1d232a); S.scene.fog = null;
     const G = M.rejilla({ limites: [Math.min(x0, ...an.map(a => a.r.x0)) - 2, Math.min(z0, ...an.map(a => a.r.z0)) - 2, Math.max(x1, ...an.map(a => a.r.x1)) + 2, z1 + 5], CELDA: 0.5 }); S.G = G;
     // Suelo y muros en corte con la puerta al sur
@@ -37,7 +37,7 @@
     const muro = (xa, za, xb, zb) => { const L = Math.hypot(xb - xa, zb - za), m = caja(W, xa === xb ? 0.25 : L, alto, xa === xb ? L : 0.25, muroC, (xa + xb) / 2, 0, (za + zb) / 2); void m; G.bloquea(Math.min(xa, xb) - 0.2, Math.min(za, zb) - 0.2, Math.max(xa, xb) + 0.2, Math.max(za, zb) + 0.2); };
     const tramos = (a, b, gaps) => { let seg = [[a, b]]; gaps.forEach(([g0, g1]) => { seg = [].concat(...seg.map(([p, q]) => (g1 <= p || g0 >= q ? [[p, q]] : [[p, Math.min(g0, q)], [Math.max(g1, p), q]].filter(s => s[1] - s[0] > 0.05)))); }); return seg; };
     tramos(x0, x1, hu.n).forEach(([p, q]) => muro(p, z0, q, z0)); tramos(z0, z1, hu.o).forEach(([p, q]) => muro(x0, p, x0, q)); tramos(z0, z1, hu.e).forEach(([p, q]) => muro(x1, p, x1, q)); muro(x0, z1, -1.2, z1); muro(1.2, z1, x1, z1);
-    const enPueblo = !!TIPOS[tipo].pueblo, salida = enPueblo ? { id: 'salir_interior', nombre: 'Salir al pueblo', accion: 'Volver al pueblo', destino: {}, irA: 'pueblo', boton: 'Salir al pueblo' } : { id: 'salir_interior', nombre: 'Salir a la calle', accion: 'Volver a la calle', destino: {}, irA: 'calle', boton: 'Salir a la calle' };
+    const enPueblo = !!TIPOS[tipo].pueblo && !deCiudad, salida = enPueblo ? { id: 'salir_interior', nombre: 'Salir al pueblo', accion: 'Volver al pueblo', destino: {}, irA: 'pueblo', boton: 'Salir al pueblo' } : { id: 'salir_interior', nombre: 'Salir a la calle', accion: 'Volver a la calle', destino: {}, irA: 'calle', boton: 'Salir a la calle' };
     const zonas = [[salida, 0, z1 + 1.4]];
     // Actividades del mapa de Ciudad (las mismas que en el menú)
     const C3 = GM.mods.ciudad3d, lid = C3 && C3.lugares ? (C3.lugares(st).find(l => l.tipo === LUGAR[tipo]) || {}).id : null;
@@ -173,7 +173,7 @@
     const nueva = async (o, rol, fijo) => { const p = await M.personaje(Object.assign({ modelo: MODELOS[(r() * MODELOS.length) | 0], altura: 160 + r() * 28, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 5) | 0] }, o)); p.rol = rol; p.fijo = !!fijo; p.r = r; p.espera = r() * 4; p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); return p; };
     const crea = async sp => { const mov = sp.anim === 'walk', p = await nueva({ modelo: sp.modelo }, sp.rol, !mov); p.obj.position.set(sp.x, 0, sp.z); p.obj.rotation.y = sp.ry || 0; if (sp.sentado) { p.asiento = sp.asiento || 0.45; M.anim(p, 'sit'); } else if (!mov) M.anim(p, sp.anim || 'idle'); return p; };
     // muebles de Kenney del bar (taburetes, mesas, sillas)
-    const listaMuebles = S.mueblesPend ? S.mueblesPend.slice() : [];
+    const listaMuebles = S.mueblesPend ? S.mueblesPend.slice() : []; S.interiorMuebles = listaMuebles;
     if (S.mueblesPend) { await Promise.all(S.mueblesPend.map(async ([m, x, z, ry]) => { try { const o = await M.mueble(m); o.position.set(x, 0, z); o.rotation.y = ry * Math.PI / 180; S.mundo.add(o); } catch (e) { } })); S.mueblesPend = null; }
     if (GM.interioresVida) { try { GM.interioresVida.decorar(S, M, st, tipo, listaMuebles); } catch (e) { console.error("interioresVida", e); } }
     if (tipo === 'pabellon') {
