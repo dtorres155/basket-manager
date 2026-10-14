@@ -37,7 +37,7 @@
   const navItems = () => entr() ? NAV_E : carrera() ? NAV_C : pres() ? NAV_P : NAV_G;
   const ATT = { tiro3: 'Triple', tiro2: 'Tiro de 2', tl: 'Tiros libres', pase: 'Pase', bote: 'Bote', reb: 'Rebote', defInt: 'Defensa interior', defPer: 'Defensa exterior', fisico: 'Físico', iq: 'Visión de juego' };
   const POSN = { PG: 'Base', SG: 'Escolta', SF: 'Alero', PF: 'Ala-pívot', C: 'Pívot' };
-  const CORTO = { EUROCUP: 'EuroCup', BCL: 'Champions', NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'ACB', LEGA: 'Lega', GBL: 'Grecia', BBL: 'Alemania', BSL: 'Turquía' };
+  const CORTO = { EUROCUP: 'EuroCup', BCL: 'Champions', NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'ACB', LEGA: 'Lega', GBL: 'Grecia', BBL: 'Alemania', BSL: 'Turquía', MUNDIAL: 'Mundial', EUROBASKET: 'EuroBasket', JJOO: 'Juegos Olímpicos', TORNEO_VERANO: 'Torneo de verano' };
   function rgb(h) { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
   function lum(h) { const c = rgb(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
   const contraste = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
@@ -454,7 +454,7 @@
     }
     if (st.temporadaTerminada) {
       const champs = st.historial.filter(x => x.temporada === st.temporada);
-      el.append(seccion('Temporada ' + st.temporada + ' terminada', h('div', { class: 'tarjeta' }, h('ul', { class: 'cronica' }, champs.map(c => h('li', null, '🏆 ' + (CORTO[c.comp] || GM.compNombre(st, c.comp)) + ': ' + eq(c.campeon).nombre + (c.campeon === club ? ' (¡tu club!)' : '')))),
+      el.append(seccion('Temporada ' + st.temporada + ' terminada', h('div', { class: 'tarjeta' }, h('ul', { class: 'cronica' }, champs.map(c => h('li', null, '🏆 ' + (CORTO[c.comp] || GM.compNombre(st, c.comp)) + ': ' + (String(c.campeon).indexOf('pais:') === 0 ? (M().pretemporada ? M().pretemporada.nombrePais(String(c.campeon).slice(5)) : String(c.campeon).slice(5)) : eq(c.campeon).nombre) + (c.campeon === club ? ' (¡tu club!)' : '')))),
         h('p', { class: 'muted' }, carrera() ? 'Revisa las ofertas de tu representante y empieza la siguiente temporada cuando estés listo.' : 'Renueva a los jugadores con contrato que vence (Mercado) y empieza la siguiente temporada cuando estés listo.'), h('button', { class: 'btn grande', onclick: nuevaTemporada }, 'Empezar temporada siguiente'))));
     } else {
       const g = C.proximoPartido(st, club);

@@ -3,17 +3,17 @@
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
 const DIR = path.join(__dirname, '..', 'capturas', 'casa'); fs.mkdirSync(DIR, { recursive: true });
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const { sleep, esperarEscena } = require('./ayudas');
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = [], out = {};
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await p.goto(process.env.URL || 'http://localhost:8080/'); await sleep(700);
   await p.evaluate(() => { localStorage.clear(); const pj = GM.mods.personaje.crear(); pj.nombre = 'Marc'; GM.newGame('joventut-badalona', undefined, { modo: 'carrera', personaje: pj, carrera: { pos: 'SG', perfil: 'tirador', nac: 'ES', origen: 'europa', agente: 'equilibrado', clubId: 'joventut-badalona' } }); GM.state.carrera.dinero = 30; GM.ui.start(document.getElementById('app')); GM.sede.abrir(GM.state); });
-  await sleep(8000); await p.evaluate(() => GM.sede._escena('calle')); await sleep(10000);
+  await esperarEscena(p); await p.evaluate(() => GM.sede._escena('calle')); await esperarEscena(p);
   // Portal de casa
   await p.evaluate(() => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'portal') || S.zonas.find(z => /^casa:/.test(z.sala.irA || '') && /vives aquí/.test(z.sala.nombre)) || S.zonas.find(z => /^casa:/.test(z.sala.irA || '')); S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z); }); await sleep(1000);
-  out.portal = await p.evaluate(() => { const b = document.querySelector('.sp-ir'); if (b) b.click(); return b && b.textContent; }); await sleep(7000);
+  out.portal = await p.evaluate(() => { const b = document.querySelector('.sp-ir'); if (b) b.click(); return b && b.textContent; }); await esperarEscena(p);
   out.escena = await p.evaluate(() => GM.sede._estado().escena);
   await p.evaluate(() => document.querySelectorAll('.sede-ayuda').forEach(e => e.style.display = 'none'));
   await p.evaluate(() => { const S = GM.sede._estado(); S.zoom = 13; }); await sleep(1500); await p.screenshot({ path: path.join(DIR, '1_casa.png') });
@@ -58,6 +58,6 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.evaluate(() => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'casa'); S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z); }); await sleep(1000);
   out.descanso = await p.evaluate(() => { const b = [...document.querySelectorAll('.sede-sala button')].find(x => x.textContent.includes('Descansar')); if (b) b.click(); return !!b; }); await sleep(500);
   out.toast = await p.evaluate(() => (document.querySelector('.toast') || {}).textContent);
-  await p.evaluate(() => GM.sede._escena('calle')); await sleep(9000); out.vuelta = await p.evaluate(() => { const S = GM.sede._estado(); return S.escena + ' en ' + S.yo.obj.position.x.toFixed(1) + ',' + S.yo.obj.position.z.toFixed(1); });
+  await p.evaluate(() => GM.sede._escena('calle')); await esperarEscena(p); out.vuelta = await p.evaluate(() => { const S = GM.sede._estado(); return S.escena + ' en ' + S.yo.obj.position.x.toFixed(1) + ',' + S.yo.obj.position.z.toFixed(1); });
   console.log(JSON.stringify(out, null, 1), '\nerrores:', errs.length ? errs.slice(0, 6) : 'ninguno'); await b.close();
 })();

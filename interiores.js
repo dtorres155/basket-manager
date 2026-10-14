@@ -29,10 +29,11 @@
     const G = M.rejilla({ limites: [Math.min(x0, ...an.map(a => a.r.x0)) - 2, Math.min(z0, ...an.map(a => a.r.z0)) - 2, Math.max(x1, ...an.map(a => a.r.x1)) + 2, z1 + 5], CELDA: 0.5 }); S.G = G;
     // Suelo y muros en corte con la puerta al sur
     const suelo = { pabellon: '#3a3f46', tienda: '#d9d4cb', pena: '#7a5638', ayuntamiento: '#d8cdb8', bar_pueblo: '#8a6a4a', casa_padres: '#b98e63', casa_amigos: '#9a8f7a', casa_pueblo: '#a5794f', restaurante: '#8a5f3c', gimnasio_barrio: '#2f3439', barberia: '#e8e2d4' }[tipo] || (IPm && IPm.SUELO[tipo]) || '#b98e63';
-    const mSuelo = new THREE.MeshStandardMaterial({ color: suelo, roughness: tipo === 'ayuntamiento' ? 0.35 : 0.8 }), TR = GM.texturas;
+    const VEC = deCiudad && tipo === 'casa_amigos' ? ((st.sede && st.sede.vecinoK) || 0) % 4 : -1; S.vecinoVar = VEC; const sueloV = VEC >= 0 ? ['#9a8f7a', '#a58a6a', '#8a8f96', '#b09a7e'][VEC] : suelo;
+    const mSuelo = new THREE.MeshStandardMaterial({ color: sueloV, roughness: tipo === 'ayuntamiento' ? 0.35 : 0.8 }), TR = GM.texturas;
     if (TR) { if (['pena', 'bar_pueblo', 'casa_padres', 'casa_amigos', 'casa_pueblo'].indexOf(tipo) >= 0) TR.aplicar(mSuelo, 'WoodFloor051', { escala: 2.2, tinte: new THREE.Color(suelo).lerp(new THREE.Color(0xffffff), 0.45).getHex() }); else if (tipo === 'ayuntamiento') TR.aplicar(mSuelo, 'Tiles074', { escala: 1.6, rugosidad: 0.3 }); else TR.aplicar(mSuelo, 'Concrete034', { color: false, escala: 3, relieve: 0.6 }); }
     const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), mSuelo); fl.receiveShadow = true; W.add(fl);
-    const alto = tipo === 'pabellon' ? 3.2 : 1.8, muroC = { pabellon: '#5d6873', tienda: '#f2efe8', pena: '#c9a27a', ayuntamiento: '#efe6d2', bar_pueblo: '#e8dcc4', casa_padres: '#efe3cf', casa_amigos: '#c9d3dc', casa_pueblo: '#e6d8bf', restaurante: '#efe3cf', gimnasio_barrio: '#c9d0d6', barberia: '#f4f1ea' }[tipo] || (IPm && IPm.MURO[tipo]) || '#efe6d2';
+    const alto = tipo === 'pabellon' ? 3.2 : 1.8; let muroC = { pabellon: '#5d6873', tienda: '#f2efe8', pena: '#c9a27a', ayuntamiento: '#efe6d2', bar_pueblo: '#e8dcc4', casa_padres: '#efe3cf', casa_amigos: '#c9d3dc', casa_pueblo: '#e6d8bf', restaurante: '#efe3cf', gimnasio_barrio: '#c9d0d6', barberia: '#f4f1ea' }[tipo] || (IPm && IPm.MURO[tipo]) || '#efe6d2'; if (VEC >= 0) muroC = ['#c9d3dc', '#e6d3b3', '#cfe0d0', '#e9cdc4'][VEC];
     if (TR) TR.aplicar(mat(muroC), 'Plaster003', { color: false, escala: 1.6, relieve: 0.8 });
     const muro = (xa, za, xb, zb) => { const L = Math.hypot(xb - xa, zb - za), m = caja(W, xa === xb ? 0.25 : L, alto, xa === xb ? L : 0.25, muroC, (xa + xb) / 2, 0, (za + zb) / 2); void m; G.bloquea(Math.min(xa, xb) - 0.2, Math.min(za, zb) - 0.2, Math.max(xa, xb) + 0.2, Math.max(za, zb) + 0.2); };
     const tramos = (a, b, gaps) => { let seg = [[a, b]]; gaps.forEach(([g0, g1]) => { seg = [].concat(...seg.map(([p, q]) => (g1 <= p || g0 >= q ? [[p, q]] : [[p, Math.min(g0, q)], [Math.max(g1, p), q]].filter(s => s[1] - s[0] > 0.05)))); }); return seg; };
@@ -176,6 +177,7 @@
     const listaMuebles = S.mueblesPend ? S.mueblesPend.slice() : []; S.interiorMuebles = listaMuebles;
     if (S.mueblesPend) { await Promise.all(S.mueblesPend.map(async ([m, x, z, ry]) => { try { const o = await M.mueble(m); o.position.set(x, 0, z); o.rotation.y = ry * Math.PI / 180; S.mundo.add(o); } catch (e) { } })); S.mueblesPend = null; }
     if (GM.interioresVida) { try { GM.interioresVida.decorar(S, M, st, tipo, listaMuebles); } catch (e) { console.error("interioresVida", e); } }
+    if (GM.decorar) { try { await GM.decorar.cargar(S, M, st); } catch (e) { console.error('decorar', e); } }
     if (tipo === 'pabellon') {
       const partido = S.dia && S.dia.tipo === 'partido' && S.dia.casa, cols = [c1, c2, '#f2f2f2', '#2f3a46'], lleno = partido ? 0.85 : 0.08;
       const fans = (S.gradas || []).filter(() => r() < lleno).map(g => Object.assign({}, g, { ropa: cols[(r() * 4) | 0], piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 5) | 0] }));
@@ -207,7 +209,7 @@
     } else if (tipo === 'casa_padres' || tipo === 'casa_amigos') {
       const so = st.carrera && st.carrera.social, cs = so && so.contactos ? so.contactos.filter(c => tipo === 'casa_padres' ? c.tipo === 'familia' : c.tipo === 'amigo') : [];
       const nom = (i, def) => (cs[i] && cs[i].nombre) || def, sitios = tipo === 'casa_padres' ? [[-4.1, 1.2, Math.PI / 2], [-1.9, 1.2, -Math.PI / 2]] : [[-1.4, 1.6, Math.PI], [0.4, 1.6, Math.PI], [-3.4, 0.6, Math.PI / 2]];
-      for (let i = 0; i < sitios.length; i++) { const [x, z, ry] = sitios[i]; const p = await nueva(tipo === 'casa_padres' ? { modelo: i ? 'h-casual_2' : 'm-casual', pelo: '#8a8a8a' } : { ropa: i === 1 ? [c1, c2] : null }, tipo === 'casa_padres' ? nom(i, i ? 'Tu padre' : 'Tu madre') : nom(i, 'Amigo de siempre'), true); p.obj.position.set(x, 0, z); p.obj.rotation.y = ry; p.asiento = 0.45; M.anim(p, 'sit'); }
+      for (let i = 0; i < sitios.length; i++) { const [x, z, ry] = sitios[i]; const p = await nueva(tipo === 'casa_padres' ? { modelo: i ? 'h-casual_2' : 'm-casual', pelo: '#8a8a8a' } : { ropa: i === 1 ? [c1, c2] : null }, tipo === 'casa_padres' ? nom(i, i ? 'Tu padre' : 'Tu madre') : (S.escenaOrigen === 'calle' && S.vecinoVar >= 0 ? ['Marta', 'Jaume', 'Rosa', 'Toni', 'Elena', 'Pau'][(i * 2 + S.vecinoVar) % 6] + ', vecino' : nom(i, 'Amigo de siempre')), true); p.obj.position.set(x, 0, z); p.obj.rotation.y = ry; p.asiento = 0.45; M.anim(p, 'sit'); }
     } else if (GM.interioresPueblo && GM.interioresPueblo.TIPOS[tipo]) {
       for (const sp of GM.interioresPueblo.poblar(tipo)) await crea(sp);
     } else {

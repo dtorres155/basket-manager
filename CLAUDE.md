@@ -69,6 +69,9 @@ node tools/casa_editor_prueba.js         # editor de la casa: muros, puertas, ve
 node tools/interaccion_prueba.js          # tocar los muebles de una casa: dormir, tele, cocina, ducha, nevera, luz...
 node tools/casas_producto_prueba.js       # casas como producto: obras visibles, valor, averías y panel
 node tools/fuga_ciudades.js [n]           # abre n ciudades seguidas y mide heap, geometrías y texturas (detecta fugas de escena)
+node tools/decorar_prueba.js              # decorar locales: colocar, guardar, volver y vender muebles en el restaurante
+node tools/vecinos_pisos_prueba.js        # los portales de vecinos de la ciudad real abren cada uno su piso y devuelven a su puerta
+node tools/error_temporada.js [club] [origen]   # juega una temporada de carrera y comprueba que Inicio no falla al terminar (campeones de selecciones)
 node tools/escenas_todas.js               # entra en todas las escenas e interiores (gestor y carrera) y falla si alguno no carga
 node tools/sonido_prueba.js               # sonido ambiente: arranca con el primer clic, mezcla por escena y botón de silencio
 node tools/escritorio_escenas.js          # versión de escritorio: árboles reales en ciudad deportiva y pueblo, y persianas en la calle
@@ -167,3 +170,5 @@ Fugas de escena: al cerrar un mundo (`cerrar()` en sede3d.js) hay que soltar tod
 - **Pruebas por tamaño del cambio:** mientras desarrollas, `npm run test:rapido` o `node test_all.js --solo=...` y la prueba de navegador de lo que tocas. `npm test` completo, `escenas_todas.js` y `real_clubes.js` solo antes de publicar.
 - **Publicar por lotes:** commit y push cuando haya algo terminado y probado, pero la versión de escritorio (`npm run publicar`, con subida del instalador) solo cuando el usuario lo pida o al cerrar un lote de varios puntos; no una versión por punto. El barrido de ciudades (`barrido_ciudades.js`, unos 25 min) solo cuando cambian los datos de ciudades o el motor de la calle.
 - **Esperas en las pruebas de navegador:** usa `tools/ayudas.js` (`esperarEscena`, `irA`, `esperar`) en vez de `sleep` fijos.
+
+Tanda 29: `decorar_interior.js` (`GM.decorar`, versión ligera del editor para locales y pabellón, `state.sede.decor`), el editor de la casa separa plantas (`E.planta`, `plantaOk`) y los portales de vecinos usan `state.sede.vecinoK`. Los campeones del historial pueden ser `pais:XX` (selecciones): nunca asumas que `campeon` es un club.

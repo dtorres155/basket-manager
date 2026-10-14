@@ -386,7 +386,7 @@
     if (!S || S.cambiando) return; if (GM.relieve) GM.relieve.fijar(null); S.cambiando = true; const de = S.escena; S.rend = null;
     if (S.yo && S.yo.bici && GM.ciudadBarrios) GM.ciudadBarrios.bici(false);
     S.mascota = null;
-    if (S.construccion && GM.casa) await GM.casa.activar(S, motor(), false);
+    if (S.construccion && GM.casa) await GM.casa.activar(S, motor(), false); if (S.decorando && GM.decorar) await GM.decorar.activar(S, motor(), false);
     const velo = GM.h('div', { class: 'sede-velo' }); S.raiz.append(velo); await new Promise(r => setTimeout(r, 280));
     try {
       if (S.panel) S.panel.style.display = 'none'; S.zonaActual = null; S.panelFijo = false; if (S.grupo) disolver();

@@ -4,7 +4,7 @@
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
 const DIR = path.join(__dirname, '..', 'capturas', 'vida'); fs.mkdirSync(DIR, { recursive: true });
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const { sleep, esperarEscena } = require('./ayudas');
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(), errs = [];
@@ -28,13 +28,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   console.log(await p.evaluate(() => 'móvil: ' + GM.mods.movil.chats(GM.state).map(c => c.nombre + (c.pendientes ? ' (decidir)' : '')).join(', ') + '\nlogros: ' + GM.mods.vida.logros(GM.state).filter(x => x.fecha).map(x => x.t).join(', ')));
   // casa con vitrina y perro
   await p.evaluate(() => { const st = GM.state; GM.mods.vida.adoptar(st, 'perro'); GM.campus.config.calidad = 'alta'; GM.sede.abrir(st, 'casa:' + GM.casa.idActual(st)); });
-  await sleep(9000);
+  await esperarEscena(p);
   await p.evaluate(() => { const S = GM.sede._estado(); document.querySelectorAll('.sede-ayuda').forEach(e => e.remove()); S.zoom = 9; S.inc = 0.8; });
   await sleep(1500); await p.screenshot({ path: path.join(DIR, 'casa_mascota.png') });
   console.log(await p.evaluate(() => { const S = GM.sede._estado(); return 'mascota en escena: ' + (S.mascota ? S.mascota.nombre + ' a ' + S.mascota.obj.position.distanceTo(S.yo.obj.position).toFixed(1) + ' m de ti' : 'no') + ', zonas: ' + S.zonas.map(z => z.sala.id).join(', '); }));
   // tu casa del pueblo: comprar, acabar la obra y entrar
   await p.evaluate(() => { const st = GM.state; st.carrera.dinero = 900; const r = GM.mods.pueblo.invertir(st, 'micasa'); (st.carrera.pueblo.obras || []).forEach(o => { o.fin = st.fecha; }); GM.mods.competiciones.jugarDia(st); window._micasa = r; GM.sede.cerrar(); GM.sede.abrir(st, 'interior:casa_pueblo'); });
-  await sleep(9000);
+  await esperarEscena(p);
   await p.evaluate(() => { const S = GM.sede._estado(); document.querySelectorAll('.sede-ayuda').forEach(e => e.remove()); S.zoom = 10; S.inc = 0.85; });
   await sleep(1500); await p.screenshot({ path: path.join(DIR, 'casa_pueblo.png') });
   console.log(await p.evaluate(() => 'casa del pueblo: ' + JSON.stringify(window._micasa).slice(0, 80) + ', ' + GM.sede._estado().interiorNombre + ', acciones: ' + GM.sede._estado().zonas.filter(z => z.sala.acciones).map(z => z.sala.acciones(GM.state).map(a => a.t + (a.disponible ? '' : ' (no)')).join(' / ')).join(' | ')));

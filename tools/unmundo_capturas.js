@@ -3,7 +3,7 @@
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
 const DIR = path.join(__dirname, '..', 'capturas', 'unmundo'); fs.mkdirSync(DIR, { recursive: true });
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const { sleep, esperarEscena } = require('./ayudas');
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const p = await (await b.newContext({ viewport: { width: 900, height: 800 } })).newPage(), errs = [];
@@ -15,12 +15,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     GM.campus.config.calidad = 'alta'; GM.ui.start(document.getElementById('app')); GM.ui.navegar('ciudad'); });
   await sleep(600);
   const tabs = await p.evaluate(() => [...document.querySelectorAll('.cuerpo .tab')].map(t => t.textContent).join(' | '));
-  await p.evaluate(() => { const t = [...document.querySelectorAll('.cuerpo .tab')].find(x => /pueblo/i.test(x.textContent)); if (t) t.click(); }); await sleep(5000);
+  await p.evaluate(() => { const t = [...document.querySelectorAll('.cuerpo .tab')].find(x => /pueblo/i.test(x.textContent)); if (t) t.click(); }); await esperarEscena(p);
   let el = await p.$('.cuerpo canvas'); if (el) await el.screenshot({ path: path.join(DIR, '1_mi_pueblo.png') });
   // tocar la parcela de la escuela desde el panel (simulado: selección y foco)
   const sel = await p.evaluate(() => { const V = GM.mods.pueblo._v ? GM.mods.pueblo._v() : null; return !!V; });
   console.log('pestañas de Ciudad:', tabs, '| selección expuesta:', sel);
-  await p.evaluate(() => { const t = [...document.querySelectorAll('.cuerpo .tab')].find(x => /mapa/i.test(x.textContent)); if (t) t.click(); }); await sleep(6000);
+  await p.evaluate(() => { const t = [...document.querySelectorAll('.cuerpo .tab')].find(x => /mapa/i.test(x.textContent)); if (t) t.click(); }); await esperarEscena(p);
   el = await p.$('.cuerpo canvas'); if (el) await el.screenshot({ path: path.join(DIR, '2_mapa_ciudad.png') });
   console.log('errores:', errs.length ? errs.slice(0, 5) : 'ninguno');
   await b.close();

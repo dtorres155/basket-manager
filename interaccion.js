@@ -115,7 +115,7 @@
     c.iv = setInterval(() => {
       if (!GM.sede || GM.sede._estado() !== S || !CORR) { cancelar(S, M); return; }
       if (S.yo.camino && S.yo.camino.length > 0 && !yo.tumbado && !yo.sentado) { cancelar(S, M, 'Lo dejas a medias'); return; }
-      const t = (performance.now() - t0) / 1000, k = Math.min(1, t / a.dur); relleno.style.width = Math.round(k * 100) + '%';
+      const t = (performance.now() - t0) / 1000, k = Math.min(1, t / (a.dur * (GM.interaccion.velocidad || 1))); relleno.style.width = Math.round(k * 100) + '%';
       adornos.forEach(ad => { if (ad.tick) ad.tick(t, 0.08); });
       if (a.min > 0) { S.hora = Math.min(23.5, (S.hora || 12) + a.min / 60 * (k - previo)); S.tLuz = 0; } previo = k;
       if (k >= 1) terminar(S, M, c);
@@ -132,6 +132,6 @@
     const q = cercano(S, p); if (!q) return false; return panel(S, M, q);
   }
   function selfTest() { return defDe('bedDouble') && defDe('kitchenStove') && defDe('televisionModern') && defDe('lampRoundFloor') && DEFS.every(d => d.acc.length > 0 && d.acc.every(a => a.id && a.t && a.dur > 0)) && !defDe('inexistente'); }
-  GM.interaccion = { DEFS, defDe, toque, cercano, panel, empezar, cancelar, accionesDe, MEDIDAS, selfTest, activa: () => !!CORR };
+  GM.interaccion = { velocidad: 1, DEFS, defDe, toque, cercano, panel, empezar, cancelar, accionesDe, MEDIDAS, selfTest, activa: () => !!CORR };
   GM.register && GM.register('interaccion', { selfTest });
 })();

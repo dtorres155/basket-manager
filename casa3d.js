@@ -185,7 +185,7 @@
   // Cabe si queda dentro de una habitación (o del exterior), no tapa una puerta ni la piscina y no pisa otro mueble
   // (los muebles que aún no tienen sitio no estorban)
   function cabe(S, st, m, x, z, r, ignorar) {
-    const PL = S.casaPlano, h = huella(m, x, z, r); if (!PL) return false;
+    const PL = S.casaPlano, h = huella(m, x, z, r); if (!PL) return false; if (GM.casaEditor && !GM.casaEditor.plantaOk(S, x, z)) return false;
     const dentro = PL.habs.concat(PL.ext).some(q => h[0] >= q.x0 + 0.12 && h[2] <= q.x1 - 0.12 && h[1] >= q.z0 + 0.12 && h[3] <= q.z1 - 0.12); if (!dentro) return false;
     if (CAT[m] && CAT[m].pisable) return true;
     if ((S.casaPuertas || []).some(([px, pz]) => px > h[0] - 0.7 && px < h[2] + 0.7 && pz > h[1] - 0.7 && pz < h[3] + 0.7)) return false;   // las puertas, libres

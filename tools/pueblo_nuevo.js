@@ -5,7 +5,7 @@ const path = require('path'), fs = require('fs');
 const DIR = path.join(__dirname, '..', 'capturas', (process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'pueblo_nuevo')); fs.mkdirSync(DIR, { recursive: true });
 const NV = (process.argv.find(a => /^--nivel=/.test(a)) || '--nivel=max').split('=')[1];
 const SOLO = (process.argv.find(a => a !== process.argv[0] && a !== process.argv[1] && !a.startsWith('--') && a.indexOf(',') >= 0 || /^interior:/.test(a)) || '').replace('interior:', '');
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const { sleep, esperarEscena } = require('./ayudas');
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = [];
@@ -19,7 +19,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     P.edificios = Object.keys(E).map(k => ({ tipo: k, nivel: nv === 'max' ? E[k].max : +nv })); P.obras = []; if (window.__FECHA) st.fecha = window.__FECHA;
     GM.campus.config.calidad = 'alta'; GM.ui.start(document.getElementById('app')); GM.sede.abrir(st, 'pueblo');
   }, NV);
-  await sleep(12000);
+  await esperarEscena(p);
   await p.evaluate(() => { GM.sede._clima('sol'); }); await sleep(1500);
   const info = await p.evaluate(() => { const S = GM.sede._estado(); return { conflictos: S.conflictos, lotes: Object.keys(S.lotes), vehiculos: !!S.zonas.find(z => z.sala.id === 'pueblo_vehiculos'), puertas: Object.keys(S.puertas || {}) }; });
   console.log(JSON.stringify(info));
@@ -46,7 +46,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   { const o = await p.evaluate(() => { let q = null; GM.sede._estado().mundo.traverse(x => { if (!q && x.userData && x.userData.vida === 'oveja') q = [x.position.x, x.position.y, x.position.z]; }); return q; });
     if (o) { await p.evaluate(([o]) => { const S = GM.sede._estado(); S.pausa = true; if (S.panel) S.panel.style.display = 'none'; S.camera.position.set(o[0] + 7, o[1] + 4, o[2] + 9); S.camera.lookAt(o[0], o[1] + 0.5, o[2]); S.renderer.render(S.scene, S.camera); }, [o]); await sleep(500); await p.screenshot({ path: path.join(DIR, 'c_ovejas.png') }); await p.evaluate(() => { GM.sede._estado().pausa = false; }); } else console.log('sin ovejas'); }
   await p.evaluate(() => { const S = GM.sede._estado(); S.hora = 21.3; S.yo.obj.position.set(0, 0, 8); S.foco.set(0, 0, 8); S.zoom = 38; S.inc = 0.8; S.yaw = 0.4; }); await sleep(2500); await p.screenshot({ path: path.join(DIR, 'n_noche.png') });
-  await p.evaluate(() => { const S = GM.sede._estado(); S.hora = 8.5; S.zoom = 20; S.inc = 0.62; S.yo.obj.position.set(1, 0, 6); S.foco.set(1, 0, 6); }); await sleep(9000); await p.screenshot({ path: path.join(DIR, 'v_vecinos.png') });
+  await p.evaluate(() => { const S = GM.sede._estado(); S.hora = 8.5; S.zoom = 20; S.inc = 0.62; S.yo.obj.position.set(1, 0, 6); S.foco.set(1, 0, 6); }); await esperarEscena(p); await p.screenshot({ path: path.join(DIR, 'v_vecinos.png') });
   await foto('3_vehiculos', () => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'pueblo_vehiculos'); if (z) { S.yo.camino = null; S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z); } S.zoom = 12; S.inc = 0.6; S.yaw = 0.4; });
   // moto
   await p.evaluate(() => { const S = GM.sede._estado(), z = S.zonas.find(z => z.sala.id === 'pueblo_vehiculos'); if (z) z.sala.acciones(GM.state)[1].fn(); });
@@ -57,7 +57,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const tipos = (SOLO ? SOLO.split(',') : ['bar_pueblo', 'casa_padres', 'casa_amigos', 'casa_pueblo', 'escuela', 'biblioteca', 'tienda_pueblo', 'ambulatorio', 'polideportivo', 'hotel', 'cine', 'centrodia', 'panaderia', 'taller', 'restaurante_pueblo', 'industrial', 'pabellon_pueblo']);
   for (const t of tipos) {
     const n0 = errs.length;
-    await p.evaluate(t => GM.sede._escena('interior:' + t), t); await sleep(6500);
+    await p.evaluate(t => GM.sede._escena('interior:' + t), t); await esperarEscena(p);
     const r = await p.evaluate(() => { const S = GM.sede._estado(); return { escena: S.escena, tipo: S.interiorTipo, gente: S.gente.length, zonas: S.zonas.length }; });
     await foto('5_' + t, () => { const S = GM.sede._estado(); S.yo.camino = null; S.yo.obj.position.set(0, 0, -1.5); S.foco.set(0, 0, -3); S.zoom = 34; S.inc = 1.05; S.yaw = 0; });
     console.log(t, JSON.stringify(r), errs.length > n0 ? 'ERRORES: ' + errs.slice(n0, n0 + 2).join(' | ') : 'sin errores');
@@ -65,7 +65,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // Menú «Mi pueblo» (pantalla de Ciudad)
   await p.evaluate(() => { GM.sede.cerrar(); }); await sleep(1500);
   await p.evaluate(() => { GM.ui.navegar('ciudad'); }); await sleep(1500);
-  await p.evaluate(() => { const b = [...document.querySelectorAll('.tabs .tab, .seg .tab, button')].find(x => x.textContent.trim() === 'Mi pueblo'); if (b) b.click(); }); await sleep(7000);
+  await p.evaluate(() => { const b = [...document.querySelectorAll('.tabs .tab, .seg .tab, button')].find(x => x.textContent.trim() === 'Mi pueblo'); if (b) b.click(); }); await esperarEscena(p);
   await p.screenshot({ path: path.join(DIR, '6_menu_pueblo.png') });
   await p.evaluate(() => { const c = document.querySelector('.panel3d'); if (c) c.scrollTop = 600; const b = [...document.querySelectorAll('.pb-edi')][3]; if (b) b.click(); }); await sleep(2500);
   await p.screenshot({ path: path.join(DIR, '6b_menu_pueblo_sel.png') });

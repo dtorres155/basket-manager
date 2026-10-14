@@ -10,7 +10,7 @@
   const U = GM.util, T = THREE;
   const I = () => GM.casa._i, PRE = { muro: 0.05, puerta: 0.2, ventana: 0.15 };
   let E = null, BIB = null;
-  const nuevoE = st => ({ pila: [], rehacer: [], vista: 'persp', techo: false, herr: null, ini: null, prev: null, filtro: { q: '', orden: '', barato: false }, d0: I().dinero(st) });
+  const nuevoE = st => ({ pila: [], rehacer: [], planta: 'ambas', vista: 'persp', techo: false, herr: null, ini: null, prev: null, filtro: { q: '', orden: '', barato: false }, d0: I().dinero(st) });
   const ajustar = v => Math.round(v * 2) / 2;
   const euros = k => Math.round(k * 1000).toLocaleString('es-ES') + ' €';
   const toast = t => { if (GM.ui && GM.ui.toast) GM.ui.toast(t); };
@@ -29,7 +29,17 @@
     const st = S.st, D = dat(st), K = S.casaMats, i = I(); i.deseleccionar(S);
     S.mueblesCasa.forEach(o => S.mundo.remove(o)); S.mueblesCasa = []; await Promise.all(D.muebles.map(x => i.colocarObj(S, M, x)));
     K.muro.color.set(i.colorPared(st, D.pared || 0)); i.ponerSuelo(S, M, D.suelo || 0); K.luz.color.setHex(i.LUCES[D.luz || 0][1]); if (K.luz2) K.luz2.color.setHex(i.LUCES[D.luz || 0][1]);
-    dibujarMuros(S, M); aplicarSuelos(S, M); vista(S, E.vista, true); i.rehacerRejilla(S, st); i.pintarCatalogo(S, M);
+    dibujarMuros(S, M); aplicarSuelos(S, M); vista(S, E.vista, true); aplicarPlanta(S); i.rehacerRejilla(S, st); i.pintarCatalogo(S, M);
+  }
+  // ---------- Plantas: la de abajo y la de arriba se editan por separado ----------
+  const tienePlantaAlta = S => !!(S.casaPlano && S.casaPlano.habs.some(r => r.arriba));
+  function plantaDe(S, x, z) { const r = S.casaPlano && S.casaPlano.habs.find(q => x >= q.x0 - 0.01 && x <= q.x1 + 0.01 && z >= q.z0 - 0.01 && z <= q.z1 + 0.01); return r && r.arriba ? 'arriba' : 'baja'; }
+  const plantaOk = (S, x, z) => !E || E.planta === 'ambas' || plantaDe(S, x, z) === E.planta;
+  function aplicarPlanta(S) {
+    if (!E) return; const st = S.st, D = dat(st), f = E.planta, W = S.mundo; if (S.edVelo) { W.remove(S.edVelo); S.edVelo = null; }
+    (S.mueblesCasa || []).forEach(o => { o.visible = f === 'ambas' || plantaDe(S, o.position.x, o.position.z) === f; });
+    if (S.edMuros) S.edMuros.traverse(o => { if (o.userData && o.userData.edMuro !== undefined) { const m = D.muros[o.userData.edMuro]; o.visible = !m || f === 'ambas' || (m.p || 'baja') === f; } });
+    if (f !== 'ambas') { const g = S.edVelo = new T.Group(); S.casaPlano.habs.forEach(r => { if ((r.arriba ? 'arriba' : 'baja') === f) return; const p = new T.Mesh(new T.BoxGeometry(r.x1 - r.x0, 0.06, r.z1 - r.z0), new T.MeshBasicMaterial({ color: 0x1d232a, transparent: true, opacity: 0.72 })); p.position.set((r.x0 + r.x1) / 2, 1.3, (r.z0 + r.z1) / 2); g.add(p); }); W.add(g); }
   }
   // ---------- Muros, puertas y ventanas de usuario ----------
   function dibujarMuros(S, M) {
@@ -49,7 +59,7 @@
       if (m.t === 'ventana') { caja(w, 0.45, d, cx, 0.225, cz, K.muro, false, id); caja(w, alto - 0.45, horiz ? 0.06 : 0.06, cx, 0.45 + (alto - 0.45) / 2, cz, mV, false, id); caja(horiz ? w : 0.22, 0.04, horiz ? 0.22 : d, cx, alto + 0.02, cz, K.remate, true, id); col(xa, za, xb, zb); return; }
       caja(w, alto, d, cx, alto / 2, cz, K.muro, false, id); caja(horiz ? w : 0.21, 0.04, horiz ? 0.21 : d, cx, alto + 0.02, cz, K.remate, true, id); col(xa, za, xb, zb);
     });
-    vista(S, E ? E.vista : 'persp', true);
+    vista(S, E ? E.vista : 'persp', true); aplicarPlanta(S);
   }
   const dentro = (S, x, z) => { const [x0, z0, x1, z1] = S.casaRect; return x >= x0 - 0.01 && x <= x1 + 0.01 && z >= z0 - 0.01 && z <= z1 + 0.01; };
   function estorba(S, st, a, b) {
@@ -63,7 +73,7 @@
     const st = S.st, D = dat(st), L = Math.abs(a[0] === b[0] ? b[1] - a[1] : b[0] - a[0]); if (L < 0.5) return false;
     if (!dentro(S, a[0], a[1]) || !dentro(S, b[0], b[1])) { toast('Fuera de la casa'); return false; }
     if (estorba(S, st, a, b)) { toast('Hay un mueble en medio'); return false; }
-    if (!cobrar(st, PRE.muro * L)) return false; snap(S); D.muros.push({ a, b, t: t || 'muro' }); dibujarMuros(S, M); I().rehacerRejilla(S, st); return true;
+    if (!cobrar(st, PRE.muro * L)) return false; snap(S); D.muros.push({ a, b, t: t || 'muro', p: plantaDe(S, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2) }); dibujarMuros(S, M); I().rehacerRejilla(S, st); return true;
   }
   function elemento(S, M, p, t) {
     const st = S.st, D = dat(st), ancho = t === 'puerta' ? 1 : 1.5; let mejor = -1, dm = 0.6;
@@ -72,7 +82,7 @@
     const m = D.muros[mejor], horiz = m.a[1] === m.b[1], lo = horiz ? Math.min(m.a[0], m.b[0]) : Math.min(m.a[1], m.b[1]), hi = horiz ? Math.max(m.a[0], m.b[0]) : Math.max(m.a[1], m.b[1]);
     let c = ajustar(horiz ? p.x : p.z); c = Math.max(lo + ancho / 2, Math.min(hi - ancho / 2, c)); c = Math.round(c * 2) / 2; const a0 = c - ancho / 2, a1 = c + ancho / 2; if (a0 < lo - 0.01 || a1 > hi + 0.01) { toast('No cabe en ese muro'); return false; }
     if (!cobrar(st, PRE[t])) return false; snap(S);
-    const mk = (u0, u1, tt) => horiz ? { a: [u0, m.a[1]], b: [u1, m.a[1]], t: tt } : { a: [m.a[0], u0], b: [m.a[0], u1], t: tt }, nuevos = []; if (a0 - lo > 0.01) nuevos.push(mk(lo, a0, 'muro')); nuevos.push(mk(a0, a1, t)); if (hi - a1 > 0.01) nuevos.push(mk(a1, hi, 'muro'));
+    const mk = (u0, u1, tt) => horiz ? { a: [u0, m.a[1]], b: [u1, m.a[1]], t: tt, p: m.p } : { a: [m.a[0], u0], b: [m.a[0], u1], t: tt, p: m.p }, nuevos = []; if (a0 - lo > 0.01) nuevos.push(mk(lo, a0, 'muro')); nuevos.push(mk(a0, a1, t)); if (hi - a1 > 0.01) nuevos.push(mk(a1, hi, 'muro'));
     D.muros.splice(mejor, 1, ...nuevos); dibujarMuros(S, M); I().rehacerRejilla(S, st); toast((t === 'puerta' ? 'Puerta' : 'Ventana') + ' abierta (' + euros(PRE[t]) + ')'); return true;
   }
   function derribar(S, M, ray) {
@@ -155,6 +165,7 @@
     return h('div', { class: 'ce-barra' },
       h('button', { class: 'btn peq', disabled: !E.pila.length, title: 'Ctrl+Z', onclick: () => deshacer(S, M) }, 'Deshacer'), h('button', { class: 'btn peq', disabled: !E.rehacer.length, title: 'Ctrl+Y', onclick: () => rehacer(S, M) }, 'Rehacer'),
       ['persp', 'planta', 'corte'].map(v => h('button', { class: 'btn peq' + (E.vista === v ? '' : ' btn-sec'), onclick: () => vista(S, v) }, { persp: 'Perspectiva', planta: 'Planta', corte: 'Corte' }[v])),
+      tienePlantaAlta(S) ? [['ambas', 'Las dos plantas'], ['baja', 'Planta baja'], ['arriba', 'Planta de arriba']].map(([k, t]) => h('button', { class: 'btn peq' + (E.planta === k ? '' : ' btn-sec'), onclick: () => { E.planta = k; aplicarPlanta(S); I().pintarCatalogo(S, M); } }, t)) : null,
       h('button', { class: 'btn peq' + (E.techo ? '' : ' btn-sec'), onclick: () => { E.techo = !E.techo; techo(S, E.techo); i.pintarCatalogo(S, M); } }, 'Techo'),
       h('button', { class: 'btn peq btn-sec', onclick: () => { const el = S.raiz.querySelector('.casa-catalogo'); if (el) el.classList.toggle('cc-min'); } }, 'Ver la casa'),
       h('span', { class: 'ce-pres' }, 'Obra: ' + (neto >= 0 ? '' : '+') + euros(Math.abs(neto)) + (pend ? ', ' + pend + ' pedido' + (pend > 1 ? 's' : '') + ' en camino' : '')));
@@ -220,6 +231,6 @@
   function salir(S, M) { if (!E) return; quitarPrev(S); if (E.vista !== 'persp') { E.vista = 'persp'; vista(S, 'persp', true); } techo(S, false); E = null; }
   function soltarHerr() { if (E) { E.herr = null; E.ini = null; } }
   function selfTest() { return diasEntrega(0.05) === 0 && diasEntrega(0.3) === 1 && diasEntrega(0.7) === 2 && diasEntrega(2) === 3 && leerCodigo('basura') === null && typeof codigo({ v: 1, m: [] }) === 'string'; }
-  GM.casaEditor = { alConstruir, entrar, salir, snap, barra, filtros, filtrar, cuerpo, seleccion, reformasExtra, toque, hover, tecla, escape: escapar, soltarHerr, entrega, pendiente, caja: caja3, cargarLib, tamLib, deshacer, rehacer, vista, copiar, alinear, codigo, leerCodigo, empaquetar, aplicarDiseno, nuevoMuro, estado: () => E, selfTest };
+  GM.casaEditor = { plantaOk, plantaDe, aplicarPlanta, alConstruir, entrar, salir, snap, barra, filtros, filtrar, cuerpo, seleccion, reformasExtra, toque, hover, tecla, escape: escapar, soltarHerr, entrega, pendiente, caja: caja3, cargarLib, tamLib, deshacer, rehacer, vista, copiar, alinear, codigo, leerCodigo, empaquetar, aplicarDiseno, nuevoMuro, estado: () => E, selfTest };
   GM.register && GM.register('casaEditor', { selfTest });
 })();
