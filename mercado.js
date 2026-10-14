@@ -25,7 +25,7 @@
   }
   function salarioPedido(st, jugId, eqId) {
     const p = st.jugadores[jugId], l = ligaDe(st, eqId);
-    const s = valorJugador(p) * FACT[l] * (0.9 + (U.hash(jugId) % 21) / 100);
+    const s = valorJugador(p) * FACT[l] * (0.9 + (U.hash(jugId) % 21) / 100) * (GM.economia ? GM.economia.factorSalario(st, eqId) : 1);
     return Math.min(MAXSAL[l], Math.max(MINSAL[l], Math.round(s / 10000) * 10000));
   }
   const masaMax = (st, eqId) => Math.round(2e6 + Math.pow(st.equipos[eqId].reputacion / 100, 3) * 60e6);

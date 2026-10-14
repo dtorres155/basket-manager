@@ -178,7 +178,7 @@
   // Efectos de una interacción con un mueble (punto 51): { moral, fat, xp, conf, fama } sobre el jugador o sobre el club según el modo; devuelve { ok, texto }
   function puede(st, coste) { if (coste && dinero(st) < coste) return { ok: false, motivo: 'No tienes ahorros para eso.' }; return { ok: true }; }
   function aplicar(st, ef, coste) {
-    ef = ef || {}; const out = []; if (coste) { if (dinero(st) < coste) return { ok: false, motivo: 'No tienes ahorros para eso.' }; gastar(st, coste); }
+    ef = ef || {}; const out = []; if (GM.rutina && ef) { GM.rutina.aplicar(st, ef); if (ef.energia > 15) out.push('energía'); if (ef.hambre > 15) out.push('comida'); } if (coste) { if (dinero(st) < coste) return { ok: false, motivo: 'No tienes ahorros para eso.' }; gastar(st, coste); }
     if (modoCar(st)) { const c = C(st), p = st.jugadores.yo; if (ef.moral) { c.moral = U.clamp(c.moral + ef.moral, 0, 100); out.push('ánimo +' + ef.moral); } if (ef.fat) { p.estado.fatiga = U.clamp(p.estado.fatiga + ef.fat, 0, 100); out.push(ef.fat < 0 ? 'descansas' : 'te cansas un poco'); } if (ef.xp) { p.xp = (p.xp || 0) + ef.xp; out.push('progresión'); } if (ef.fama) c.fama = c.fama + ef.fama; }
     else { const pl = club(st).plantilla.map(i => st.jugadores[i]).filter(Boolean); if (ef.moral) { pl.forEach(p => { p.estado.moral = U.clamp(p.estado.moral + ef.moral * 0.4, 20, 100); }); out.push('el vestuario lo nota'); } if (ef.xp) { pl.slice().sort((a, b) => a.edad - b.edad).slice(0, 3).forEach(p => { p.xp = (p.xp || 0) + ef.xp * 0.5; }); out.push('los jóvenes progresan'); } if (ef.conf && st.modo === 'entrenador' && st.entrenador && st.entrenador.fase === 'activo') { st.entrenador.confianza = U.clamp(st.entrenador.confianza + ef.conf, 0, 100); out.push('confianza +' + ef.conf); } if (ef.fat < 0) pl.forEach(p => { p.estado.fatiga = Math.max(0, p.estado.fatiga + ef.fat * 0.2); }); }
     return { ok: true, texto: out.join(', ') };
@@ -203,7 +203,7 @@
     const st = GM.state; if (!st || !st.equipos) return;
     if (U.weekday(st.fecha) === 1 && st.hogar) st.hogar.energia = 3;
     if (st.fecha.slice(8) !== '01') return;
-    if (modoCar(st)) { if (C(st).fase === 'retirado') return; } else { ingresar(st, Math.round(salarioAnual(st) / 12 * 10) / 10); gastar(st, GASTOS_VIDA[nivel(st)] || 1); }
+    if (modoCar(st)) { if (C(st).fase === 'retirado') return; } else { ingresar(st, Math.round(salarioAnual(st) / 12 * 10) / 10); gastar(st, Math.round((GASTOS_VIDA[nivel(st)] || 1) * (GM.economia ? GM.economia.indiceVida(st) : 1) * 100) / 100); }
     const casa = casaActual(st), e = efectos(st);
     if (!modoCar(st) && (casa.modo === 'alquiler' || casa.modo === 'hipoteca') && hog(st).casa) gastar(st, hog(st).casa.cuota || hog(st).casa.alquiler || Math.max(1, Math.round(hog(st).casa.precio * 0.005 * 10) / 10));
     if (modoCar(st)) {

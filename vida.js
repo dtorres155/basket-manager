@@ -176,8 +176,9 @@
     ['seg100k', '100.000 seguidores', 'Cien mil seguidores en tus redes.'], ['millon', 'Millonario', 'Un millón de euros ahorrados.'], ['pueblo', 'Hijo predilecto', 'Que tu pueblo te quiera con locura (cariño 90).'],
     ['ejemplar', 'Profesional ejemplar', 'Estilo de 80 o más.'], ['rebelde', 'Chico malo', 'Estilo de −80 o menos.'], ['padre', 'Padre de familia', 'Ten un hijo.']
   ];
+  const EXTRA = [];   // logros que añaden otros módulos (logros_eco.js): { id, t, d, grupo, cond(st), prog(st) -> [valor, meta] }
   function lograr(st, id) {
-    const L = datos(st).logros; if (L.hechos[id]) return; L.hechos[id] = st.fecha; const d = LOGROS.find(x => x[0] === id); if (!d) return;
+    const L = datos(st).logros; if (L.hechos[id]) return; const ex = EXTRA.find(x => x.id === id), d = LOGROS.find(x => x[0] === id) || (ex && [ex.id, ex.t]); if (!d) return; L.hechos[id] = st.fecha;
     C(st).hitos.unshift({ fecha: st.fecha, texto: 'Logro: ' + d[1] + '.' }); GM.noticia(st, '🏅 Logro desbloqueado: ' + d[1] + '.'); C(st).fama = C(st).fama + 0.3;
   }
   function revisarLogros(st) {
@@ -191,7 +192,7 @@
   }
   function logros(st) {
     const L = datos(st).logros, v = { pj: L.pj, pts: L.pts };
-    return LOGROS.map(([id, t, d, k, meta]) => ({ id, t, d, fecha: L.hechos[id] || null, prog: k ? Math.min(1, v[k] / meta) : null, valor: k ? v[k] : null, meta: meta || null }));
+    return LOGROS.map(([id, t, d, k, meta]) => ({ id, t, d, fecha: L.hechos[id] || null, prog: k ? Math.min(1, v[k] / meta) : null, valor: k ? v[k] : null, meta: meta || null })).concat(EXTRA.map(x => { let pg = null; try { pg = x.prog ? x.prog(st) : null; } catch (e) { /* sin datos */ } return { id: x.id, t: x.t, d: x.d, fecha: L.hechos[x.id] || null, prog: pg ? Math.min(1, pg[0] / pg[1]) : null, valor: pg ? pg[0] : null, meta: pg ? pg[1] : null, grupo: x.grupo || null }; }));
   }
   function nuevosRetos(st) {
     const ult = C(st).historial.filter(x => x.pj && !/^(NCAA|Cadete|Junior|Filial)$/.test(x.liga)).pop(), pts = ult ? Math.max(6, Math.round(ult.pts + 2)) : Math.round(clamp((YO(st).ovr - 58) * 0.7 + 5, 5, 22)), id = YO(st).equipoId;
@@ -335,5 +336,5 @@
     rival: st => { const k = C(st).social && C(st).social.contactos.find(x => x.tipo === 'rival'); return [k ? k.nombre : 'Tu rival', 'Rival por el puesto']; }
   });
   function selfTest() { return LOGROS.length >= 20 && Object.keys(TIPOS_POST).length === 7 && typeof decidir === 'function'; }
-  GM.register('vida', { accionesCasaPueblo, datos, vestuario, decidir, redes, publicar, TIPOS_POST, familia, logros, retos, ofertasRetiro, elegirRetiro, comentar, mascota, adoptar, jugarMascota, ponerMascota, moverMascota, vitrina, fisioSesion, hablarVestuario, LOGROS, selfTest });
+  GM.register('vida', { registrarLogros: l => l.forEach(x => { if (!EXTRA.some(y => y.id === x.id)) EXTRA.push(x); }), lograr, revisarExtra: st => { datos(st); EXTRA.forEach(x => { try { if (!datos(st).logros.hechos[x.id] && x.cond(st)) lograr(st, x.id); } catch (e) { /* aún no aplica */ } }); }, accionesCasaPueblo, datos, vestuario, decidir, redes, publicar, TIPOS_POST, familia, logros, retos, ofertasRetiro, elegirRetiro, comentar, mascota, adoptar, jugarMascota, ponerMascota, moverMascota, vitrina, fisioSesion, hablarVestuario, LOGROS, selfTest });
 })();

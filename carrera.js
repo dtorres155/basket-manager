@@ -198,7 +198,7 @@
       if (vaAlDraft && st.fecha.slice(5) === '05-24' && !c.pend.some(x => x.id === 'entrevistas')) { c.pend.unshift({ id: 'entrevistas', fecha: st.fecha }); GM.noticia(st, 'Varios equipos de la NBA quieren entrevistarte antes del draft.'); } }
     if (st.fecha.slice(8) === '01') {
       potMes(st); c.pico = Math.max(c.pico || 0, p.ovr);
-      if (p.contrato && p.contrato.salario) c.dinero += Math.round(p.contrato.salario * 0.58 / 12 / 1000);
+      if (p.contrato && p.contrato.salario) { const nomina = Math.round(p.contrato.salario * (GM.mods.patrimonio ? GM.mods.patrimonio.factorNeto(st) : 0.58) / 12 / 1000); c.dinero += nomina; if (GM.mods.patrimonio) GM.mods.patrimonio.reg(st, 'trabajo', 'Nómina del mes', nomina); }
       efectosVivienda(st); ingresosVivienda(st);
       const r = rol(st), objetivo = r === 'Titular' ? 75 : r === 'Rotación' ? 60 : r === 'Banquillo' ? 44 : c.fase === 'ncaa' ? 62 : 32;
       c.moral = U.clamp(c.moral + (objetivo - c.moral) * 0.2, 0, 100);
@@ -558,7 +558,7 @@
     const ciu = ciudadActual(st), nombres = GM.mods.ciudad3d ? GM.mods.ciudad3d.barrios(st).map(b => b.nombre) : [];
     return nombres.map((n, i) => { const h = U.hash(ciu + 'viv' + i); return { i, nombre: n, precio: Math.round((i === 1 ? 1.45 : i === 0 ? 1.25 : 0.75 + (h % 40) / 100) * 100) / 100, transporte: 1 + (h >>> 3) % 5, ruido: 1 + (h >>> 6) % 5, prestigio: i === 1 ? 5 : i === 0 ? 4 : 1 + (h >>> 9) % 4 }; });
   }
-  function precioVivienda(st, barrio, tipo) { const b = barriosVivienda(st)[barrio]; return Math.round(TIPOS_VIV[tipo].base * b.precio); }
+  function precioVivienda(st, barrio, tipo) { const b = barriosVivienda(st)[barrio]; return Math.round(TIPOS_VIV[tipo].base * b.precio * (GM.economia ? GM.economia.indiceSuelo(st) : 1)); }
   function comprarVivienda(st, barrio, tipo, modo) {
     const c = C(st), v = c.vivienda; if (c.fase === 'ncaa') return { ok: false, motivo: c.etapa === 'cantera' ? 'Vives en la residencia de la cantera hasta los 18.' : 'Vives en la residencia universitaria.' };
     const b = barriosVivienda(st)[barrio], t = TIPOS_VIV[tipo]; if (!b || !t) return { ok: false, motivo: 'Opción no válida.' };
@@ -566,7 +566,7 @@
     const precio = precioVivienda(st, barrio, tipo), alquiler = Math.max(1, Math.round(precio * 0.005 * 10) / 10);
     const coste = modo === 'compra' ? precio : modo === 'hipoteca' ? Math.round(precio * 0.2) : alquiler * 2;
     if (c.dinero < coste) return { ok: false, motivo: 'Te faltan ' + Math.round(coste - c.dinero) + ' mil € de ahorros.' };
-    c.dinero -= coste;
+    c.dinero -= coste; if (GM.mods.patrimonio) GM.mods.patrimonio.reg(st, 'vivienda', (modo === 'alquiler' ? 'Fianza de ' : 'Entrada de ') + t.nombre.toLowerCase() + ' en ' + b.nombre, -coste);
     if (v.actual && v.actual.modo === 'compra') v.propiedades.push(Object.assign({}, v.actual, { alquilada: false }));
     v.actual = { id: 'v' + (st.fecha) + barrio + tipo, barrio, barrioNombre: b.nombre, tipo, modo, precio, alquiler, cuota: alquiler, ciudad: ciudadActual(st), desde: st.fecha, comodidad: t.comodidad, transporte: b.transporte, ruido: b.ruido, prestigio: b.prestigio };
     c.hitos.unshift({ fecha: st.fecha, texto: (modo === 'compra' ? 'Compras un ' : 'Alquilas un ') + t.nombre.toLowerCase() + ' en ' + b.nombre + '.' });

@@ -45,11 +45,11 @@
     const nac = st.jugadores.yo.nac, lista = NOMBRES[nac] || NOMBRES.ES, h = U.hash(st.jugadores.yo.nombre + 'pueblo');
     st.carrera.pueblo = { nombre: lista[h % lista.length], nac, aportado: 0, cariño: 40, edificios: [{ tipo: 'canasta', nivel: 1 }], hitos: [], cd: {}, nivel: 1, energia: 0 };
   }
-  function puntos(st) { const c = C(st), p = P(st); return GM.mods.carrera.gradoFama(c).idx * 10 + p.aportado / 18 + p.cariño * 0.18; }
+  function puntos(st) { const c = C(st), p = P(st); return GM.mods.carrera.gradoFama(c).idx * 10 + p.aportado / 18 + p.cariño * 0.18 + (p.gest ? p.gest.bono : 0); }
   function nivel(st) { const pt = puntos(st); let n = 0; UMBRAL.forEach((u, i) => { if (pt >= u) n = i; }); return n + 1; }
   function estado(st) {
     if (!act(st)) return null; const p = P(st), n = nivel(st), pt = puntos(st), sig = UMBRAL[n] !== undefined ? UMBRAL[n] : null;
-    return { nombre: p.nombre, nivel: n, etiqueta: NIVELES[n - 1], poblacion: Math.round(300 * Math.pow(2.3, n - 1) + p.cariño * 8), cariño: p.cariño, aportado: p.aportado, pts: pt, sig, frac: sig ? U.clamp((pt - UMBRAL[n - 1]) / (sig - UMBRAL[n - 1]), 0, 1) : 1 };
+    return { nombre: p.nombre, nivel: n, etiqueta: NIVELES[n - 1], poblacion: p.gest ? p.gest.pob : Math.round(300 * Math.pow(2.3, n - 1) + p.cariño * 8), cariño: p.cariño, aportado: p.aportado, pts: pt, sig, frac: sig ? U.clamp((pt - UMBRAL[n - 1]) / (sig - UMBRAL[n - 1]), 0, 1) : 1 };
   }
   // Quién lleva un negocio: un vecino del pueblo o un amigo de siempre (de tu agenda, si lo tienes)
   const VECINOS = ['Mari Carmen', 'Paco', 'Luisa', 'Manolo', 'Pepa', 'Andrés', 'Rosa', 'Tomás', 'Conchi', 'Julián'];

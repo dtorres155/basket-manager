@@ -35,6 +35,7 @@
         joy.addEventListener('pointermove', e => { if (S.joy.activo) { e.preventDefault(); mover(e); } });
         const soltar = () => { S.joy.activo = false; S.joy.x = S.joy.y = 0; pomo.style.transform = ''; }; joy.addEventListener('pointerup', soltar); joy.addEventListener('pointercancel', soltar);
         S.raiz.append(joy); }
+      if (GM.rutina) GM.rutina.hud(S);
       if (GM.decorar && GM.decorar.puede(S)) { S.btnDecorar = h('button', { class: 'btn casa-btn btn-decorar', onclick: () => GM.decorar.activar(S, motor()) }, 'Decorar'); S.raiz.append(h('div', { class: 'sede-hud casa-btn-cont' }, S.btnDecorar)); }
       if (S.escena === 'casa' && GM.casa) { S.btnConstruir = h('button', { class: 'btn casa-btn', onclick: () => GM.casa.activar(S, motor()) }, S.construccion ? 'Salir del modo construcción' : 'Modo construcción'); S.raiz.append(h('div', { class: 'sede-hud casa-btn-cont' }, S.btnConstruir)); }
     }

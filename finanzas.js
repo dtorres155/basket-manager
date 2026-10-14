@@ -38,7 +38,7 @@
   function ofertasPatrocinio(st, clubId) {
     if (GM.mods.contratos) return [];
     const eq = st.equipos[clubId], f = st.finanzas[clubId];
-    const ciu = M().ciudad ? M().ciudad.modificadores(st, clubId).ingresos : 1;
+    const ciu = (M().ciudad ? M().ciudad.modificadores(st, clubId).ingresos : 1) * (GM.economia ? GM.economia.factorClub(st, clubId).patrocinio : 1);
     const tipos = [['Camiseta', 0.065], ['Pabellón (nombre del recinto)', 0.045], ['Cantera y formación', 0.02]];
     const h = U.hash(clubId + st.temporada);
     const out = [];
@@ -72,9 +72,9 @@
     fr = U.clamp(fr * ciu.asistencia * efe.asistencia * (1 - 0.35 * (ab - 1)), 0.35, 1);
     const asistencia = Math.round(aforo * fr);
     const precio = esc.precio * (0.6 + eq.reputacion / 100 * 0.8) * efe.precio * (g.fase === 'playoff' ? 1.35 : 1) * ab;
-    const entradas = Math.round(asistencia * precio * ciu.ingresos);
+    const ecoF = GM.economia ? GM.economia.factorClub(st, g.local) : { taquilla: 1 }, entradas = Math.round(asistencia * precio * ciu.ingresos * ecoF.taquilla);
     const cdI = m.ciudadDeportiva && m.ciudadDeportiva.efectos && st.instalaciones && st.instalaciones[g.local] ? m.ciudadDeportiva.efectos(st, g.local).ingresos : 1;
-    const merchandising = Math.round(asistencia * esc.merch * (0.5 + eq.reputacion / 100) * efe.merch * cdI);
+    const merchandising = Math.round(asistencia * esc.merch * (0.5 + eq.reputacion / 100) * efe.merch * cdI * ecoF.taquilla);
     const tv = Math.round(esc.tv * (0.6 + eq.reputacion / 130));
     return { asistencia, entradas, merchandising, tv, total: entradas + merchandising + tv };
   }

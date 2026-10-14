@@ -29,7 +29,7 @@
   const buscar = (st, id) => lista(st).find(p => p.id === id) || null, esActual = (st, p) => modoCar(st) ? !!(st.carrera.vivienda.actual && st.carrera.vivienda.actual.id === p.id) : !!(st.hogar.casa && st.hogar.casa.id === p.id);
   const duena = p => p.modo === 'compra' || p.modo === 'hipoteca';
   const H = () => GM.mods.hogar, dinero = st => H().dinero(st);
-  function pagar(st, k) { H().gastar(st, k); } function cobrar(st, k) { H().ingresar(st, k); }
+  function pagar(st, k, t) { H().gastar(st, k); if (GM.patrimonio) GM.patrimonio.reg(st, 'vivienda', t || 'Gasto de la vivienda', -k); } function cobrar(st, k, t) { H().ingresar(st, k); if (GM.patrimonio) GM.patrimonio.reg(st, 'vivienda', t || 'Ingreso de la vivienda', k); }
   function ini(st, p) {
     if (p.prod) return p.prod; const r = U.hash(String(p.barrioNombre || '') + (p.tipo || '') + (st.clubId || ''));
     const vecinos = [0, 1, 2].map(i => { const h = U.hash(String(r) + 'v' + i), rasgo = Object.keys(RASGOS)[h % 5]; return { n: NOMBRES[h % 16] + ' ' + APELL[(h >>> 4) % 10], rasgo, rel: 10 + (h >>> 8) % 25 }; });
@@ -53,7 +53,7 @@
   function vender(st, id) {
     const p = buscar(st, id); if (!p) return { ok: false, motivo: 'Propiedad no encontrada.' }; if (!duena(p)) return { ok: false, motivo: 'Solo puedes vender lo que has comprado.' }; const P = ini(st, p), vn = ventaNeta(st, p), res = resultado(st, p);
     if (P.obras.length) return { ok: false, motivo: 'No se puede vender con una obra en marcha.' };
-    cobrar(st, vn.neto); const c = modoCar(st) ? st.carrera.vivienda : st.hogar;
+    cobrar(st, vn.neto, 'Venta de la vivienda de ' + p.barrioNombre); if (GM.patrimonio && res > 0) GM.patrimonio.est(st).imp.ingresos += res; const c = modoCar(st) ? st.carrera.vivienda : st.hogar;
     if (modoCar(st)) { if (c.actual && c.actual.id === id) c.actual = null; else c.propiedades = c.propiedades.filter(x => x.id !== id); st.carrera.hitos.unshift({ fecha: st.fecha, texto: 'Vendes tu vivienda en ' + p.barrioNombre + ' por ' + k1(vn.bruto) + ' mil € (' + (res >= 0 ? 'ganas ' : 'pierdes ') + k1(Math.abs(res)) + ' mil €).' }); }
     else { if (c.casa && c.casa.id === id) { c.casa = null; } else c.propiedades = (c.propiedades || []).filter(x => x.id !== id); }
     if (GM.noticia) GM.noticia(st, 'Vendes tu vivienda en ' + p.barrioNombre + ' por ' + k1(vn.bruto) + ' mil €: ' + (res >= 0 ? 'beneficio de ' : 'pérdida de ') + k1(Math.abs(res)) + ' mil €.');
@@ -68,7 +68,7 @@
   }
   function encargar(st, id, obra, opc) {
     const p = buscar(st, id), R = REFORMAS[obra]; if (!p) return { ok: false, motivo: 'Propiedad no encontrada.' }; const m = motivoNo(st, p, obra); if (m) return { ok: false, motivo: m };
-    const P = ini(st, p), c = coste(p, R); pagar(st, c); P.invertido += c; P.obras.push({ id: obra, ini: st.fecha, fin: U.addDays(st.fecha, R.dias), coste: c, color: opc && opc.color || null });
+    const P = ini(st, p), c = coste(p, R); pagar(st, c, 'Obra: ' + R.n.toLowerCase()); P.invertido += c; P.obras.push({ id: obra, ini: st.fecha, fin: U.addDays(st.fecha, R.dias), coste: c, color: opc && opc.color || null });
     if (GM.noticia) GM.noticia(st, 'Empieza la obra: ' + R.n.toLowerCase() + ' en tu casa de ' + p.barrioNombre + ' (' + R.dias + ' días).'); return { ok: true, fin: P.obras[0].fin, coste: c };
   }
   function avance(st, o) { const R = REFORMAS[o.id], t = Math.max(0, Math.min(1, U.diffDays(o.ini, st.fecha) / Math.max(1, U.diffDays(o.ini, o.fin)))); return { t, fase: R.fases[Math.min(R.fases.length - 1, Math.floor(t * R.fases.length))], dias: Math.max(0, U.diffDays(st.fecha, o.fin)) }; }
@@ -79,8 +79,8 @@
   }
   // ---------- Averías y vecinos ----------
   function reparar(st, id, aid) {
-    const p = buscar(st, id), P = p && ini(st, p), a = P && P.averias.find(x => x.id === aid); if (!a) return { ok: false, motivo: 'Esa avería no existe.' }; if (dinero(st) < a.coste) return { ok: false, motivo: 'Te faltan ' + k1(a.coste - dinero(st)) + ' mil €.' };
-    pagar(st, a.coste); P.invertido += a.coste; P.averias = P.averias.filter(x => x !== a); P.estado = Math.min(100, P.estado + 4); return { ok: true, coste: a.coste };
+    const p = buscar(st, id), P = p && ini(st, p), a = P && P.averias.find(x => x.id === aid); if (!a) return { ok: false, motivo: 'Esa avería no existe.' }; const coste = Math.round(a.coste * (GM.patrimonio ? GM.patrimonio.factorSeguro(st, 'hogar') : 1) * 10) / 10; if (dinero(st) < coste) return { ok: false, motivo: 'Te faltan ' + k1(coste - dinero(st)) + ' mil €.' };
+    pagar(st, coste, 'Reparación: ' + a.n.toLowerCase()); P.invertido += coste; P.averias = P.averias.filter(x => x !== a); P.estado = Math.min(100, P.estado + 4); return { ok: true, coste };
   }
   function cafe(st, id, i) {
     const p = buscar(st, id), v = p && ini(st, p).vecinos[i]; if (!v) return { ok: false, motivo: 'Ese vecino no existe.' }; if (dinero(st) < 0.05) return { ok: false, motivo: 'No tienes ahorros para eso.' };
@@ -96,7 +96,7 @@
     lista(st).forEach((p, k) => {
       const P = ini(st, p); if (!duena(p) && p.modo !== 'alquiler') return; if (!duena(p)) { P.estado = Math.max(40, P.estado - 0.3); return; }
       const antig = Math.max(0, U.diffDays(P.compraFecha, st.fecha) / 365), desgaste = 0.8 + Math.min(1, antig * 0.06) + (P.extras.piscina ? 0.35 : 0) + (P.averias.length ? 1.5 : 0) + GM.rng.next() * 0.6;
-      pagar(st, mantenimiento(st, p) * (esActual(st, p) ? 1 : 0.5)); P.estado = Math.max(0, Math.round((P.estado - desgaste) * 10) / 10);
+      pagar(st, mantenimiento(st, p) * (esActual(st, p) ? 1 : 0.5), 'Mantenimiento de la vivienda'); P.estado = Math.max(0, Math.round((P.estado - desgaste) * 10) / 10);
       if (P.averias.length) H().aplicar(st, { moral: -0.5 * Math.min(2, P.averias.length) });
       const prob = Math.max(0.02, Math.min(0.4, (80 - P.estado) / 140 + 0.03));
       if (P.averias.length < 2 && !P.obras.length && GM.rng.next() < prob) { const [n, f] = AVERIAS[Math.floor(GM.rng.next() * AVERIAS.length)], c = Math.max(0.4, Math.round(P.precioCompra * f * (0.7 + GM.rng.next() * 0.8) * 10) / 10); P.averias.push({ id: 'a' + st.fecha + k, n, fecha: st.fecha, coste: c }); if (GM.noticia) GM.noticia(st, n + ' en tu casa de ' + p.barrioNombre + ': repararla cuesta ' + k1(c) + ' mil €.'); }
