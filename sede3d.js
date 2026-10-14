@@ -731,6 +731,8 @@
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
     S.dia = estadoDia(st); S.clima = climaDe(st); montarClima(); if (GM.sonido) GM.sonido.escena(S.escena, S.escenaArg); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
     if (S.escena === 'casa') { if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
+    if (S.escena === 'sede' && GM.decorar && S.G && !S.raiz.querySelector('.btn-decorar')) { S.btnDecorar = GM.h('button', { class: 'btn casa-btn btn-decorar', onclick: () => GM.decorar.activar(S, motor()) }, 'Decorar'); S.raiz.append(GM.h('div', { class: 'sede-hud casa-btn-cont' }, S.btnDecorar)); }
+    if (S.escena === 'sede' && GM.decorar && S.G) { try { await GM.decorar.cargar(S, motor(), st); } catch (e) { console.error('decorar', e); } }
     if (S.escena === 'interior') { if (GM.interiores) await GM.interiores.poblar(S, motor(), st, S.escenaArg); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'deportiva') { if (GM.deportivaMundo) await GM.deportivaMundo.poblar(S, motor(), st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'calle') { await GM.calle.poblar(S, motor(), st); await conNombre(st); if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
