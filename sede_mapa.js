@@ -38,7 +38,7 @@
         if (VEC && VEC.N && Vw.s >= 5.5) VEC.N.forEach(n => { const [a, c] = aPx(n.x, n.z); if (a < 20 || a > Vw.w - 20 || c < 14 || c > Vw.h - 14) return; x.fillStyle = '#7a6a52'; x.beginPath(); x.arc(a, c, 2.6, 0, 6.3); x.fill(); rotulo(n.nom.length > 22 ? n.nom.slice(0, 21) + '…' : n.nom, a, c - 8, 10.5, 'rgba(255,255,255,.85)', '#5a4f3d'); });
         (S.zonas || []).forEach(z => {
           const [px, py] = aPx(z.obj.position.x, z.obj.position.z); if (px < -30 || px > Vw.w + 30 || py < -30 || py > Vw.h + 30) return; const r = Math.max(5, Math.min(9, 4 + Vw.s * 0.6));
-          x.fillStyle = z.sala.irA ? '#e8a400' : club.colores[0] === '#ffffff' ? '#e8590c' : club.colores[0]; x.beginPath(); x.arc(px, py, r, 0, 6.3); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 2; x.stroke();
+          x.fillStyle = z.sala.irA ? '#e8a400' : club.colores[0] === '#ffffff' ? '#e8590c' : club.colores[0]; x.beginPath(); x.arc(px, py, r, 0, 6.3); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 2; x.stroke(); if (z.sala.encargo) { x.strokeStyle = '#ffc83a'; x.lineWidth = 3; x.beginPath(); x.arc(px, py, r + 4, 0, 6.3); x.stroke(); }
           const tx = z.sala.nombre.length > 22 ? z.sala.nombre.slice(0, 21) + '…' : z.sala.nombre; if (!VEC || Vw.s >= 1.1 || z.sala.irA) rotulo(tx, px, py - r - 8, 12, 'rgba(255,255,255,.92)', '#1c2b3a');
         });
         const [yx, yz] = aPx(S.yo.obj.position.x, S.yo.obj.position.z); x.fillStyle = '#2f80ed'; x.beginPath(); x.arc(yx, yz, 7, 0, 6.3); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 3; x.stroke();

@@ -145,5 +145,5 @@
     if (tipo === 'plaza') out.push({ ico: 'estrella', t: 'Encargos del pueblo (' + pendientes(st) + ')', d: 'Tus vecinos te piden cosas con premio.', disponible: true, fn: () => { panelEncargos(); return { ok: true, texto: 'Encargos' }; } });
     return out;
   }
-  GM.puebloJuego = { bolos, encargos: lista, generar, acciones, panelEncargos, pendientes, marcas, fiesta, esFiesta, triples, libres, unoContraUno };
+  GM.puebloJuego = { cursor, ventana, ronda, att, forma, bolos, encargos: lista, generar, acciones, panelEncargos, pendientes, marcas, fiesta, esFiesta, triples, libres, unoContraUno };
 })();

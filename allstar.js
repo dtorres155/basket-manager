@@ -46,8 +46,9 @@
     let tir = tiradores(st, liga, r), sal = saltadores(st, liga, r);
     if (yo && inv.triples === 'aceptada' && !tir.some(x => x.j.id === 'yo')) { tir = tir.slice(0, 7); tir.push({ j: yo }); }
     if (yo && inv.mates === 'aceptada' && !sal.some(x => x.j.id === 'yo')) { sal = sal.slice(0, 5); sal.push({ j: yo }); }
-    ev.triples = concurso(tir, [4, 2, 1], r, (j, rr) => Math.round(8 + (att(j, 'tiro3') - 60) / 4.2 + rr() * 9));
-    ev.mates = concurso(sal, [3, 1], r, (j, rr) => Math.round(38 + (att(j, 'fisico') - 60) / 2.6 + rr() * 11));
+    const jug = inv.jugado || {}; let kt = 0, km = 0;   // si has jugado tú el concurso (ciudad_juego.js), tus rondas cuentan en lugar de la simulación
+    ev.triples = concurso(tir, [4, 2, 1], r, (j, rr) => { const sim = Math.round(8 + (att(j, 'tiro3') - 60) / 4.2 + rr() * 9); if (j.id === 'yo' && jug.triples && jug.triples[kt] !== undefined) return jug.triples[kt++]; return sim; });
+    ev.mates = concurso(sal, [3, 1], r, (j, rr) => { const sim = Math.round(38 + (att(j, 'fisico') - 60) / 2.6 + rr() * 11); if (j.id === 'yo' && jug.mates && jug.mates[km] !== undefined) return jug.mates[km++]; return sim; });
     ev.estado = 'hecho';
     const nom = id => st.jugadores[id].nombre, club = st.clubId;
     GM.noticia(st, '⭐ ' + d.nombre + ': ' + ev.partido.nombreA + ' ' + ev.partido.pa + ' - ' + ev.partido.pb + ' ' + ev.partido.nombreB + '. MVP: ' + nom(mvp) + '. Triples: ' + nom(ev.triples.ganador) + '. Mates: ' + nom(ev.mates.ganador) + '.');
@@ -77,6 +78,7 @@
   });
   GM.bus.on('temporada:nueva', function () { const st = GM.state; if (st && st.ligas) iniciar(st); });
   function invitaciones(st) { const A = estado(st), out = []; Object.keys(A.inv).forEach(l => { const ev = A.eventos[l]; if (!ev || ev.estado !== 'pendiente') return; ['triples', 'mates'].forEach(c => { if (A.inv[l][c] === 'ofrecida') out.push({ liga: l, concurso: c, evento: ev.nombre, fecha: ev.fecha }); }); }); return out; }
+  function registrarJugado(st, liga, tipo, valores) { const i = estado(st).inv[liga]; if (!i) return false; (i.jugado = i.jugado || {})[tipo] = valores; return true; }
   function evento(st, liga) { return estado(st).eventos[liga] || null; }
   function nuevaPartida(st) { st.allstar = { temp: null, eventos: {}, inv: {} }; iniciar(st); }
   function selfTest() {
@@ -86,5 +88,5 @@
     iniciar(st); const ev = resolver(st, 'NBA'); GM.mods.mercado.ligaDe = ligaDe0;
     return !!ev && ev.estado === 'hecho' && ev.partido.a.length + ev.partido.b.length === 24 && !!ev.triples.ganador && !!ev.mates.ganador && ev.triples.rondas.length === 3;
   }
-  GM.register('allstar', { estado, evento, invitaciones, responder, resolver, nuevaPartida, selfTest, DEF });
+  GM.register('allstar', { registrarJugado, estado, evento, invitaciones, responder, resolver, nuevaPartida, selfTest, DEF });
 })();

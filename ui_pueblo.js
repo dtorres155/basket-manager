@@ -20,5 +20,13 @@
     el.append(seccion('Vecinos del pueblo', h('div', { class: 'lista' }, g.vecinos.map(v => h('div', { class: 'item' }, h('div', { class: 'ct' }, h('b', null, v.n), h('span', { class: 'muted' }, v.oficio + ', ' + v.edad + ' años')), h('b', { class: v.op >= 55 ? 'ok' : 'neg' }, Math.round(v.op) + '/100'))))));
     const ob = GM.mods.pueblo.edificios(st).filter(b => b.obra); if (ob.length) el.append(seccion('Obras en marcha', h('div', { class: 'lista' }, ob.map(b => h('div', { class: 'item col' }, h('b', null, b.nombre + ': ' + b.obra.proximo), barra(b.obra.progreso * 100, 100, ''), h('span', { class: 'muted' }, 'Fin el ' + U.fecha(b.obra.fin)))))));
   }
+  // Encargos de la ciudad real (punto 60)
+  function encargosTab(el, st) {
+    const J = GM.ciudadJuego; J.generar(st, GM.sede.activa() && GM.sede._estado().escena === 'calle' ? GM.sede._estado() : null); const d = J.datos(st), L = J.encargos(st);
+    el.append(seccion('Encargos de la ciudad', tarjeta(h('div', { class: 'chips' }, chip('Calle ' + Math.round(d.calle) + ' de 100'), chip('Récord de triples ' + d.rec.triples + ' de 10'), chip('Libres ' + d.rec.libres + ' de 10'), chip('Precisión ' + d.rec.precision + ' de 14'), chip('Unos contra uno ganados ' + d.rec.uno)),
+      h('p', { class: 'muted' }, 'Hay dos canchas de barrio en tu ciudad (en el mapa 3D): concurso de triples, tiros libres, uno contra uno callejero y entreno de precisión. Los sitios con encargo llevan un anillo dorado.'))));
+    el.append(seccion('Pendientes (' + L.filter(e => !e.hecho).length + ')', h('div', { class: 'lista' }, L.length ? L.map(e => h('div', { class: 'item col', style: { opacity: e.hecho ? 0.55 : 1 } }, h('div', { class: 'fila' }, h('b', null, e.texto), chip(e.hecho ? 'Cumplido' : e.diario ? 'Hoy' : 'Quedan ' + Math.max(0, U.diffDays(st.fecha, e.hasta)) + ' d')), h('span', { class: 'muted' }, 'Premio ' + k1(e.premio.dinero) + ' mil €, fama +' + e.premio.fama + ', calle +' + e.premio.calle + (e.destino && e.destino !== 'cancha' && J.SITIOS[e.destino] ? '. En ' + J.SITIOS[e.destino] + '.' : '. En una cancha.')))) : h('p', { class: 'muted' }, 'No hay encargos ahora mismo.'))));
+  }
+  addTab('ciudad', 'encargos', 'Encargos', encargosTab, st => st.modo === 'carrera' && !!st.carrera && !!GM.ciudadJuego);
   addTab('ciudad', 'gestionpueblo', 'Gestión del pueblo', tab, st => st.modo === 'carrera' && !!st.carrera && !!st.carrera.pueblo && !!GM.puebloGestion);
 })();

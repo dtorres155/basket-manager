@@ -72,6 +72,10 @@ node tools/fuga_ciudades.js [n]           # abre n ciudades seguidas y mide heap
 node tools/decorar_prueba.js              # decorar locales: colocar, guardar, volver y vender muebles en el restaurante
 node tools/vecinos_pisos_prueba.js        # los portales de vecinos de la ciudad real abren cada uno su piso y devuelven a su puerta
 node tools/error_temporada.js [club] [origen]   # juega una temporada de carrera y comprueba que Inicio no falla al terminar (campeones de selecciones)
+node tools/economia_larga.js [días]       # tres años de carrera con decisiones de patrimonio, negocios, pueblo y colección: sin números rotos ni excepciones
+node tools/ciudad_juego_prueba.js         # canchas de barrio, encargos y minijuegos de la ciudad real, All-Star jugable
+node tools/coleccion_prueba.js            # vitrina de casa, sobres del quiosco y museo con piezas
+node tools/pestana_captura.js <pantalla> <pestaña> [sub] [carpeta] [semilla JS]   # captura una pestaña nueva
 node tools/escenas_todas.js               # entra en todas las escenas e interiores (gestor y carrera) y falla si alguno no carga
 node tools/sonido_prueba.js               # sonido ambiente: arranca con el primer clic, mezcla por escena y botón de silencio
 node tools/escritorio_escenas.js          # versión de escritorio: árboles reales en ciudad deportiva y pueblo, y persianas en la calle
@@ -172,3 +176,5 @@ Fugas de escena: al cerrar un mundo (`cerrar()` en sede3d.js) hay que soltar tod
 - **Esperas en las pruebas de navegador:** usa `tools/ayudas.js` (`esperarEscena`, `irA`, `esperar`) en vez de `sleep` fijos.
 
 Tanda 29: `decorar_interior.js` (`GM.decorar`, versión ligera del editor para locales y pabellón, `state.sede.decor`), el editor de la casa separa plantas (`E.planta`, `plantaOk`) y los portales de vecinos usan `state.sede.vecinoK`. Los campeones del historial pueden ser `pais:XX` (selecciones): nunca asumas que `campeon` es un club.
+
+Tanda 30 (puntos 54 a 61): `patrimonio.js` (libro `reg`, `neto`, mercado, hipotecas, seguros, impuestos), `economia.js` (índices por ciudad y ciclo; lo usan hogar, carrera, mercado, finanzas y patrimonio), `negocios.js`, `pueblo_gestion.js` (suma `gest.bono` a los puntos de pueblo.js), `rutina.js`, `logros_eco.js` (`vida.registrarLogros`), `ciudad_juego.js` (reutiliza `GM.puebloJuego.cursor/ventana/ronda`), `coleccionables.js`; sus pestañas están en `ui_patrimonio.js`, `ui_negocios.js`, `ui_pueblo.js`, `ui_rutina.js` y `ui_coleccion.js` (todas con `GM.ui.addTab('ciudad', ...)`). `GM.ui.grafico(series, opciones)` devuelve un gráfico SVG. Todo el dinero del jugador pasa por `GM.mods.hogar` (`dinero/gastar/ingresar`) y se anota con `GM.patrimonio.reg(st, categoría, texto, importe)`. Simulación de comprobación: `node tools/economia_larga.js`.

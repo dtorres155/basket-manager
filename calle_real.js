@@ -499,7 +499,7 @@
     if (R.tienda) { poner('tienda', R.tienda, (hecho('tienda') ? 'MEGATIENDA ' : 'TIENDA OFICIAL ') + club.siglas, '#14181d', '#ffffff', { ancho: hecho('tienda') ? 8 : 6.2 }); SALAS.tienda = { id: 'tienda', nombre: 'Tienda oficial', accion: 'Camisetas, bufandas y aficionados', destino: {} }; }
     if (R.pena) { const p = poner('pena', R.pena, 'BAR LA PEÑA', '#5a3b26', '#f2d27a', { ancho: 5.5 }); S.ptoPena = [p.x, p.z]; SALAS.pena = { id: 'pena', nombre: 'Bar La Peña', accion: 'Donde se reúne la afición', destino: {} }; }
     if (R.ayuntamiento) { poner('ayuntamiento', R.ayuntamiento, 'AYUNTAMIENTO DE ' + club.ciudad.toUpperCase(), '#1d4f91', '#ffffff', { ancho: 9, y: 4.4 }); SALAS.ayuntamiento = { id: 'ayuntamiento', nombre: 'Ayuntamiento de ' + club.ciudad, accion: 'Convenios y relación con la ciudad', destino: { todos: 'ciudad' } }; }
-    if (R.kiosco) { poner('kiosco', R.kiosco, 'PRENSA', '#2a2f35', '#ffffff', { ancho: 3 }); SALAS.kiosco = { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {} }; }
+    if (R.kiosco) { poner('kiosco', R.kiosco, 'PRENSA', '#2a2f35', '#ffffff', { ancho: 3 }); SALAS.kiosco = { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {}, acciones: s2 => (GM.coleccionables ? GM.coleccionables.acciones(s2) : []) }; }
     if (R.mercado) { poner('mercado', R.mercado, 'MERCADO DE ' + S.plazaNombre.toUpperCase(), '#2e5d3a', '#f2d27a', { ancho: 8 }); SALAS.mercado = { id: 'mercado', nombre: 'Mercado de ' + S.plazaNombre, accion: 'Fruta, pescado y charla con los tenderos', destino: {} }; }
     if (R.terraza) { poner('terraza', R.terraza, 'CAFÉ CENTRAL', '#6b3a2a', '#ffffff', { ancho: 5 }); SALAS.terraza = { id: 'terraza', nombre: 'Terraza del Café Central', accion: 'Un café y escuchar a la gente', destino: {} }; terrazaMesas(W, R.terraza, X, G, S); }
     if (R.heladeria) { poner('heladeria', R.heladeria, 'HELADERÍA LA OLA', '#d86a8a', '#ffffff', { ancho: 5 }); SALAS.heladeria = { id: 'heladeria', nombre: 'Heladería La Ola', accion: 'Helados artesanos', destino: {} }; }
@@ -515,7 +515,7 @@
       SALAS[id] = { id, nombre: v.nombre + (v.actual ? ' (vives aquí)' : ' (tuya)'), accion: v.barrioNombre ? 'Tu casa en ' + v.barrioNombre : 'Tu casa', destino: {}, irA: 'casa:' + v.id, boton: 'Entrar en casa' };
       entrada('casa:' + v.id, p); if (v.actual) S.puertas.casa = S.puertas['casa:' + v.id];
     });
-    R.locales.forEach(l => { const p = poner('local_' + l.tipo, l.b, l.txt, l.fondo, '#ffffff', { ancho: 5.5 }); SALAS['local_' + l.tipo] = { id: 'local_' + l.tipo, nombre: l.txt.charAt(0) + l.txt.slice(1).toLowerCase(), accion: '', destino: {}, irA: 'interior:' + l.tipo, boton: l.boton }; entrada('interior:' + l.tipo, p); });
+    R.locales.forEach(l => { const p = poner('local_' + l.tipo, l.b, l.txt, l.fondo, '#ffffff', { ancho: 5.5 }); SALAS['local_' + l.tipo] = { id: 'local_' + l.tipo, nombre: l.txt.charAt(0) + l.txt.slice(1).toLowerCase() + (GM.negocios && GM.negocios.tiene(st, ({ restaurante: 'restaurante', gimnasio_barrio: 'gimnasio' })[l.tipo]) ? ' (tuyo)' : ''), accion: '', destino: {}, irA: 'interior:' + l.tipo, boton: l.boton }; entrada('interior:' + l.tipo, p); });
     if (GM.interiores) [['pabellon', 'Entrar al pabellón'], ['tienda', 'Entrar en la tienda'], ['pena', 'Entrar en el bar'], ['ayuntamiento', 'Entrar en el ayuntamiento']].forEach(([k, bt]) => {
       if (!SALAS[k]) return; SALAS[k] = Object.assign({}, SALAS[k], { irA: 'interior:' + k, boton: bt }); const p = R[k] && R[k].puerta; if (p && k !== 'pabellon') entrada('interior:' + k, p);
     });
@@ -544,7 +544,7 @@
       if (q) {
         const k = new THREE.Group(), cu = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.3, 1.6), new THREE.MeshStandardMaterial({ color: 0x2f5d8a, roughness: 0.6 })); cu.position.y = 1.15; k.add(cu);
         const te = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 2.0), new THREE.MeshStandardMaterial({ color: 0xc43d3d })); te.position.y = 2.4; k.add(te); k.position.set(q[0], 0, q[1]); k.userData = { kiosco: true }; W.add(k);
-        G.bloquea(q[0] - 1.2, q[1] - 0.9, q[0] + 1.2, q[1] + 0.9); zonas.kiosco = [q[0], q[1] + 1.8]; SALAS.kiosco = { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {} }; paseo.push(zonas.kiosco);
+        G.bloquea(q[0] - 1.2, q[1] - 0.9, q[0] + 1.2, q[1] + 0.9); zonas.kiosco = [q[0], q[1] + 1.8]; SALAS.kiosco = { id: 'kiosco', nombre: 'Quiosco de prensa', accion: 'Lo que dicen los periódicos', destino: {}, acciones: s2 => (GM.coleccionables ? GM.coleccionables.acciones(s2) : []) }; paseo.push(zonas.kiosco);
       }
     }
     { const q = sitioAcera(30, 120, 11); if (q) { zonas.musico = [q[0], q[1]]; S.musicoPos = [q[0], q[1]]; SALAS.musico = { id: 'musico', nombre: 'Músico callejero', accion: 'Toca en la plaza', destino: {} }; } }
