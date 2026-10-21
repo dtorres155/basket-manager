@@ -3,7 +3,7 @@
 // Presupuestos por carpeta: triángulos y peso en KB (archivo glTF/glb, buffers y texturas del modelo). Se leen de docs/PRESUPUESTOS.md solo como referencia: la tabla vive aquí.
 const fs = require('fs'), path = require('path'), { spawnSync } = require('child_process');
 const raiz = path.join(__dirname, '..'), base = path.join(raiz, 'vendor', 'modelos');
-const PRESUPUESTOS = { reales: { tris: 12000, kb: 3500 }, objetos: { tris: 12000, kb: 3500 }, muebles: { tris: 6000, kb: 300 }, edificio: { tris: 4000, kb: 200 }, personas: { tris: 40000, kb: 6000 }, _: { tris: 12000, kb: 3500 } };
+const PRESUPUESTOS = { reales: { tris: 12000, kb: 3500 }, objetos: { tris: 12000, kb: 3500 }, muebles: { tris: 6000, kb: 300 }, edificio: { tris: 4000, kb: 200 }, personas: { tris: 40000, kb: 6000 }, vehiculos: { tris: 6000, kb: 400 }, _: { tris: 12000, kb: 3500 } };
 const GT = path.join(raiz, 'recursos', 'herramientas', 'node_modules', '.bin', 'gltf-transform' + (process.platform === 'win32' ? '.cmd' : ''));
 function lista(dir, out) { out = out || []; if (!fs.existsSync(dir)) return out; for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const p = path.join(dir, e.name); if (e.isDirectory()) lista(p, out); else if (/\.(gltf|glb)$/i.test(e.name)) out.push(p); } return out; }
 function triangulos(f) {

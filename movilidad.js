@@ -57,7 +57,7 @@
     const tr = (S.tranvia || []).filter(t => t.t <= 1);
     if (tr.length && S.G) {
       let mejor = null, ml = 0; tr.forEach(t => { const den = []; t.p.forEach((q, i) => { if (i) { const o = t.p[i - 1], l = dist2(q[0], q[1], o[0], o[1]), n = Math.max(1, Math.ceil(l / 6)); for (let k = 1; k < n; k++) den.push([o[0] + (q[0] - o[0]) * k / n, o[1] + (q[1] - o[1]) * k / n]); } den.push(q); }); let run = []; const probar = () => { if (run.length > ml) { ml = run.length; mejor = run; } run = []; }; den.forEach(q => { if (Math.hypot(q[0], q[1]) < (S.RW || 300) - 15) run.push(q); else probar(); }); probar(); });
-      if (mejor && mejor.length >= 12) { const acum = [0]; for (let i = 1; i < mejor.length; i++) acum.push(acum[i - 1] + dist2(mejor[i][0], mejor[i][1], mejor[i - 1][0], mejor[i - 1][1])); const obj = tranvia(club); S.mundo.add(obj); S.tram = { obj, p: mejor, acum, L: acum[acum.length - 1], pos: acum[acum.length - 1] * Math.random() * 0.8, dir: 1, vel: 0, tParada: 0, proxParada: 90 }; }
+      if (mejor && mejor.length >= 12) { const acum = [0]; for (let i = 1; i < mejor.length; i++) acum.push(acum[i - 1] + dist2(mejor[i][0], mejor[i][1], mejor[i - 1][0], mejor[i - 1][1])); const obj = GM.vehiculos ? GM.vehiculos.crear('tranvia', undefined, { st: GM.state }) : tranvia(club); S.mundo.add(obj); S.tram = { obj, p: mejor, acum, L: acum[acum.length - 1], pos: acum[acum.length - 1] * Math.random() * 0.8, dir: 1, vel: 0, tParada: 0, proxParada: 90 }; }
     }
   }
   function actualizarTram(S, dt) {

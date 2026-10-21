@@ -51,6 +51,20 @@
     for (const z of [-0.32, 0.36]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 12), neg); w.rotation.z = Math.PI / 2; w.position.set(0, 0.1, z); g.add(w); }
     g.userData = { coche: true, tipo: 'patinete', largo: LARGO.patinete }; return g;
   }
+  // ---------- modelos de Kenney (Car Kit, CC0): para la calidad normal y el móvil; se cargan una vez con precargar() ----------
+  const KENNEY = { turismo: 'sedan', compacto: 'hatchback-sports', todoterreno: 'suv', furgoneta: 'van', taxi: 'taxi', policia: 'police', ambulancia: 'ambulance', bomberos: 'firetruck', reparto: 'delivery', basura: 'garbage-truck', camion: 'truck' }, cache = {}; let cargando = null;
+  function precargar() {
+    if (cargando) return cargando; if (!GM.sede || !GM.sede.modeloReal) return Promise.resolve(0);
+    cargando = Promise.all(Object.keys(KENNEY).map(t => GM.sede.modeloReal(KENNEY[t], 'modelos/vehiculos/' + KENNEY[t] + '.glb').then(sc => { cache[t] = sc; }).catch(() => null))).then(() => Object.keys(cache).length); return cargando;
+  }
+  const LARGO_K = { turismo: 4.4, compacto: 4, todoterreno: 4.7, furgoneta: 5.2, taxi: 4.5, policia: 4.5, ambulancia: 5.5, bomberos: 8, reparto: 5.6, basura: 7, camion: 6.5 };
+  // devuelve una copia del modelo de Kenney a escala real y con el morro hacia +z, o null si no está cargado
+  function kenney(tipo) {
+    const sc = cache[tipo]; if (!sc) return null; const g = new THREE.Group(), m = sc.clone(true), b = new THREE.Box3().setFromObject(m), tam = b.getSize(new THREE.Vector3()), largo = Math.max(tam.x, tam.z), k = (LARGO_K[tipo] || 4.4) / largo;
+    m.scale.setScalar(k); if (tam.x > tam.z) m.rotation.y = Math.PI / 2; const b2 = new THREE.Box3().setFromObject(m), c = b2.getCenter(new THREE.Vector3()); m.position.set(-c.x, -b2.min.y, -c.z); const pv = new THREE.Group(); pv.rotation.y = ORIENTACION_K; pv.add(m); g.add(pv);
+    m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.userData = { coche: true, tipo, largo: LARGO_K[tipo] || 4.4, kenney: true }; return g;
+  }
+  let ORIENTACION_K = 0;
   function crear(tipo, ciudad, op) {
     op = op || {}; const M = marca(op.st, ciudad); let g;
     if (tipo === 'autobus') g = autobus(op.color || M.bus, op.linea);
@@ -60,10 +74,11 @@
     else if (tipo === 'moto') g = GM.urbano && GM.urbano.moto ? GM.urbano.moto(op.color) : new THREE.Group();
     else if (tipo === 'taxi') { g = GM.kit.coche(M.taxi[0], 'taxi'); if (M.taxi[1] !== M.taxi[0]) caja(g, 1.85, 0.12, 2.6, mat(M.taxi[1], { roughness: 0.4 }), 0, 0.62, -0.1); }
     else if (tipo === 'policia') g = GM.kit.coche('#f2f4f6', 'turismo');
+    else if (op.kenney !== false && KENNEY[tipo] && (op.kenney === true || (GM.campus && GM.campus.config.calidad !== 'alta')) && kenney(tipo)) g = kenney(tipo);
     else g = GM.kit.coche(op.color || '#c8ccd0', tipo || 'turismo');
     g.userData = Object.assign({ coche: true, tipo, largo: LARGO[tipo] || 4.4 }, g.userData || {}); return g;
   }
   function selfTest() { return tipos().length >= 12 && marca(null, 'ES-CT').taxi[0] === '#1d1d1b' && marca(null, 'XX').bus === MARCAS._.bus && taxiColor(null, 'GR') === '#f2c500'; }
-  GM.vehiculos = { MARCAS, tipos, marca, taxiColor, crear, selfTest };
+  GM.vehiculos = { precargar, kenney, KENNEY, MARCAS, tipos, marca, taxiColor, crear, selfTest };
   GM.register && GM.register('vehiculos', GM.vehiculos);
 })();

@@ -464,6 +464,7 @@
   let nCoche = 0;
   function coche(color) {
     if (GM.kit.coche && (!GM.campus || GM.campus.config.calidad === 'alta')) { const k = nCoche++, tipo = k === 9 ? 'ambulancia' : ['turismo', 'compacto', 'turismo', 'todoterreno', 'compacto', 'furgoneta', 'taxi'][k % 7], o = GM.kit.coche(tipo === 'taxi' || tipo === 'ambulancia' ? '#f4f4f4' : tipo === 'furgoneta' ? '#e8e8e8' : color, tipo); o.position.y = -0.12; o.userData.coche = true; return o; }
+    if (GM.vehiculos && GM.vehiculos.kenney && GM.campus && GM.campus.config.calidad !== 'alta') { const k = GM.vehiculos.kenney(['turismo', 'compacto', 'turismo', 'todoterreno', 'compacto', 'furgoneta'][nCoche++ % 6]); if (k) return k; }   // modelos de Kenney (CC0) en la calidad normal
     const g = new THREE.Group(), cuerpo = mat(color, { roughness: 0.35, metalness: 0.4 }), cristal = mat('#22303a', { roughness: 0.1, metalness: 0.6 }), rueda = mat('#151515');
     const B = (w, h, d, m, x, y, z) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.castShadow = true; g.add(me); };
     B(1.8, 0.55, 4.1, cuerpo, 0, 0.5, 0); B(1.6, 0.5, 2.1, cristal, 0, 0.98, -0.2); B(1.62, 0.06, 2.0, cuerpo, 0, 1.25, -0.2);
@@ -620,6 +621,6 @@
   // La ciudad real (calle_real.js) sustituye a la calle inventada en los clubes con datos de OpenStreetMap
   const esReal = st => !!(GM.mods.calleReal && GM.mods.calleReal.datos(st.clubId));
   function construir(S, M, st) { return esReal(st) ? GM.mods.calleReal.construir(S, M, st) : construirAntigua(S, M, st); }
-  const preparar = st => GM.mods.calleReal ? GM.mods.calleReal.cargar(st.clubId, st) : Promise.resolve(null);
+  const preparar = st => { const v = GM.vehiculos && GM.campus && GM.campus.config.calidad !== 'alta' ? GM.vehiculos.precargar() : null; const c = GM.mods.calleReal ? GM.mods.calleReal.cargar(st.clubId, st) : Promise.resolve(null); return v ? Promise.all([c, v]).then(x => x[0]) : c; };
   GM.calle = { moverPalomas, partidoFase: true, construir, construirAntigua, poblar, siguiente, actualizar, LIM, real: esReal, preparar, util: { MODELOS, PIEL, PELO, coche, perro, autobusRua, autobus, autobusEquipo } };
 })();
