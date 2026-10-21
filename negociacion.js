@@ -19,8 +19,8 @@
     if (E.bloqueos[jugId] && st.fecha < E.bloqueos[jugId]) return { ok: false, motivo: 'Su agente no quiere volver a hablar hasta el ' + U.fechaLarga(E.bloqueos[jugId]) + '.' };
     if (tipo === 'renovar' && p.equipoId !== club) return { ok: false, motivo: 'Solo puedes renovar a jugadores de tu plantilla.' };
     if (tipo === 'fichar' && !p.libre) return { ok: false, motivo: 'Tiene contrato con otro club: negocia un traspaso.' };
-    const ag = agente(st, jugId), pedido = Math.round(M().salarioPedido(st, jugId, club) * (tipo === 'renovar' ? 1.04 : 1) * ag.f / 10000) * 10000;
-    const ses = { id: jugId + ':' + tipo, jugId, tipo, ronda: 0, paciencia: ag.pac, agente: { perfil: ag.perfil, nombre: ag.nombre, etq: ag.etq }, pedido, estado: 'abierta', historial: [] };
+    const ag = agente(st, jugId), tr = GM.traspasos && st.mercado ? GM.traspasos.trato(st, jugId) : null, pedido = Math.round(M().salarioPedido(st, jugId, club) * (tipo === 'renovar' ? 1.04 : 1) * ag.f * (tr ? tr.factorSalario : 1) / 10000) * 10000;   // la agencia del jugador te recuerda (punto 65)
+    const ses = { id: jugId + ':' + tipo, jugId, tipo, ronda: 0, paciencia: ag.pac + (tr ? tr.pacienciaExtra : 0), agencia: tr ? tr.agencia : null, agente: { perfil: ag.perfil, nombre: ag.nombre, etq: ag.etq }, pedido, estado: 'abierta', historial: [] };
     E.ses[ses.id] = ses; return { ok: true, sesion: ses };
   }
   // Probabilidades aproximadas de cumplir cada bonus (la usa el jugador para valorarlos)
@@ -50,13 +50,14 @@
     const E = estado(st), p = st.jugadores[ses.jugId]; if (ses.estado !== 'abierta') return { estado: ses.estado, mensaje: 'La negociación ya ha terminado.' };
     ses.ronda++; const val = valorar(st, ses, o), min = ses.agente.perfil === 'duro' ? 0.93 : 0.9, r = val.ratio;
     ses.historial.push({ ronda: ses.ronda, oferta: Object.assign({}, o), ratio: Math.round(r * 100) / 100 });
-    if (r >= 1) { ses.estado = 'acepta'; ses.final = o; return { estado: 'acepta', mensaje: ses.agente.nombre + ': «De acuerdo. ' + p.nombre + ' firma.»', val }; }
+    if (GM.traspasos && st.mercado && r < 0.72) GM.traspasos.recordar(st, ses.jugId, 'lowball', 'Oferta muy baja por ' + p.nombre);
+    if (r >= 1) { ses.estado = 'acepta'; ses.final = o; if (GM.traspasos && st.mercado) GM.traspasos.recordar(st, ses.jugId, ses.tipo === 'renovar' ? 'renovacion' : 'acuerdo', 'Contrato acordado con ' + p.nombre); return { estado: 'acepta', mensaje: ses.agente.nombre + ': «De acuerdo. ' + p.nombre + ' firma.»', val }; }
     if (r >= min && ses.agente.perfil !== 'duro' || (r >= min && ses.ronda <= 2)) {
       const falta = Math.max(10000, Math.round((ses.pedido - val.valor) / 10000) * 10000), contra = Object.assign({}, o, { salario: Math.round(o.salario) + falta });
       return { estado: 'contra', mensaje: ses.agente.nombre + ': «Estamos cerca. Si subes el salario a ' + U.eur(contra.salario) + ' al año, firmamos.»', contra, val };
     }
     ses.paciencia--;
-    if (ses.paciencia <= 0 || ses.ronda >= 3) { ses.estado = 'rompe'; E.bloqueos[ses.jugId] = U.addDays(st.fecha, 30); return { estado: 'rompe', mensaje: ses.agente.nombre + ': «Se acabó. No volveremos a hablar en un mes.»', val }; }
+    if (ses.paciencia <= 0 || ses.ronda >= 3) { ses.estado = 'rompe'; E.bloqueos[ses.jugId] = U.addDays(st.fecha, 30); if (GM.traspasos && st.mercado) GM.traspasos.recordar(st, ses.jugId, 'rompe', 'Se rompe la negociación por ' + p.nombre); return { estado: 'rompe', mensaje: ses.agente.nombre + ': «Se acabó. No volveremos a hablar en un mes.»', val }; }
     return { estado: 'rechaza', mensaje: ses.agente.nombre + ': «Eso queda lejos de lo que merece. Piden unos ' + U.eur(ses.pedido) + ' al año en total.»', val };
   }
   // Firma el contrato pactado

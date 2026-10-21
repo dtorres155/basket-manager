@@ -2,7 +2,7 @@
    a los datos de INE, Eurostat, BLS y Numbeo; son cifras redondeadas, no oficiales), y la economía tiene un ciclo anual (boom, recesión, burbuja inmobiliaria, inflación alta) y una inflación suave.
    Efectos en el juego: lo que cuesta vivir (hogar.js), el precio de la vivienda y de los bienes (carrera.js, patrimonio.js), los sueldos que piden los jugadores (mercado.js) y los ingresos del club:
    patrocinios y taquilla/abonados (finanzas.js). Así Boston es más cara que Lleida y se nota en el contrato, en el alquiler y en la caja del club.
-   Expone: ficha(st, clubId), indiceVida, indiceSuelo, indicePrecios, factorSalario, factorClub, ciclo, inflacion, comparar, ranking, gastosMes, selfTest. No guarda estado (el ciclo sale de la semilla de la partida). Prueba: t_economia.js. */
+   Expone: ficha(st, clubId), indiceVida, indiceSuelo, indicePrecios, factorSalario, factorLiga, factorClub, ciclo, inflacion, comparar, ranking, gastosMes, selfTest. No guarda estado (el ciclo sale de la semilla de la partida). Prueba: t_economia.js. */
 (function () {
   const U = GM.util, clamp = U.clamp;
   // coste de vida (España = 1), salario medio anual en miles de euros, alquiler en €/m² al mes, inflación anual base
@@ -36,7 +36,13 @@
   const indiceVida = (st, clubId) => Math.round((PAIS[pais(st, clubId)] || PAIS.ES).vida * ciudadF(st, clubId) * inflacion(st, clubId) * 1000) / 1000;
   const indiceSuelo = (st, clubId) => { const p = PAIS[pais(st, clubId)] || PAIS.ES; return Math.round(p.alq / PAIS.ES.alq * Math.pow(ciudadF(st, clubId), 1.2) * ciclo(st).vivienda * inflacion(st, clubId) * 1000) / 1000; };
   const indicePrecios = (st, clubId) => indiceSuelo(st, clubId);
-  function factorSalario(st, clubId) { return Math.round(clamp(0.92 + 0.08 * ciudadF(st, clubId) * Math.sqrt((PAIS[pais(st, clubId)] || PAIS.ES).vida), 0.9, 1.12) * 1000) / 1000; }
+  // Dentro de una misma ciudad no todos los clubes pagan igual: cuenta el nivel de su liga y lo grande que es el club (un Euroliga y un segundo equipo de la misma ciudad no ofrecen lo mismo)
+  const LIGA_SAL = { NBA: 1.05, EUROLIGA: 1.04, ACB: 0.99, LEGA: 0.98, BBL: 0.98, BSL: 0.97, GBL: 0.95, EUROCUP: 0.95, CHAMPIONS: 0.93 };
+  function factorLiga(st, clubId) {
+    clubId = clubId || st.clubId; const e = st.equipos[clubId]; let l = null; try { l = GM.mods.mercado && st.ligas ? GM.mods.mercado.ligaDe(st, clubId) : null; } catch (x) { l = null; }
+    const rep = e && typeof e.reputacion === 'number' ? e.reputacion : 60; return Math.round((LIGA_SAL[l] || 1) * (0.94 + 0.12 * clamp(rep / 100, 0, 1)) * 1000) / 1000;
+  }
+  function factorSalario(st, clubId) { return Math.round(clamp(0.92 + 0.08 * ciudadF(st, clubId) * Math.sqrt((PAIS[pais(st, clubId)] || PAIS.ES).vida), 0.9, 1.12) * factorLiga(st, clubId) * 1000) / 1000; }
   function factorClub(st, clubId) {
     const c = ciclo(st), p = PAIS[pais(st, clubId)] || PAIS.ES, riqueza = Math.pow(clamp(p.sal * Math.pow(ciudadF(st, clubId), 0.8) / 30, 0.4, 2.4), 0.25);   // el poder adquisitivo de la afición pesa poco, pero pesa
     return { patrocinio: Math.round(c.patrocinio * riqueza * 1000) / 1000, taquilla: Math.round(c.taquilla * (0.9 + 0.1 * riqueza) * 1000) / 1000 };
@@ -56,6 +62,6 @@
     const c = comparar(st, 'bo', 'll'); if (!(c.vida > 30 && c.alquiler > 100 && c.salario > 100)) return false; if (!(factorSalario(st, 'bo') > factorSalario(st, 'll'))) return false;
     const a = inflacion(Object.assign({}, st, { temporada: '2030-31' }), 'bo'), t = inflacion(Object.assign({}, st, { temporada: '2030-31' }), 'tr'); return a > 1.05 && t > a * 1.2 && ciclo(st).id === 'normal' && Object.keys(CICLOS).length === 5 && factorClub(st, 'bo').patrocinio > factorClub(st, 'tr').patrocinio;
   }
-  GM.economia = { PAIS, CIUDAD, CICLOS, ficha, comparar, ranking, indiceVida, indiceSuelo, indicePrecios, factorSalario, factorClub, ciclo, inflacion, gastosMes, selfTest };
+  GM.economia = { PAIS, CIUDAD, CICLOS, ficha, comparar, ranking, indiceVida, indiceSuelo, indicePrecios, factorSalario, factorLiga, LIGA_SAL, factorClub, ciclo, inflacion, gastosMes, selfTest };
   GM.register && GM.register('economia', GM.economia);
 })();

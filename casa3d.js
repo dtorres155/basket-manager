@@ -157,6 +157,7 @@
       if (st.modo === 'carrera' && GM.mods.vida.vitrina(S, st, W, vx, vz, 0)) { S.casaMuros.push([vx - 0.85, vz - 0.3, vx + 0.85, vz + 0.3]); rehacerRejilla(S, st);
         S.zonas.push(M.zona(W, { id: 'vitrina', nombre: 'Vitrina de logros', accion: '', destino: {}, acciones: s2 => { const L = GM.mods.vida.logros(s2), hechos = L.filter(x => x.fecha); return (hechos.length ? hechos : [{ t: 'Aún vacía', d: 'Consigue logros para llenarla.' }]).map((x, i) => ({ id: 'l' + i, t: x.t, d: x.fecha ? U.fecha(x.fecha) : x.d, disponible: false, motivo: x.fecha ? 'Conseguido el ' + U.fecha(x.fecha) : x.d, fn: () => ({ ok: false }) })); } }, vx, vz + 1.2, club)); }
       if (GM.coleccionables && st.modo === 'carrera') { const cx = vx + 2.1 < salon.x1 - 1.2 ? vx + 2.1 : vx - 2.1; GM.coleccionables.vitrina(S, st, W, cx, vz, 0); S.casaMuros.push([cx - 0.95, vz - 0.3, cx + 0.95, vz + 0.3]); rehacerRejilla(S, st); S.zonas.push(M.zona(W, { id: 'coleccion', nombre: 'Tu colección', accion: '', destino: {}, acciones: s2 => GM.coleccionables.acciones(s2) }, cx, vz + 1.2, club)); }
+      if (GM.patrimonio && st.modo === 'carrera') { try { GM.patrimonio.colgar(S, M, st, W, salon, club); } catch (e) { console.warn('arte', e); } }
       GM.mods.vida.ponerMascota(S, st, (salon.x0 + salon.x1) / 2 + 0.6, (salon.z0 + salon.z1) / 2);
     }
     return W;

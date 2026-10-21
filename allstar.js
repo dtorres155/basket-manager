@@ -41,6 +41,7 @@
     const rating = L => L.reduce((s, i) => s + st.jugadores[i].ovr, 0) / Math.max(1, L.length), ra = rating(a), rb = rating(b), base = d.pts + r() * 14, sa = Math.round(base + (ra - rb) * 1.2 + (r() - 0.5) * 26), sb = Math.round(base - (ra - rb) * 1.2 + (r() - 0.5) * 26);
     const resA = sa === sb ? sa + 2 : sa, ganA = resA > sb, gan = ganA ? a : b, mvp = gan.slice().sort((x, y) => (st.jugadores[y].ovr + r() * 14) - (st.jugadores[x].ovr + r() * 14))[0];
     ev.partido = { a, b, nombreA: liga === 'NBA' ? 'Este' : 'Equipo A', nombreB: liga === 'NBA' ? 'Oeste' : 'Equipo B', pa: resA, pb: sb, mvp };
+    if (ev.directo) Object.assign(ev.partido, { pa: ev.directo.pa, pb: ev.directo.pb, mvp: ev.directo.mvp || ev.partido.mvp, enDirecto: true });   // lo jugado en directo sustituye a la simulación (punto 66)
     // concursos: los invitados y quien haya aceptado
     const inv = A.inv[liga] || {}, yo = st.modo === 'carrera' ? st.jugadores.yo : null;
     let tir = tiradores(st, liga, r), sal = saltadores(st, liga, r);
@@ -88,5 +89,26 @@
     iniciar(st); const ev = resolver(st, 'NBA'); GM.mods.mercado.ligaDe = ligaDe0;
     return !!ev && ev.estado === 'hecho' && ev.partido.a.length + ev.partido.b.length === 24 && !!ev.triples.ganador && !!ev.mates.ganador && ev.triples.rondas.length === 3;
   }
-  GM.register('allstar', { registrarJugado, estado, evento, invitaciones, responder, resolver, nuevaPartida, selfTest, DEF });
+  // ---------- El partido en directo (punto 66) ----------
+  // Se puede jugar (o ver) con el motor del directo desde cinco días antes de la fecha: dos equipos temporales con los 24 elegidos; al terminar se restauran cansancio y lesiones y el resultado cuenta
+  function reparto(st, liga, top) { let a = [], b = []; if (liga === 'NBA') top.forEach(t => { const cf = equipoDe(st, t.id).conferencia; (cf === 'O' ? b : a).push(t.id); }); else top.forEach((t, i) => { (i % 4 === 0 || i % 4 === 3 ? a : b).push(t.id); }); return { a, b }; }
+  function puedeDirecto(st, liga) { const ev = estado(st).eventos[liga]; if (!ev || ev.estado !== 'pendiente' || ev.directo) return { ok: false, motivo: ev && ev.directo ? 'Ya lo has jugado.' : 'No está disponible.' }; if (U.diffDays(st.fecha, ev.fecha) > 5) return { ok: false, motivo: 'Se podrá jugar cinco días antes del ' + U.fechaLarga(ev.fecha) + '.' }; if (candidatos(st, liga).length < DEF[liga].n) return { ok: false, motivo: 'Todavía no hay jugadores suficientes.' }; return { ok: true }; }
+  function prepararDirecto(st, liga) {
+    const c = puedeDirecto(st, liga); if (!c.ok) return c; const ev = estado(st).eventos[liga], d = DEF[liga], top = candidatos(st, liga).slice(0, d.n), { a, b } = reparto(st, liga, top), ids = a.concat(b);
+    const snap = ids.map(i => { const e = st.jugadores[i].estado; return [i, e.fatiga, e.lesion, e.moral, e.carga, e.forma]; }), club = st.clubId, cols = liga === 'NBA' ? [['#1d4f91', '#ffffff'], ['#c8102e', '#ffffff']] : [['#1d4f91', '#ffffff'], ['#e8590c', '#ffffff']];
+    st.equipos['as:A'] = { id: 'as:A', nombre: liga === 'NBA' ? 'Este' : 'Equipo A', siglas: liga === 'NBA' ? 'EST' : 'EQA', colores: cols[0], plantilla: a.slice(), reputacion: 85, cohesion: 60, ciudad: 'All-Star', pais: 'XX', presupuesto: 1, pabellon: { nombre: ev.nombre, aforo: 18000 } };
+    st.equipos['as:B'] = { id: 'as:B', nombre: liga === 'NBA' ? 'Oeste' : 'Equipo B', siglas: liga === 'NBA' ? 'OES' : 'EQB', colores: cols[1], plantilla: b.slice(), reputacion: 85, cohesion: 60, ciudad: 'All-Star', pais: 'XX', presupuesto: 1, pabellon: { nombre: ev.nombre, aforo: 18000 } };
+    ids.forEach(i => { st.jugadores[i]._equipoAS = st.jugadores[i].equipoId; });
+    return { ok: true, a, b, partido: { id: 'asg:' + liga, fecha: ev.fecha, comp: liga, fase: 'allstar', jornada: 0, local: 'as:A', visitante: 'as:B', resultado: null }, snap, ids, club };
+  }
+  function terminarDirecto(st, liga, ctx, res) {
+    ctx.snap.forEach(([i, f, l, m, c, fo]) => { const e = st.jugadores[i].estado; e.fatiga = f; e.lesion = l; e.moral = m; e.carga = c; e.forma = fo; delete st.jugadores[i]._equipoAS; }); delete st.equipos['as:A']; delete st.equipos['as:B'];
+    if (!res) return { ok: false }; const ev = estado(st).eventos[liga]; let mvp = null, mx = -1; const gana = res.local > res.visitante ? 'a' : 'b'; Object.keys(res.stats || {}).forEach(id => { const s = res.stats[id], el = ctx.ids.indexOf(id) >= 0, delLado = gana === 'a' ? ctx.a.indexOf(id) >= 0 : ctx.b.indexOf(id) >= 0; if (el && delLado && s.pts + s.reb * 0.3 + s.ast * 0.5 > mx) { mx = s.pts + s.reb * 0.3 + s.ast * 0.5; mvp = id; } });
+    ev.directo = { pa: res.local, pb: res.visitante, mvp, stats: res.stats }; GM.noticia && GM.noticia(st, 'Has jugado el partido de las estrellas: ' + res.local + ' - ' + res.visitante + '.'); return { ok: true, resultado: ev.directo };
+  }
+  function jugarDirecto(st, liga, opt) {
+    const ctx = prepararDirecto(st, liga); if (!ctx.ok) return ctx; if (!GM.mods.directo || !GM.mods.directo.abrir) { terminarDirecto(st, liga, ctx, null); return { ok: false, motivo: 'El directo no está disponible.' }; }
+    GM.mods.directo.abrir(st, ctx.partido, { control: false, onFin: res => { const r = terminarDirecto(st, liga, ctx, res); if (opt && opt.onFin) opt.onFin(r); } }); return { ok: true };
+  }
+  GM.register('allstar', { puedeDirecto, prepararDirecto, terminarDirecto, jugarDirecto, registrarJugado, estado, evento, invitaciones, responder, resolver, nuevaPartida, selfTest, DEF });
 })();

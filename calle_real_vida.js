@@ -111,7 +111,7 @@
     if (!S.rua && GM.urbano && GM.urbano.bici && vias.length) for (let i = 0; i < (alta ? 5 : 2); i++) { const vi = vias[(i + 2) % Math.min(vias.length, 10)], obj = GM.urbano.bici(['#d62d2d', '#2f6f9e', '#e9e5da', '#2e7d32'][i % 4]); const pil = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color: ['#1d2024', '#5a1020', '#2f4a6a'][i % 3] })); pil.position.set(0, 1.05, -0.05); obj.add(pil); S.mundo.add(obj); S.coches.push({ obj, vi, dir: vi.v.uno || i % 2 ? 1 : -1, pos: r() * vi.L, vel: 0, len: 1.8, lane: ANCHO[vi.v.k] / 2 - 0.9, vmax: 4.2, bici: true }); }
     S.viasCoche = vias; S.punto = punto; if (GM.ciudadDia) { try { await GM.ciudadDia.poblar(S, M, st); } catch (e) { console.error('ciudadDia', e); } }
     if (GM.movilidad) { try { GM.movilidad.poblar(S, M, st); } catch (e) { console.error('movilidad', e); } }
-    if (GM.ciudadJuego) { try { GM.ciudadJuego.canchas(S, M, st); GM.ciudadJuego.marcas(S, M, st); } catch (e) { console.error('ciudadJuego', e); } }
+    if (GM.ciudadJuego) { try { GM.ciudadJuego.canchas(S, M, st); GM.ciudadJuego.marcas(S, M, st); await GM.ciudadJuego.gente(S, M, st); } catch (e) { console.error('ciudadJuego', e); } }
     fp('taxis, policía, gatos, autobús y ciclistas'); // clientes sentados en las terrazas
     if (S.sitios && S.sitios.length) { const cl = await Promise.all(S.sitios.map((q, k) => M.personaje({ modelo: MODELOS[(k * 5 + 2) % MODELOS.length], altura: 160 + k * 4, piel: PIEL[k % 5], pelo: PELO[(k * 2) % 6] })));
       cl.forEach((p, k) => { const q = S.sitios[k]; if (k % 3 === 2) { p.obj.visible = false; p.oculto = true; return; } p.fijo = true; p.rol = 'Cliente de la terraza'; p.obj.position.set(q.x, 0, q.z); p.obj.rotation.y = q.ry; p.asiento = 0.45; p.obj.userData = { npc: S.gente.length }; S.mundo.add(p.obj); M.anim(p, 'sit'); S.gente.push(p); }); }
@@ -195,6 +195,7 @@
   }
   function actualizar(S, M, dt) {
     if (S.tiendas && S.tiendas.length && S.st) { S.tTienda = (S.tTienda || 0) - dt; if (S.tTienda <= 0) { S.tTienda = 1; const h = S.hora || 12, dow = S.festivo ? 0 : new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay(), pais = (S.st.equipos[S.st.clubId] || {}).pais; S.tiendas.forEach(t => { const ab = abierto(t.tipo, h, dow, pais); t.pr.visible = !ab; t.v.visible = ab || true; }); const luz = 0.1 + 0.9 * Math.min(1, Math.max(0, S.noche || 0)); (S.matsTienda || []).forEach(m => { m.emissiveIntensity = luz; }); } }
+    if (S.jugadoresCancha && GM.ciudadJuego) GM.ciudadJuego.moverCanchas(S, M, dt);
     if (S.multGPU) S.multGPU.actualizar(performance.now() / 1000, S.foco, S.hora);
     if (S.chunks) S.chunks.paso([[S.foco.x, S.foco.z], [S.camera.position.x, S.camera.position.z]], 4);   // ciudad por trozos: construye y descarta celdas de edificios según la distancia
     const t = performance.now() / 1000;

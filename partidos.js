@@ -84,7 +84,9 @@
       s: { min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fal: 0 }
     }));
     const st = state.staff, mio = eqId === state.clubId && st ? st : null;
-    return { id: eqId, tac, rot, score: 0, rm: 1 + (tac.ritmo - 3) * 0.035, bonus: { ataque: mio ? mio.ataque || 0 : 0, defensa: mio ? mio.defensa || 0 : 0 } };
+    const T = { id: eqId, tac, rot, score: 0, rm: 1 + (tac.ritmo - 3) * 0.035, bonus: { ataque: mio ? mio.ataque || 0 : 0, defensa: mio ? mio.defensa || 0 : 0 } };
+    if (GM.tacticaPlus) { T.pz = GM.tacticaPlus.equipo(state, eqId, tac); T.uso = {}; if (T.pz.minutos) GM.tacticaPlus.aplicarMinutos(T, T.pz.minutos, gmin); }   // libro de jugadas, emparejamientos y minutos objetivo (punto 64)
+    return T;
   }
   function elige(team, first) {
     const rot = team.rot;
@@ -131,7 +133,7 @@
   function posesion(O, D, c) {
     const cf = c.cf;
     const pTov = U.clamp(0.125 + (D.dP - 60) / 950 - ((O.bote + O.pase) / 2 - 60) / 1100 + (D.tac.defensa === 'mixta' ? 0.012 : 0) + (D.tac.presion === 'alta' ? 0.02 * (1 + 0.2 * D.bonus.defensa) : D.tac.presion === 'media' ? 0.009 * (1 + 0.2 * D.bonus.defensa) : 0), 0.08, 0.2);
-    if (R() < pTov) {
+    if (R() < pTov + (O.bonus && O.bonus.tov ? O.bonus.tov : 0)) {
       const ti = wp(O.wTov); O.L[ti].s.tov++;
       let rob = null; if (R() < 0.55) { const si = wp(D.wStl); D.L[si].s.stl++; rob = D.L[si].p.id; }
       if (c.ev) c.last = { r: 'tov', jug: O.L[ti].p.id, rob };
@@ -160,6 +162,7 @@
         pm += ((is3 ? at.tiro3 : at.tiro2) * f - 65) / (is3 ? 520 : 470); // sensibilidad al talento (recalibrada: antes 400/360 daba demasiadas palizas)
         pm -= ((is3 ? D.dP : D.dI * 0.6 + D.dP * 0.4) - 60) / (is3 ? 680 : 600);
         pm += (O.pase - 62) / 1400 + c.ha;
+        if (GM.tacticaPlus && (O.pz || O.quim || (O.bonus && O.bonus.charla) || (D.pz && D.pz.emp))) pm += GM.tacticaPlus.ajustePm(O, D, si, is3);   // jugadas, emparejamientos, química y charla (punto 64)
         if (D.tac.defensa === 'zona') pm += is3 ? 0.008 : -0.012;
         if (O.tac.ritmo >= 4) pm -= 0.006;
         { const at = O.tac.ataque, k = 1 + 0.25 * O.bonus.ataque;
@@ -194,13 +197,15 @@
     const tacL = partido.local === state.clubId ? tacticaValida(state, partido.local) : tacticaAuto(state, partido.local);
     const tacV = partido.visitante === state.clubId ? tacticaValida(state, partido.visitante) : tacticaAuto(state, partido.visitante);
     const A = mkTeam(state, partido.local, tacL, gmin), B = mkTeam(state, partido.visitante, tacV, gmin);
+    if (GM.tacticaPlus) GM.tacticaPlus.alinear(state, A, B);
     const N = cf.pace * (A.rm + B.rm) / 2 * (0.95 + 0.1 * R());
     const stintMin = cf.q / 3, qs = cf.q * 60;
     const D = { state, partido, cf, A, B, cuartos: [], q: 0, ot: 0, terminado: false, tm: { A: 3, B: 3 }, enPista: { A: [], B: [] }, eventos: [], prevA: 0, prevB: 0 };
     const jugarStint = (first, minutos, nPos, base, dur, evs) => {
       const LA = elige(A, first), LB = elige(B, first);
       D.enPista.A = LA.map(e => e.p.id); D.enPista.B = LB.map(e => e.p.id);
-      const aA = agg(LA, A.tac, A.bonus), aB = agg(LB, B.tac, B.bonus);
+      const aA = agg(LA, A.tac, A.bonus), aB = agg(LB, B.tac, B.bonus), sa0 = A.score, sb0 = B.score;
+      if (GM.tacticaPlus) { aA.pz = A.pz; aA.adapt = A.adapt; aA.uso = A.uso; aA.quim = GM.tacticaPlus.quimicaEquipo(state, A, LA); aB.pz = B.pz; aB.adapt = B.adapt; aB.uso = B.uso; aB.quim = GM.tacticaPlus.quimicaEquipo(state, B, LB); }
       LA.forEach(e => { e.played += minutos; e.s.min += minutos; });
       LB.forEach(e => { e.played += minutos; e.s.min += minutos; });
       const cA = { cf, ha: cf.ha, ev: !!evs, last: null }, cB = { cf, ha: -cf.ha, ev: !!evs, last: null };
@@ -225,6 +230,7 @@
         const pp = atA ? posesion(aA, aB, cA) : posesion(aB, aA, cB); if (atA) A.score += pp; else B.score += pp;
         if (evs && c.last) evs.push(Object.assign({ eq: atA ? 'A' : 'B', t: Math.round(base + dur - 5 + x * 2), pts: pp, a: A.score, b: B.score, pista: [D.enPista.A.slice(), D.enPista.B.slice()] }, c.last));
       }
+      if (GM.tacticaPlus) GM.tacticaPlus.registrarStint(D, LA, LB, A.score - sa0, B.score - sb0, minutos);
     };
     D.jugarCuarto = function () {
       if (D.terminado) return null;
@@ -293,9 +299,11 @@
           stats[p.id] = e.s;
           p.estado.fatiga = Math.min(100, p.estado.fatiga + m * 0.33);
           p.estado.moral = U.clamp(p.estado.moral + (gano ? 1 : -1), 20, 100);
-          if (R() < 0.0035 * (m / 30) * (1 + p.estado.fatiga / 80)) {
-            const r = R(); const dias = r < 0.6 ? GM.rng.int(3, 10) : r < 0.9 ? GM.rng.int(11, 30) : GM.rng.int(31, 90);
+          if (GM.progresion) GM.progresion.sumarMinutos(p, m);
+          if (R() < 0.0035 * (m / 30) * (1 + p.estado.fatiga / 80) * (GM.progresion ? GM.progresion.factorLesion(state, p) : 1)) {
+            const r = R(); let dias = r < 0.6 ? GM.rng.int(3, 10) : r < 0.9 ? GM.rng.int(11, 30) : GM.rng.int(31, 90);
             const tipo = GM.rng.pick(TIPOS_LESION);
+            if (GM.progresion) dias = GM.progresion.lesionar(state, p, tipo, dias, 'partido').dias;
             p.estado.lesion = { tipo, dias };
             lesiones.push({ jugadorId: p.id, tipo, dias });
           }
@@ -303,8 +311,10 @@
       });
       const res = { local: A.score, visitante: B.score, cuartos: D.cuartos, stats, lesiones, cronica: [], ot: D.ot };
       res.cronica = cronica(state, partido, A, B, res);
+      if (GM.tacticaPlus) GM.tacticaPlus.cierrePartido(D, res);
       return res;
     };
+    if (GM.tacticaPlus) GM.tacticaPlus.extenderDirecto(D, state);
     return D;
   }
   function simular(state, partido) { return crearDirecto(state, partido, false).finalizar(); }
@@ -343,6 +353,7 @@
       const p = st.jugadores[id], e = p.estado;
       const rec = p.equipoId === st.clubId ? recUser : 1;
       if (e.fatiga > 0) e.fatiga = Math.max(0, e.fatiga - 9 * rec);
+      if (GM.progresion) GM.progresion.descansoDiario(p, rec);
       if (e.lesion) { e.lesion.dias -= 1 + (R() < rec - 1 ? 1 : 0); if (e.lesion.dias <= 0) e.lesion = null; }
       e.forma = U.clamp(e.forma + (e.fatiga < 25 ? 0.6 : -0.4), 55, 100);
     }

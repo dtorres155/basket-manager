@@ -153,6 +153,7 @@
   function traspasar(st, jugId, aId, precio) {
     const p = st.jugadores[jugId], user = st.clubId;
     if (!p || !p.equipoId) return { ok: false, motivo: 'Jugador no disponible para traspaso.' };
+    if (GM.traspasos && st.modo === 'gestor' && st.mercado) { const cerrado = GM.traspasos.motivoCerrado(st, [user, aId === user ? p.equipoId : aId]); if (cerrado) return { ok: false, motivo: cerrado }; }   // fechas límite (punto 65)
     precio = Math.round(precio);
     if (aId === user && p.equipoId !== user) {
       if (precio < precioMinimo(st, jugId)) return { ok: false, motivo: 'El club pide al menos ' + U.eur(precioMinimo(st, jugId)) + '.' };
@@ -349,5 +350,5 @@
     const a = { ovr: 90, pot: 90, edad: 27 }, b = { ovr: 70, pot: 70, edad: 27 };
     return valorJugador(a) > valorJugador(b) * 4 && valorJugador(b) > 1e6 && valorJugador({ ovr: 70, pot: 70, edad: 36 }) < valorJugador(b);
   }
-  GM.register('mercado', { firmar, claseDraft, sacar, valorJugador, salarioPedido, topeSalarial, evaluarOferta, ofertar, renovar, liberar, precioMinimo, comprar, ofertasVenta, vender, traspasar, draft, expiran, libres, buscar, cerrarContratos, nuevaPartida, selfTest, ligaDe, MAXP });
+  GM.register('mercado', { firmar, claseDraft, sacar, valorJugador, salarioPedido, topeSalarial, evaluarOferta, ofertar, renovar, liberar, precioMinimo, comprar, ofertasVenta, vender, traspasar, draft, expiran, libres, buscar, cerrarContratos, nuevaPartida, selfTest, ligaDe, MAXP, mover, motivoNoAnadir, valorIA });
 })();

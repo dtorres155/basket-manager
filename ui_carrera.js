@@ -193,7 +193,7 @@
     if (c.fase === 'retirado') { // salón de la fama: el resumen de tu carrera
       const lg = K.legado(st), fila = (k, v) => h('div', { class: 'fila' }, h('span', { class: 'muted' }, k), h('b', null, v));
       el.append(seccion('Tu legado', h('div', { class: 'tarjeta' },
-        h('h3', null, lg.veredicto), h('div', { class: 'chips' }, chip(lg.grado, lg.salon ? 'ok' : ''), chip('Fama ' + lg.fama), lg.mejorDelJuego ? chip('Llegaste a ser el mejor del juego', 'ok') : null),
+        h('h3', null, lg.veredicto), h('div', { class: 'chips' }, chip(lg.grado, lg.salon ? 'ok' : ''), chip('Fama ' + lg.fama), lg.medallas && lg.medallas.length ? chip('Medallas con la selección: ' + lg.medallas.length, 'ok') : null, lg.mejorDelJuego ? chip('Llegaste a ser el mejor del juego', 'ok') : null),
         fila('Nivel máximo', lg.pico), fila('Temporadas como profesional', lg.temporadas + (lg.temporadasNBA ? ', ' + lg.temporadasNBA + ' en la NBA' : '')),
         fila('Partidos y puntos', lg.pj + ' partidos, ' + lg.puntosTotales.toLocaleString('es-ES') + ' puntos'), fila('Medias', lg.pts + ' pts, ' + lg.reb + ' reb, ' + lg.ast + ' ast'),
         lg.draft ? fila('Draft de la NBA', 'número ' + lg.draft) : null, lg.mejorPartido ? fila('Mejor partido', lg.mejorPartido.pts + ' puntos') : null,

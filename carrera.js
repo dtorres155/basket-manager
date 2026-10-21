@@ -541,10 +541,11 @@
     const titulos = c.historial.filter(x => x.titulo), clubes = [...new Set(H.map(x => x.club))], nba = H.filter(x => x.liga === 'NBA').length;
     const pico = Math.max(c.pico || 0, c.retiro ? c.retiro.pico || c.retiro.ovr : p.ovr, p.ovr);
     const mejorJuego = Object.values(st.jugadores).filter(j => !j.esYo && j.equipoId).reduce((m, j) => Math.max(m, j.ovr), 0);
-    const puntos = pico * 0.6 + c.fama * 0.25 + titulos.length * 4 + nba * 1.5;
+    const medallas = c.medallas || [], puntosMed = medallas.reduce((s, m) => s + ({ oro: 3, plata: 2, bronce: 1 })[m.medalla], 0);
+    const puntos = pico * 0.6 + c.fama * 0.25 + titulos.length * 4 + nba * 1.5 + puntosMed;
     const veredicto = puntos >= 85 ? 'Leyenda: entras en el salón de la fama por la puerta grande' : puntos >= 72 ? 'Entras en el salón de la fama' : puntos >= 60 ? 'Una gran carrera, a las puertas del salón de la fama' : puntos >= 48 ? 'Un profesional respetado' : 'Una carrera discreta';
     return { temporadas: H.length, pj, pts: pj ? Math.round(tot('pts') / pj * 10) / 10 : 0, reb: pj ? Math.round(tot('reb') / pj * 10) / 10 : 0, ast: pj ? Math.round(tot('ast') / pj * 10) / 10 : 0, puntosTotales: Math.round(tot('pts')),
-      titulos: titulos.map(x => x.temporada + ' ' + x.club), clubes, temporadasNBA: nba, pico, mejorDelJuego: pico >= mejorJuego, draft: c.draftPick || null, mejorPartido: c.mejor, grado: gradoFama(c).nombre, fama: Math.round(c.fama), veredicto, salon: puntos >= 72 };
+      titulos: titulos.map(x => x.temporada + ' ' + x.club), medallas: medallas.map(m => m.anio + ' ' + m.torneo + ', ' + m.medalla), clubes, temporadasNBA: nba, pico, mejorDelJuego: pico >= mejorJuego, draft: c.draftPick || null, mejorPartido: c.mejor, grado: gradoFama(c).nombre, fama: Math.round(c.fama), veredicto, salon: puntos >= 72 };
   }
 
   // ---------- Vivienda y estilo de vida ----------

@@ -146,6 +146,24 @@
     const sol = of.find(o => o.tipo === 'solar'), r = comprar(st, sol.id, 'contado'); if (!r.ok || dinero(st) >= 600) return false; const b = r.bien; st.fecha = '2030-10-01'; const v = valorBien(st, b); if (!(v > 0 && v !== sol.precio)) return false;
     const p = prestamo(st, 50, 60); if (!p.ok || deudaTotal(st) <= 0) return false; if (tramos(PAISES.ES.imp, 60) < 9 || tramos(PAISES.ES.imp, 0) !== 0) return false; return !!neto(st).total && vender(st, b.id).ok && Math.abs(factorNeto(st) - 0.62) < 1e-9;
   }
-  GM.patrimonio = { PAISES, TIPOS, SEGUROS, CATS, reg, conciliar, neto, mercado, comprar, vender, alquilar, edificar, prestamo, amortizar, contratarSeguro, cuotaSeguro, factorSeguro, declaracion, valorBien, factorNeto, est, libro: st => est(st).libro, serie: st => est(st).serie, limiteCredito, deudaTotal, tramos, dia, selfTest };
+  // Arte colgado en casa: los cuadros y esculturas que has comprado salen en la pared lateral del salón (casa3d.js), cada uno con su composición de colores
+  const cuadros = st => (st.patrimonio ? st.patrimonio.bienes.filter(b => b.tipo === 'arte' && !b.vendido) : []);
+  function colgar(S, M, st, W, salon, club) {
+    const L = cuadros(st).slice(0, 5); if (!L.length || !THREE) return 0; const T = THREE, pal = [['#c0392b', '#f1c40f', '#1d4f91'], ['#2e5d3a', '#e8dcc4', '#8e44ad'], ['#1d2630', '#e67e22', '#ecf0f1'], ['#16a085', '#f39c12', '#2c3e50'], ['#7f1d1d', '#d6c6a0', '#3a5f7a']];
+    L.forEach((b, i) => {
+      const h = U.hash(b.nombre + b.id) >>> 0, c = pal[h % 5], esc = /Escultura/.test(b.nombre), z = salon.z0 + 1.5 + i * 1.5, x = salon.x0 + 0.13, g = new T.Group();
+      if (esc) { const peana = new T.Mesh(new T.BoxGeometry(0.5, 0.9, 0.5), new T.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.6 })); peana.position.set(0, 0.45, 0); g.add(peana); const f = new T.Mesh(new T.CylinderGeometry(0.08, 0.2, 0.7, 10), new T.MeshStandardMaterial({ color: 0x8a6a3a, metalness: 0.7, roughness: 0.35 })); f.position.set(0, 1.25, 0); g.add(f); g.position.set(x + 0.35, 0, z); }
+      else {
+        const marco = new T.Mesh(new T.BoxGeometry(0.06, 0.95, 1.25), new T.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.5 })); g.add(marco);
+        const lienzo = new T.Mesh(new T.BoxGeometry(0.02, 0.8, 1.1), new T.MeshStandardMaterial({ color: c[0], roughness: 0.8 })); lienzo.position.x = 0.03; g.add(lienzo);
+        for (let k = 0; k < 3; k++) { const w = 0.3 + ((h >>> (k * 4)) % 50) / 100, hh = 0.2 + ((h >>> (k * 4 + 2)) % 40) / 100; const r = new T.Mesh(new T.BoxGeometry(0.02, hh, w), new T.MeshStandardMaterial({ color: c[(k + 1) % 3], roughness: 0.8 })); r.position.set(0.045, -0.2 + k * 0.22, -0.25 + ((h >>> (k * 3)) % 40) / 80); g.add(r); }
+        g.position.set(x, 1.55, z);
+      }
+      g.userData = { arte: b.id }; W.add(g);
+    });
+    S.zonas.push(M.zona(W, { id: 'arte_casa', nombre: 'Tu colección de arte', accion: '', destino: {}, acciones: s2 => cuadros(s2).map((b, i) => ({ id: 'a' + i, t: b.nombre, d: 'Valor actual ' + (Math.round(valorBien(s2, b) * 10) / 10) + ' mil €, comprado por ' + (Math.round(b.compra.precio * 10) / 10) + ' mil €.', disponible: false, motivo: 'Colgado en tu salón', fn: () => ({ ok: false }) })) }, salon.x0 + 1.5, salon.z0 + 1.5 + (L.length - 1) * 0.75, club));
+    return L.length;
+  }
+  GM.patrimonio = { cuadros, colgar, PAISES, TIPOS, SEGUROS, CATS, reg, conciliar, neto, mercado, comprar, vender, alquilar, edificar, prestamo, amortizar, contratarSeguro, cuotaSeguro, factorSeguro, declaracion, valorBien, factorNeto, est, libro: st => est(st).libro, serie: st => est(st).serie, limiteCredito, deudaTotal, tramos, dia, selfTest };
   GM.register && GM.register('patrimonio', GM.patrimonio);
 })();

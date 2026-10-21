@@ -81,11 +81,12 @@
     if (!st.instalaciones || !st.instalaciones[clubId]) return e;
     cd(st, clubId).edificios.forEach(b => { const t = info(b.tipo); for (const k in t.ef) e[k] += t.ef[k] * b.nivel; });
     (st.instalaciones[clubId].buffs || []).forEach(x => { if (x.hasta >= st.fecha) e[x.k] += x.v; });
+    if (GM.arbolInst) GM.arbolInst.sumar(e, st, clubId);   // las ramas del árbol de instalaciones (punto 62)
     return e;
   }
   function mantenimiento(st, id) {
     if (!st.instalaciones || !st.instalaciones[id]) return 0;
-    return Math.round(cd(st, id).edificios.reduce((a, b) => a + b.nivel, 0) * 4000 * escala(st, id));
+    return Math.round(cd(st, id).edificios.reduce((a, b) => a + b.nivel, 0) * 4000 * escala(st, id)) + (GM.arbolInst ? GM.arbolInst.mantenimiento(st, id) : 0);
   }
   function actividades(st, clubId, slotId) {
     const c = cd(st, clubId), b = bSlot(c, slotId); if (!b || !b.nivel || !ACT[b.tipo]) return [];
@@ -164,6 +165,7 @@
       if (W.userData.campusReal && m.children[0] && m.children[0].isMesh) { if (b) m.children[0].visible = false; else m.children[0].material = new THREE.MeshStandardMaterial({ color: 0xa08c6a, roughness: 1 }); }   // con el entorno real, sin el disco claro de base
       W.add(m); mallas.push(m);
     });
+    if (GM.arbolInst) { try { GM.arbolInst.decorar(W, st, id, L, S.c1); } catch (e) { console.warn('arbolInst', e); } }
     return { L, S, mallas };
   }
   function escena(st, id) {

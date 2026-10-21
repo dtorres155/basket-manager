@@ -38,6 +38,27 @@
   function cambiarRepes(st) {
     const c = col(st); let n = 0; Object.keys(c.items).forEach(k => { const x = c.items[k]; if (x.n >= 4 && item(st, k) && item(st, k).tipo === 'cromo') { const dar = Math.floor((x.n - 1) / 3); x.n -= dar * 3; n += dar; } }); if (!n) return { ok: false, motivo: 'Necesitas un cromo con al menos cuatro copias (tres repetidas cambian por un sobre).' }; c.sobres += n; return { ok: true, sobres: n };
   }
+  // ---------- Intercambio con vecinos ----------
+  // Cada semana tres vecinos coleccionistas te ofrecen cambiar una de tus repetidas por una pieza que no tienes (de rareza igual, o una menos si es de las altas).
+  const VECINOS = [['Marta', 'del tercero'], ['Jaume', 'de la panadería'], ['Rosa', 'del quiosco de enfrente'], ['Toni', 'del bloque de al lado'], ['Elena', 'del colegio'], ['Pau', 'del club de ajedrez'], ['Nuria', 'de la peña'], ['Quim', 'del taller']];
+  const semana = st => U.addDays(st.fecha, -U.weekday(st.fecha));
+  function ofertas(st) {
+    if (!act(st)) return []; const c = col(st), sem = semana(st); if (!c.tru || c.tru.sem !== sem) c.tru = { sem, hechos: [] };
+    const L = catalogo(st), orden = { comun: 0, rara: 1, epica: 2, legendaria: 3 }, mias = Object.keys(c.items).filter(k => c.items[k].n >= 2 && item(st, k)).sort(), out = [], usados = new Set();
+    for (let k = 0; k < 3; k++) {
+      const h0 = U.hash(sem + 'tru' + k + st.seed) >>> 0, v = VECINOS[(h0 >>> 3) % VECINOS.length]; let quiere = null, da = null;
+      if (mias.length) { quiere = item(st, mias[(h0 >>> 5) % mias.length]); const r = orden[quiere.rareza], objetivo = r >= 2 && (h0 >>> 9) % 3 === 0 ? r - 1 : r, pool = L.filter(x => orden[x.rareza] === objetivo && !c.items[x.id] && x.id !== quiere.id && !usados.has(x.id)); if (pool.length) da = pool[(h0 >>> 11) % pool.length]; }
+      if (!da) { quiere = { id: 'sobre', nombre: 'un sobre de cromos sin abrir', rareza: 'comun' }; const pool = L.filter(x => x.rareza === 'rara' && x.tipo === 'cromo' && !c.items[x.id] && !usados.has(x.id)); if (!pool.length || c.sobres < 1) { if (!pool.length) continue; } da = pool[(h0 >>> 11) % pool.length]; }
+      usados.add(da.id); out.push({ k, vecino: v[0], de: v[1], quiere: { id: quiere.id, nombre: quiere.nombre, rareza: quiere.rareza }, da: { id: da.id, nombre: da.nombre, rareza: da.rareza }, hecho: c.tru.hechos.indexOf(k) >= 0 });
+    }
+    return out;
+  }
+  function intercambiar(st, k) {
+    const o = ofertas(st).find(x => x.k === k); if (!o) return { ok: false, motivo: 'Esa oferta ya no está.' }; if (o.hecho) return { ok: false, motivo: 'Ya habéis cambiado esta semana.' }; const c = col(st);
+    if (o.quiere.id === 'sobre') { if (c.sobres < 1) return { ok: false, motivo: 'No tienes ningún sobre sin abrir para cambiar.' }; c.sobres--; } else { const x = c.items[o.quiere.id]; if (!x || x.n < 2) return { ok: false, motivo: 'Ya no tienes esa repetida.' }; x.n--; }
+    const r = otorgar(st, o.da.id, 'intercambio con ' + o.vecino); c.tru.hechos.push(k); const so = st.carrera.social; if (so && so.contactos) { const ami = so.contactos.find(q => q.tipo === 'amigo'); if (ami && GM.rng.next() < 0.3) ami.rel = clamp(ami.rel + 1, 0, 100); }
+    return { ok: true, texto: o.vecino + ' ' + o.de + ' te da ' + o.da.nombre.toLowerCase() + (r && r.nuevo ? ' (¡nueva en tu colección!)' : '') + '.' };
+  }
   // ---------- De dónde salen ----------
   GM.bus.on('partido:jugado', ({ partido: g }) => {
     const st = GM.state; if (!act(st) || !g || !g.resultado) return; const c = C(st), yo = st.jugadores.yo, id = yo && yo.equipoId; if (!id || (g.local !== id && g.visitante !== id)) return; const rival = g.local === id ? g.visitante : g.local, s = g.resultado.stats && g.resultado.stats.yo;
@@ -66,16 +87,16 @@
     s.camisetas.concat(s.cromos).forEach((it, i) => { const cam = it.tipo === 'camiseta', w = cam ? 0.7 : 0.45, h = cam ? 0.85 : 0.62, px = x0 + 1.2 + i * ((x1 - x0 - 2.4) / 11), m = new T.Mesh(new T.BoxGeometry(w + 0.1, h + 0.1, 0.05), marco); m.position.set(px, 1.2, z0 + 0.1); W.add(m); const f = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshStandardMaterial({ color: new T.Color(cam ? it.colores[0] : COLOR[it.rareza]) })); f.position.set(px, 1.2, z0 + 0.14); W.add(f); k++; }); return k;
   }
   function acciones(st) {
-    if (!act(st)) return []; const c = col(st), p = progreso(st);
-    return [{ id: 'sobre', t: 'Comprar un sobre de cromos (' + Math.round(PRECIO_SOBRE * 1000) + ' €)', d: 'Cinco cromos al azar. Tienes ' + c.sobres + ' sobre' + (c.sobres === 1 ? '' : 's') + ' sin abrir.', disponible: GM.mods.hogar.dinero(st) >= PRECIO_SOBRE, motivo: 'No tienes ahorros para eso', fn: () => { const r = comprarSobre(st); return r.ok ? { ok: true, texto: 'Compras un sobre' } : r; } },
+    if (!act(st)) return []; const c = col(st), p = progreso(st), tru = ofertas(st).map(o => ({ id: 'trueque' + o.k, t: 'Cambiar con ' + o.vecino + ': ' + o.quiere.nombre.toLowerCase() + ' por ' + o.da.nombre.toLowerCase(), d: o.vecino + ' ' + o.de + '. Una vez a la semana con cada uno.', disponible: !o.hecho, motivo: 'Ya habéis cambiado esta semana', fn: () => intercambiar(st, o.k) }));
+    return tru.concat([{ id: 'sobre', t: 'Comprar un sobre de cromos (' + Math.round(PRECIO_SOBRE * 1000) + ' €)', d: 'Cinco cromos al azar. Tienes ' + c.sobres + ' sobre' + (c.sobres === 1 ? '' : 's') + ' sin abrir.', disponible: GM.mods.hogar.dinero(st) >= PRECIO_SOBRE, motivo: 'No tienes ahorros para eso', fn: () => { const r = comprarSobre(st); return r.ok ? { ok: true, texto: 'Compras un sobre' } : r; } },
       { id: 'abrir', t: 'Abrir un sobre', d: 'Rasga el sobre y mira qué ha salido (' + c.sobres + ' en la mochila).', disponible: c.sobres > 0, motivo: 'No tienes sobres', fn: () => { const r = abrirSobre(st); if (!r.ok) return r; if (GM.ui && GM.ui.modal) mostrarSacados(r.sacados); return { ok: true, texto: 'Abres un sobre: ' + r.sacados.filter(x => x.nuevo).length + ' nuevos' }; } },
-      { id: 'estado', t: 'Colección: ' + p.total + ' de ' + p.hay, d: p.camiseta.tengo + ' camisetas, ' + p.cromo.tengo + ' cromos, ' + p.balon.tengo + ' balones. Repetidas: ' + p.repetidas + '.', disponible: false, motivo: '', fn: () => ({ ok: false }) }];
+      { id: 'estado', t: 'Colección: ' + p.total + ' de ' + p.hay, d: p.camiseta.tengo + ' camisetas, ' + p.cromo.tengo + ' cromos, ' + p.balon.tengo + ' balones. Repetidas: ' + p.repetidas + '.', disponible: false, motivo: '', fn: () => ({ ok: false }) }]);
   }
   function mostrarSacados(s) { const h = GM.h; GM.ui.modal(h('div', null, h('h3', null, 'Tu sobre'), h('div', { class: 'lista' }, s.map(x => h('div', { class: 'item' }, h('div', { class: 'ct' }, h('b', { style: { color: COLOR[x.rareza] } }, x.nombre), h('span', { class: 'muted' }, NOM[x.rareza] + (x.nuevo ? ', ¡nueva!' : ', repetida'))))))), [{ t: 'Guardar', cls: 'btn-sec' }]); }
   function selfTest() {
     const st = { seed: 'a', modo: 'carrera', fecha: '2026-10-01', equipos: { a: { id: 'a', nombre: 'Club A', siglas: 'A', reputacion: 90, colores: ['#c00', '#fff'] }, b: { id: 'b', nombre: 'Club B', siglas: 'B', reputacion: 50 } }, jugadores: { x: { nombre: 'Uno', ovr: 88, equipoId: 'a' }, y: { nombre: 'Dos', ovr: 66, equipoId: 'b' }, z: { nombre: 'Tres', ovr: 50, equipoId: 'b' } }, carrera: { dinero: 5 }, noticias: [], hogar: { ahorros: 5 } }; const L = catalogo(st);
     return L.filter(x => x.tipo === 'camiseta').length === 2 && L.filter(x => x.tipo === 'cromo').length === 2 && L.find(x => x.id === 'cromo:x').rareza === 'legendaria' && L.find(x => x.id === 'camiseta:a').rareza === 'legendaria' && RAREZAS.length === 4;
   }
-  GM.coleccionables = { RAREZAS, NOM, COLOR, PRECIO_SOBRE, catalogo, item, tiene, copias, total, progreso, otorgar, comprarSobre, abrirSobre, cambiarRepes, vitrina, exhibicion, seleccion, acciones, selfTest, col };
+  GM.coleccionables = { RAREZAS, NOM, COLOR, PRECIO_SOBRE, catalogo, item, tiene, copias, total, progreso, otorgar, comprarSobre, abrirSobre, cambiarRepes, ofertas, intercambiar, vitrina, exhibicion, seleccion, acciones, selfTest, col };
   GM.register && GM.register('coleccionables', GM.coleccionables);
 })();

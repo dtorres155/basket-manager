@@ -44,11 +44,13 @@
     const evs = Object.keys(S0.eventos).map(k => S0.eventos[k]);
     if (!evs.length) { el.append(aviso('Este año no hay All-Star en tus ligas.', '')); return; }
     evs.forEach(ev => {
+      const dir = ev.estado === 'pendiente' ? A.puedeDirecto(st, ev.id) : null;
       const mios = (ev.seleccionados || []).filter(i => st.jugadores[i] && (st.jugadores[i].equipoId === club || i === 'yo'));
       const lista = ids => h('div', { class: 'lista' }, ids.map(i => h('div', { class: 'item' + (mios.indexOf(i) >= 0 ? ' mio' : '') }, h('span', { class: 'pos' }, st.jugadores[i].pos), h('span', { class: 'ct' }, h('b', null, clip(nombre(st, i), 22)), h('span', { class: 'muted' }, eq(st.jugadores[i].equipoId || club).siglas)), h('span', { class: 'ovr ' + clsOvr(st.jugadores[i].ovr) }, st.jugadores[i].ovr))));
       const contenido = [h('p', { class: 'muted' }, ev.estado === 'pendiente' ? 'Se celebra el ' + U.fechaLarga(ev.fecha) + '.' : ev.estado === 'cancelado' ? 'Cancelado: no hay datos suficientes esta temporada.' : 'Celebrado el ' + U.fechaLarga(ev.fecha) + '.')];
+      if (dir) contenido.push(h('div', { class: 'tarjeta' }, h('b', null, 'El partido de las estrellas en directo'), h('p', { class: 'muted' }, dir.ok ? 'Puedes ver el partido con el motor del directo: los 24 elegidos, sin riesgo de lesión ni cansancio. El resultado cuenta.' : dir.motivo), dir.ok ? h('button', { class: 'btn', onclick: () => { const r = A.jugarDirecto(st, ev.id, { onFin: () => refrescar() }); if (!r.ok) toast(r.motivo); } }, 'Ver el partido en directo') : null));
       if (ev.estado === 'hecho') {
-        const pa = ev.partido; contenido.push(h('div', { class: 'tarjeta' }, h('b', null, pa.nombreA + ' ' + pa.pa + ' - ' + pa.pb + ' ' + pa.nombreB), h('p', { class: 'muted' }, 'MVP: ' + nombre(st, pa.mvp))));
+        const pa = ev.partido; if (pa.enDirecto) contenido.push(h('p', { class: 'muted' }, 'Jugado en directo.')); contenido.push(h('div', { class: 'tarjeta' }, h('b', null, pa.nombreA + ' ' + pa.pa + ' - ' + pa.pb + ' ' + pa.nombreB), h('p', { class: 'muted' }, 'MVP: ' + nombre(st, pa.mvp))));
         const tabla = (titulo, c) => h('div', null, h('h4', null, titulo + ': ' + nombre(st, c.ganador)), h('div', { class: 'lista' }, c.rondas[0].tabla.slice(0, 8).map((r, i) => h('div', { class: 'item' + (r.id === 'yo' || (st.jugadores[r.id] && st.jugadores[r.id].equipoId === club) ? ' mio' : '') }, h('span', { class: 'muted f' }, '#' + (i + 1)), h('span', { class: 'ct' }, h('b', null, clip(r.nombre, 22))), h('b', null, r.puntos + ' pts')))));
         contenido.push(tabla('Concurso de triples (primera ronda)', ev.triples), tabla('Concurso de mates (primera ronda)', ev.mates));
         contenido.push(h('h4', null, pa.nombreA), lista(pa.a), h('h4', null, pa.nombreB), lista(pa.b));

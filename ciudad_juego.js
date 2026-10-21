@@ -104,6 +104,23 @@
     const nombres = ['Cancha del parque', 'Cancha del barrio', 'Pista de la plaza'], niv = [0, 4, 8];
     for (const pasada of [15, 9, 4]) { holgura = pasada; for (const q of cand.concat(grid)) { if (usados.length >= 2) break; if (usados.some(u => Math.hypot(u[0] - q[0], u[1] - q[1]) < 110)) continue; if (!libre(q[0], q[1])) continue; usados.push(q); const k = usados.length - 1; S.canchas.push(pista(S, M, st, q[0], q[1], nombres[(U.hash(st.clubId) + k) % 3] + (k ? ' norte' : ''), niv[k], k)); } if (usados.length >= 2) break; }
   }
+  // Gente en las canchas: dos jugadores que corren, un rival que te espera y público en los bordes (más el sábado y el domingo)
+  const MOD = ['h-casual_hoodie', 'h-casual_2', 'h-beach', 'm-casual', 'm-punk'], PIELES = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'];
+  async function gente(S, M, st) {
+    if (!act(st) || !S.canchas || !S.canchas.length || !S.gente) return; S.jugadoresCancha = [];
+    const finde = [0, 6].indexOf(U.weekday(st.fecha)) >= 0, noche = (S.hora || 12) > 21 || (S.hora || 12) < 7, club = st.equipos[st.clubId];
+    for (let k = 0; k < S.canchas.length; k++) {
+      const zn = S.canchas[k], cx = zn.obj.position.x, cz = zn.obj.position.z - 3.2, h = U.hash(st.fecha + 'cancha' + k) >>> 0; if (noche && h % 3) continue;
+      const nuevo = async (o, rol, x, z, ry) => { const p = await M.personaje(Object.assign({ modelo: MOD[(h + rol.length) % 5], altura: 170 + (h % 25), piel: PIELES[(h >>> 3) % 5] }, o)); p.fijo = true; p.rol = rol; p.obj.position.set(x, 0, z); p.obj.rotation.y = ry || 0; p.obj.userData = { npc: S.gente.length }; M.anim(p, 'idle'); S.mundo.add(p.obj); S.gente.push(p); return p; };
+      for (let i = 0; i < 2; i++) { const p = await nuevo({ modelo: MOD[(h + i * 2) % 5], ropa: [['#c0392b', '#1d4f91'][i], '#222'] }, i ? 'Chaval jugando un tres contra tres' : 'Chaval jugando un tres contra tres', cx + (i ? 2 : -2), cz + i, i ? Math.PI : 0); p.pista = { cx, cz, fase: i * Math.PI, vel: 0.5 + (h % 5) / 10 }; M.anim(p, 'walk'); S.jugadoresCancha.push(p); }
+      const riv = await nuevo({ modelo: MOD[(h + 3) % 5], altura: 188 + (h % 14), ropa: [club.colores[1] || '#ffffff', '#222'] }, 'Rival del barrio, espera su turno', cx + 5.2, cz + 3.2, -Math.PI / 2); riv.rival = true; M.anim(riv, 'idle');
+      const publico = finde ? 4 : 2; for (let i = 0; i < publico; i++) { const p = await nuevo({ modelo: MOD[(h + i + 1) % 5] }, i % 2 ? 'Vecino mirando el partido' : 'Chaval esperando pista', cx - 5 + i * 3.1, cz + 4.9, Math.PI); if (i % 2) M.anim(p, 'emote-yes'); }
+    }
+  }
+  function moverCanchas(S, M, dt) {
+    if (!S.jugadoresCancha) return; const t = performance.now() / 1000;
+    S.jugadoresCancha.forEach(p => { const q = p.pista, a = t * q.vel + q.fase, x = q.cx + Math.sin(a) * 4.6, z = q.cz + Math.cos(a * 1.3) * 2.6, dx = x - p.obj.position.x, dz = z - p.obj.position.z; if (Math.hypot(dx, dz) > 0.001) p.obj.rotation.y = Math.atan2(dx, dz); p.obj.position.x = x; p.obj.position.z = z; });
+  }
   // Anillos dorados sobre los sitios con encargo pendiente y marca en el mapa (sala.encargo)
   function marcas(S, M, st) {
     if (!act(st)) return; generar(st, S); const pend = lista(st).filter(e => !e.hecho), ids = new Set(); pend.forEach(e => { if (e.destino === 'cancha') (S.zonas || []).forEach(z => { if (/^cancha_/.test(z.sala.id)) ids.add(z.sala.id); }); else ids.add(e.destino); });
@@ -121,6 +138,6 @@
     GM.ui.modal(cuerpo, [{ t: 'Cerrar', cls: 'btn-sec' }]);
   }
   function selfTest() { const st = { modo: 'carrera', fecha: '2026-10-01', carrera: { fama: 30, moral: 50, dinero: 10, cjuego: null }, equipos: {}, noticias: [], jugadores: { yo: {} } }; generar(st, null); return lista(st).length === 4 && lista(st).filter(e => e.diario).length === 1 && Object.keys(SITIOS).length >= 12; }
-  GM.ciudadJuego = { SITIOS, datos, encargos: lista, generar, canchas, marcas, panelEncargos, pendientes, acciones, triples, libres, uno, precision, jugarAllStar, selfTest };
+  GM.ciudadJuego = { SITIOS, datos, encargos: lista, generar, canchas, gente, moverCanchas, marcas, panelEncargos, pendientes, acciones, triples, libres, uno, precision, jugarAllStar, selfTest };
   GM.register && GM.register('ciudadJuego', GM.ciudadJuego);
 })();

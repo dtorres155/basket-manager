@@ -32,14 +32,17 @@
     const p = estado(st), club = st.clubId, y = yearOf(st);
     p.temp = st.temporada; p.amistosos = []; p.torneo = null; p.quimica = 0; p.seleccion = null;
     if (!st.equipos[club]) return;
-    const riv = rivales(st, club, 7);
+    const riv = rivales(st, club, 9);
     // cuatro amistosos entre el 18 de agosto y el 20 de septiembre, alternando local y visitante
     [y + '-08-19', y + '-08-26', y + '-09-02', y + '-09-16'].forEach((f, i) => { const o = riv[i]; if (!o) return; const g = i % 2 ? crear(st, f, o, club) : crear(st, f, club, o); p.amistosos.push(g.id); });
     // torneo de verano de cuatro equipos: semifinales el 9 de septiembre, final y tercer puesto el 11
     const t = riv.slice(4, 7); if (t.length === 3) {
-      const anfi = st.equipos[club].reputacion >= 55 ? 'Torneo Ciudad de ' + st.equipos[club].ciudad : 'Trofeo de verano de ' + st.equipos[t[0]].ciudad;
-      const s1 = crear(st, y + '-09-09', club, t[0], { torneo: true, ronda: 'Semifinal' }), s2 = crear(st, y + '-09-09', t[1], t[2], { torneo: true, ronda: 'Semifinal' });
-      p.torneo = { nombre: anfi, equipos: [club].concat(t), semis: [s1.id, s2.id], final: null, tercero: null, campeon: null };
+      // tres formatos (punto 66): copa de cuatro equipos, cuadrangular a una vuelta y torneo de seis con dos grupos y final
+      const formato = ['copa', 'liguilla', 'grupos'][U.hash(club + st.temporada + 'fmt') % 3], anfi = st.equipos[club].reputacion >= 55 ? 'Torneo Ciudad de ' + st.equipos[club].ciudad : 'Trofeo de verano de ' + st.equipos[t[0]].ciudad, T = { nombre: anfi, equipos: [club].concat(t), semis: [], formato, partidos: [], final: null, tercero: null, campeon: null };
+      if (formato === 'copa') { const s1 = crear(st, y + '-09-09', club, t[0], { torneo: true, ronda: 'Semifinal' }), s2 = crear(st, y + '-09-09', t[1], t[2], { torneo: true, ronda: 'Semifinal' }); T.semis = [s1.id, s2.id]; }
+      else if (formato === 'liguilla') { T.nombre = 'Cuadrangular ' + anfi.replace(/^(Torneo|Trofeo) /, ''); [[0, [[club, t[0]], [t[1], t[2]]]], [2, [[club, t[1]], [t[0], t[2]]]], [4, [[club, t[2]], [t[0], t[1]]]]].forEach(([d, ps], j) => ps.forEach(([a, b]) => T.partidos.push(crear(st, U.addDays(y + '-09-08', d), a, b, { torneo: true, ronda: 'Jornada ' + (j + 1) }).id))); }
+      else { const r5 = riv.slice(4, 9); if (r5.length === 5) { T.nombre = 'Torneo de seis equipos ' + anfi.replace(/^(Torneo|Trofeo) /, ''); T.equipos = [club].concat(r5); T.grupos = [[club, r5[0], r5[1]], [r5[2], r5[3], r5[4]]]; T.grupos.forEach((G, gi) => [[0, 1], [1, 2], [0, 2]].forEach(([a, b], k) => T.partidos.push(crear(st, U.addDays(y + '-09-07', k + (gi ? 0 : 0)), G[a], G[b], { torneo: true, ronda: 'Grupo ' + 'AB'[gi] }).id))); } else T.formato = 'copa'; if (T.formato === 'copa') { const s1 = crear(st, y + '-09-09', club, t[0], { torneo: true, ronda: 'Semifinal' }), s2 = crear(st, y + '-09-09', t[1], t[2], { torneo: true, ronda: 'Semifinal' }); T.semis = [s1.id, s2.id]; } }
+      p.torneo = T;
     }
     GM.noticia(st, 'Empieza la pretemporada: cuatro amistosos y el ' + (p.torneo ? p.torneo.nombre : 'torneo de verano') + '.');
   }
@@ -57,12 +60,36 @@
       GM.noticia(st, '🏆 ' + nom + ' gana el ' + p.torneo.nombre + '.'); st.historial.push({ temporada: st.temporada, comp: 'TORNEO_VERANO', campeon: p.torneo.campeon });
       if (p.torneo.campeon === club) { st.equipos[club].plantilla.forEach(i => { const j = st.jugadores[i]; if (j) j.estado.moral = U.clamp(j.estado.moral + 4, 20, 100); }); p.quimica = U.clamp(p.quimica + 4, 0, 100); }
     }
+    if (g.torneo && p.torneo && p.torneo.formato && p.torneo.formato !== 'copa') avanzaTorneo(st, p);
+    if (g.local === club) taquillaAmistoso(st, g);   // los amistosos en casa dejan taquilla (punto 66)
     if (g.local !== club && g.visitante !== club) return;
     p.quimica = U.clamp(p.quimica + Math.round(5 * plan.q), 0, 100);
     const pl = st.equipos[club].plantilla.map(i => st.jugadores[i]).filter(Boolean);
     pl.forEach(j => { j.estado.forma = U.clamp(j.estado.forma + plan.forma * 0.3, 40, 100); j.estado.fatiga = U.clamp((j.estado.fatiga || 0) + (p.plan === 'duro' ? 8 : 3), 0, 100); });
     if (GM.rng.next() < 0.03 * plan.lesion * pl.length / 12 && pl.length) { const j = GM.rng.pick(pl); if (!(j.estado.lesion && j.estado.lesion.dias > 0)) { j.estado.lesion = { tipo: 'Molestias de pretemporada', dias: GM.rng.int(8, 28) }; GM.noticia(st, 'Pretemporada: ' + j.nombre + ' se lesiona en el amistoso (' + j.estado.lesion.dias + ' días).'); } }
   });
+  // Tabla de un torneo a partir de sus partidos del calendario (victorias y diferencia de puntos)
+  function tablaTorneo(st, ids, equipos) {
+    const T = {}; equipos.forEach(e => { T[e] = { equipoId: e, v: 0, pf: 0, pc: 0 }; });
+    ids.map(i => getG(st, i)).filter(g => g && g.resultado).forEach(g => { const a = T[g.local], b = T[g.visitante]; if (!a || !b) return; a.pf += g.resultado.local; a.pc += g.resultado.visitante; b.pf += g.resultado.visitante; b.pc += g.resultado.local; if (g.resultado.local > g.resultado.visitante) a.v++; else b.v++; });
+    return Object.keys(T).map(k => T[k]).sort((x, y) => y.v - x.v || (y.pf - y.pc) - (x.pf - x.pc) || y.pf - x.pf);
+  }
+  function avanzaTorneo(st, p) {
+    const T = p.torneo, hechos = ids => ids.every(i => getG(st, i) && getG(st, i).resultado), club = st.clubId; if (T.campeon) return;
+    if (T.formato === 'liguilla' && hechos(T.partidos)) { const tb = tablaTorneo(st, T.partidos, T.equipos); T.tabla = tb; T.campeon = tb[0].equipoId; }
+    else if (T.formato === 'grupos') {
+      if (!T.final && hechos(T.partidos)) { const t0 = tablaTorneo(st, T.partidos.slice(0, 3), T.grupos[0]), t1 = tablaTorneo(st, T.partidos.slice(3), T.grupos[1]), d = U.addDays(getG(st, T.partidos[T.partidos.length - 1]).fecha, 2); T.tablas = [t0, t1];
+        T.final = crear(st, d, t0[0].equipoId, t1[0].equipoId, { torneo: true, ronda: 'Final' }).id; T.tercero = crear(st, d, t0[1].equipoId, t1[1].equipoId, { torneo: true, ronda: 'Tercer puesto' }).id; }
+    }
+    if (T.campeon) { const nom = st.equipos[T.campeon].nombre; GM.noticia(st, '🏆 ' + nom + ' gana el ' + T.nombre + '.'); st.historial.push({ temporada: st.temporada, comp: 'TORNEO_VERANO', campeon: T.campeon }); if (T.campeon === club) { st.equipos[club].plantilla.forEach(i => { const j = st.jugadores[i]; if (j) j.estado.moral = U.clamp(j.estado.moral + 4, 20, 100); }); p.quimica = U.clamp(p.quimica + 4, 0, 100); } }
+  }
+  // Taquilla de un amistoso en casa: menos público y entradas más baratas que en la liga, algo más en un torneo
+  function taquillaAmistoso(st, g) {
+    const F = GM.mods.finanzas, eq = st.equipos[g.local]; if (!F || !st.finanzas || !st.finanzas[g.local] || !g.resultado) return; const m = GM.mods, cl = st.ciudad && st.ciudad[g.local] || { ambiente: 50, aficion: 50 };
+    const aforo = m.estadio && m.estadio.aforo ? m.estadio.aforo(st, g.local) : eq.pabellon.aforo, ciu = m.ciudad ? m.ciudad.modificadores(st, g.local) : { asistencia: 1, ingresos: 1 }, eco = GM.economia ? GM.economia.factorClub(st, g.local).taquilla : 1;
+    const fr = U.clamp((0.22 + 0.25 * eq.reputacion / 100 + 0.1 * cl.ambiente / 100 + (g.torneo ? 0.1 : 0)) * ciu.asistencia, 0.2, 0.85), asistencia = Math.round(aforo * fr), precio = 16 * (0.6 + eq.reputacion / 100 * 0.8) * (g.torneo ? 1.2 : 1), entradas = Math.round(asistencia * precio * ciu.ingresos * eco);
+    g.resultado.asistencia = asistencia; g.resultado.ingresos = entradas; F.registrar(st, g.local, 'Taquilla del amistoso' + (g.torneo ? ' (torneo)' : ''), entradas);
+  }
   function setPlan(st, id) { if (!PLANES[id]) return { ok: false, motivo: 'Plan desconocido.' }; estado(st).plan = id; return { ok: true }; }
 
   // ---------- Selecciones ----------
@@ -117,11 +144,13 @@
     const y = yearOf(st), v = ventanaDe(y); if (!v) return; const p = estado(st); p.ventana = { id: v.id, nombre: v.nombre, desde: v.desde, hasta: v.hasta, resuelta: false };
     const todas = seleccionesDe(st, v).slice(0, v.n || 16), club = st.clubId, mios = [];
     todas.forEach(t => t.jugadores.forEach(id => { if (id !== 'yo' && st.equipos[club].plantilla.indexOf(id) >= 0) mios.push(st.jugadores[id].nombre + ' (' + nombrePais(t.pais) + ')'); }));
-    GM.noticia(st, v.nombre + ': ' + (mios.length ? 'convocados de tu club: ' + mios.slice(0, 5).join(', ') + '.' : 'ninguno de tus jugadores está convocado.'));
+    if (GM.seleccion) { const V = GM.seleccion.crear(st, { id: v.id, nombre: v.nombre, desde: v.desde, hasta: v.hasta, europa: v.id === 'EUROBASKET', n: v.id === 'JJOO' ? 12 : 16 }); if (V) p.ventana = V; }
+    GM.noticia(st, v.nombre + ': ' + (mios.length ? 'convocados de tu club: ' + mios.slice(0, 5).join(', ') + '. Decide si los dejas ir en Calendario, Pretemporada.' : 'ninguno de tus jugadores está convocado.'));
   }
   GM.bus.on('temporada:nueva', function () { const st = GM.state; if (!st || !st.calendario) return; iniciarVerano(st); anunciar(st); });
   GM.bus.on('dia:avanzado', function () {
     const st = GM.state; if (!st || !st.pretemp || !st.pretemp.ventana || st.pretemp.ventana.resuelta) return; const v = st.pretemp.ventana;
+    if (GM.seleccion && v.equipos) { GM.seleccion.dia(st); return; }
     if (st.fecha >= v.hasta) { v.resuelta = true; resolverSeleccion(st, { id: v.id, nombre: v.nombre, desde: v.desde, hasta: v.hasta, europa: v.id === 'EUROBASKET', n: v.id === 'JJOO' ? 12 : 16 }); }
   });
   function amistososClub(st, club) { return st.calendario.filter(g => g.fase === 'amistoso' && (g.local === (club || st.clubId) || g.visitante === (club || st.clubId))); }
@@ -133,5 +162,5 @@
     const r = resolverSeleccion(st, { id: 'MUNDIAL', nombre: 'Mundial', desde: '2027-08-25', hasta: '2027-09-10', europa: false });
     return !!r && !!r.campeon && r.participantes.length === 16 && r.convocados.length >= 2 && st.jugadores.ES0.estado.fatiga >= 25;
   }
-  GM.register('pretemporada', { estado, setPlan, amistososClub, ventanaDe, resolverSeleccion, seleccionesDe, nombrePais, nuevaPartida, selfTest, PLANES });
+  GM.register('pretemporada', { tablaTorneo, taquillaAmistoso, estado, setPlan, amistososClub, ventanaDe, resolverSeleccion, seleccionesDe, nombrePais, nuevaPartida, selfTest, PLANES });
 })();

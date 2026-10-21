@@ -11,7 +11,7 @@ if (GM.mods.allstar) { avanza(st, '2027-02-20'); const ev = GM.mods.allstar.esta
 { let g = 0; while (!st.temporadaTerminada && g++ < 500) GM.mods.competiciones.jugarDia(st); ok('temporada terminada', st.temporadaTerminada); }
 GM.mods.competiciones.nuevaTemporada(st); st.temporadaTerminada = false;
 if (GM.mods.pretemporada) {
-  const P = GM.mods.pretemporada.estado(st); ok('cuatro amistosos y torneo', P.amistosos.length === 4 && P.torneo && P.torneo.semis.length === 2);
+  const P = GM.mods.pretemporada.estado(st); ok('cuatro amistosos y torneo', P.amistosos.length === 4 && P.torneo && (P.torneo.semis.length === 2 || (P.torneo.partidos && P.torneo.partidos.length >= 5)));
   avanza(st, '2027-09-20'); const am = GM.mods.pretemporada.amistososClub(st); ok('amistosos jugados: ' + am.filter(g => g.resultado).length, am.filter(g => g.resultado).length >= 5);
   ok('el torneo tiene campeón', !!P.torneo.campeon); ok('los amistosos no puntúan', Object.values(st.clasificaciones).every(t => !t || JSON.stringify(t).indexOf('"AMISTOSO"') < 0));
   ok('ventana de selección resuelta (Mundial 2027)', !!P.seleccion && P.seleccion.id === 'MUNDIAL' && P.seleccion.convocados.length >= 0 && !!P.seleccion.campeon);

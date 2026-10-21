@@ -442,6 +442,8 @@
     if (GM.interiores) [['restaurante', 'RESTAURANTE EL TAPÓN', '#5a1020', 'Entrar en el restaurante', [12, 2, 0]], ['gimnasio_barrio', 'GIMNASIO', '#1d2024', 'Entrar en el gimnasio', [2, 0, 3]], ['cine_ciudad', 'CINE', '#7a1a22', 'Entrar en el cine', [2, 0]], ['bolera', 'BOLERA STRIKE', '#1d4f91', 'Entrar en la bolera', [2, 0, 9]], ['barberia', 'BARBERÍA PACO', '#1d4f91', 'Entrar en la barbería', [2, 12, 0]]].forEach(([tipo, txt, fondo, boton, cls], k) => {
       const b = tomar('local_' + tipo, b => acc(b) && cls.indexOf(b.cl) >= 0 && b.ar > 90 && b.ar < 1100 && b.dc > 30 && b.dc < 240, b => b.dc * (0.6 + rr() * 0.8) + k * 6, 2) || sint('local_' + tipo, 2, 30, 210, 11, 9, 2); if (b) R.locales.push({ tipo, txt, fondo, boton, b });
     });
+    // negocios propios abiertos: un local con su interior (punto 55)
+    R.negocios = []; if (GM.interiores && GM.negocios && st.negocios) GM.negocios.activos(st).filter(n => n.abierto).slice(0, 6).forEach((n, k) => { const b = tomar('negocio_' + n.id, b => acc(b) && [2, 12, 0, 3].indexOf(b.cl) >= 0 && b.ar > 70 && b.ar < 1200 && b.dc > 25 && b.dc < 260, b => b.dc * (0.6 + rr() * 0.8) + k * 5, 2) || sint('negocio_' + n.id, 2, 25, 230, 10, 8, 2); if (b) R.negocios.push({ n, b }); });
     return R;
   }
   // ---------- Carteles, zonas y puertas ----------
@@ -524,10 +526,12 @@
     // el café de la terraza y dos pisos de vecinos tienen interior (los vecinos reutilizan la casa con gente)
     if (GM.interiores && R.terraza && R.terraza.puerta && SALAS.terraza) { SALAS.terraza = Object.assign({}, SALAS.terraza, { irA: 'interior:bar_pueblo', boton: 'Entrar en el café' }); entrada('interior:bar_pueblo', R.terraza.puerta); }
     if (GM.interiores && R.vecinos) R.vecinos.forEach((vb, k) => { const id = 'vecino' + k, p = poner(id, vb, 'PORTAL', '#4a4f55', '#ffffff', { ancho: 2.6, y: 2.7 }); entrada(id, p); if (k === Math.min((st.sede && st.sede.vecinoK) || 0, R.vecinos.length - 1)) entrada('interior:casa_amigos', p); SALAS[id] = { id, nombre: 'Piso de un vecino', accion: 'Llamar al timbre', destino: {}, acciones: s2 => [{ id: 'timbre', t: 'Llamar al timbre', d: 'Un vecino te abre y te deja pasar.', disponible: true, fn: () => { s2.sede = s2.sede || { charlas: {} }; s2.sede.vecinoK = k; S.puertas['interior:casa_amigos'] = S.puertas[id]; setTimeout(() => GM.sede._escena('interior:casa_amigos'), 50); return { ok: true, texto: 'Llamas al timbre' }; } }] }; });
+    (R.negocios || []).forEach(({ n, b }) => { const id = 'negocio_' + n.id, T = GM.negocios.TIPOS[n.tipo], p = poner(id, b, n.nombre.toUpperCase().slice(0, 24), '#2b3a4a', '#f2d27a', { ancho: 5.2 }); entrada(id, p);
+      SALAS[id] = { id, nombre: n.nombre + ' (tuyo)', accion: T.n + ' en ' + n.barrio, destino: {}, acciones: s2 => [{ id: 'entrar', t: 'Entrar en tu negocio', d: 'Ves cómo va el día con tu plantilla.', disponible: true, fn: () => { s2.sede = s2.sede || { charlas: {} }; s2.sede.negocioId = n.id; S.puertas['interior:negocio'] = S.puertas[id]; setTimeout(() => GM.sede._escena('interior:negocio'), 50); return { ok: true, texto: 'Entras en ' + n.nombre }; } }] }; });
     // Autobús a tu pueblo
     if (st.modo === 'carrera' && st.carrera && st.carrera.pueblo && R.bus) {
       const P = st.carrera.pueblo, carr = (P.edificios.find(b => b.tipo === 'carretera') || {}).nivel || 0, p = puntoPuerta(R.bus, X, G, 2.2);
-      cartel(W, M, 'AUTOBÚS A ' + P.nombre.toUpperCase().slice(0, 18), '#2a8a4a', '#ffffff', p.mx + p.nx * 0.07, 3.0, p.mz + p.nz * 0.07, p.ry, 5); zonas.bus_pueblo = [p.x, p.z]; paseo.push([p.x, p.z]);
+      cartel(W, M, 'AUTOBÚS A ' + P.nombre.toUpperCase().slice(0, 18), '#2a8a4a', '#ffffff', p.mx + p.nx * 0.07, 3.0, p.mz + p.nz * 0.07, p.ry, 5); zonas.bus_pueblo = [p.x, p.z]; paseo.push([p.x, p.z]); { const pe = GM.mods.pueblo && GM.mods.pueblo.estado ? GM.mods.pueblo.estado(st) : null; if (pe) cartel(W, M, (pe.poblacion.toLocaleString('es-ES') + ' HAB., ' + pe.etiqueta).toUpperCase().slice(0, 30), '#14301f', '#f2d27a', p.mx + p.nx * 0.07, 2.2, p.mz + p.nz * 0.07, p.ry, 5); }
       SALAS.bus_pueblo = { id: 'bus_pueblo', nombre: 'Autobús a ' + P.nombre, accion: '', destino: {}, irA: 'pueblo', boton: carr >= 2 ? 'Coger la línea diaria a ' + P.nombre : 'Coger el autobús a ' + P.nombre }; S.puertas.pueblo = { x: p.x, z: p.z, ry: p.ry };
     }
     // Parque: el más grande cerca del centro, con su canasta

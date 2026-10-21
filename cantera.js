@@ -26,7 +26,7 @@
   }
   function generarJuveniles(st, clubId, n) {
     const c = st.cantera[clubId], q = (eff(st, clubId).cantera + ciu(st, clubId)) / 2 - 1 + Math.min(1, (c.scouts[0].nivel - 1) * 0.15);
-    for (let i = 0; i < (n === undefined ? 6 : n); i++) c.juveniles.push(nuevoJuvenil(st, clubId, null, 0.5 + q + GM.rng.next() * 0.5).id);
+    for (let i = 0; i < (n === undefined ? 6 + Math.round(eff(st, clubId).cupo || 0) : n); i++) c.juveniles.push(nuevoJuvenil(st, clubId, null, 0.5 + q + GM.rng.next() * 0.5).id);
     return c.juveniles.length;
   }
   function ojear(st, clubId, zona) {
@@ -38,7 +38,7 @@
     c.prospectos.forEach(i => { delete st.jugadores[i]; });
     c.prospectos = [];
     const base = 0.4 + (c.scouts[0].nivel - 1) * 0.2 + eff(st, clubId).cantera - 1;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 3 + Math.round(eff(st, clubId).ojeo || 0); i++) {
       const p = nuevoJuvenil(st, clubId, ZONAS[zona], base + GM.rng.next() * 0.9);
       p.equipoId = null; p.prospecto = true;
       c.prospectos.push(p.id);
@@ -67,7 +67,7 @@
     GM.noticia(st, p.nombre + ' debuta con el primer equipo (cantera).');
     return { ok: true };
   }
-  function fijarFoco(st, clubId, foco) { if (FOCOS[foco]) st.cantera[clubId].foco = foco; }
+  function fijarFoco(st, clubId, foco) { if (FOCOS[foco]) { st.cantera[clubId].foco = foco; if (GM.progresion && clubId === st.clubId) GM.progresion.fijarColectivo(st, undefined, foco); } }
 
   function sube(p, keys, n) {
     for (let i = 0; i < n; i++) { const k = keys[GM.rng.int(0, keys.length - 1)]; p.att[k] = Math.min(99, p.att[k] + 1); }
@@ -78,6 +78,7 @@
     const lista = st.equipos[club].plantilla.concat(c.juveniles);
     lista.forEach(id => {
       const p = st.jugadores[id]; if (!p || p.esYo) return;
+      if (GM.progresion) { GM.progresion.aplicarSemana(st, p, mult, c.juveniles.indexOf(id) >= 0); return; }   // curvas, carga y entrenamiento individual (punto 63)
       const g = p.edad <= 21 ? 0.14 : p.edad <= 24 ? 0.09 : p.edad <= 27 ? 0.04 : p.edad <= 30 ? 0.01 : -0.025;
       p.xp = (p.xp || 0) + g * mult * (0.7 + 0.6 * GM.rng.next());
       if (p.xp >= 1 && p.ovr < Math.max(p.pot, p.ovr)) { p.xp = 0; GM.setOvr(p, p.ovr + 1, keys); }
