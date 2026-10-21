@@ -1,8 +1,7 @@
-# Publica dist/ en GitHub Pages en cada push a main (tras pasar las pruebas).
+# Publica dist/ en GitHub Pages (tras pasar las pruebas). Manual desde que el repositorio es privado.
 name: Publicar en GitHub Pages
 on:
-  push:
-    branches: [main]
+  # El repositorio es privado (oct 2026): GitHub Pages no publica repositorios privados en el plan gratuito, así que solo se lanza a mano
   workflow_dispatch:
 permissions:
   contents: read
