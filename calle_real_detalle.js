@@ -146,14 +146,14 @@
     }
 
     // ---------- Mobiliario urbano ----------
-    const base = (S.paseoBase || []).slice().sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1])), bancos = [], papeleras = [], bolardos = [], hidrantes = [], contenedores = [];
+    const PAL = GM.mobiliario ? GM.mobiliario.paleta(GM.state) : null, base = (S.paseoBase || []).slice().sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1])), bancos = [], papeleras = [], bolardos = [], hidrantes = [], contenedores = [];
     const mirar = (x, z) => { const cs = calleCerca(x, z); if (!cs.seg) return null; const s = cs.seg, dx = s.b[0] - s.a[0], dz = s.b[1] - s.a[1], l = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - s.a[0]) * dx + (z - s.a[1]) * dz) / l)), px = s.a[0] + dx * t - x, pz = s.a[1] + dz * t - z, d = Math.hypot(px, pz) || 1; return { ry: Math.atan2(px / d, pz / d), k: s.k, d: cs.d }; };
     base.forEach((p, i) => {
       if (ocupado(p[0], p[1]) || !libre(p[0], p[1])) return; const m = mirar(p[0], p[1]); if (!m) return; const h = U.hash(club.id + 'mob' + i) % 100;
-      if (h < 9 && bancos.length < 120 && m.k !== 1) { bancos.push({ x: p[0], z: p[1], ry: m.ry, c: ['#5a4630', '#3a3f45', '#6b4a2f'][h % 3] }); ocupa(p[0], p[1]); bloquea(p[0], p[1], 0.8); }
-      else if (h < 16 && papeleras.length < 120) { papeleras.push({ x: p[0], z: p[1], c: ['#2f4f3a', '#3a3f45', '#4a4f55'][h % 3] }); ocupa(p[0], p[1]); bloquea(p[0], p[1], 0.3); }
+      if (h < 9 && bancos.length < 120 && m.k !== 1) { bancos.push({ x: p[0], z: p[1], ry: m.ry, c: (PAL ? PAL.banco : ['#5a4630', '#3a3f45', '#6b4a2f'])[h % 3] }); ocupa(p[0], p[1]); bloquea(p[0], p[1], 0.8); }
+      else if (h < 16 && papeleras.length < 120) { papeleras.push({ x: p[0], z: p[1], c: (PAL ? PAL.papelera : ['#2f4f3a', '#3a3f45', '#4a4f55'])[h % 3] }); ocupa(p[0], p[1]); bloquea(p[0], p[1], 0.3); }
       else if (h < 19 && hidrantes.length < 28) { hidrantes.push({ x: p[0], z: p[1] }); ocupa(p[0], p[1]); bloquea(p[0], p[1], 0.3); }
-      else if (h < 23 && contenedores.length < 60 && m.k >= 3) { for (let k = 0; k < 3; k++) { const ox = p[0] + Math.cos(m.ry + 1.57) * (k - 1) * 1.25, oz = p[1] - Math.sin(m.ry + 1.57) * (k - 1) * 1.25; contenedores.push({ x: ox, z: oz, ry: m.ry, c: ['#2e6b3a', '#d4a017', '#2f6f9e'][k] }); bloquea(ox, oz, 0.6); } ocupa(p[0], p[1]); }
+      else if (h < 23 && contenedores.length < 60 && m.k >= 3) { for (let k = 0; k < 3; k++) { const ox = p[0] + Math.cos(m.ry + 1.57) * (k - 1) * 1.25, oz = p[1] - Math.sin(m.ry + 1.57) * (k - 1) * 1.25; contenedores.push({ x: ox, z: oz, ry: m.ry, c: (PAL ? PAL.contenedor : ['#2e6b3a', '#d4a017', '#2f6f9e'])[k] }); bloquea(ox, oz, 0.6); } ocupa(p[0], p[1]); }
     });
     X.PT.forEach(p => { if (ocupado(p.x, p.z) || !libre(p.x, p.z)) return; const m = mirar(p.x, p.z); if (p.t === 4) bancos.push({ x: p.x, z: p.z, ry: m ? m.ry : 0, c: '#5a4630' }); else if (p.t === 5) papeleras.push({ x: p.x, z: p.z, c: '#2f4f3a' }); else return; ocupa(p.x, p.z); });
     S.bancosPos = bancos;   // posiciones de los bancos: sientan a peatones de la multitud de la GPU (multitud_gpu.js)

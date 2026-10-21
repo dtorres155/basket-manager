@@ -89,6 +89,7 @@
 
   // ---------- Monumento de la ciudad (al fondo, en el norte) ----------
   function monumento(W, G, club, st) {
+    const icono = GM.monumentos && GM.monumentos.icono(club.id); if (icono) { icono.position.set(30, 0, -122); W.add(icono); return icono; }   // icono propio de la ciudad (punto 78)
     const g = new T.Group(), pais = club.pais, x = 30, z = -122, pie = new T.MeshStandardMaterial({ color: 0xd8cfbc, roughness: 0.85 }), lad = mat('#a8584a'); if (GM.texturas) GM.texturas.aplicar(pie, 'Plaster003', { color: false, escala: 3, relieve: 1 });
     g.position.set(x, 0, z); g.scale.setScalar(1.5); W.add(g);
     const suelo = new T.Mesh(new T.CircleGeometry(15, 32).rotateX(-Math.PI / 2), new T.MeshStandardMaterial({ color: 0x7a9a58, roughness: 1 })); suelo.position.y = -0.1; g.add(suelo); const plaza = new T.Mesh(new T.CircleGeometry(9, 32).rotateX(-Math.PI / 2), new T.MeshStandardMaterial({ color: 0xc9c2b4, roughness: 0.9 })); plaza.position.y = -0.08; g.add(plaza);

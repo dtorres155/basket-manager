@@ -72,6 +72,7 @@
   }
   // ---------------- Decisiones que llegan al móvil ----------------
   function decidir(st, d, i) {
+    if (d.que === 'cesion' && GM.mods.ascensos) return GM.mods.ascensos.decidir(st, d, i);
     const c = C(st), out = [];
     if (d.que === 'lesion') {
       const p = YO(st), l = p.estado.lesion; if (!l) return { ok: true, efectos: ['Ya estás recuperado'] }; if (i < 0) i = 1;

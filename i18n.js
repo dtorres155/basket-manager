@@ -51,7 +51,7 @@
   function lote() { prog = false; const L = Array.from(pend); pend.clear(); L.forEach(n => { try { if (n.isConnected || n.nodeType === 3) recorre(n); } catch (e) { /* nodo ya fuera */ } }); }
   function observar() {
     if (obs || typeof MutationObserver === 'undefined' || !document.body) return;
-    obs = new MutationObserver(ms => { ms.forEach(m => { if (m.type === 'characterData') pend.add(m.target); else if (m.type === 'attributes') pend.add(m.target); else m.addedNodes.forEach(n => pend.add(n)); }); if (!prog) { prog = true; (window.requestAnimationFrame || setTimeout)(lote); } });
+    obs = new MutationObserver(ms => { if (ido === 'es') return; ms.forEach(m => { if (m.type === 'characterData') pend.add(m.target); else if (m.type === 'attributes') pend.add(m.target); else m.addedNodes.forEach(n => pend.add(n)); }); if (!prog) { prog = true; (window.requestAnimationFrame || setTimeout)(lote); } });
     obs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTR });
   }
   function traducirDOM() { if (typeof document === 'undefined' || !document.body) return; observar(); recorre(document.body); }

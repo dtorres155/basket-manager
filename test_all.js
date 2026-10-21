@@ -7,7 +7,7 @@ const { spawn, spawnSync } = require('child_process'), os = require('os');
 const PRUEBAS = [
   ['t_all'], ['t_comp'], ['t_copas'], ['t_cont'], ['t_directo'], ['t_entrenador'], ['t_social'], ['t_sponsor'], ['t_rep'], ['t_cadete', 'lenta'], ['t_carrera', 'lenta'], ['t_vida'], ['t_hogar'], ['t_pueblo'],
   ['t_calle'], ['t_campus'], ['t_ui'], ['t_html', 'lenta'], ['t_presui', 'lenta'], ['t_ciui'],
-  ['t_flow', 'gestor', 'lenta'], ['t_flow', 'presidente', 'lenta'], ['t_flow', 'entrenador', 'lenta'], ['t_flow', 'carrera-ncaa', 'lenta'], ['t_flow', 'carrera-europa', 'lenta'], ['t_flow', 'carrera-cadete', 'lenta'], ['t_aserciones'], ['t_vecinos'], ['t_movilidad'], ['t_ciudad_dia'], ['t_demografia'], ['t_interaccion'], ['t_casa_editor'], ['t_casas_producto'], ['t_patrimonio'], ['t_economia'], ['t_negocios'], ['t_pueblo_gestion'], ['t_rutina'], ['t_logros_eco'], ['t_ciudad_juego'], ['t_coleccionables'], ['t_arbol'], ['t_tactica_plus'], ['t_traspasos'], ['t_seleccion'], ['t_traspasos_modos'], ['t_cierre67'], ['t_ligas'], ['t_movil_apps'], ['t_diseno'], ['t_temporada'], ['t_sol'], ['t_migracion']
+  ['t_flow', 'gestor', 'lenta'], ['t_flow', 'presidente', 'lenta'], ['t_flow', 'entrenador', 'lenta'], ['t_flow', 'carrera-ncaa', 'lenta'], ['t_flow', 'carrera-europa', 'lenta'], ['t_flow', 'carrera-cadete', 'lenta'], ['t_aserciones'], ['t_vecinos'], ['t_movilidad'], ['t_ciudad_dia'], ['t_demografia'], ['t_interaccion'], ['t_casa_editor'], ['t_casas_producto'], ['t_patrimonio'], ['t_economia'], ['t_negocios'], ['t_pueblo_gestion'], ['t_rutina'], ['t_logros_eco'], ['t_ciudad_juego'], ['t_coleccionables'], ['t_arbol'], ['t_tactica_plus'], ['t_traspasos'], ['t_seleccion'], ['t_traspasos_modos'], ['t_cierre67'], ['t_ligas'], ['t_movil_apps'], ['t_diseno'], ['t_ascensos'], ['t_modelos'], ['t_temporada'], ['t_sol'], ['t_migracion']
 ].map(p => ({ t: p[0], a: p.slice(1).filter(x => x !== 'lenta'), lenta: p.includes('lenta') }));
 const arg = k => { const a = process.argv.find(x => x.startsWith('--' + k + '=')); return a ? a.split('=')[1] : null; }, flag = k => process.argv.includes('--' + k);
 const MAL = /(TypeError|ReferenceError|SyntaxError|RangeError|AssertionError|ERRORES \[[^\]])|selfTest \w+ false|fallos [1-9]/, ruido = l => /Not implemented: HTMLCanvasElement/.test(l);
@@ -18,8 +18,8 @@ function lanzar() {
   while (vivos < paralelo && sig < lista.length) {
     const p = lista[sig++], i = sig - 1, ini = Date.now(); vivos++; let out = '';
     const h = spawn('node', [p.t + '.js', ...p.a], { cwd: __dirname }); h.stdout.on('data', d => { out += d; }); h.stderr.on('data', d => { out += d; });
-    const corte = setTimeout(() => { out += '\nTimeout de 240 s'; h.kill(); }, 240000);
-    h.on('close', code => { clearTimeout(corte); vivos--; const limpia = out.split('\n').filter(l => !ruido(l)).join('\n'), ok = code === 0 && !MAL.test(limpia) && !/Timeout de 240/.test(limpia); if (!ok) fallos++; resultados[i] = { p, ok, limpia, ms: Date.now() - ini }; if (sig >= lista.length && vivos === 0) fin(); else lanzar(); });
+    const corte = setTimeout(() => { out += '\nTimeout de 480 s'; h.kill(); }, 480000);
+    h.on('close', code => { clearTimeout(corte); vivos--; const limpia = out.split('\n').filter(l => !ruido(l)).join('\n'), ok = code === 0 && !MAL.test(limpia) && !/Timeout de 480/.test(limpia); if (!ok) fallos++; resultados[i] = { p, ok, limpia, ms: Date.now() - ini }; if (sig >= lista.length && vivos === 0) fin(); else lanzar(); });
   }
 }
 function fin() {

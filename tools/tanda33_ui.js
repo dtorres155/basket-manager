@@ -13,6 +13,9 @@ const { chromium } = require('playwright'); const { sleep, esperarEscena } = req
   await p.setViewportSize({ width: 390, height: 844 }); await sleep(300); await shot('galeria_movil'); const sc = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2); chk(!sc, 'galería sin scroll horizontal en móvil'); await p.setViewportSize({ width: 1000, height: 900 }); await p.evaluate(() => GM.diseno.setTema('dia'));
   // plantilla con tabla ordenable
   await p.evaluate(() => { GM.ui._.ui.tab.plantilla = 'plantilla'; GM.ui.navegar('plantilla'); }); await sleep(600); const ord = await p.evaluate(() => !!document.querySelector('input[placeholder="Buscar jugador"]')); chk(ord, 'plantilla con tabla ordenable'); await shot('plantilla');
+  // cesiones y ascensos (LEB Oro y Plata)
+  await p.evaluate(() => { GM.ui._.ui.tab.plantilla = 'cesiones'; GM.ui.navegar('plantilla'); }); await sleep(600); x = await texto(); chk(/Ceder a un joven/.test(x) && /Club de destino/.test(x), 'cesiones: candidatos y destino'); await shot('cesiones');
+  await p.evaluate(() => { GM.ui._.ui.tab.club = 'ascensos'; GM.ui.navegar('club'); }); await sleep(600); x = await texto(); chk(/LEB Oro/.test(x) && /Palencia/.test(x), 'ascensos: tabla de LEB Oro con Palencia'); await shot('ascensos');
   // finanzas con evolución
   await p.evaluate(() => { const st = GM.state; for (let i = 0; i < 20; i++) { st.fecha = GM.util.addDays(st.fecha, 1); GM.bus.emit('dia:avanzado', {}); } GM.ui._.ui.tab.finanzas = 'resumen'; GM.ui.navegar('finanzas'); }); await sleep(500); x = await texto(); chk(/Evolución reciente/.test(x), 'finanzas: evolución reciente');
   // idioma catalán
