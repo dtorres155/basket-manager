@@ -729,7 +729,7 @@
   async function poblar(st) {
     const P = GM.sedePlano, eq = st.equipos[st.clubId], r = rnd(U.hash(st.clubId + st.fecha));
     S.gente.forEach(n => { acabarTiro(n); S.mundo.remove(n.obj); n.mixer.stopAllAction(); }); S.gente = []; S.ocupados = new Set();
-    S.dia = estadoDia(st); S.clima = climaDe(st); montarClima(); if (GM.sonido) GM.sonido.escena(S.escena, S.escenaArg); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
+    S.dia = estadoDia(st); S.clima = climaDe(st); montarClima(); if (GM.sonido) GM.sonido.escena(S.escena, S.escenaArg); if (GM.musica) GM.musica.escena(S.escena, S.escenaArg); if (GM.bus) GM.bus.emit('escena:abierta', { id: S.escena }); aplicarAmbiente(); if (S.grupo) disolver(); S.tGrupo = 6;
     if (S.escena === 'casa') { if (S.chipDia) S.chipDia.textContent = S.dia.texto; return; }
     if (S.escena === 'sede' && GM.decorar && S.G && !S.raiz.querySelector('.btn-decorar')) { S.btnDecorar = GM.h('button', { class: 'btn casa-btn btn-decorar', onclick: () => GM.decorar.activar(S, motor()) }, 'Decorar'); S.raiz.append(GM.h('div', { class: 'sede-hud casa-btn-cont' }, S.btnDecorar)); }
     if (S.escena === 'sede' && GM.decorar && S.G) { try { await GM.decorar.cargar(S, motor(), st); } catch (e) { console.error('decorar', e); } }
@@ -947,7 +947,7 @@
     if (GM.ui && GM.ui.toast && e < 0.99 && !S.avisoRes) { S.avisoRes = true; GM.ui.toast('Resolución ajustada para que vaya más fluido'); }
   }
   function cerrar() {
-    if (!S) return; if (THREE.DefaultLoadingManager) THREE.DefaultLoadingManager.__prog = null; S.vivo = false; cancelAnimationFrame(S.raf); if (GM.sonido) GM.sonido.escena(null);
+    if (!S) return; if (THREE.DefaultLoadingManager) THREE.DefaultLoadingManager.__prog = null; S.vivo = false; cancelAnimationFrame(S.raf); if (GM.sonido) GM.sonido.escena(null); if (GM.musica) GM.musica.escena(null);
     if (S.nav) { S.nav.cerrar(); S.nav = null; }
     window.removeEventListener('resize', S.onResize); window.removeEventListener('keydown', S.onKey); window.removeEventListener('keyup', S.onKey); if (S.teclasFoto) { window.removeEventListener('keydown', S.teclasFoto); window.removeEventListener('keyup', S.teclasFoto); }
     { const luces = []; S.scene.traverse(n => { if (n.isLight) luces.push(n); }); luces.forEach(l => { if (l.shadow && l.shadow.map) l.shadow.map.dispose(); l.removeFromParent(); if (l.target) l.target.removeFromParent(); }); }   // el renderer guarda las últimas luces y, por su padre, todo el mundo

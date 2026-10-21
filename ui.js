@@ -146,6 +146,7 @@
     try { if (GM.portada3d) GM.portada3d.montar(f, ['#e8590c']); } catch (e) { if (typeof console !== 'undefined') console.warn('Fondo 3D no disponible: ' + e.message); } // el fondo es decorativo: nunca debe romper el menú
   }
   function menu() {
+    if (GM.musica) GM.musica.escena('menu');
     cerrarModales(); desmontar(); aplicaKit(['#e8590c', '#1c2b3a']);
     const r = ui.raiz; r.innerHTML = ''; fondoPortada(true);
     const g = M().guardado, slots = g ? g.listar().filter(s => s.club) : [];
@@ -169,7 +170,7 @@
         h('div', { class: 'm-fila' },
           slots.length > 1 ? h('button', { class: 'm-sec', onclick: () => cargarMenu(slots) }, 'Otras partidas') : null,
           g ? h('button', { class: 'm-sec', onclick: dialogoImportar }, 'Importar') : null,
-          h('button', { class: 'm-sec', onclick: accesModal }, 'Accesibilidad'), h('button', { class: 'm-sec', onclick: ajustesModal }, 'Ajustes gráficos'),
+          h('button', { class: 'm-sec', onclick: accesModal }, 'Accesibilidad'), h('button', { class: 'm-sec', onclick: () => (GM.ajustes ? GM.ajustes.abrir() : ajustesModal()) }, 'Ajustes'),
           h('button', { class: 'm-sec', onclick: () => { cicloTema(); toast('Tema: ' + ({ auto: 'automático', dia: 'claro', noche: 'oscuro' })[GM.diseno ? GM.diseno.tema() : 'dia']); } }, 'Tema claro u oscuro'))),
       h('p', { class: 'm-pie' }, 'Clubes y jugadores reales; las valoraciones son estimaciones. Modelos 3D de Kenney y Quaternius (CC0).')));
   }
@@ -304,6 +305,7 @@
   }
   function desmontar() { const m = M(); if (m.ciudadDeportiva && m.ciudadDeportiva.unmount) m.ciudadDeportiva.unmount(); if (m.estadio && m.estadio.unmount) m.estadio.unmount(); if (m.ciudad3d && m.ciudad3d.unmount) m.ciudad3d.unmount(); if (m.hogar3d && m.hogar3d.unmount) m.hogar3d.unmount(); if (m.pueblo && m.pueblo.unmount) m.pueblo.unmount(); }
   function navegar(id) {
+    if (GM.musica && GM.musica.estado().actual === 'menu') GM.musica.parar();
     if (!S() || !ui.cuerpo) return;
     if (id !== 'club') desmontar();
     ui.pantalla = id; refrescar(true);
@@ -315,6 +317,7 @@
     ui.cuerpo.innerHTML = ''; ui.cuerpo.setAttribute('data-pantalla', ui.pantalla);
     try { screens[ui.pantalla].render(ui.cuerpo, S()); } catch (err) { ui.cuerpo.append(aviso('Error al mostrar la pantalla: ' + err.message, 'mal')); if (typeof console !== 'undefined') console.error(err); }
     ui.cuerpo.scrollTop = arriba ? 0 : y;
+    if (GM.bus) { GM.bus.emit('pantalla:abierta', { id: ui.pantalla }); if (ui.tab[ui.pantalla]) GM.bus.emit('pestana:abierta', { id: ui.tab[ui.pantalla] }); }
   }
   // Ajustes gráficos y de sonido: nivel de calidad (bajo, medio, alto, ultra; docs/PRESUPUESTOS.md) y sonido. Los cambios gráficos valen al abrir de nuevo el mundo 3D.
   function ajustesModal() {
@@ -338,7 +341,7 @@
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { try { window.localStorage.setItem('gm1:directo', directoOn() ? 'no' : 'si'); } catch (e) { } toast(directoOn() ? 'Partidos en directo activados' : 'Partidos en directo desactivados'); } }, 'Ver los partidos en directo: activar o desactivar'),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { cicloTema(); toast('Tema: ' + ({ auto: 'automático', dia: 'claro', noche: 'oscuro' })[GM.diseno ? GM.diseno.tema() : 'dia']); } }, 'Tema claro u oscuro'),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: accesModal }, 'Accesibilidad'),
-      h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: ajustesModal }, 'Ajustes gráficos y de sonido'),
+      h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => (GM.ajustes ? GM.ajustes.abrir() : ajustesModal()) }, 'Ajustes, sonido y datos'),
       GM.ui.tutorial ? h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { cerrarModales(); navegar('inicio'); setTimeout(() => GM.ui.tutorial(), 300); } }, 'Ver el tutorial') : null,
       h('p', { class: 'muted' }, 'El guardado vive en este móvil' + (g && g.protegido() ? ' y el navegador lo protege (no lo borra aunque falte espacio)' : g && g.protegido() === false ? '; el navegador podría borrarlo si falta espacio' : '') + '. Haz copias de seguridad de vez en cuando.')),
       [{ t: 'Salir al menú principal', cls: 'btn-sec', fn: () => { if (g) g.guardar(0); GM.state = null; setTimeout(menu, 0); } }, { t: 'Cerrar', cls: 'btn-sec' }]);
@@ -454,6 +457,7 @@
     const club = st.clubId, C = M().competiciones, P = M().partidos, G = M().guardado;
     if (GM.sede && GM.kit && GM.kit.disponible()) el.append(h('button', { class: 'sede-entrar', onclick: () => GM.sede.abrir(st) }, h('b', null, 'Entrar en la sede del club'), h('span', null, 'Camina por las instalaciones, habla con la plantilla y entra en cada sala')));
     if (G && G.necesitaCopia(st)) el.append(h('div', { class: 'aviso med' }, h('b', null, 'Haz una copia de seguridad. '), 'Si se borran los datos del navegador, la partida se pierde. ', h('div', { class: 'par', style: { marginTop: '8px' } }, h('button', { class: 'btn peq', onclick: dialogoExportar }, 'Hacer copia'), h('button', { class: 'btn btn-sec peq', onclick: () => { G.copiaAvisada(st); refrescar(); } }, 'Más tarde'))));
+    (GM.ui._.inicioBloques || []).forEach(f => { try { f(el, st); } catch (e) { /* bloque opcional */ } });
     if (carrera()) { if (GM.ui._.inicioCarrera(el, st)) return; }
     else if (st.personaje) el.append(h('button', { class: 'perfil-linea', onclick: perfilModal }, avatarEl(st.personaje, 44), h('div', { class: 'ct' }, h('b', null, M().personaje.nombre(st.personaje)), h('span', { class: 'muted' }, (pres() ? 'Presidente' : entr() ? 'Entrenador' : 'Director técnico') + ' de ' + eq(club).nombre)), chip('Cambiar aspecto')));
     if (entr() && st.entrenador.fase !== 'retirado') {
@@ -524,6 +528,6 @@
     return ok;
   }
   // Utilidades compartidas con los archivos de pantallas (ui_gestion.js, ui_ciudad.js, ui_presidente.js, ui_carrera.js, ui_entrenador.js)
-  GM.ui._ = { NAV_ACTUAL: navItems, ajustesModal, addTab, tabsExtra, tabExtra, accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
+  GM.ui._ = { inicioBloques: [], copiasModal, NAV_ACTUAL: navItems, ajustesModal, addTab, tabsExtra, tabExtra, accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
   GM.register('ui', { start, navegar, refrescar, toast, modal, registerScreen, selfTest });
 })();

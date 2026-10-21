@@ -13,7 +13,7 @@ const PRES = { alta: { llamadas: 1500, tri: 3e6 }, normal: { llamadas: 400, tri:
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const b = await chromium.launch({ channel: 'msedge' }), p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = [], medidas = {};
-  p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); }); p.on('response', r => { if (r.status() >= 400 && !/\/modelos\/reales\/arboles\//.test(r.url())) errs.push(r.status() + ' ' + r.url()); });
   for (const esc of ESC) {
     await p.goto('http://localhost:8080/'); await sleep(800);
     await p.evaluate(([c, cal, esc]) => { GM.newGame(c, undefined, { modo: 'carrera', personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'Marc', apellido: 'Soler' }), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } }); GM.campus.config.calidad = cal; GM.ui.start(document.getElementById('app')); GM.sede.abrir(GM.state, esc.indexOf(':') > 0 ? 'calle' : esc);}, [club, CAL, esc]);

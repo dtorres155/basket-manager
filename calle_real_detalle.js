@@ -161,6 +161,8 @@
     inst(fundir([new THREE.CylinderGeometry(0.22, 0.2, 0.9, 10).translate(0, 0.45, 0), new THREE.CylinderGeometry(0.25, 0.25, 0.06, 10).translate(0, 0.93, 0)]), blanco, papeleras, 'papeleras', true);
     inst(fundir([new THREE.CylinderGeometry(0.1, 0.12, 0.7, 8).translate(0, 0.35, 0), new THREE.SphereGeometry(0.1, 8, 6).translate(0, 0.72, 0)]), mat(0xc0392b), hidrantes, 'hidrantes', true);
     inst(caja(1.1, 1.15, 0.9, 0, 0.58, 0), blanco, contenedores, 'contenedores', true);
+    // buzones, cabinas y vallas del juego de mobiliario del país (punto 77)
+    if (GM.mobiliario) { const pais = (GM.state && GM.state.equipos && GM.state.equipos[GM.state.clubId] || {}).pais || '_', M = GM.mobiliario; papeleras.forEach((p, i) => { if (i % 9 === 4 && i < 90) { const o = M.buzon(pais); o.position.set(p.x + 0.6, 0, p.z); W.add(o); } else if (i % 31 === 15 && (pais === 'ES' || pais === 'IT')) { const o = M.cabina(pais); o.position.set(p.x + 0.8, 0, p.z); W.add(o); } }); }
     // bolardos a los lados de cada paso de peatones (dos por borde de calzada)
     { const dx = [], zs = []; void dx; void zs; nodos.forEach(n => { if (n.seg.length < 3 || bolardos.length > 260 || Math.hypot(n.x, n.z) > R - 14) return; n.seg.forEach(s => { if (s.k > 4 || s.len < 12) return; const d = s.w / 2 + 3.1; for (const lado of [-1, 1]) { const x = n.x + s.dx * d - s.dz * (s.w / 2 + 0.5) * lado, z = n.z + s.dz * d + s.dx * (s.w / 2 + 0.5) * lado; if (libre(x, z) && !ocupado(x, z) && bolardos.length < 260) { bolardos.push({ x, z }); bloquea(x, z, 0.15); } } }); }); }
     inst(new THREE.CylinderGeometry(0.07, 0.08, 0.8, 8).translate(0, 0.4, 0), mat(0x4a4f55, { metalness: 0.4 }), bolardos, 'bolardos');

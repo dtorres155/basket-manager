@@ -6,3 +6,6 @@ recursos/
 escritorio/node_modules/
 escritorio/app/
 escritorio/salida/
+
+tools/partidas_antiguas/*.txt
+calidad/actual/

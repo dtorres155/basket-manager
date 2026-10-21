@@ -19,6 +19,7 @@
   }
   function abrir(st, g, opt) {
     opt = opt || {};
+    if (GM.musica) GM.musica.escena('partido');
     const h = GM.h, P = GM.mods.partidos, D = P.crearDirecto(st, g, true), club = st.clubId, lado = g.local === club ? 'A' : g.visitante === club ? 'B' : null;
     const control = !!opt.control && !!lado, nombre = id => st.jugadores[id] ? st.jugadores[id].nombre.split(' ').slice(-1)[0] : '';
     const col = id => GM.kit.color(st.equipos[id].colores[0] === '#000000' ? '#333333' : st.equipos[id].colores[0]);
@@ -29,6 +30,7 @@
     const statEl = h('div', { class: 'dir-stats', style: { display: 'none' } }); fondo.append(marc, vistaEl, tick, ctrl, panel); vistaEl.append(statEl); document.body.appendChild(fondo);
     let V = null, jug = null, balon = null, ids = { A: [], B: [] };
     function pintaMarcador() {
+      if (GM.musica) { const dif = Math.abs(ES.marcador[0] - ES.marcador[1]), tension = Math.max(0, 1 - dif / 18); GM.musica.intensidad(0.25 + 0.5 * tension + (ES.cuarto >= 4 ? 0.25 : ES.cuarto * 0.05)); }
       const cu = ES.cuarto, qtxt = cu === 0 ? 'Previa' : cu <= 4 ? 'Cuarto ' + cu : 'Prórroga ' + (cu - 4), rest = Math.max(0, ES.dur - ES.t), mm = Math.floor(rest / 60), ss = Math.floor(rest % 60);
       marc.innerHTML = '';
       marc.append(h('div', { class: 'dir-eq' }, h('b', null, st.equipos[g.local].siglas), h('span', { class: 'muted' }, st.equipos[g.local].nombre)), h('div', { class: 'dir-num' }, h('b', null, ES.marcador[0]), h('i', null, '-'), h('b', null, ES.marcador[1])), h('div', { class: 'dir-eq der' }, h('b', null, st.equipos[g.visitante].siglas), h('span', { class: 'muted' }, st.equipos[g.visitante].nombre)), h('div', { class: 'dir-reloj' }, qtxt + (cu ? '  ' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') : '')));
@@ -237,6 +239,7 @@
     function terminar() {
       cancelAnimationFrame(reloj);
       const res = D.finalizar();
+      if (GM.musica) { const mio = lado === 'A' ? res.local > res.visitante : lado === 'B' ? res.visitante > res.local : null; GM.musica.sting(mio === null ? 'gol' : mio ? 'victoria' : 'derrota'); GM.musica.voz('Final del partido'); GM.musica.escena(null); }
       if (V) V.dispose(); fondo.remove();
       if (opt.onFin) opt.onFin(res);
     }
@@ -262,7 +265,7 @@
         h('b', null, 'Cambios (afectan al siguiente tramo)'), h('div', { class: 'lista' }, T.rot.map(e => { const dentro = ids[lado].indexOf(e.p.id) >= 0; return h('button', { class: 'jug' + (dentro ? ' sel' : ''), onclick: () => { D.ajustar(lado, dentro ? { sacar: e.p.id } : { meter: e.p.id }); narra((dentro ? 'Sale ' : 'Entra ') + e.p.nombre.split(' ').slice(-1)[0] + ' en el próximo tramo.'); paneles(); } }, h('span', { class: 'pos' }, e.p.pos), h('span', { class: 'ct' }, h('b', null, e.p.nombre), h('span', { class: 'muted' }, Math.round(e.s.min) + ' min, fatiga ' + Math.round(e.p.estado.fatiga))), dentro ? h('span', { class: 'chip ok' }, 'En pista') : null, h('span', { class: 'ovr' }, e.p.ovr)); })));
     }
     pintaMarcador(); controles(); paneles(); tick1();
-    return { cerrar: () => { cancelAnimationFrame(reloj); if (V) V.dispose(); fondo.remove(); }, D, ES };
+    return { cerrar: () => { cancelAnimationFrame(reloj); if (GM.musica) GM.musica.escena(null); if (V) V.dispose(); fondo.remove(); }, D, ES };
   }
   function selfTest() { return typeof abrir === 'function' && formacion(true, 0)[0] < formacion(false, 0)[0] + 5; }
   GM.register('directo', { abrir, selfTest });

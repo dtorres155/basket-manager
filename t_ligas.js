@@ -5,7 +5,7 @@ let fallos = 0; const ok = (n, c) => { if (!c) { fallos++; console.log('FALLA', 
 ok('selfTest ligasConfig', GM.mods.ligasConfig.selfTest());
 const st = GM.newGame('joventut-badalona', 11, { modo: 'gestor', personaje: GM.mods.personaje.crear() }); GM.state = st;
 ['LNB', 'LKL', 'ABA', 'ISR'].forEach(l => { const g = st.ligas[l]; ok(l + ': ' + (g ? g.equipos.length + ' clubes' : 'no existe'), !!g && g.equipos.length >= 9 && g.equipos.every(id => !!st.equipos[id] && st.equipos[id].plantilla.length >= 8)); });
-ok('los clubes nuevos tienen jugadores del país y relleno ficticio', st.jugadores['siauliai-01'] && st.jugadores['siauliai-01'].nac === 'LT' && st.jugadores['siauliai-01'].ficticio);
+ok('los clubes nuevos tienen jugadores del país y relleno ficticio', st.jugadores['rytas-vilnius-01'] && st.jugadores['rytas-vilnius-01'].nac === 'LT' && st.jugadores['rytas-vilnius-01'].ficticio);
 ok('la liga adriática mezcla países (relleno croata y esloveno)', st.equipos['cedevita-olimpija'].plantilla.some(i => st.jugadores[i].nac === 'SI') && st.equipos['zadar'].plantilla.some(i => st.jugadores[i].nac === 'HR'));
 const M = GM.mods.mercado; ok('ligaDe: un club nuevo y uno compartido con la Euroliga', M.ligaDe(st, 'monaco') === 'LNB' && M.ligaDe(st, 'asvel') === 'EUROLIGA' && M.ligaDe(st, 'rytas-vilnius') === 'LKL');
 const g = st.calendario.filter(x => x.comp === 'LNB'); ok('el calendario de la LNB: ' + g.length + ' partidos (16 clubes, doble vuelta + playoffs)', g.filter(x => x.fase === 'regular').length >= 16 * 15 && g[0].fecha >= '2026-09-26');

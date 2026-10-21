@@ -7,6 +7,8 @@
     "test": "node test_all.js",
     "test:rapido": "node test_all.js --rapido",
     "modelos": "node tools/modelos_presupuesto.js --optimizar",
+    "calidad": "node tools/calidad.js",
+    "calidad:rapido": "node tools/calidad.js --rapido",
     "serve": "node serve.js",
     "vendor:three": "node tools/vendor_three.js",
     "test:visual": "node tools/test_visual.js"

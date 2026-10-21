@@ -712,3 +712,5 @@ body{background:var(--bg)}
 :root[data-dalton]:not([data-dalton="ninguno"]) .chip.ok::before{content:"\2713 "}
 :root[data-dalton]:not([data-dalton="ninguno"]) .chip.mal::before{content:"\2717 "}
 :root[data-dalton]:not([data-dalton="ninguno"]) .pos-v::before{content:"+"}
+
+input[type=range]{accent-color:var(--club,#e8590c)}

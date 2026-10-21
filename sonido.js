@@ -5,12 +5,12 @@
    Se activa con el primer gesto del usuario (los navegadores lo exigen). Preferencia en el dispositivo: gm1:sonido ('1' o '0').
    Expone: escena(tipo, arg), estado({ hora, clima, partido, previa }), alternar(), activo(), selfTest. */
 (function () {
-  let ctx = null, maestro = null, analizador = null, ruido = null, capas = {}, esc = null, arg = null, est = { hora: 9, clima: 'sol', partido: false, previa: false }, temporizadores = [], ultimaHora = -1;
+  let ctx = null, maestro = null, analizador = null, ruido = null, capas = {}, esc = null, arg = null, est = { hora: 9, clima: 'sol', partido: false, previa: false }, temporizadores = [], ultimaHora = -1, nivAmb = 1, nivUi = 1;
   const pref = () => { try { return localStorage.getItem('gm1:sonido') !== '0'; } catch (e) { return true; } };
   function iniciar() {
     if (ctx || typeof window === 'undefined' || !(window.AudioContext || window.webkitAudioContext)) return !!ctx;
     try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return false; }
-    maestro = ctx.createGain(); maestro.gain.value = pref() ? 0.9 : 0; maestro.connect(ctx.destination); analizador = ctx.createAnalyser(); analizador.fftSize = 2048; maestro.connect(analizador);
+    maestro = ctx.createGain(); maestro.gain.value = pref() ? 0.9 * nivAmb : 0; maestro.connect(ctx.destination); analizador = ctx.createAnalyser(); analizador.fftSize = 2048; maestro.connect(analizador);
     const n = ctx.sampleRate * 3, b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0); let ult = 0;
     for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; ult = (ult + 0.02 * w) / 1.02; d[i] = w * 0.6 + ult * 2.4; }   // ruido blanco con algo de «marrón»
     ruido = b; montarCapas(); return true;
@@ -37,7 +37,7 @@
   function cantico(v) { const t = ctx.currentTime; [0, 0.5, 1.0, 1.25, 1.5].forEach(d => palma(t + d, v)); [2.4, 2.9, 3.4, 3.65, 3.9].forEach(d => palma(t + d, v)); }
   function vaso() { const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 2600 + Math.random() * 1400; g.gain.setValueAtTime(0.025, t); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.35); o.connect(g); g.connect(maestro); o.start(t); o.stop(t + 0.4); }
   function campana(veces) { for (let i = 0; i < veces; i++) { const t = ctx.currentTime + i * 1.6; [1, 2.76, 5.4].forEach((m, k) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 330 * m; g.gain.setValueAtTime(0.09 / (k + 1), t); g.gain.exponentialRampToValueAtTime(0.0005, t + 2.6); o.connect(g); g.connect(maestro); o.start(t); o.stop(t + 2.7); }); } }
-  function clic() { if (!ctx || !pref()) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 1300; g.gain.setValueAtTime(0.03, t); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.04); o.connect(g); g.connect(maestro); o.start(t); o.stop(t + 0.05); }
+  function clic() { if (!ctx || !pref()) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 1300; g.gain.setValueAtTime(0.03 * nivUi, t); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.04); o.connect(g); g.connect(maestro); o.start(t); o.stop(t + 0.05); }
   // ---------- programación según la escena ----------
   const repetir = (fn, min, max) => { const t = () => { if (!ctx) return; try { fn(); } catch (e) { } temporizadores.push(setTimeout(t, (min + Math.random() * (max - min)) * 1000)); }; temporizadores.push(setTimeout(t, Math.random() * min * 1000)); };
   // Paisaje sonoro por zona (punto 44): la calle del juego calcula cuánto de cada cosa hay cerca del jugador (0 a 1) y aquí se mezcla; _mezcla guarda lo último para las pruebas
@@ -76,7 +76,9 @@
     const h = Math.floor(est.hora || 9); if (esc === 'calle' && ultimaHora >= 0 && h !== ultimaHora && h >= 8 && h <= 21 && (paisaje.iglesia || 0) > 0.15) campana(((h - 1) % 12) + 1); if (esc === 'pueblo' && ultimaHora >= 0 && h !== ultimaHora && h >= 8 && h <= 22) campana(((h - 1) % 12) + 1); ultimaHora = h;
   }
   function activo() { return pref(); }
-  function alternar() { const on = !pref(); try { localStorage.setItem('gm1:sonido', on ? '1' : '0'); } catch (e) { } iniciar(); if (maestro) suave(maestro.gain, on ? 0.9 : 0, 0.15); return on; }
+  // mezcla (punto 80, musica.js): nivel del ambiente y de los sonidos de interfaz, de 0 a 1
+  function nivelAmbiente(amb, ui) { nivAmb = amb === undefined ? nivAmb : amb; nivUi = ui === undefined ? nivUi : ui; if (maestro) suave(maestro.gain, pref() ? 0.9 * nivAmb : 0, 0.1); }
+  function alternar() { const on = !pref(); try { localStorage.setItem('gm1:sonido', on ? '1' : '0'); } catch (e) { } iniciar(); if (maestro) suave(maestro.gain, on ? 0.9 * nivAmb : 0, 0.15); return on; }
   // el contexto de audio solo arranca tras un gesto; también el clic de los botones
   if (typeof document !== 'undefined') {
     const gesto = () => { if (iniciar()) { if (ctx.state === 'suspended') ctx.resume(); if (esc) { mezclar(); programar(); } } };
@@ -87,5 +89,5 @@
   function pais(p) { Object.assign(paisaje, p || {}); if (ctx) mezclar(); }
   // Análisis de lo que suena (para las pruebas): nivel RMS y energía en graves (<300 Hz), medios y agudos (>2 kHz)
   function analisis() { if (!ctx || !analizador) return null; const t = new Float32Array(analizador.fftSize); analizador.getFloatTimeDomainData(t); let r = 0; for (let i = 0; i < t.length; i++) r += t[i] * t[i]; const f = new Uint8Array(analizador.frequencyBinCount); analizador.getByteFrequencyData(f); const hz = ctx.sampleRate / analizador.fftSize, b = [0, 0, 0]; f.forEach((v, i) => { const fr = i * hz; b[fr < 300 ? 0 : fr < 2000 ? 1 : 2] += v * v; }); const tot = b[0] + b[1] + b[2] || 1; return { rms: Math.sqrt(r / t.length), graves: b[0] / tot, medios: b[1] / tot, agudos: b[2] / tot }; }
-  GM.sonido = { analisis, paisaje: pais, _mezcla: () => ultimaMezcla, _paisaje: () => paisaje, escena, estado, alternar, activo, selfTest, _ctx: () => ctx };
+  GM.sonido = { nivelAmbiente, analisis, paisaje: pais, _mezcla: () => ultimaMezcla, _paisaje: () => paisaje, escena, estado, alternar, activo, selfTest, _ctx: () => ctx };
 })();
