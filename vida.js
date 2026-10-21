@@ -149,7 +149,7 @@
     if (H.etapa === 'cantera' || H.etapa === 'profesional') {
       H.nivel = clamp(H.nivel + (H.edad < 22 ? 2 + Math.floor(R() * 6) : H.edad < 29 ? Math.floor(R() * 3) - 1 : -2), 20, 85);
       if (H.etapa === 'cantera' && H.edad >= 18 && H.nivel >= 52) {
-        const dom = ['ACB', 'LEGA', 'GBL', 'BBL', 'BSL'].find(l => st.ligas[l] && st.ligas[l].equipos.indexOf(st.clubId) >= 0) || (pais(st) === 'ES' ? 'ACB' : null);
+        const dom = GM.lista('vida.domesticas', ['ACB', 'LEGA', 'GBL', 'BBL', 'BSL']).find(l => st.ligas[l] && st.ligas[l].equipos.indexOf(st.clubId) >= 0) || (pais(st) === 'ES' ? 'ACB' : null);
         const pool = dom && st.ligas[dom] ? st.ligas[dom].equipos.map(id => st.equipos[id]).filter(e => e && e.reputacion < 60 && e.id !== st.clubId) : [], e = pool.length ? pool[(U.hash(H.nombre + st.temporada) >>> 0) % pool.length] : null;
         H.etapa = 'profesional'; H.club = e ? e.nombre : 'una universidad de la NCAA'; av('Tu hermano ' + H.nombre + ' firma su primer contrato profesional con ' + H.club + '.'); GM.noticia(st, 'Tu hermano ' + H.nombre + ' firma con ' + H.club + '.'); enviar(st, 'familia', '¡¡' + H.nombre + ' ha firmado con ' + H.club + '!! Dice que quiere ser como tú.');
       } else if (H.etapa === 'cantera' && H.edad >= 20 && H.nivel < 45) { H.etapa = 'estudios'; av(H.nombre + ' deja el baloncesto para estudiar.'); }
@@ -217,7 +217,7 @@
   function ofertasRetiro(st) {
     const c = C(st); if (c.fase !== 'retirado' || c.post) return [];
     const fama = c.fama, ult = (c.historial.filter(x => x.club && !/Cantera|Universidad/.test(x.club)).pop() || {}).club, prefer = Object.values(st.equipos).find(e => e.nombre === ult);
-    const objetivo = 25 + fama * 0.65, ligas = ['ACB', 'LEGA', 'GBL', 'BBL', 'BSL', 'EUROLIGA'].filter(l => st.ligas[l]);
+    const objetivo = 25 + fama * 0.65, ligas = GM.lista('vida.domesticas', ['ACB', 'LEGA', 'GBL', 'BBL', 'BSL']).concat(['EUROLIGA']).filter(l => st.ligas[l]);
     const pool = ligas.flatMap(l => st.ligas[l].equipos).map(id => st.equipos[id]).filter(Boolean).sort((a, b) => Math.abs(a.reputacion - objetivo) - Math.abs(b.reputacion - objetivo));
     const ent = (prefer ? [prefer] : []).concat(pool.filter(e => e !== prefer)).slice(0, 3), dir = pool.filter(e => e !== prefer).slice(3, 5).concat(prefer ? [prefer] : []).slice(0, 3);
     return [

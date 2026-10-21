@@ -96,7 +96,7 @@
     if (escena === 'pueblo' && carrera(st) && (mes === 7 || mes === 8)) { const e = ESPECIALES[(U.hash('pueblo' + sem + st.clubId) >>> 0) % ESPECIALES.length]; return [Object.assign(famoso(st, e), { zona: 'pueblo_plaza' })]; }
     return [];
   }
-  const personas = (st, escena) => personasBase(st, escena).concat(famososHoy(st, escena).map(f => ({ id: f.id, nombre: f.nombre, rol: f.rol, zona: f.zona, aspecto: f.aspecto, famoso: true, ambito: f.ambito })));
+  const personas = (st, escena) => personasBase(st, escena).concat(GM.genteHist ? GM.genteHist.personas(st, escena) : [], famososHoy(st, escena).map(f => ({ id: f.id, nombre: f.nombre, rol: f.rol, zona: f.zona, aspecto: f.aspecto, famoso: true, ambito: f.ambito })));
   const buscar = (st, id) => personas(st, 'calle').concat(personas(st, 'pueblo')).find(p => p.id === id);
 
   // Último partido del club del usuario (para comentarlo)
@@ -164,12 +164,13 @@
 
   // Ficha de una persona: texto y acciones { t, d, disponible, motivo, fn } (fn devuelve { ok, texto })
   function ficha(st, id) {
-    const d = buscar(st, id); if (!d) return null;
+    const d = buscar(st, id); if (!d) return null; if (d.hist && GM.genteHist) return GM.genteHist.ficha(st, d);   // personajes con historia (gente_historias.js)
     const g = G(st), r = rel(st, id), ult = g.charla[id], puede = !ult || U.diffDays(ult, st.fecha) >= 7, enc = g.encargo, mio = enc && enc.quien === id;
     const acciones = [{ t: 'Charlar', d: 'Una vez por semana: mejora la relación', disponible: puede, motivo: 'Ya habéis hablado esta semana',
       fn: () => { g.charla[id] = st.fecha; subeRel(st, id, 6); const ef = premio(st, id, 1); return { ok: true, texto: charla(st, d), efectos: ef }; } }];
     if (id === 'periodista') acciones.push({ t: 'Darle una exclusiva', d: 'Más reputación, pero al vestuario no le gustan las filtraciones', disponible: puede, motivo: 'Vuelve la semana que viene',
       fn: () => { g.charla[id] = st.fecha; subeRel(st, id, 12); if (carrera(st)) { st.carrera.fama = st.carrera.fama + 0.5; st.carrera.moral = U.clamp(st.carrera.moral - 2, 0, 100); } else { const ci = st.ciudad && st.ciudad[st.clubId]; if (ci) ci.aficion = U.clamp(ci.aficion + 2, 0, 100); } subeRel(st, 'utillero', -4); return { ok: true, texto: 'Mañana sales en portada del Diario.' }; } });
+    if (id === 'periodista' && GM.traspasos && st.modo === 'gestor') GM.traspasos.accionesPrensa(st).slice(0, 2).forEach(a => acciones.push(a));   // te cuenta los rumores del mercado (punto 65)
     if (d.famoso) acciones.push(especial(st, d, r));
     else {
       const nuevo = !enc && encargoDe(st, id);

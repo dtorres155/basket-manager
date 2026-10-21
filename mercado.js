@@ -6,12 +6,12 @@
 (function () {
   const U = GM.util;
   const yearOf = st => parseInt(st.temporada.slice(0, 4), 10);
-  const PRIO = ['NBA', 'EUROLIGA', 'ACB', 'LEGA', 'GBL', 'BBL', 'BSL'];
+  const PRIO = GM.lista('mercado.prio', ['NBA', 'EUROLIGA', 'ACB', 'LEGA', 'GBL', 'BBL', 'BSL']);
   // Escala salarial por liga respecto a la NBA (un 80 de media: ~22 M€ en la NBA, ~4 en la Euroliga, ~1,5 en la ACB) y techo por liga:
   // en Europa ni las estrellas se acercan a lo que cobra un jugador de rotación de la NBA
-  const FACT = { NBA: 1, EUROLIGA: 0.18, ACB: 0.07, LEGA: 0.06, GBL: 0.06, BBL: 0.07, BSL: 0.08 };
-  const MINSAL = { NBA: 2.2e6, EUROLIGA: 0.15e6, ACB: 0.1e6, LEGA: 0.1e6, GBL: 0.1e6, BBL: 0.1e6, BSL: 0.1e6 };
-  const MAXSAL = { NBA: 62e6, EUROLIGA: 6e6, ACB: 2.5e6, LEGA: 2e6, GBL: 2.5e6, BBL: 2e6, BSL: 3e6 };
+  const FACT = GM.tabla('mercado.fact', { NBA: 1, EUROLIGA: 0.18, ACB: 0.07, LEGA: 0.06, GBL: 0.06, BBL: 0.07, BSL: 0.08 });
+  const MINSAL = GM.tabla('mercado.minsal', { NBA: 2.2e6, EUROLIGA: 0.15e6, ACB: 0.1e6, LEGA: 0.1e6, GBL: 0.1e6, BBL: 0.1e6, BSL: 0.1e6 });
+  const MAXSAL = GM.tabla('mercado.maxsal', { NBA: 62e6, EUROLIGA: 6e6, ACB: 2.5e6, LEGA: 2e6, GBL: 2.5e6, BBL: 2e6, BSL: 3e6 });
   const TOPE_NBA = 140e6, TECHO_NBA = 190e6, MAXP = 15;
   const POS = ['PG', 'SG', 'SF', 'PF', 'C'];
   const F = () => GM.mods.finanzas;
@@ -100,7 +100,7 @@
       if (p.equipoId !== club) return { ok: false, motivo: 'Solo puedes renovar a jugadores de tu plantilla.' };
       const nope = motivoNoAnadir(st, club, salario, 'renovar', p.contrato.salario); if (nope) return { ok: false, motivo: nope };
       p.contrato = Object.assign({ salario, hasta: Math.max(p.contrato.hasta, yearOf(st) + 1) + anos }, extra); p.estado.moral = U.clamp(p.estado.moral + 8, 0, 100);
-      GM.noticia(st, 'Renovación: ' + p.nombre + ' continúa hasta ' + p.contrato.hasta + '.'); return { ok: true };
+      GM.noticia(st, 'Renovación: ' + p.nombre + ' continúa hasta ' + p.contrato.hasta + '.'); GM.bus.emit('contrato:renovado', { jugadorId: p.id }); return { ok: true };
     }
     if (!p.libre) return { ok: false, motivo: 'Tiene contrato con otro club.' };
     const nope = motivoNoAnadir(st, club, salario, 'fichaje'); if (nope) return { ok: false, motivo: nope };
@@ -281,9 +281,18 @@
     }
     return pros;
   }
+  // Lotería del draft de la NBA (probabilidades del sistema de 2019): los 14 peores se sortean los cuatro primeros puestos; el resto, por balance
+  const PROB_LOTERIA = [14, 14, 14, 12.5, 10.5, 9, 7.5, 6, 4.5, 3, 2, 1.5, 1, 0.5];
+  function loteria(st, peorAMejor) {
+    if (peorAMejor.length < 14) return { orden: peorAMejor, equipos: [] }; const L = peorAMejor.slice(0, 14), libres = L.map((id, i) => ({ id, i, w: PROB_LOTERIA[i] })), top = [];
+    for (let k = 0; k < 4; k++) { const t = libres.reduce((s, x) => s + x.w, 0); let r = GM.rng.next() * t, j = 0; for (; j < libres.length - 1; j++) { r -= libres[j].w; if (r <= 0) break; } top.push(libres[j]); libres.splice(j, 1); }
+    const orden = top.map(x => x.id).concat(libres.map(x => x.id), peorAMejor.slice(14)), equipos = L.map((id, i) => ({ id, antes: i + 1, despues: orden.indexOf(id) + 1, prob: PROB_LOTERIA[i] }));
+    return { orden, equipos };
+  }
   function draft(st) {
     if (!st.ligas.NBA) return null;
-    const y = yearOf(st) + 1, equipos = GM.mods.competiciones.clasificacion(st, 'NBA').map(r => r.equipoId).reverse();
+    const y = yearOf(st) + 1, lot = loteria(st, GM.mods.competiciones.clasificacion(st, 'NBA').map(r => r.equipoId).reverse()), equipos = lot.orden; st.mercado.loteria = { temporada: st.temporada, equipos: lot.equipos };
+    if (lot.equipos.length) { const g = lot.equipos.filter(e => e.despues <= 4).sort((a, b) => a.despues - b.despues), s = g.find(e => e.despues < e.antes - 2); GM.noticia && GM.noticia(st, '🎰 Lotería del draft: ' + g.map(e => st.equipos[e.id].nombre + ' (' + e.despues + 'º)').join(', ') + (s ? '. ' + st.equipos[s.id].nombre + ' sube del puesto ' + s.antes + ' al ' + s.despues + '.' : '.')); }
     const pros = claseDraft(st);
     const yo = GM.mods.carrera && GM.mods.carrera.preDraft ? GM.mods.carrera.preDraft(st) : null;
     if (yo) pros.push(yo);
@@ -350,5 +359,5 @@
     const a = { ovr: 90, pot: 90, edad: 27 }, b = { ovr: 70, pot: 70, edad: 27 };
     return valorJugador(a) > valorJugador(b) * 4 && valorJugador(b) > 1e6 && valorJugador({ ovr: 70, pot: 70, edad: 36 }) < valorJugador(b);
   }
-  GM.register('mercado', { firmar, claseDraft, sacar, valorJugador, salarioPedido, topeSalarial, evaluarOferta, ofertar, renovar, liberar, precioMinimo, comprar, ofertasVenta, vender, traspasar, draft, expiran, libres, buscar, cerrarContratos, nuevaPartida, selfTest, ligaDe, MAXP, mover, motivoNoAnadir, valorIA });
+  GM.register('mercado', { loteria, PROB_LOTERIA, firmar, claseDraft, sacar, valorJugador, salarioPedido, topeSalarial, evaluarOferta, ofertar, renovar, liberar, precioMinimo, comprar, ofertasVenta, vender, traspasar, draft, expiran, libres, buscar, cerrarContratos, nuevaPartida, selfTest, ligaDe, MAXP, mover, motivoNoAnadir, valorIA });
 })();

@@ -88,6 +88,8 @@
   const quimicaEquipo = (st, T, L) => (T.id === st.clubId && activo(st) ? bonoQuim(st, L.map(e => e.p.id)) : 0);
   // La IA se adapta a lo que ve: si ya te ha visto repetir una jugada, resta eficacia (más cuanto mejor es su equipo)
   function alinear(st, A, B) {
+    // la IA también defiende con cabeza: su mejor defensor marca a la estrella rival (y, si es un club grande, el segundo a la segunda)
+    [[A, B], [B, A]].forEach(([yo, otro]) => { if (!yo.pz || !yo.pz.ia) return; const rep = (st.equipos[yo.id] && st.equipos[yo.id].reputacion) || 60; if (rep < 52) return; const mios = yo.rot.slice(0, 7).slice().sort((a, b) => (b.p.att.defPer + b.p.att.defInt + b.p.att.fisico * 0.4) - (a.p.att.defPer + a.p.att.defInt + a.p.att.fisico * 0.4)), objetivos = otro.rot.slice(0, 5).slice().sort((a, b) => b.p.ovr - a.p.ovr), n = rep >= 72 ? 2 : 1, emp = {}; for (let i = 0; i < n && mios[i] && objetivos[i]; i++) emp[mios[i].p.id] = objetivos[i].p.id; yo.pz.emp = emp; });
     [[A, B], [B, A]].forEach(([mio, otro]) => { if (mio.id !== st.clubId || !activo(st) || otro.id === st.clubId) return; const v = est(st).vistas, rep = (st.equipos[otro.id] && st.equipos[otro.id].reputacion) || 60; mio.adapt = {}; Object.keys(v).forEach(id => { mio.adapt[id] = clamp(v[id] * 0.04 * (0.6 + rep / 150), 0, 0.3); }); });
   }
   function registrarStint(D, LA, LB, dA, dB, min) {

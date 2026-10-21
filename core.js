@@ -43,6 +43,7 @@ window.GM = window.GM || (function () {
       on(e, f) { (handlers[e] = handlers[e] || []).push(f); },
       emit(e, p) { (handlers[e] || []).slice().forEach(f => f(p)); }
     },
+    tabla(nombre, base) { return base; }, lista(nombre, base) { return base; },   // ligas_config.js las sustituye: tablas de las ligas que admiten ligas nuevas sin tocar código
     register(nombre, mod) { this.mods[nombre] = mod; return mod; },
     addData(p) {
       (p.ligas || []).forEach(l => { this.data.ligas[l.id] = l; });

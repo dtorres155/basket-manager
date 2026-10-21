@@ -84,7 +84,7 @@
     if (chatId) ver(chatId); else lista();
     modal(cuerpo, [{ t: 'Cerrar', cls: 'btn-sec', fn: () => { refrescar(); } }], { alta: true });
   }
-  GM.ui.movil = abrirMovil;
+  GM.ui.movilMensajes = abrirMovil; GM.ui.movil = GM.ui.movil || abrirMovil;   // ui_movil.js pone encima la pantalla con las apps
   function eventosCards(el, st) {
     const K = entr() ? M().entrenador : M().carrera, ev = K.eventos(st);
     if (!ev.length) return;

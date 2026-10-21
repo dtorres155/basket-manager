@@ -150,13 +150,16 @@
     const h = S.hora || 9, f = h < 16 ? 'antes' : h < 20.5 ? 'previa' : h < 22.25 ? 'juego' : 'salida'; if (S.fasePartido === f || S.cambiandoFase || !GM.kit.publico || !S.ptoPab) return; S.cambiandoFase = true; S.fasePartido = f;
     const club = st.equipos[st.clubId], c1 = club.colores[0], c2 = club.colores[1] || '#222', r = rnd(U.hash(st.fecha + f)), { PIEL, PELO } = K(), P = S.partidoObj || (S.partidoObj = {}), quitar = k => { if (P[k]) { S.mundo.remove(P[k].grupo); P[k] = null; } };
     const libre = (x, z) => { const [i, j] = S.G.celda(x, z); return S.G.libre(i, j); }, fan = (x, z, ry) => ({ x, y: 0.88, z, ry, ropa: r() < 0.7 ? c1 : c2, piel: PIEL[(r() * 5) | 0], pelo: PELO[(r() * 6) | 0], pantalon: '#2f3640' });
+    const amb = S.dia && S.dia.rival && GM.mods.rivalidades ? GM.mods.rivalidades.ambiente(st, st.clubId, S.dia.rival.id) : 0, kA = amb >= 2 ? 1.7 : 1; S.ambDerbi = amb;   // los clásicos llenan la calle (punto 67)
     if (S.multitud) S.multitud.grupo.visible = f === 'previa' || f === 'juego';
     if (f === 'previa') {
-      const cola = [], [px, pz] = S.ptoPab, fr = S.G; void fr; for (let t = 0; t < 400 && cola.length < 34; t++) { const a = r() * 6.28, d = 1.2 + r() * 3.2, x = px + Math.cos(a) * d, z = pz + Math.sin(a) * d; if (libre(x, z)) cola.push(fan(x, z, Math.atan2(px - x, pz - z))); }
+      const cola = [], [px, pz] = S.ptoPab, fr = S.G; void fr; for (let t = 0; t < 400 && cola.length < Math.round(34 * kA); t++) { const a = r() * 6.28, d = 1.2 + r() * 3.2, x = px + Math.cos(a) * d, z = pz + Math.sin(a) * d; if (libre(x, z)) cola.push(fan(x, z, Math.atan2(px - x, pz - z))); }
       P.cola = GM.kit.publico(cola, 1, true); S.mundo.add(P.cola.grupo); P.colaT = 0;
-      if (S.ptoPena) { const bar = [], [qx, qz] = S.ptoPena; for (let t = 0; t < 400 && bar.length < 24; t++) { const a = r() * 6.28, d = 0.8 + r() * 2.6, x = qx + Math.cos(a) * d, z = qz + Math.sin(a) * d; if (libre(x, z)) bar.push(fan(x, z, r() * 6.28)); } P.bares = GM.kit.publico(bar, 1, true); S.mundo.add(P.bares.grupo); }
+      if (amb >= 1 && S.dia.rival) { const rv = S.dia.rival, cr = rv.colores[0] === '#000000' ? '#333333' : rv.colores[0], gr = []; for (let t = 0; t < 400 && gr.length < Math.round(14 * kA); t++) { const a = 1.2 + r() * 1.6, d = 5 + r() * 3, x = px + Math.cos(a) * d, z = pz + Math.sin(a) * d; if (libre(x, z)) gr.push(Object.assign(fan(x, z, Math.atan2(px - x, pz - z)), { ropa: cr })); } if (gr.length) { quitar('rivales'); P.rivales = GM.kit.publico(gr, 1, true); S.mundo.add(P.rivales.grupo); } }   // aficionados rivales con sus colores
+      if (S.ptoPena) { const bar = [], [qx, qz] = S.ptoPena; for (let t = 0; t < 400 && bar.length < Math.round(24 * kA); t++) { const a = r() * 6.28, d = 0.8 + r() * 2.6, x = qx + Math.cos(a) * d, z = qz + Math.sin(a) * d; if (libre(x, z)) bar.push(fan(x, z, r() * 6.28)); } P.bares = GM.kit.publico(bar, 1, true); S.mundo.add(P.bares.grupo); }
     } else { quitar('cola'); quitar('bares'); }
-    if (f === 'salida') { const sal = [], [px, pz] = S.ptoPab; for (let t = 0; t < 600 && sal.length < 120; t++) { const a = r() * 6.28, d = 1.5 + r() * 5, x = px + Math.cos(a) * d, z = pz + Math.sin(a) * d; if (libre(x, z)) sal.push(fan(x, z, r() * 6.28)); } P.salida = GM.kit.publico(sal, 1, true); S.mundo.add(P.salida.grupo); P.salidaT = 0; } else quitar('salida');
+    if (f !== 'previa' && f !== 'salida') quitar('rivales');
+    if (f === 'salida') { const sal = [], [px, pz] = S.ptoPab; for (let t = 0; t < 600 && sal.length < Math.round(120 * kA); t++) { const a = r() * 6.28, d = 1.5 + r() * 5, x = px + Math.cos(a) * d, z = pz + Math.sin(a) * d; if (libre(x, z)) sal.push(fan(x, z, r() * 6.28)); } P.salida = GM.kit.publico(sal, 1, true); S.mundo.add(P.salida.grupo); P.salidaT = 0; } else quitar('salida');
     S.cambiandoFase = false;
   }
   // A las 19:00 llega el autobús del equipo, se baja la plantilla y entra en el pabellón
@@ -196,6 +199,7 @@
   function actualizar(S, M, dt) {
     if (S.tiendas && S.tiendas.length && S.st) { S.tTienda = (S.tTienda || 0) - dt; if (S.tTienda <= 0) { S.tTienda = 1; const h = S.hora || 12, dow = S.festivo ? 0 : new Date(String(S.st.fecha).slice(0, 10) + 'T12:00:00').getDay(), pais = (S.st.equipos[S.st.clubId] || {}).pais; S.tiendas.forEach(t => { const ab = abierto(t.tipo, h, dow, pais); t.pr.visible = !ab; t.v.visible = ab || true; }); const luz = 0.1 + 0.9 * Math.min(1, Math.max(0, S.noche || 0)); (S.matsTienda || []).forEach(m => { m.emissiveIntensity = luz; }); } }
     if (S.jugadoresCancha && GM.ciudadJuego) GM.ciudadJuego.moverCanchas(S, M, dt);
+    if (S.ambDerbi >= 2 && (S.fasePartido === 'previa' || S.fasePartido === 'salida') && GM.narrador && GM.ui && GM.ui.toast) { S.tCanto = (S.tCanto || 12) - dt; if (S.tCanto <= 0 && (S.nCantos || 0) < 6) { S.tCanto = 30; S.nCantos = (S.nCantos || 0) + 1; const C = GM.narrador.CANTOS, l = (S.nCantos % 2 ? C.local : C.rival), c = l[Math.floor(Math.random() * l.length)].replace(/{c}/g, S.st.equipos[S.st.clubId].siglas); GM.ui.toast('🔊 La calle canta: ' + c); } }   // cánticos de clásico
     if (S.multGPU) S.multGPU.actualizar(performance.now() / 1000, S.foco, S.hora);
     if (S.chunks) S.chunks.paso([[S.foco.x, S.foco.z], [S.camera.position.x, S.camera.position.z]], 4);   // ciudad por trozos: construye y descarta celdas de edificios según la distancia
     const t = performance.now() / 1000;

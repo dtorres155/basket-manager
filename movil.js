@@ -35,7 +35,7 @@
     if (dec.tipo === 'evento') { const e = GM.mods.carrera.eventos(st).find(x => x.id === dec.id); return e ? e.opciones.map(o => ({ t: o.t, d: o.d, i: o.i })) : null; }
     if (dec.tipo === 'plan') return [{ t: '¡Me apunto!', d: 'Plan de fiesta (más rebelde).' }, { t: 'Hoy no, que mañana entreno', d: 'Un poco más profesional.' }];
     if (dec.tipo === 'patrocinio') return [{ t: 'Firmar', d: '+' + dec.dinero + ' mil €.' }, { t: 'No me interesa', d: 'Sin cambios.' }];
-    if (dec.tipo === 'vida') return dec.ops;
+    if (dec.tipo === 'vida' || dec.tipo === 'traspaso') return dec.ops;
     if (dec.tipo === 'entrevista') return [{ t: 'Atenderles', d: 'Un poco de fama, imagen de profesional.' }, { t: 'No contestar', d: 'Morbo y algo más de rebeldía.' }];
     return null;
   }
@@ -52,6 +52,7 @@
     if (d.tipo === 'evento') { r = GM.mods.carrera.elegirEvento(st, d.id, m.ops[i].i !== undefined ? m.ops[i].i : i); if (r.ok) out.push.apply(out, r.efectos || []); }
     else if (d.tipo === 'plan') { if (i === 0) { r = GM.mods.estilo.hacer(st, d.plan); if (r.ok) out.push.apply(out, r.efectos); } else GM.mods.estilo.mover(st, 2, 'Rechazas una fiesta'); }
     else if (d.tipo === 'patrocinio') { if (i === 0) { const k = C(st); k.dinero += d.dinero; k.fama = k.fama + d.fama; GM.mods.estilo.mover(st, d.dv, 'Patrocinio'); out.push('+' + d.dinero + ' mil €'); k.hitos.unshift({ fecha: st.fecha, texto: 'Firmas un patrocinio de ' + d.dinero + ' mil €.' }); } }
+    else if (d.tipo === 'traspaso') { r = GM.traspasosModos ? GM.traspasosModos.responderAgente(st, d, i) : { ok: true, efectos: [] }; if (r.ok) out.push.apply(out, r.efectos || []); }
     else if (d.tipo === 'vida') { r = GM.mods.vida.decidir(st, d, i); if (r.ok) out.push.apply(out, r.efectos || []); }
     else if (d.tipo === 'entrevista') { if (i === 0) { C(st).fama = C(st).fama + 0.5; GM.mods.estilo.mover(st, 2, 'Atiendes a la prensa'); out.push('reputación +'); } else { C(st).fama = C(st).fama + 0.3; GM.mods.estilo.mover(st, -3, 'No contestas a la prensa'); } }
     if (!r.ok) return r;

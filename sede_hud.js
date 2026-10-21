@@ -16,6 +16,7 @@
         h('button', { class: 'btn btn-sec peq', title: 'Calidad gráfica: bajo, medio, alto o ultra (reinicia la escena)', onclick: () => { const N = GM.campus.NIVELES, n = N[(N.indexOf(GM.campus.config.nivel) + 1) % N.length]; GM.campus.setNivel(n); const st = S.st, arg = S.escena + (S.escenaArg ? ':' + S.escenaArg : ''); cerrar(); GM.ui.toast('Calidad ' + n); setTimeout(() => abrir(st, arg), 60); } }, 'Calidad: ' + ((GM.campus && GM.campus.config.nivel) || 'alto')),
         GM.sonido ? h('button', { class: 'btn btn-sec peq', title: 'Activar o silenciar el sonido', onclick: e => { const on = GM.sonido.alternar(); e.currentTarget.textContent = on ? 'Sonido' : 'Sin sonido'; } }, GM.sonido.activo() ? 'Sonido' : 'Sin sonido') : null,
         S.escena === 'pueblo' && GM.puebloJuego ? h('button', { class: 'btn btn-sec peq', onclick: () => GM.puebloJuego.panelEncargos() }, 'Encargos (' + GM.puebloJuego.pendientes(st) + ')') : null,
+        st.modo !== 'carrera' && GM.movilApps && GM.ui.movil ? h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil') : null,
         st.modo === 'carrera' && GM.mods.movil && GM.ui.movil ? (() => { const n = GM.mods.movil.noLeidos(st); return h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil' + (n ? ' (' + n + ')' : '')); })() : null,
         h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día'));
       S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });

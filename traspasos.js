@@ -10,7 +10,7 @@
    Estado: state.mercadoPlus = { ses, ofertas, rumores, agencias, peticiones, ofrecidos, fuentes, bloqueos, seq }. Expone: ventana, abrir, proponer, cerrar, abandonar, trato, recordar, ofertasRecibidas, responderOferta, rumores,
    peticiones, resolverPeticion, ofrecidos, aceptarOfrecido, resumen, AGENCIAS, selfTest. Prueba: t_traspasos.js. */
 (function () {
-  const U = GM.util, clamp = U.clamp, M = () => GM.mods.mercado, F = () => GM.mods.finanzas, act = st => st && st.modo === 'gestor' && st.mercado && st.equipos && st.equipos[st.clubId];
+  const U = GM.util, clamp = U.clamp, M = () => GM.mods.mercado, F = () => GM.mods.finanzas, act = st => st && (st.modo === 'gestor' || st.modo === 'entrenador') && st.mercado && st.equipos && st.equipos[st.clubId];
   const AGENCIAS = ['Sports Capital', 'Nexo Management', 'Pivot Agency', 'Triple Doble', 'Aro Global', 'Bastión Sport', 'Zona Libre', 'Mar y Cancha', 'Quinteto Partners', 'Última Posesión', 'Primer Tiempo', 'Rebote Group', 'Línea de Tres', 'Doble Pivote'];
   const DIRECTORES = { duro: { etq: 'Director duro', desc: 'No baja de su precio y se cansa pronto.', res: 1.0, pac: 2, techo: 0.92 }, justo: { etq: 'Director justo', desc: 'Negocia con calma y acepta un precio razonable.', res: 0.92, pac: 3, techo: 1.0 }, flexible: { etq: 'Director flexible', desc: 'Busca cerrar el trato: cede si le ayudas.', res: 0.85, pac: 4, techo: 1.1 } };
   const est = st => st.mercadoPlus || (st.mercadoPlus = { ses: {}, ofertas: [], rumores: [], agencias: {}, peticiones: [], ofrecidos: [], fuentes: { radio: { ok: 0, n: 0 }, agencia: { ok: 0, n: 0 }, redes: { ok: 0, n: 0 } }, bloqueos: {}, seq: 0, hist: [] });
@@ -154,6 +154,11 @@
     const h = (U.hash(st.fecha + 'ofrece') >>> 0); if ((h % 1000) / 1000 > 0.06 * atractivo + (trato(st, c[h % c.length]).rel >= 40 ? 0.1 : 0)) return; const q = st.jugadores[c[(h >>> 4) % c.length]];
     E.ofrecidos.push({ id: 'ofr' + (++E.seq), jugId: q.id, clubId: q.equipoId, rebaja: 0.15, desde: st.fecha, hasta: U.addDays(st.fecha, 14), fuente: trato(st, q.id).rel >= 40 ? 'agencia' : 'directo' }); GM.noticia && GM.noticia(st, '🤝 ' + q.nombre + ' (' + st.equipos[q.equipoId].nombre + ') quiere jugar en tu club: su club bajaría el precio un 15 % durante dos semanas.');
   }
+  // La prensa de la ciudad (quiosco del mapa y periodista de la calle) cuenta los rumores: titulares de las últimas semanas con su fuente
+  function titulares(st, n) { if (!act(st)) return []; return est(st).rumores.filter(r => U.diffDays(r.f, st.fecha) <= 21).slice(0, n || 4).map(r => ({ id: r.id, texto: r.texto, fuente: FUENTES[r.fuente].n, fecha: r.f, resuelto: r.resuelto })); }
+  function accionesPrensa(st) {
+    return titulares(st, 4).map((r, i) => ({ id: 'rumor' + i, t: 'Leer: ' + (r.texto.length > 70 ? r.texto.slice(0, 67) + '…' : r.texto), d: r.fuente + ', ' + U.fecha(r.fecha) + (r.resuelto ? (r.resuelto === 'confirmado' ? ', confirmado' : ', desmentido') : ''), disponible: true, fn: () => ({ ok: true, texto: r.texto + ' (' + r.fuente + ')' }) }));
+  }
   const ofrecidos = st => est(st).ofrecidos.filter(o => o.hasta >= st.fecha);
   function aceptarOfrecido(st, id) { const o = est(st).ofrecidos.find(x => x.id === id && x.hasta >= st.fecha); if (!o) return { ok: false, motivo: 'La oferta ya no está.' }; return abrir(st, o.jugId, 'comprar', null, { descuento: o.rebaja }); }
   // ---------- Día a día ----------
@@ -176,6 +181,6 @@
     const v1 = ventanaLiga(st, 'ACB'), v2 = ventanaLiga(Object.assign({}, st, { fecha: '2026-11-20' }), 'ACB'), v3 = ventanaLiga(Object.assign({}, st, { fecha: '2027-03-01' }), 'NBA'), v4 = ventanaLiga(Object.assign({}, st, { fecha: '2027-01-10' }), 'ACB');
     recordar(st, 'x1', 'acuerdo'); recordar(st, 'x1', 'rompe'); const a = trato(st, 'x1'); return v1.abierta && !v2.abierta && v2.abre === '2027-01-02' && !v3.abierta && v3.abre === '2027-07-01' && v4.abierta && a.rel === -5 && a.factorSalario > 1 && Object.keys(DIRECTORES).length === 3 && AGENCIAS.length === 14;
   }
-  GM.traspasos = { AGENCIAS, DIRECTORES, FUENTES, est, ventana, motivoCerrado, ventanaLiga, abrir, proponer, cerrar, abandonar, valorOferta, trato, recordar, agenciaDe, ofertasRecibidas, generarOfertas, responderOferta, generarRumores, rumores, fiabilidadFuente, generarPeticiones, peticiones, resolverPeticion, generarOfrecidos, ofrecidos, aceptarOfrecido, resumen, selfTest };
+  GM.traspasos = { AGENCIAS, DIRECTORES, FUENTES, est, ventana, motivoCerrado, ventanaLiga, abrir, proponer, cerrar, abandonar, valorOferta, trato, recordar, agenciaDe, ofertasRecibidas, generarOfertas, responderOferta, generarRumores, rumores, fiabilidadFuente, generarPeticiones, peticiones, resolverPeticion, generarOfrecidos, ofrecidos, aceptarOfrecido, resumen, titulares, accionesPrensa, selfTest };
   GM.register && GM.register('traspasos', GM.traspasos);
 })();

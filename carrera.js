@@ -7,9 +7,9 @@
 (function () {
   const U = GM.util, yearOf = st => parseInt(st.temporada.slice(0, 4), 10);
   const C = st => st.carrera, YO = st => st.jugadores.yo, M = () => GM.mods.mercado;
-  const MIN = { NBA: 70, EUROLIGA: 68, ACB: 60, LEGA: 58, GBL: 58, BBL: 59, BSL: 60 };
-  const NIVEL = { NBA: 4, EUROLIGA: 3, ACB: 2, LEGA: 2, GBL: 2, BBL: 2, BSL: 2 };
-  const NOMLIGA = { NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'Liga Endesa', LEGA: 'Lega Basket', GBL: 'Liga griega', BBL: 'Bundesliga', BSL: 'Liga turca' };
+  const MIN = GM.tabla('carrera.min', { NBA: 70, EUROLIGA: 68, ACB: 60, LEGA: 58, GBL: 58, BBL: 59, BSL: 60 });
+  const NIVEL = GM.tabla('carrera.nivel', { NBA: 4, EUROLIGA: 3, ACB: 2, LEGA: 2, GBL: 2, BBL: 2, BSL: 2 });
+  const NOMLIGA = GM.tabla('carrera.nomliga', { NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'Liga Endesa', LEGA: 'Lega Basket', GBL: 'Liga griega', BBL: 'Bundesliga', BSL: 'Liga turca' });
   const FOCOS = { tiro: ['tiro3', 'tiro2', 'tl'], defensa: ['defInt', 'defPer', 'iq'], fisico: ['fisico', 'reb'], pase: ['pase', 'bote', 'iq'], mente: ['iq', 'tl', 'pase'] };
   const INTENS = { suave: 0.6, normal: 1, intensa: 1.5 };
   const AGENTES = {
@@ -30,8 +30,8 @@
   const GRADOS = [{ u: 0, n: 'Desconocido' }, { u: 8, n: 'Promesa' }, { u: 18, n: 'Talento emergente' }, { u: 30, n: 'Profesional consolidado' }, { u: 44, n: 'Referente de la liga' }, { u: 58, n: 'Estrella continental' }, { u: 72, n: 'Estrella mundial' }, { u: 86, n: 'Icono' }, { u: 96, n: 'Leyenda' }];
   // Estatus dentro de cada club: de recién llegado a leyenda del club.
   const ESTATUS = [{ u: 0, n: 'Recién llegado' }, { u: 6, n: 'Promesa' }, { u: 20, n: 'Jugador de rotación' }, { u: 38, n: 'Titular' }, { u: 60, n: 'Referente' }, { u: 84, n: 'Ídolo' }, { u: 110, n: 'Leyenda del club' }];
-  const TIER = { NBA: 4, EUROLIGA: 3, ACB: 2, LEGA: 2, GBL: 2, BBL: 2, BSL: 2 };
-  const FACTOR_TIER = { NBA: 1.3, EUROLIGA: 1, ACB: 0.8, LEGA: 0.8, GBL: 0.75, BBL: 0.75, BSL: 0.75 };
+  const TIER = GM.tabla('carrera.tier', { NBA: 4, EUROLIGA: 3, ACB: 2, LEGA: 2, GBL: 2, BBL: 2, BSL: 2 });
+  const FACTOR_TIER = GM.tabla('carrera.factortier', { NBA: 1.3, EUROLIGA: 1, ACB: 0.8, LEGA: 0.8, GBL: 0.75, BBL: 0.75, BSL: 0.75 });
   function instalaFama(c) {
     const v = typeof c.fama === 'number' ? c.fama : (c._f || 0);
     Object.defineProperty(c, '_f', { value: v, writable: true, enumerable: false, configurable: true });
@@ -506,6 +506,7 @@
     actualizaTier(st);
     GM.noticia(st, nueva ? p.nombre + ' ficha por ' + nuevo.nombre + '.' : p.nombre + ' renueva con ' + nuevo.nombre + '.');
     c.ofertas = [];
+    GM.bus.emit('carrera:contrato', { tipo: o.tipo, clubId: o.clubId, antes, cambioClub: nueva && antes !== o.clubId });   // las promesas de prensa se resuelven con esto (punto 67)
     return { ok: true, cambioClub: nueva };
   }
   // Se llama al empezar una nueva temporada: si no decides, tu representante cierra algo.

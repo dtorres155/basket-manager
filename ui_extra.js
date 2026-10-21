@@ -85,11 +85,14 @@
     const inf = O.informes(st), segs = inf.filter(i => i.seguido), resto = inf.filter(i => !i.seguido);
     const tarjeta = i => h('div', { class: 'item col' }, h('div', { class: 'fila' }, h('div', { class: 'ct' }, h('b', null, clip(i.nombre, 24) + (i.joya ? ' 💎' : '')), h('span', { class: 'muted' }, i.pos + ', ' + i.edad + ' años, ' + i.nac + ', ' + clip(i.club, 24))), h('div', { class: 'col' }, h('span', { class: 'ovr' }, i.ovr[0] + '-' + i.ovr[1]), h('span', { class: 'muted' }, 'pot. ' + i.pot[0] + '-' + i.pot[1]))),
       h('span', { class: 'muted' }, 'Informe de ' + i.ojeador + ' (' + O.NIVELES[i.nivel] + ', ' + U.fecha(i.fecha) + (i.vistas > 1 ? ', visto ' + i.vistas + ' veces' : '') + '). ' + (i.fuerte ? 'Destaca en ' + i.fuerte + '.' : '') + (i.joya ? ' Podría explotar si juega.' : '')),
-      h('div', { class: 'par' }, i.jugadorId && GM.ui._.detalleJugador ? h('button', { class: 'btn peq', onclick: () => GM.ui._.detalleJugador(i.jugadorId) }, 'Ver ficha') : null, h('button', { class: 'btn peq btn-sec', onclick: () => { O.seguir(st, i.id); refrescar(); } }, i.seguido ? 'Dejar de seguir' : 'Seguir'), h('button', { class: 'btn peq btn-sec', onclick: () => { O.descartar(st, i.id); refrescar(); } }, 'Descartar')));
+      h('div', { class: 'par' }, i.jugadorId && GM.ui._.detalleJugador ? h('button', { class: 'btn peq', onclick: () => GM.ui._.detalleJugador(i.jugadorId) }, 'Ver ficha') : null, i.jugadorId && st.jugadores[i.jugadorId] && st.jugadores[i.jugadorId].juvenil && st.jugadores[i.jugadorId].equipoId !== st.clubId && (gestor(st) || pres(st)) ? h('button', { class: 'btn peq', onclick: () => { const r = O.ficharCantera(st, i.id); toast(r.ok ? 'Fichas al juvenil por ' + U.eur(r.precio) : r.motivo); refrescar(); } }, 'Ofertar ' + U.eur(O.precioJuvenil(st, st.jugadores[i.jugadorId]))) : null, h('button', { class: 'btn peq btn-sec', onclick: () => { O.seguir(st, i.id); refrescar(); } }, i.seguido ? 'Dejar de seguir' : 'Seguir'), h('button', { class: 'btn peq btn-sec', onclick: () => { O.descartar(st, i.id); refrescar(); } }, 'Descartar')));
     if (segs.length) el.append(seccion('En seguimiento', h('div', { class: 'lista' }, segs.map(tarjeta))));
     el.append(seccion('Informes', resto.length ? h('div', { class: 'lista' }, resto.slice(0, 30).map(tarjeta)) : h('p', { class: 'muted' }, 'Aún no hay informes. Asigna una zona a un ojeador y espera al lunes.')));
   }
   addTab('mercado', 'ojeadores', 'Ojeadores', ojeadoresTab, st => !!M().ojeadores && (gestor(st) || pres(st)));
+  // En entrenador y carrera las pantallas no tienen pestañas: los ojeadores se añaden al final de la directiva y del agente
+  const adjuntar = (id, es, fn) => { const sc = GM.ui.screens[id]; if (!sc) return; const old = sc.render; sc.render = (el, st) => { old(el, st); if (es(st)) fn(el, st); }; }; GM.ui._.adjuntar = adjuntar;
+  adjuntar('junta', st => !!M().ojeadores && entr(st), ojeadoresTab); adjuntar('agente', st => !!M().ojeadores && carrera(st), ojeadoresTab);
 
   // ---------- Negociación de contratos ----------
   function dialogoNegociacion(id, tipo) {
@@ -153,6 +156,7 @@
     el.append(seccion('Prensa y credibilidad', h('div', { class: 'tarjeta' }, fila('Credibilidad', Math.round(E.cred) + ' / 100'), barra(E.cred, 100, E.cred >= 50 ? 'verde' : 'rojo'), h('p', { class: 'muted' }, 'Lo que prometes en las ruedas de prensa se recuerda. Cumplirlo sube tu credibilidad y tus mensajes pesan más; romperlo la hunde. Las ruedas se dan en la sede (despacho o sala de prensa).'))));
     el.append(seccion('Promesas abiertas', ab.length ? h('div', { class: 'lista' }, ab.map(m => h('div', { class: 'item col' }, h('b', null, m.frase), h('span', { class: 'muted' }, 'Dicho el ' + U.fechaLarga(m.desde) + (m.rebajada ? ', matizado' : '')))))
       : h('p', { class: 'muted' }, 'No tienes promesas pendientes.')));
+    const rc = Pr.reacciones ? Pr.reacciones(st) : []; if (rc.length) el.append(seccion('Reacciones de otros vestuarios', h('div', { class: 'lista' }, rc.map(r => h('div', { class: 'item col' }, h('span', null, r.texto), h('span', { class: 'muted' }, U.fecha(r.fecha)))))));
     const res = E.mem.filter(m => m.estado !== 'abierta').slice(0, 8);
     if (res.length) el.append(seccion('Hemeroteca', h('div', { class: 'lista' }, res.map(m => h('div', { class: 'item col' }, h('div', { class: 'fila' }, h('b', null, clip(m.frase, 60)), pill(m.estado === 'cumplida' ? 'Cumplida' : 'Rota', m.estado === 'cumplida')), h('span', { class: 'muted' }, U.fechaLarga(m.desde) + (m.resuelta ? ', resuelta el ' + U.fechaLarga(m.resuelta) : '')))))));
   }
@@ -166,9 +170,19 @@
     el.append(seccion('La ciudad crece con el club', h('div', { class: 'tarjeta' }, fila('Turismo', Math.round(E.turismo) + ' / 100'), barra(E.turismo, 100, 'verde'), fila('Comercio', Math.round(E.comercio) + ' / 100'), barra(E.comercio, 100, 'verde'), h('div', { class: 'chips' }, chip('Ingresos ' + (ef.ingresos >= 0 ? '+' : '') + (ef.ingresos * 100).toFixed(1) + ' %', ''), chip('Asistencia ' + (ef.asistencia >= 0 ? '+' : '') + (ef.asistencia * 100).toFixed(1) + ' %', ''), chip('Cantera ' + (ef.cantera >= 0 ? '+' : '') + (ef.cantera * 100).toFixed(1) + ' %', '')),
       h('p', { class: 'muted' }, puede ? 'Impulsa los hitos cuando se desbloqueen: las obras tardan semanas y el resultado se ve por las calles de tu ciudad.' : 'La ciudad impulsa estos hitos sola cuando el club los merece.'))));
     el.append(seccion('Hitos urbanos', h('div', { class: 'lista' }, H.map(x => h('div', { class: 'item col' }, h('div', { class: 'fila' }, h('b', null, x.nombre), pill(x.estado === 'hecho' ? 'Inaugurado' : x.estado === 'obra' ? 'En obras' : x.estado === 'disponible' ? 'Disponible' : 'Bloqueado', x.estado === 'hecho' ? true : x.estado === 'bloqueado' ? undefined : undefined)), h('span', { class: 'muted' }, x.desc),
-      x.estado === 'obra' ? h('div', null, barra(x.progreso * 100, 100, 'verde'), h('span', { class: 'muted' }, 'Se inaugura el ' + U.fechaLarga(x.fin))) : null,
+      x.estado === 'obra' ? h('div', null, barra(x.progreso * 100, 100, 'verde'), h('span', { class: 'muted' }, (x.fase ? x.fase.nombre + ' (' + x.fase.pct + ' %). ' : '') + 'Se inaugura el ' + U.fechaLarga(x.fin))) : null,
       x.estado === 'bloqueado' ? h('span', { class: 'muted' }, 'Falta: ' + x.falta.map(f => ({ aficion: 'afición', apoyo: 'apoyo del ayuntamiento', reputacion: 'reputación', titulos: 'títulos' }[f.k] || f.k) + ' ' + f.tiene + '/' + f.pide).join(', ')) : null,
       x.estado === 'disponible' ? h('button', { class: 'btn peq', disabled: !puede, onclick: () => { const r = C.impulsar(st, x.id); toast(r.ok ? 'Obras en marcha' : r.motivo); refrescar(); } }, puede ? 'Impulsar' + (x.coste ? ' (' + U.eur(x.coste) + ')' : '') : 'La ciudad lo hará sola') : null)))));
   }
-  addTab('ciudad', 'crece', 'La ciudad crece', creceTab, st => !!M().crecimiento);
+  // Otras ciudades y el pueblo (punto 67)
+  function extraCrece(el, st) {
+    const C = M().crecimiento; if (C.hitosPueblo && st.modo === 'carrera' && st.carrera && st.carrera.pueblo) {
+      const hp = C.hitosPueblo(st); el.append(seccion('Hitos de ' + st.carrera.pueblo.nombre, h('div', { class: 'lista' }, hp.map(x => h('div', { class: 'item col' }, h('div', { class: 'fila' }, h('b', null, x.nombre), pill(x.estado === 'hecho' ? 'Inaugurado' : x.estado === 'obra' ? 'En obras' : x.estado === 'disponible' ? 'Disponible' : 'Bloqueado', x.estado === 'hecho' ? true : x.estado === 'obra' ? undefined : false)), h('span', { class: 'muted' }, x.desc),
+        x.estado === 'obra' ? h('div', null, barra(x.fase.pct, 100, 'verde'), h('span', { class: 'muted' }, x.fase.nombre + ', se inaugura el ' + U.fechaLarga(x.fin))) : null,
+        x.estado === 'bloqueado' ? h('span', { class: 'muted' }, 'Falta: ' + x.falta.map(f => (f.k === 'fama' ? 'fama' : 'cariño del pueblo') + ' ' + f.tiene + '/' + f.pide).join(', ')) : null,
+        x.estado === 'disponible' ? h('button', { class: 'btn peq', onclick: () => { const r = C.impulsarPueblo(st, x.id); toast(r.ok ? 'Obras en marcha' : r.motivo); refrescar(); } }, 'Impulsar' + (x.coste ? ' (' + U.eur(x.coste * 1000) + ')' : ' (lo paga el ayuntamiento)')) : null)))));
+    }
+    if (C.ranking) { const rk = C.ranking(st); el.append(seccion('Otras ciudades que crecen', h('div', { class: 'lista' }, rk.map(x => h('div', { class: 'item' }, h('div', { class: 'ct' }, h('b', null, x.ciudad + ' (' + x.club + ')'), h('span', { class: 'muted' }, x.hechos + ' hitos' + (x.obras.length ? ', en obras: ' + x.obras.join(', ').toLowerCase() : ''))))))));}
+  }
+  addTab('ciudad', 'crece', 'La ciudad crece', (el, st) => { creceTab(el, st); extraCrece(el, st); }, st => !!M().crecimiento);
 })();

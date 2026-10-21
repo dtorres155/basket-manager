@@ -23,9 +23,10 @@
     const control = !!opt.control && !!lado, nombre = id => st.jugadores[id] ? st.jugadores[id].nombre.split(' ').slice(-1)[0] : '';
     const col = id => GM.kit.color(st.equipos[id].colores[0] === '#000000' ? '#333333' : st.equipos[id].colores[0]);
     const ES = { fase: 'inicio', vel: 4, pausa: false, t: 0, dur: 600, cola: [], idx: 0, anim: null, marcador: [0, 0], cuarto: 0, ultimo: null, desde: 0 };
+    const NAR = GM.narrador ? GM.narrador.nuevo(st, g, D, nombre) : null;   // frases con contexto, estadísticas en vivo, repeticiones, cámaras y ambiente de clásico (punto 68)
     const fondo = h('div', { class: 'directo' });
     const marc = h('div', { class: 'dir-marcador' }), vistaEl = h('div', { class: 'dir-vista' }), tick = h('div', { class: 'dir-ticker' }), ctrl = h('div', { class: 'dir-ctrl' }), panel = h('div', { class: 'dir-panel' });
-    fondo.append(marc, vistaEl, tick, ctrl, panel); document.body.appendChild(fondo);
+    const statEl = h('div', { class: 'dir-stats', style: { display: 'none' } }); fondo.append(marc, vistaEl, tick, ctrl, panel); vistaEl.append(statEl); document.body.appendChild(fondo);
     let V = null, jug = null, balon = null, ids = { A: [], B: [] };
     function pintaMarcador() {
       const cu = ES.cuarto, qtxt = cu === 0 ? 'Previa' : cu <= 4 ? 'Cuarto ' + cu : 'Prórroga ' + (cu - 4), rest = Math.max(0, ES.dur - ES.t), mm = Math.floor(rest / 60), ss = Math.floor(rest % 60);
@@ -54,10 +55,11 @@
         V.scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
         { // Público: personas sentadas instanciadas (GM.kit.publico), 3/4 con los colores del local; al celebrar saltan y alzan los brazos
           const eL = st.equipos[g.local], eV = st.equipos[g.visitante], cols = [eL.colores[0], eL.colores[1] || '#ffffff', eV.colores[0], '#3d4a56', '#d9d9d9', '#7a2f22', '#2f4f6e'];
-          const sitios = []; for (let r = 0; r < 4; r++) for (const s of [-1, 1]) for (let x = -L - 1.5; x <= L + 1.5; x += 0.62) { const h0 = U.hash('fan' + r + s + x.toFixed(2)); if (h0 % 10 < 1) continue; sitios.push({ x: x + ((h0 >>> 4) % 10) / 40, y: r * 0.6 + 0.3, z: s * (W + 1.6 + r * 0.9), s, eq: h0 % 100 < 74 ? 'A' : h0 % 100 < 90 ? 'B' : 'N', h0 }); }
+          const sitios = []; for (let r = 0; r < 4; r++) for (const s of [-1, 1]) for (let x = -L - 1.5; x <= L + 1.5; x += 0.62) { const h0 = U.hash('fan' + r + s + x.toFixed(2)); if (h0 % 10 < 1 && !(NAR && NAR.ambiente >= 2)) continue; sitios.push({ x: x + ((h0 >>> 4) % 10) / 40, y: r * 0.6 + 0.3, z: s * (W + 1.6 + r * 0.9), s, eq: h0 % 100 < (NAR && NAR.ambiente >= 2 ? 58 : 74) ? 'A' : h0 % 100 < 90 ? 'B' : 'N', h0 }); }
           const piel = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'], pelo = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#8a8a8a', '#c9a25f'];
           const fans = sitios.map(p => ({ x: p.x, y: p.y, z: p.z, ry: p.s > 0 ? Math.PI : 0, ropa: p.eq === 'A' ? cols[p.h0 % 2] : p.eq === 'B' ? cols[2] : cols[3 + p.h0 % 4], piel: piel[(p.h0 >>> 7) % 5], pelo: pelo[(p.h0 >>> 11) % 6], pantalon: ['#2f3640', '#3c4a5c', '#5a4a3a'][(p.h0 >>> 3) % 3] }));
           const PB = K.publico(fans, 0.82); W3.add(PB.grupo); ES.publico = { sitios, PB };
+          if (NAR && NAR.ambiente >= 2) [-1, 1].forEach(s => { [[-0.55, eL.colores[0]], [0.0, eL.colores[1] || '#ffffff'], [0.55, eL.colores[0]]].forEach(([dx, c]) => W3.add(K.caja(L * 0.5, 1.4, 0.06, c, dx * L * 1.1, 4.0, s * (W + 1.6 + 4 * 0.9 + 0.4)))); W3.add(K.caja(L * 0.9, 1.6, 0.06, eV.colores[0], s * 0 + L * 0.9, 4.0, (W + 6.0))); });   // tifos de clásico
           ES.colocaPublico = (t) => { const C = ES.celebra, act = C && t - C.t0 < 1.4; PB.colocar(i => { const p = sitios[i]; if (!(act && p.eq === C.k)) return null; const f = 1 - (t - C.t0) / 1.4; return { salto: Math.abs(Math.sin((t - C.t0) * 9 + p.h0)) * 0.35 * f, brazos: Math.min(1, f * 1.6) }; }); };
           ES.colocaPublico(0);
         }
@@ -86,7 +88,7 @@
         };
         const _hb = new THREE.Vector3();
         V.anim = function (tm) {
-          const dt = 0.033;
+          const dt = 0.033; if (NAR && ES.cam && ES.cam !== 'general') GM.narrador.camara(V, ES.cam, balon, ES.ataca, window.innerWidth);
           ['A', 'B'].forEach(k => jug[k].forEach(o => { const dx = (o.tx - o.x) * 0.12, dz = (o.tz - o.z) * 0.12; o.x += dx; o.z += dz; o.g.position.set(o.x, 0, o.z); const v = Math.hypot(dx, dz) / dt;
             if (o.p) { if (v > 0.25) { let a = Math.atan2(dx, dz) - o.g.rotation.y; while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; o.g.rotation.y += a * 0.25; } else { const hx = (ES.ataca === k ? 1 : -1) * (k === 'A' ? 1 : -1) * HX; o.g.rotation.y += (Math.atan2(hx - o.x, -o.z) - o.g.rotation.y) * 0.08; }
               nombreAnim(o, k, jug[k].indexOf(o), v); o.p.mixer.update(dt);
@@ -97,7 +99,7 @@
           if (ES.arbitros) ES.arbitros.forEach(a => { const tx = balon.position.x * 0.85 + (a.j ? 2.2 : -2.2), tz = a.j ? -W + 1.3 : W - 1.3, dx = (tx - a.x) * 0.07, dz = (tz - a.z) * 0.07, v = Math.hypot(dx, dz) / dt, cp = a.clip; a.x += dx; a.z += dz; a.g.position.set(a.x, 0, a.z); let ang = Math.atan2(balon.position.x - a.x, balon.position.z - a.z) - a.g.rotation.y; while (ang > Math.PI) ang -= 2 * Math.PI; while (ang < -Math.PI) ang += 2 * Math.PI; a.g.rotation.y += ang * 0.12; const ya2 = performance.now() / 1000; if (cp && ya2 >= cp.t0 && ya2 < cp.t0 + cp.dur) GM.sede.animar(a.p, cp.nombre); else { if (cp && ya2 >= cp.t0 + cp.dur) a.clip = null; GM.sede.animar(a.p, v > 0.35 ? 'walk' : 'idle'); if (a.p.accion) a.p.accion.timeScale = v > 0.35 ? Math.min(1.8, Math.max(0.6, v / 1.3)) : 1; } a.p.mixer.update(dt); });
           if (ES.suplentes) ['A', 'B'].forEach(k => { const c = ES.celebra, act = c && c.k === k && performance.now() / 1000 >= c.t0 && performance.now() / 1000 - c.t0 < 1.4; (ES.suplentes[k] || []).forEach(sp => { if (act && !sp.de) { sp.de = true; GM.sede.animar(sp.p, 'celebrar'); } else if (!act && sp.de) { sp.de = false; GM.sede.animar(sp.p, 'sit'); } if (sp.de) sp.p.mixer.update(dt); }); });
           if (a) {
-            let u = (ahora - a.t0) / a.dur; if (ES.pausa) { a.t0 += dt; u = (ahora - a.t0) / a.dur; }
+            let u = (ahora - a.t0) / a.dur; if (ES.pausa && !ES.repe) { a.t0 += dt; u = (ahora - a.t0) / a.dur; }
             if (u >= 1) { balon.position.set(a.fin[0], a.fin[1], a.fin[2]); ES.anim = null; if (a.cb) a.cb(); }
             else { const n = a.keys.length - 1, s = Math.min(n - 1, Math.floor(u * n)), v = u * n - s, p0 = a.keys[s], p1 = a.keys[s + 1], arco = a.arco && s === n - 1 ? Math.sin(v * Math.PI) * 2.2 : Math.sin(v * Math.PI) * 0.2; balon.position.set(p0[0] + (p1[0] - p0[0]) * v, p0[1] + (p1[1] - p0[1]) * v + arco, p0[2] + (p1[2] - p0[2]) * v); }
           } else if (ES.fase === 'jugando' || ES.libres) {   // sin jugada en el aire: el balón va en la mano de quien lo lleva (botando si bota)
@@ -125,7 +127,7 @@
       else if (ev.r === 'fallo') frase = txt(pick(ev.v === 3 ? FRASES.fallo3 : FRASES.fallo2)) + (ev.tap ? ' ' + FRASES.tap[0].replace('{j}', nombre(ev.tap)) : '') + (ev.reb ? ' ' + FRASES.reb[0].replace('{j}', nombre(ev.reb)) + '.' : ev.oreb ? ' Rebote ofensivo de ' + nombre(ev.oreb) + '.' : '');
       else if (ev.r === 'tov') frase = txt(pick(FRASES.tov)) + (ev.rob ? ' ' + FRASES.rob[0].replace('{j}', nombre(ev.rob)) + '.' : '.');
       else if (ev.r === 'falta') { frase = txt(pick(FRASES.falta)) + ': ' + ev.ok + '/' + ev.v + ' desde la línea.'; }
-      if (!mudo) narra(frase, cls);
+      if (NAR) { const x = NAR.evento(ev, frase); if (!mudo) { narra(x.frase, cls); x.extra.forEach(l => narra(l.t, l.cls)); } if (ES.stats) statsPinta(); } else if (!mudo) narra(frase, cls);
       pintaMarcador();
       if (!V || ES.vel >= 16) return;
       const sh = posJug(k, ev.jug), hoop = [dir * HX, 3.0, 0], pase = () => { const o = jug[k][Math.floor(Math.random() * 5)]; return [o.tx, 1.4, o.tz]; };
@@ -210,6 +212,16 @@
       const nj = nombre(res.jug), fin = res.r === 'ok' ? (res.extra ? '¡' + nj + ' anota con falta y adicional!' : '¡' + nj + ' la mete!' + (res.v === 3 ? ' Triple.' : '')) : res.r === 'falta' ? 'Falta sobre ' + nj + ': ' + res.ok + '/2 desde la línea.' : res.r === 'tov' ? 'Balón perdido en la jugada decisiva.' : nj + ' falla.';
       ES.fase = 'jugando'; ES.ult = performance.now() / 1000; juega(ES.cola[ES.idx++], true); narra(fin, res.pts ? 'bien' : ''); controles();
     }
+    // Estadísticas en vivo y repetición de la última jugada notable
+    function statsPinta() {
+      statEl.style.display = ES.stats ? '' : 'none'; if (!ES.stats || !NAR) return; const s = NAR.estadisticas(); statEl.innerHTML = '';
+      ['A', 'B'].forEach(k => { const e = st.equipos[k === 'A' ? g.local : g.visitante]; statEl.append(h('div', { class: 'dir-stat' }, h('b', null, e.siglas + ' ' + s.eq[k].pts + ' pts, ' + s.eq[k].reb + ' reb, ' + s.eq[k].ast + ' ast, ' + s.eq[k].tov + ' per'), s[k].map(x => h('div', { class: 'fila' }, h('span', null, x.nombre), h('span', { class: 'muted' }, x.pts + ' pts, ' + x.reb + ' reb, ' + x.ast + ' ast'))))); });
+    }
+    function repetir() {
+      const ev = NAR && NAR.ultimaNotable(); if (!ev) { narra('Todavía no hay una jugada para repetir.'); return; } if (ES.repe) return; const pausa = ES.pausa, m0 = ES.marcador.slice(), at0 = ES.ataca; ES.repe = true; ES.pausa = true;
+      const marca = h('div', { class: 'dir-repe' }, 'REPETICIÓN'); vistaEl.append(marca); narra('Repetición: ' + (ev.r === 'ok' ? nombre(ev.jug) + (ev.v === 3 ? ' desde el triple' : ' anota') : ev.tap ? 'tapón de ' + nombre(ev.tap) : 'la jugada') + '.', 'bien'); juega(ev, true);
+      setTimeout(() => { ES.repe = false; ES.pausa = pausa; ES.marcador = m0; ES.ataca = at0; marca.remove(); ES.anim = null; pintaMarcador(); controles(); }, 3800);
+    }
     function saltar() { while (ES.idx < ES.cola.length) ES.cola[ES.idx++]; ES.anim = null; finCuarto(); }
     function terminar() {
       cancelAnimationFrame(reloj);
@@ -223,7 +235,7 @@
       if (ES.fase === 'inicio') { ctrl.append(h('button', { class: 'btn grande', onclick: empiezaCuarto }, 'Empezar el partido'), h('button', { class: 'btn btn-sec', onclick: () => { cancelAnimationFrame(reloj); if (V) V.dispose(); fondo.remove(); if (opt.onFin) opt.onFin(P.crearDirecto(st, g, false).finalizar()); } }, 'Simular sin verlo')); return; }
       if (ES.fase === 'jugando') {
         ctrl.append(h('div', { class: 'seg compacto' }, [[1, '×1'], [2, '×2'], [4, '×4'], [16, 'Rápido']].map(o => h('button', { class: 'tab' + (ES.vel === o[0] ? ' on' : ''), onclick: () => { ES.vel = o[0]; controles(); } }, o[1])),
-          h('button', { class: 'tab', onclick: () => { ES.pausa = !ES.pausa; paneles(); controles(); } }, ES.pausa ? '▶ Seguir' : '⏸ Pausa'), h('button', { class: 'tab', onclick: saltar }, 'Saltar cuarto')));
+          h('button', { class: 'tab', onclick: () => { ES.pausa = !ES.pausa; paneles(); controles(); } }, ES.pausa ? '▶ Seguir' : '⏸ Pausa'), h('button', { class: 'tab', onclick: saltar }, 'Saltar cuarto'), NAR ? h('button', { class: 'tab', onclick: () => { ES.stats = !ES.stats; statsPinta(); } }, 'Estadísticas') : null, NAR ? h('button', { class: 'tab', onclick: repetir }, 'Repetición') : null, NAR && V ? h('button', { class: 'tab', onclick: () => { const k = Object.keys(GM.narrador.CAMARAS), i = k.indexOf(ES.cam || 'general'); ES.cam = k[(i + 1) % k.length]; if (ES.cam === 'general' && V) { V.__camModo = null; GM.narrador.camara(V, 'general', null, null, window.innerWidth); } controles(); } }, 'Cámara: ' + GM.narrador.CAMARAS[ES.cam || 'general'].n) : null));
         return;
       }
       ctrl.append(D.terminado ? h('button', { class: 'btn grande', onclick: terminar }, 'Terminar el partido') : h('div', { class: 'par' }, h('button', { class: 'btn', onclick: empiezaCuarto }, 'Siguiente cuarto'), h('button', { class: 'btn btn-sec', onclick: terminar }, 'Simular el resto')));

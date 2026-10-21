@@ -37,7 +37,7 @@
   const indiceSuelo = (st, clubId) => { const p = PAIS[pais(st, clubId)] || PAIS.ES; return Math.round(p.alq / PAIS.ES.alq * Math.pow(ciudadF(st, clubId), 1.2) * ciclo(st).vivienda * inflacion(st, clubId) * 1000) / 1000; };
   const indicePrecios = (st, clubId) => indiceSuelo(st, clubId);
   // Dentro de una misma ciudad no todos los clubes pagan igual: cuenta el nivel de su liga y lo grande que es el club (un Euroliga y un segundo equipo de la misma ciudad no ofrecen lo mismo)
-  const LIGA_SAL = { NBA: 1.05, EUROLIGA: 1.04, ACB: 0.99, LEGA: 0.98, BBL: 0.98, BSL: 0.97, GBL: 0.95, EUROCUP: 0.95, CHAMPIONS: 0.93 };
+  const LIGA_SAL = GM.tabla('economia.ligasal', { NBA: 1.05, EUROLIGA: 1.04, ACB: 0.99, LEGA: 0.98, BBL: 0.98, BSL: 0.97, GBL: 0.95, EUROCUP: 0.95, CHAMPIONS: 0.93 });
   function factorLiga(st, clubId) {
     clubId = clubId || st.clubId; const e = st.equipos[clubId]; let l = null; try { l = GM.mods.mercado && st.ligas ? GM.mods.mercado.ligaDe(st, clubId) : null; } catch (x) { l = null; }
     const rep = e && typeof e.reputacion === 'number' ? e.reputacion : 60; return Math.round((LIGA_SAL[l] || 1) * (0.94 + 0.12 * clamp(rep / 100, 0, 1)) * 1000) / 1000;

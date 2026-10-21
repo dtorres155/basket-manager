@@ -10,7 +10,7 @@
   const U = GM.util, M = () => GM.mods, F = () => GM.mods.finanzas;
   const TIPOS = {
     playoffs: { etq: 'Clasificarse para los playoffs', frase: 'Nos clasificaremos para los playoffs.' }, titulo: { etq: 'Ganar el título de liga', frase: 'Vamos a ganar el título.' },
-    copa: { etq: 'Ganar la copa', frase: 'Esta temporada ganaremos la copa.' }, racha1: { etq: 'Ganar el próximo partido', frase: 'Ganaremos el próximo partido.' },
+    copa: { etq: 'Ganar la copa', frase: 'Esta temporada ganaremos la copa.' }, renovar: { etq: 'Renovar con el club', frase: 'Voy a renovar con este club.' }, quedarme: { etq: 'No irme este mercado', frase: 'No pienso moverme de aquí este año.' }, noVender: { etq: 'No vender a la estrella', frase: 'Nuestra estrella no se vende.' }, renovarEstrella: { etq: 'Renovar a la estrella', frase: 'Vamos a renovar a nuestra estrella.' }, racha1: { etq: 'Ganar el próximo partido', frase: 'Ganaremos el próximo partido.' },
     derbi: { etq: 'Ganar el derbi', frase: 'Vamos a ganar este derbi.' }, fichaje: { etq: 'Fichar a una estrella', frase: 'Vamos a fichar a una estrella.' }, media20: { etq: 'Promediar 20 puntos', frase: 'Esta temporada voy a promediar 20 puntos.' }
   };
   function estado(st) { return st.prensa || (st.prensa = { cred: 50, mem: [], prov: {}, hist: [], seq: 0 }); }
@@ -64,13 +64,19 @@
     // opciones propias del modo
     if (!pr && carrera && libres && !ab.some(m => m.tipo === 'media20')) op.push(opc('Quiero promediar 20 puntos esta temporada.', 'ambicioso', { aficion: 2, presion: true }, 'media20'));
     if (!pr && (st.modo === 'gestor' || st.modo === 'presidente') && libres && !ab.some(m => m.tipo === 'fichaje') && tipo !== 'derbi') op.push(opc('Vamos a reforzar el equipo con una estrella.', 'ambicioso', { aficion: 3, presion: true }, 'fichaje'));
+    // promesas de mercado y de contrato (punto 67): la estrella de tu club o tu propio contrato
+    if (!pr && libres && carrera && !ab.some(m => m.tipo === 'renovar' || m.tipo === 'quedarme')) { const y = parseInt(String(st.temporada).slice(0, 4), 10), yo = st.jugadores.yo; if (yo && yo.contrato && yo.contrato.hasta <= y + 1) op.push(opc('Quiero renovar con este club.', 'ambicioso', { aficion: 2, presion: true }, 'renovar')); else op.push(opc('No pienso irme de aquí este año.', 'ambicioso', { aficion: 2, presion: true }, 'quedarme')); }
+    if (!pr && libres && (st.modo === 'gestor' || st.modo === 'presidente') && !ab.some(m => m.tipo === 'noVender' || m.tipo === 'renovarEstrella')) { const est = estrella(st); if (est) { const y = parseInt(String(st.temporada).slice(0, 4), 10); op.push(est.contrato && est.contrato.hasta <= y + 1 ? opc('Vamos a renovar a ' + est.nombre + '.', 'ambicioso', { aficion: 2, presion: true }, 'renovarEstrella') : opc(est.nombre + ' no se vende.', 'ambicioso', { aficion: 3, presion: true }, 'noVender')); } }
     return { pregunta, respuestas: op.map(o => o.t), contexto: tipo, memoria: memo, _o: op, credibilidad: E.cred };
   }
+  const estrella = st => st.equipos[st.clubId].plantilla.map(i => st.jugadores[i]).filter(p => p && !p.esYo).sort((a, b) => b.ovr - a.ovr)[0];
   function crearPromesa(st, tipo, op) {
     const E = estado(st), lg = ligaDe(st), P = { id: 'pm' + (++E.seq), tipo, frase: TIPOS[tipo].frase, desde: st.fecha, estado: 'abierta', rebajada: false, liga: lg };
     if (tipo === 'derbi') { const g = M().competiciones.proximoPartido(st, st.clubId); P.rival = g ? (g.local === st.clubId ? g.visitante : g.local) : null; P.partido = g ? g.id : null; P.frase = 'Vamos a ganar el derbi contra ' + (P.rival ? st.equipos[P.rival].nombre : 'el rival') + '.'; }
     if (tipo === 'racha1') { const g = M().competiciones.proximoPartido(st, st.clubId); P.partido = g ? g.id : null; }
     if (tipo === 'fichaje') { const mx = Math.max.apply(null, st.equipos[st.clubId].plantilla.map(i => st.jugadores[i].ovr)); P.nivel = Math.min(90, Math.max(72, mx + 2)); P.hasta = U.addDays(st.fecha, 75); P.frase = 'Vamos a fichar a una estrella (' + P.nivel + ' de media o más).'; }
+    if (tipo === 'noVender' || tipo === 'renovarEstrella') { const e = estrella(st); P.jug = e ? e.id : null; P.frase = tipo === 'noVender' ? (e ? e.nombre : 'La estrella') + ' no se vende.' : 'Vamos a renovar a ' + (e ? e.nombre : 'nuestra estrella') + '.'; }
+    if (tipo === 'renovar') P.frase = 'Voy a renovar con ' + st.equipos[st.clubId].nombre + '.'; if (tipo === 'quedarme') P.frase = 'No pienso irme de ' + st.equipos[st.clubId].nombre + ' este año.';
     if (tipo === 'media20') { P.objetivo = 20; P.frase = 'Esta temporada voy a promediar 20 puntos por partido.'; }
     return P;
   }
@@ -82,7 +88,7 @@
     if (ef.cred) { E.cred = U.clamp(E.cred + ef.cred, 0, 100); out.push('credibilidad ' + (ef.cred > 0 ? '+' : '') + ef.cred); }
     if (ef.multa && st.modo !== 'carrera' && F()) { F().registrar(st, st.clubId, 'Multa por declaraciones', -ef.multa); out.push('multa de ' + U.eur(ef.multa)); }
     if (ef.rebaja) { const m = E.mem.find(x => x.id === ef.rebaja); if (m) { m.rebajada = true; m.frase = m.frase + ' (después matizó que las circunstancias habían cambiado)'; } }
-    if (ef.rival) { E.prov[ef.rival] = { fecha: st.fecha, frase: op.t }; out.push('el rival toma nota'); }
+    if (ef.rival) { E.prov[ef.rival] = { fecha: st.fecha, frase: op.t }; out.push('el rival toma nota'); reaccionar(st, 'provocacion', {}); }
     if (op.promesa) { const P = crearPromesa(st, op.promesa, op); E.mem.unshift(P); out.push('promesa registrada: ' + TIPOS[op.promesa].etq.toLowerCase()); }
     E.hist.unshift({ fecha: st.fecha, ctx: c.contexto, frase: op.t, tono: op.tono }); if (E.hist.length > 60) E.hist.length = 60; if (E.mem.length > 40) E.mem.length = 40;
     if (st.modo === 'entrenador' && st.entrenador && st.entrenador.fase === 'activo' && ef.presion) st.entrenador.confianza = U.clamp(st.entrenador.confianza + 1, 0, 100);
@@ -96,6 +102,7 @@
     E.cred = U.clamp(E.cred + (cumple ? 6 : -8) * f, 0, 100); if (ci) ci.aficion = U.clamp(ci.aficion + (cumple ? 4 : -4) * f, 0, 100);
     pl.forEach(p => { p.estado.moral = U.clamp(p.estado.moral + (cumple ? 2 : -2), 20, 100); });
     if (st.modo === 'entrenador' && st.entrenador && st.entrenador.fase === 'activo') st.entrenador.confianza = U.clamp(st.entrenador.confianza + (cumple ? 4 : -6) * f, 0, 100);
+    if (m.tipo !== 'racha1') reaccionar(st, cumple ? 'cumplida' : 'rota', {});
     GM.noticia(st, cumple ? '📰 Cumple su palabra: «' + m.frase + '» (' + hace(st, m.desde) + ').' : '📰 Promesa rota: «' + m.frase + '» (' + hace(st, m.desde) + '). La prensa no lo olvida.');
   }
   GM.bus.on('partido:jugado', function (e) {
@@ -103,7 +110,11 @@
     const gano = (g.local === club) === (g.resultado.local > g.resultado.visitante);
     abiertas(st).forEach(m => { if (m.tipo === 'racha1' && g.fecha >= m.desde && g.fase !== 'amistoso') resolver(st, m, gano); else if (m.tipo === 'derbi' && m.rival && (g.local === m.rival || g.visitante === m.rival) && g.fecha >= m.desde) resolver(st, m, gano); });
   });
-  GM.bus.on('fichaje:hecho', function (e) { const st = GM.state; if (!st || !st.prensa || e.a !== st.clubId) return; const p = st.jugadores[e.jugadorId]; abiertas(st).forEach(m => { if (m.tipo === 'fichaje' && p && p.ovr >= m.nivel) resolver(st, m, true); }); });
+  GM.bus.on('carrera:contrato', function (e) { const st = GM.state; if (!st || !st.prensa) return; abiertas(st).forEach(m => { if (m.tipo === 'renovar') resolver(st, m, e.tipo === 'Renovación' && !e.cambioClub); else if (m.tipo === 'quedarme' && e.cambioClub) resolver(st, m, false); }); });
+  GM.bus.on('contrato:renovado', function (e) { const st = GM.state; if (!st || !st.prensa) return; abiertas(st).forEach(m => { if (m.tipo === 'renovarEstrella' && m.jug === e.jugadorId) resolver(st, m, true); }); });
+  GM.bus.on('fichaje:hecho', function (e) { const st = GM.state; if (st && st.prensa && e.de === st.clubId) abiertas(st).forEach(m => { if (m.tipo === 'noVender' && m.jug === e.jugadorId) resolver(st, m, false); });
+    if (st && st.prensa && e.a === st.clubId && st.jugadores[e.jugadorId] && st.jugadores[e.jugadorId].ovr >= 74) reaccionar(st, 'fichaje', { jugadorId: e.jugadorId });
+    if (!st || !st.prensa || e.a !== st.clubId) return; const p = st.jugadores[e.jugadorId]; abiertas(st).forEach(m => { if (m.tipo === 'fichaje' && p && p.ovr >= m.nivel) resolver(st, m, true); }); });
   GM.bus.on('dia:avanzado', function () {
     const st = GM.state; if (!st || !st.prensa || !st.equipos[st.clubId]) return; const E = st.prensa, lg = ligaDe(st);
     abiertas(st).forEach(m => {
@@ -120,16 +131,34 @@
   });
   GM.bus.on('temporada:fin', function () {
     const st = GM.state; if (!st || !st.prensa) return; const E = st.prensa;
-    abiertas(st).forEach(m => { if (m.tipo === 'media20') { const s = (st.estadisticas || {}).yo; return resolver(st, m, !!s && s.pj >= 20 && s.pts / s.pj >= m.objetivo); } if (m.tipo === 'titulo') return resolver(st, m, st.historial.some(h => h.temporada === st.temporada && h.campeon === st.clubId && h.comp === m.liga)); if (m.tipo === 'copa') return resolver(st, m, st.historial.some(h => h.temporada === st.temporada && h.campeon === st.clubId && st.copas && st.copas[h.comp])); if (m.tipo === 'playoffs') { const pos = posicion(st); return resolver(st, m, pos.puesto > 0 && pos.puesto <= Math.ceil(pos.n * 0.5)); } resolver(st, m, false); });
+    abiertas(st).forEach(m => { const yF = parseInt(String(st.temporada).slice(0, 4), 10);
+      if (m.tipo === 'renovar') { const yo = st.jugadores.yo; return resolver(st, m, !!yo && yo.equipoId === st.clubId && !!yo.contrato && yo.contrato.hasta > yF + 1); }
+      if (m.tipo === 'quedarme') return resolver(st, m, !!st.jugadores.yo && st.jugadores.yo.equipoId === st.clubId);
+      if (m.tipo === 'noVender') { const p = st.jugadores[m.jug]; return resolver(st, m, !!p && p.equipoId === st.clubId); }
+      if (m.tipo === 'renovarEstrella') { const p = st.jugadores[m.jug]; return resolver(st, m, !!p && p.equipoId === st.clubId && !!p.contrato && p.contrato.hasta > yF + 1); }
+      if (m.tipo === 'media20') { const s = (st.estadisticas || {}).yo; return resolver(st, m, !!s && s.pj >= 20 && s.pts / s.pj >= m.objetivo); } if (m.tipo === 'titulo') return resolver(st, m, st.historial.some(h => h.temporada === st.temporada && h.campeon === st.clubId && h.comp === m.liga)); if (m.tipo === 'copa') return resolver(st, m, st.historial.some(h => h.temporada === st.temporada && h.campeon === st.clubId && st.copas && st.copas[h.comp])); if (m.tipo === 'playoffs') { const pos = posicion(st); return resolver(st, m, pos.puesto > 0 && pos.puesto <= Math.ceil(pos.n * 0.5)); } resolver(st, m, false); });
     E.prov = {};
   });
+  // Reacciones de otros vestuarios (punto 67): cuando algo tuyo trasciende, un rival de tu liga contesta; mueve el ánimo de su plantilla y se anota en la prensa
+  function reaccionar(st, que, d) {
+    if (!st.ligas || !st.mercado) return; const E = estado(st), club = st.clubId, lg = ligaDe(st); if (!st.ligas[lg]) return; const ids = st.ligas[lg].equipos.filter(i => i !== club && st.equipos[i]); if (!ids.length) return;
+    const riv = ids.map(i => ({ i, d: M().rivalidades && M().rivalidades.derbi(st, club, i), h: U.hash(i + st.fecha + que) })).sort((a, b) => ((b.d ? b.d.i : 0) - (a.d ? a.d.i : 0)) || (a.h - b.h))[0].i, nom = st.equipos[riv].nombre, h = U.hash(riv + st.fecha + que + 'r') >>> 0, pick = a => a[h % a.length];
+    let texto = '', moral = 0;
+    if (que === 'rota') { texto = pick(['El vestuario del ' + nom + ' se ríe de la promesa rota: «Se dice y luego no se cumple».', 'Desde el ' + nom + ' responden: «Nosotros hablamos en la pista».']); moral = 2; }
+    else if (que === 'cumplida') { texto = pick(['En el ' + nom + ' reconocen: «Cumplieron su palabra, hay que respetarlos».', 'El capitán del ' + nom + ' dice que el rival «va en serio»: «Nos toca apretar».']); moral = 1; }
+    else if (que === 'fichaje') { const p = st.jugadores[d.jugadorId]; texto = 'El ' + nom + ' toma nota del fichaje de ' + (p ? p.nombre : 'la estrella') + ': «Es un buen refuerzo, pero nosotros no nos escondemos».'; moral = 1; }
+    else if (que === 'provocacion') { texto = 'En el ' + nom + ' no sientan bien tus palabras: «Nos lo apuntamos para el día del partido».'; moral = 3; }
+    if (!texto) return; st.equipos[riv].plantilla.forEach(i => { const p = st.jugadores[i]; if (p) p.estado.moral = U.clamp(p.estado.moral + moral, 20, 100); });
+    (E.reacc = E.reacc || []).unshift({ fecha: st.fecha, rival: riv, que, texto }); if (E.reacc.length > 30) E.reacc.length = 30; GM.noticia(st, '🗣️ ' + texto);
+  }
+  function reacciones(st) { return (estado(st).reacc || []).slice(0, 12); }
   function hemeroteca(st) { return estado(st).mem.slice(0, 20); }
   function nuevaPartida(st) { st.prensa = { cred: 50, mem: [], prov: {}, hist: [], seq: 0 }; }
   function selfTest() {
     const st = { fecha: '2026-11-02', temporada: '2026-27', clubId: 'a', modo: 'gestor', noticias: [], equipos: { a: { plantilla: [] } }, jugadores: {}, ciudad: { a: { aficion: 50, ambiente: 50 } }, prensa: { cred: 50, mem: [], prov: {}, hist: [], seq: 0 } };
     const P = { id: 'p1', tipo: 'racha1', frase: 'Ganaremos', desde: '2026-10-20', estado: 'abierta', rebajada: false }; st.prensa.mem.push(P);
     resolver(st, P, true); const c1 = st.prensa.cred; const Q = { id: 'p2', tipo: 'titulo', frase: 'Ganaremos el título', desde: '2026-10-20', estado: 'abierta', rebajada: true }; st.prensa.mem.push(Q); resolver(st, Q, false);
-    return c1 === 56 && st.prensa.cred === 52 && P.estado === 'cumplida' && Q.estado === 'incumplida' && st.ciudad.a.aficion === 50 + 4 - 2 && hace(st, '2026-10-10') === 'hace 3 semanas' && Object.keys(TIPOS).length === 7;
+    return c1 === 56 && st.prensa.cred === 52 && P.estado === 'cumplida' && Q.estado === 'incumplida' && st.ciudad.a.aficion === 50 + 4 - 2 && hace(st, '2026-10-10') === 'hace 3 semanas' && Object.keys(TIPOS).length === 11;
   }
-  GM.register('prensa', { estado, conferencia, responder, hemeroteca, abiertas, nuevaPartida, selfTest, TIPOS });
+  GM.register('prensa', { reaccionar, reacciones, estado, conferencia, responder, hemeroteca, abiertas, nuevaPartida, selfTest, TIPOS });
 })();

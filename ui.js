@@ -216,7 +216,7 @@
   }
   function elegirLiga() {
     const st0 = GM.data, r = ui.raiz; r.innerHTML = '';
-    const ligas = ['NBA', 'EUROLIGA', 'ACB', 'LEGA', 'GBL', 'BBL', 'BSL'].filter(l => st0.ligas[l] && !(ui.nuevo && ui.nuevo.modo === 'carrera' && l === 'NBA'));
+    const ligas = GM.lista('ui.ligas', ['NBA', 'EUROLIGA', 'ACB', 'LEGA', 'GBL', 'BBL', 'BSL']).filter(l => st0.ligas[l] && !(ui.nuevo && ui.nuevo.modo === 'carrera' && l === 'NBA'));
     r.append(h('div', { class: 'menu' }, h('button', { class: 'btn btn-sec', onclick: menu }, '‹ Volver'), h('h2', null, 'Elige competición'),
       h('div', { class: 'col' }, ligas.map(l => h('button', { class: 'liga', onclick: () => elegirClub(l) }, h('b', null, st0.ligas[l].nombre), h('span', { class: 'muted' }, st0.ligas[l].equipos.length + ' clubes'))))));
   }
@@ -289,6 +289,7 @@
     }
     ui.cabecera.append(escudo(st.clubId), h('div', { class: 'cab-t' }, h('b', null, clip(e.nombre, 22)), h('span', null, U.fechaLarga(st.fecha) + ', ' + st.temporada)),
       entr() ? h('div', { class: 'cab-c' }, h('b', { class: st.entrenador.confianza < 25 ? 'neg' : '' }, Math.round(st.entrenador.confianza) + ' %'), h('span', null, st.entrenador.fase === 'activo' ? 'confianza' : 'sin equipo')) : h('div', { class: 'cab-c' }, h('b', { class: f.caja < 0 ? 'neg' : '' }, U.eur(f.caja)), h('span', null, 'caja')),
+      GM.movilApps && GM.ui.movil ? h('button', { class: 'btn-ic movil-btn', 'aria-label': 'Móvil', onclick: () => GM.ui.movil() }, icon('movil')) : null,
       h('button', { class: 'btn-ic avatar-btn', 'aria-label': 'Tu perfil', onclick: perfilModal }, avatarEl(st.personaje || M().personaje.crear(), 40)),
       h('button', { class: 'btn-ic', 'aria-label': 'Menú', onclick: menuJuego }, icon('menu')));
   }

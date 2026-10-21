@@ -6,8 +6,8 @@
    Escribe state.entrenador = { fase, reputacion, confianza, objetivo, ayudantes, historial, ofertas, pend, res, hitos, ultimoEvento, club }. */
 (function () {
   const U = GM.util, yearOf = st => parseInt(st.temporada.slice(0, 4), 10), M = () => GM.mods.mercado, E = st => st.entrenador;
-  const NOMLIGA = { NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'Liga Endesa', LEGA: 'Lega Basket', GBL: 'Liga griega', BBL: 'Bundesliga', BSL: 'Liga turca' };
-  const NIVEL = { NBA: 4, EUROLIGA: 3, ACB: 2, LEGA: 2, GBL: 2, BBL: 2, BSL: 2 };
+  const NOMLIGA = GM.tabla('entrenador.nomliga', { NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'Liga Endesa', LEGA: 'Lega Basket', GBL: 'Liga griega', BBL: 'Bundesliga', BSL: 'Liga turca' });
+  const NIVEL = GM.tabla('entrenador.nivel', { NBA: 4, EUROLIGA: 3, ACB: 2, LEGA: 2, GBL: 2, BBL: 2, BSL: 2 });
   const AYUDANTES = {
     fisico: { etq: 'Preparador físico', desc: 'El equipo se recupera antes y se lesiona menos.', coste: 25 },
     tecnico: { etq: 'Técnico individual', desc: 'Los tres jugadores más jóvenes progresan más rápido.', coste: 30 },

@@ -9,13 +9,21 @@
 (function () {
   const U = GM.util, M = () => GM.mods.mercado, F = () => GM.mods.finanzas;
   const NIVELES = ['', 'Aprendiz', 'Correcto', 'Fiable', 'Experto', 'Leyenda'];
-  const ESPEC = { NBA: 'Universidad y Norteamérica', EUROLIGA: 'Europa del Este', ACB: 'Península Ibérica', LEGA: 'Italia y Balcanes', GBL: 'Mediterráneo oriental', BBL: 'Centroeuropa', BSL: 'Turquía y Oriente Medio' };
-  const NOMLIGA = { NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'Liga Endesa', LEGA: 'Lega Basket', GBL: 'Liga griega', BBL: 'Bundesliga', BSL: 'Liga turca', LIBRES: 'Agentes libres', DRAFT: 'Clase del draft' };
-  const disponible = st => st.modo === 'gestor' || st.modo === 'presidente';
+  const ESPEC = GM.tabla('ojeadores.espec', { NBA: 'Universidad y Norteamérica', EUROLIGA: 'Europa del Este', ACB: 'Península Ibérica', LEGA: 'Italia y Balcanes', GBL: 'Mediterráneo oriental', BBL: 'Centroeuropa', BSL: 'Turquía y Oriente Medio' });
+  const NOMLIGA = GM.tabla('ojeadores.nomliga', { NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'Liga Endesa', LEGA: 'Lega Basket', GBL: 'Liga griega', BBL: 'Bundesliga', BSL: 'Liga turca', LIBRES: 'Agentes libres', DRAFT: 'Clase del draft' });
+  const disponible = st => st.modo === 'gestor' || st.modo === 'presidente' || st.modo === 'entrenador' || (st.modo === 'carrera' && !!st.carrera && st.carrera.fase !== 'retirado');
+  // En carrera los ojeadores los paga el jugador de su bolsillo (en miles de euros); en los demás modos, la caja del club
+  const dinero = st => (st.modo === 'carrera' ? GM.mods.hogar.dinero(st) * 1000 : (F() && st.finanzas && st.finanzas[st.clubId] ? st.finanzas[st.clubId].caja : 1e12));
+  function pagar(st, euros, concepto) { if (st.modo === 'carrera') { GM.mods.hogar.gastar(st, euros / 1000); if (GM.patrimonio) GM.patrimonio.reg(st, 'vida', concepto, -euros / 1000); } else if (F()) F().registrar(st, st.clubId, concepto, -euros); }
   function estado(st) { return st.ojeadores || (st.ojeadores = { equipo: [], informes: [], vistos: {}, seq: 0, cand: { temp: null, lista: [] } }); }
-  const maximo = st => Math.max(1, Math.min(3, 1 + Math.floor(st.equipos[st.clubId].reputacion / 40)));
+  const maximo = st => (st.modo === 'carrera' ? Math.max(1, Math.min(2, 1 + Math.floor(((st.carrera && st.carrera.fama) || 0) / 60))) : st.modo === 'entrenador' ? Math.max(1, Math.min(3, 1 + Math.floor(((st.entrenador && st.entrenador.reputacion) || 30) / 35))) : Math.max(1, Math.min(3, 1 + Math.floor(st.equipos[st.clubId].reputacion / 40))));
   const sueldoDe = n => 18000 * n * n;
-  function destinos(st) { return Object.keys(NOMLIGA).filter(l => l === 'LIBRES' || l === 'DRAFT' || st.ligas[l]).map(l => ({ id: l, nombre: NOMLIGA[l] })); }
+  const PAISES = { ES: 'España', FR: 'Francia', IT: 'Italia', GR: 'Grecia', DE: 'Alemania', TR: 'Turquía', RS: 'Serbia', US: 'Estados Unidos', LT: 'Lituania', SI: 'Eslovenia', HR: 'Croacia', IL: 'Israel', LV: 'Letonia', GB: 'Gran Bretaña' };
+  function destinos(st) {
+    const base = Object.keys(NOMLIGA).filter(l => l === 'LIBRES' || l === 'DRAFT' || st.ligas[l]).map(l => ({ id: l, nombre: NOMLIGA[l] })), paises = Object.keys(PAISES).map(c => ({ id: 'PAIS:' + c, nombre: 'Jugadores de ' + PAISES[c] }));
+    const clubes = Object.keys(st.equipos).filter(id => id !== st.clubId && st.equipos[id].plantilla.length >= 8).sort((a, b) => st.equipos[b].reputacion - st.equipos[a].reputacion).slice(0, 16).map(id => ({ id: 'CANTERA:' + id, nombre: 'Cantera del ' + st.equipos[id].nombre }));
+    return base.concat(paises, clubes);
+  }
   function candidatos(st) {
     const E = estado(st); if (E.cand.temp === st.temporada && E.cand.lista.length) return E.cand.lista;
     const ligas = Object.keys(ESPEC).filter(l => st.ligas[l]), paises = ['ES', 'FR', 'IT', 'GR', 'DE', 'TR', 'RS', 'US', 'LT', 'SI'];
@@ -26,7 +34,7 @@
     if (!disponible(st)) return { ok: false, motivo: 'Este modo no gestiona ojeadores.' }; const E = estado(st);
     if (E.equipo.length >= maximo(st)) return { ok: false, motivo: 'Tu club solo puede mantener ' + maximo(st) + (maximo(st) === 1 ? ' ojeador.' : ' ojeadores.') };
     const c = candidatos(st).find(x => x.id === candId); if (!c) return { ok: false, motivo: 'Ese ojeador ya no está disponible.' };
-    if (F() && st.finanzas[st.clubId].caja < c.sueldo / 12) return { ok: false, motivo: 'No hay caja para pagarle el primer mes.' };
+    if (dinero(st) < c.sueldo / 12) return { ok: false, motivo: st.modo === 'carrera' ? 'No tienes dinero para pagarle el primer mes.' : 'No hay caja para pagarle el primer mes.' };
     E.equipo.push({ id: 'o' + (++E.seq), nombre: c.nombre, nivel: c.nivel, espec: c.espec, sueldo: c.sueldo, destino: null, desde: st.fecha, vistos: 0 }); E.cand.lista = E.cand.lista.filter(x => x.id !== candId);
     GM.noticia(st, 'Ojeador nuevo: ' + c.nombre + ' (' + NIVELES[c.nivel] + ').'); return { ok: true };
   }
@@ -37,6 +45,8 @@
     const club = st.clubId; let L;
     if (destino === 'LIBRES') L = (st.mercado.libres || []).map(i => st.jugadores[i]).filter(Boolean).filter(p => p.edad <= 27);
     else if (destino === 'DRAFT') { if (!st._draftOjeo || st._draftOjeo.temp !== st.temporada) st._draftOjeo = { temp: st.temporada, l: M().claseDraft(st).map(p => ({ id: p.id, nombre: p.nombre, edad: p.edad, pos: p.pos, nac: p.nac, ovr: p.ovr, pot: p.pot, draft: true })) }; L = st._draftOjeo.l; }
+    else if (/^PAIS:/.test(destino)) { const c = destino.slice(5); L = Object.keys(st.jugadores).map(i => st.jugadores[i]).filter(p => p && p.nac === c && p.equipoId && p.equipoId !== club && !p.esYo && p.edad <= 24 && !p.libre); }
+    else if (/^CANTERA:/.test(destino)) { const id = destino.slice(8), c = st.cantera && st.cantera[id]; if (c && !c.juveniles.length && GM.mods.cantera) GM.mods.cantera.generarJuveniles(st, id, 6); L = c ? c.juveniles.map(i => st.jugadores[i]).filter(Boolean) : []; }
     else L = (st.ligas[destino] ? st.ligas[destino].equipos : []).filter(e => e !== club).reduce((a, e) => a.concat(st.equipos[e].plantilla.map(i => st.jugadores[i]).filter(Boolean)), []).filter(p => p.edad <= 24);
     return L;
   }
@@ -45,7 +55,7 @@
     const lo = Math.round(r.range(0.3, 1) * err), hi = Math.round(err - lo + 1), pl = Math.round(r.range(0.3, 1) * (err + 2)), ph = Math.round(err + 2 - pl + 1);
     const joya = !p.draft && p.edad <= 23 && chispa(p) > 0.92 && o.nivel >= 3 && r.next() < 0.3 + o.nivel * 0.12;
     const at = p.att || null; let fuerte = ''; if (at) { const k = Object.keys(at).sort((a, b) => at[b] - at[a])[0]; fuerte = { tiro3: 'el triple', tiro2: 'el tiro de media', tl: 'el tiro libre', pase: 'la visión de juego', bote: 'el manejo', reb: 'el rebote', defInt: 'la defensa interior', defPer: 'la defensa exterior', fisico: 'el físico', iq: 'la lectura del juego' }[k] || k; }
-    const club = p.equipoId && st.equipos[p.equipoId] ? st.equipos[p.equipoId].nombre : p.draft ? 'Universitario o europeo (draft)' : 'Sin club';
+    const club = p.juvenil && p.equipoId && st.equipos[p.equipoId] ? 'Cantera del ' + st.equipos[p.equipoId].nombre : p.equipoId && st.equipos[p.equipoId] ? st.equipos[p.equipoId].nombre : p.draft ? 'Universitario o europeo (draft)' : 'Sin club';
     return { id: 'i' + (++E.seq), jugadorId: p.draft ? null : p.id, nombre: p.nombre, edad: p.edad, pos: p.pos, nac: p.nac, club, fecha: st.fecha, ojeador: o.nombre, nivel: o.nivel, ovr: [Math.max(35, p.ovr - lo), Math.min(99, p.ovr + hi)], pot: [Math.max(40, p.pot - pl), Math.min(99, p.pot + ph)], vistas: v, joya, fuerte, seguido: false, draft: !!p.draft };
   }
   function semana(st) {
@@ -59,13 +69,22 @@
     });
     if (E.informes.length > 80) E.informes.length = 80;
   }
+  // Ofertar por un juvenil de la cantera de otro club (gestor y presidente): paga una cantidad y entra en tu cantera
+  function precioJuvenil(st, p) { return Math.round((60000 + Math.pow(Math.max(0, p.pot - 45), 2) * 900 + p.ovr * 1500) / 5000) * 5000; }
+  function ficharCantera(st, informeId) {
+    const E = estado(st), i = E.informes.find(x => x.id === informeId), p = i && i.jugadorId ? st.jugadores[i.jugadorId] : null; if (!p || !p.juvenil) return { ok: false, motivo: 'Ese informe no es de un juvenil de cantera.' };
+    if (st.modo !== 'gestor' && st.modo !== 'presidente') return { ok: false, motivo: 'Solo el club puede ofertar por un juvenil.' }; const c = st.cantera[st.clubId], viejo = st.cantera[p.equipoId]; if (!c || !viejo || p.equipoId === st.clubId) return { ok: false, motivo: 'No está en la cantera de otro club.' };
+    if (c.juveniles.length >= 10) return { ok: false, motivo: 'Tu cantera está llena (10 juveniles).' }; const precio = precioJuvenil(st, p); if (dinero(st) < precio) return { ok: false, motivo: 'No hay caja para ' + U.eur(precio) + '.' };
+    pagar(st, precio, 'Juvenil ' + p.nombre); if (F() && st.finanzas[p.equipoId]) F().registrar(st, p.equipoId, 'Venta del juvenil ' + p.nombre, precio); viejo.juveniles = viejo.juveniles.filter(x => x !== p.id); p.equipoId = st.clubId; c.juveniles.push(p.id); E.informes = E.informes.filter(x => x !== i);
+    GM.noticia && GM.noticia(st, 'Fichas al juvenil ' + p.nombre + ' de la cantera del ' + (st.equipos[i.club.replace(/^Cantera del /, '')] ? '' : '') + i.club.replace(/^Cantera del /, '') + ' por ' + U.eur(precio) + '.'); return { ok: true, precio };
+  }
   function informes(st) { return estado(st).informes; }
   function seguir(st, id) { const i = estado(st).informes.find(x => x.id === id); if (!i) return { ok: false, motivo: 'No existe.' }; i.seguido = !i.seguido; return { ok: true, seguido: i.seguido }; }
   function descartar(st, id) { const E = estado(st); E.informes = E.informes.filter(x => x.id !== id); return { ok: true }; }
   GM.bus.on('dia:avanzado', function () {
     const st = GM.state; if (!st || !st.ojeadores || !disponible(st)) return;
     if (U.weekday(st.fecha) === 1) semana(st);
-    if (st.fecha.slice(8, 10) === '01' && F()) st.ojeadores.equipo.forEach(o => F().registrar(st, st.clubId, 'Ojeador ' + o.nombre, -Math.round(o.sueldo / 12)));
+    if (st.fecha.slice(8, 10) === '01') st.ojeadores.equipo.forEach(o => pagar(st, Math.round(o.sueldo / 12), 'Ojeador ' + o.nombre));
   });
   function nuevaPartida(st) { st.ojeadores = { equipo: [], informes: [], vistos: {}, seq: 0, cand: { temp: null, lista: [] } }; }
   function selfTest() {
@@ -76,5 +95,5 @@
     const E = estado(st); asignar(st, E.equipo[0].id, 'ACB'); semana(st); semana(st); GM.mods.finanzas = F0;
     const inf = E.informes[0]; return maximo(st) >= 2 && E.informes.length >= 2 && inf.ovr[0] <= inf.ovr[1] && inf.pot[0] <= inf.pot[1] && sueldoDe(3) === 162000;
   }
-  GM.register('ojeadores', { estado, disponible, candidatos, contratar, despedir, asignar, informes, seguir, descartar, destinos, maximo, nuevaPartida, selfTest, NIVELES, NOMLIGA, ESPEC, semana });
+  GM.register('ojeadores', { estado, disponible, candidatos, contratar, despedir, asignar, informes, seguir, descartar, destinos, maximo, nuevaPartida, selfTest, NIVELES, NOMLIGA, ESPEC, semana, PAISES, precioJuvenil, ficharCantera });
 })();

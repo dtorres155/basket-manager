@@ -1,6 +1,6 @@
 /* COMPETICIONES (GM.mods.competiciones)
    Calendario 2026-27 (NBA 82 partidos + play-in + playoffs al 7; Euroliga 38 jornadas + play-in + playoffs al 5 + Final Four;
-   ACB y Lega a doble vuelta + playoffs). Expone: generarCalendario, proximoPartido, clasificacion, playoffs, jugarDia,
+   ACB y Lega a doble vuelta + playoffs). Expone: PAUSAS, fechaReal, generarCalendario, proximoPartido, clasificacion, playoffs, jugarDia,
    avanzarHastaPartido, calendarioClub, finTemporada, nuevaTemporada, selfTest.
    Escribe state.calendario, clasificaciones, playoffs, estadisticas, historial. Emite partido:jugado, dia:avanzado, temporada:fin. */
 (function () {
@@ -21,13 +21,13 @@
   };
   // Fechas de 2026-27 por liga (inicio, última jornada y comienzo de los playoffs). ACB: calendario oficial (26 de septiembre
   // al 22 de mayo, playoffs desde el 25 de mayo). BBL: 19 de septiembre en realidad, pero la partida empieza el 24. El resto, aproximadas.
-  const FECHAS = {
+  const FECHAS = GM.tabla('competiciones.fechas', {
     ACB: { ini: '-09-26', fin: '-05-22', po: '-05-25' },
     BBL: { ini: '-09-26', fin: '-05-02', po: '-05-08' },
     LEGA: { ini: '-10-03', fin: '-05-03', po: '-05-09' },
     GBL: { ini: '-10-03', fin: '-04-18', po: '-04-25' },
     BSL: { ini: '-10-03', fin: '-05-09', po: '-05-15' }
-  };
+  });
   const fechaLiga = (comp, k, y) => FECHAS[comp] ? (k === 'ini' ? y : y + 1) + FECHAS[comp][k] : null;
   const ORDEN = { nba: 0, euroliga: 1, acb: 2, liga_simple: 3 };
 
@@ -46,6 +46,9 @@
     }
     return rs;
   }
+  // Calendario realista (punto 68): las ligas europeas paran en las ventanas FIBA de selecciones (finales de noviembre y de febrero) y no juegan el día de Navidad ni Año Nuevo
+  const PAUSAS = y => [[y + '-11-23', y + '-11-30'], [(y + 1) + '-02-22', (y + 1) + '-03-01']];
+  function fechaReal(d, formato, y) { if (formato === 'nba') return d; PAUSAS(y).forEach(([a, b]) => { if (d >= a && d <= b) d = U.addDays(b, 1); }); if (d.slice(5) === '12-25' || d.slice(5) === '01-01') d = U.addDays(d, 1); return d; }
   const getG = (st, id) => st.calendario.find(g => g.id === id);
   function creaG(st, comp, fase, local, vis, fecha, jornada, extra) {
     if (fase !== 'regular') { let k = 0; while (k++ < 30 && st.calendario.some(g => g.fecha === fecha && (g.local === local || g.visitante === local || g.local === vis || g.visitante === vis))) fecha = U.addDays(fecha, 1); }
@@ -71,6 +74,7 @@
       rondas.forEach((games, r) => {
         let d0 = U.addDays(ini, Math.floor(r * paso));
         if (F.snap) while ([0, 6].indexOf(U.weekday(d0)) < 0) d0 = U.addDays(d0, 1);
+        d0 = fechaReal(d0, liga.formato, y);
         games.forEach((g, i) => {
           let d = F.dos && i >= games.length / 2 ? U.addDays(d0, 1) : d0;
           while (ocupado[d + g[0]] || ocupado[d + g[1]]) d = U.addDays(d, 1);
@@ -298,5 +302,5 @@
     const ids = Object.keys(c).filter(i => st.jugadores[i]), max = ids.reduce((m, i) => Math.max(m, c[i][0]), 0), min = Math.max(1, Math.ceil(max * 0.4)), k = COL[cat];
     return ids.filter(i => c[i][0] >= min).map(i => ({ id: i, pj: c[i][0], media: c[i][k] / c[i][0], total: c[i][k], min: c[i][1] / c[i][0] })).sort((a, b) => b.media - a.media).slice(0, n || 10);
   }
-  GM.register('competiciones', { lideres, generarCalendario, proximoPartido, clasificacion, playoffs, jugarDia, avanzarHastaPartido, calendarioClub, finTemporada, nuevaTemporada, nuevaPartida, selfTest, FORM });
+  GM.register('competiciones', { PAUSAS, fechaReal, lideres, generarCalendario, proximoPartido, clasificacion, playoffs, jugarDia, avanzarHastaPartido, calendarioClub, finTemporada, nuevaTemporada, nuevaPartida, selfTest, FORM });
 })();

@@ -1,0 +1,42 @@
+/* LIGAS NUEVAS (punto 68): Francia (LNB Pro A), Lituania (LKL), Liga Adriática (ABA) e Israel (Ligat Winner). Se añaden SOLO con datos: cada liga es un GM.registrarLiga({ id, nombre, pais, formato, equipos (clubes que ya existen), clubes (filas de GM.club),
+   params (ver ligas_config.js) }). Los clubes llevan nombres reales; las plantillas son relleno ficticio con nombres del país (no hay datos fiables de sus jugadores), así que su media es orientativa. Para añadir otra liga basta con copiar uno
+   de estos bloques. Las fechas de cada liga son aproximadas. */
+(function () {
+  const c = (id, nombre, siglas, ciudad, pais, col, rep, pres, pab, aforo, relleno) => ({ def: [id, nombre, siglas, ciudad, pais, col, rep, pres, pab, aforo], filas: [], opt: { plantilla: 13, salMin: 0.1, baseOvr: Math.round(52 + (rep - 40) * 0.35), paisRelleno: relleno || pais } });
+  GM.registrarLiga({
+    id: 'LNB', nombre: 'Liga francesa (LNB Élite)', pais: 'FR', formato: 'liga_simple', equipos: ['asvel', 'paris-basketball'],
+    params: { fact: 0.07, minsal: 0.12e6, maxsal: 2.4e6, esc: { precio: 22, merch: 2.5, tv: 0.05e6 }, baseLiga: 0.28, minOvr: 58, nivel: 2, tier: 2, factorTier: 0.78, ligaSal: 0.98, espec: 'Francia y África occidental', nombreLiga: 'Liga francesa', fechas: { ini: '-09-26', fin: '-05-16', po: '-05-22' }, copa: { id: 'COPA_FRANCIA', nombre: 'Copa de Francia (Leaders Cup)', fecha: '-02-14', min: 12 } },
+    clubes: [
+      c('monaco', 'AS Monaco', 'MON', 'Mónaco', 'FR', ['#c8102e', '#ffffff'], 64, 22, 'Salle Gaston Médecin', 4000), c('cholet', 'Cholet Basket', 'CHO', 'Cholet', 'FR', ['#d4202e', '#1d1d1b'], 50, 6.5, 'La Meilleraie', 5191), c('limoges', 'Limoges CSP', 'LIM', 'Limoges', 'FR', ['#1b8a3c', '#ffffff'], 52, 7, 'Beaublanc', 5500),
+      c('dijon', 'JDA Dijon', 'DIJ', 'Dijon', 'FR', ['#e30613', '#ffffff'], 46, 5.5, 'Palais des Sports Jean-Michel Geoffroy', 4500), c('strasbourg', 'SIG Strasbourg', 'STR', 'Estrasburgo', 'FR', ['#e30613', '#ffffff'], 56, 8.5, 'Rhénus Sport', 6200), c('le-mans', 'Le Mans Sarthe', 'LEM', 'Le Mans', 'FR', ['#fcd116', '#1d1d1b'], 50, 6, 'Antarès', 6004),
+      c('bourg-en-bresse', 'JL Bourg', 'BOU', 'Bourg-en-Bresse', 'FR', ['#c8102e', '#ffffff'], 52, 6.5, 'Ekinox', 3600), c('nanterre', 'Nanterre 92', 'NAN', 'Nanterre', 'FR', ['#00a0e3', '#ffffff'], 48, 5.5, 'Palais des Sports Maurice Thorez', 3000), c('gravelines', 'BCM Gravelines-Dunkerque', 'GRA', 'Gravelines', 'FR', ['#f08300', '#1d1d1b'], 48, 5.5, 'Sportica', 3500),
+      c('le-portel', 'Étoile Portel', 'POR', 'Le Portel', 'FR', ['#e30613', '#1d4f91'], 44, 4.5, 'Le Chaudron', 3000), c('nancy', 'SLUC Nancy', 'NCY', 'Nancy', 'FR', ['#d4202e', '#ffffff'], 46, 5, 'Palais des Sports Jean Weille', 6027), c('chalon', 'Élan Chalon', 'CHA', 'Chalon-sur-Saône', 'FR', ['#e30613', '#fcd116'], 46, 5, 'Colisée', 5000),
+      c('boulazac', 'Boulazac Basket Dordogne', 'BOZ', 'Boulazac', 'FR', ['#1d4f91', '#ffffff'], 42, 4, 'Palio', 3200), c('orleans', 'Orléans Loiret', 'ORL', 'Orleans', 'FR', ['#c8102e', '#ffffff'], 42, 4, 'Palais des Sports', 4000)]
+  });
+  GM.registrarLiga({
+    id: 'LKL', nombre: 'Liga lituana (LKL)', pais: 'LT', formato: 'liga_simple', equipos: ['zalgiris-kaunas'],
+    params: { fact: 0.05, minsal: 0.08e6, maxsal: 1.6e6, esc: { precio: 14, merch: 1.8, tv: 0.03e6 }, baseLiga: 0.3, minOvr: 55, nivel: 2, tier: 2, factorTier: 0.7, ligaSal: 0.88, espec: 'Países bálticos', nombreLiga: 'Liga lituana', fechas: { ini: '-09-24', fin: '-04-12', po: '-04-18' }, copa: { id: 'COPA_REY_MINDAUGAS', nombre: 'Copa del Rey Mindaugas', fecha: '-02-12', min: 10 } },
+    clubes: [
+      c('rytas-vilnius', 'Rytas Vilnius', 'RYT', 'Vilna', 'LT', ['#e30613', '#1d1d1b'], 54, 5, 'Avia Solutions Group Arena', 10300), c('lietkabelis', 'Lietkabelis Panevėžys', 'LIE', 'Panevėžys', 'LT', ['#f08300', '#1d1d1b'], 46, 3, 'Cido Arena', 5000), c('neptunas', 'Neptūnas Klaipėda', 'NEP', 'Klaipėda', 'LT', ['#1d4f91', '#ffffff'], 44, 2.6, 'Švyturio Arena', 6000),
+      c('juventus-utena', 'Juventus Utena', 'JUV', 'Utena', 'LT', ['#e30613', '#ffffff'], 40, 2, 'Utenos Arena', 1800), c('siauliai', 'Šiauliai', 'SIA', 'Šiauliai', 'LT', ['#fcd116', '#1d1d1b'], 40, 2, 'Šiaulių Arena', 5700), c('jonava', 'Jonava Hipocredit', 'JON', 'Jonava', 'LT', ['#00833e', '#ffffff'], 38, 1.8, 'Jonavos Arena', 1800),
+      c('kedainiai', 'Nevėžis Kėdainiai', 'KED', 'Kėdainiai', 'LT', ['#1d4f91', '#f08300'], 36, 1.6, 'Kėdainių Arena', 1500), c('gargzdai', 'Gargždų Gargždai', 'GAR', 'Gargždai', 'LT', ['#1b8a3c', '#ffffff'], 34, 1.4, 'Gargždų Arena', 1200), c('mazeikiai', 'Mažeikių Mažeikiai', 'MAZ', 'Mažeikiai', 'LT', ['#c8102e', '#1d1d1b'], 34, 1.4, 'Mažeikių Arena', 1500)]
+  });
+  GM.registrarLiga({
+    id: 'ABA', nombre: 'Liga Adriática (ABA)', pais: 'RS', formato: 'liga_simple', equipos: ['crvena-zvezda', 'partizan'],
+    params: { fact: 0.05, minsal: 0.08e6, maxsal: 1.8e6, esc: { precio: 12, merch: 1.6, tv: 0.03e6 }, baseLiga: 0.3, minOvr: 55, nivel: 2, tier: 2, factorTier: 0.72, ligaSal: 0.86, espec: 'Balcanes', nombreLiga: 'Liga Adriática', fechas: { ini: '-09-28', fin: '-04-05', po: '-04-12' } },
+    clubes: [
+      c('buducnost', 'Budućnost Podgorica', 'BUD', 'Podgorica', 'ME', ['#1d4f91', '#ffffff'], 52, 4.5, 'Morača Sport Center', 4500, 'RS'), c('cedevita-olimpija', 'Cedevita Olimpija', 'CED', 'Liubliana', 'SI', ['#00833e', '#ffffff'], 54, 5, 'Arena Stožice', 12480, 'SI'), c('igokea', 'Igokea m:tel', 'IGO', 'Aleksandrovac', 'BA', ['#c8102e', '#1d1d1b'], 44, 2.6, 'Laktaši', 3000, 'RS'),
+      c('dubrovnik', 'Dubrovnik', 'DUB', 'Dubrovnik', 'HR', ['#00a0e3', '#ffffff'], 40, 1.8, 'Športska dvorana Gospino polje', 3000, 'HR'), c('mega-basket', 'Mega MIS', 'MEG', 'Belgrado', 'RS', ['#fcd116', '#1d1d1b'], 50, 3.8, 'Sportski centar Pionir', 8000, 'RS'), c('split', 'Split', 'SPL', 'Split', 'HR', ['#c8102e', '#ffffff'], 42, 2.2, 'Arena Gripe', 4000, 'HR'),
+      c('zadar', 'Zadar', 'ZAD', 'Zadar', 'HR', ['#1d4f91', '#fcd116'], 44, 2.4, 'Višnjik', 3000, 'HR'), c('cibona', 'Cibona', 'CIB', 'Zagreb', 'HR', ['#c8102e', '#1d4f91'], 44, 2.4, 'Dražen Petrović Basketball Hall', 5400, 'HR'), c('vojvodina', 'Vojvodina Novi Sad', 'VOJ', 'Novi Sad', 'RS', ['#c8102e', '#ffffff'], 40, 2, 'Spens', 6000, 'RS'),
+      c('spartak-subotica', 'Spartak Subotica', 'SPA', 'Subotica', 'RS', ['#1d4f91', '#ffffff'], 38, 1.6, 'Dvorana Sportova', 3000, 'RS'), c('krka', 'Krka Novo Mesto', 'KRK', 'Novo Mesto', 'SI', ['#00833e', '#fcd116'], 42, 2, 'Leon Štukelj Hall', 2500, 'SI'), c('studentski-centar', 'Studentski Centar', 'STC', 'Podgorica', 'ME', ['#1d4f91', '#1d1d1b'], 36, 1.4, 'Morača Sport Center', 2000, 'RS')]
+  });
+  GM.registrarLiga({
+    id: 'ISR', nombre: 'Liga israelí (Winner League)', pais: 'IL', formato: 'liga_simple', equipos: ['maccabi-tel-aviv', 'hapoel-tel-aviv'],
+    params: { fact: 0.06, minsal: 0.1e6, maxsal: 2.2e6, esc: { precio: 16, merch: 2, tv: 0.04e6 }, baseLiga: 0.3, minOvr: 56, nivel: 2, tier: 2, factorTier: 0.74, ligaSal: 0.95, espec: 'Israel y Oriente Medio', nombreLiga: 'Liga israelí', fechas: { ini: '-10-03', fin: '-04-26', po: '-05-02' }, copa: { id: 'COPA_ISRAEL', nombre: 'Copa de Israel', fecha: '-02-22', min: 10 } },
+    clubes: [
+      c('hapoel-jerusalem', 'Hapoel Jerusalem', 'HJE', 'Jerusalén', 'IL', ['#c8102e', '#ffffff'], 56, 6.5, 'Pais Arena Jerusalem', 11600), c('hapoel-holon', 'Hapoel Holon', 'HHO', 'Holon', 'IL', ['#c8102e', '#fcd116'], 50, 4.5, 'Holon Toto Hall', 5500), c('maccabi-rishon', 'Maccabi Rishon LeZion', 'MRI', 'Rishon LeZion', 'IL', ['#fcd116', '#1d4f91'], 46, 3.2, 'Beit Hapais Rishon', 3000),
+      c('hapoel-beer-sheva', 'Hapoel Beer Sheva', 'HBS', 'Beer Sheva', 'IL', ['#c8102e', '#ffffff'], 44, 3, 'Beer Sheva Arena', 3000), c('hapoel-galil-elyon', 'Hapoel Galil Elyon', 'HGE', 'Galil Elyon', 'IL', ['#fcd116', '#c8102e'], 44, 2.8, 'Kibbutz Gonen', 2800), c('hapoel-eilat', 'Hapoel Eilat', 'HEI', 'Eilat', 'IL', ['#c8102e', '#1d4f91'], 42, 2.6, 'Begin Hall', 2500),
+      c('ironi-ness-ziona', 'Ironi Ness Ziona', 'INZ', 'Ness Ziona', 'IL', ['#1d4f91', '#ffffff'], 40, 2.2, 'Ness Ziona Hall', 2500), c('hapoel-gilboa', 'Hapoel Gilboa Galil', 'HGG', 'Gilboa', 'IL', ['#c8102e', '#1d1d1b'], 40, 2.2, 'Gilboa Hall', 2200), c('bnei-herzliya', 'Bnei Herzliya', 'BHE', 'Herzliya', 'IL', ['#00833e', '#ffffff'], 38, 2, 'Herzliya Arena', 2500), c('maccabi-haifa', 'Maccabi Haifa', 'MHA', 'Haifa', 'IL', ['#00833e', '#ffffff'], 42, 2.4, 'Romema Arena', 5000)]
+  });
+  GM.commitDatos([]);
+})();

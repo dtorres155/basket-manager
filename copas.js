@@ -6,14 +6,14 @@
 (function () {
   const U = GM.util;
   const yearOf = st => parseInt(st.temporada.slice(0, 4), 10);
-  const DEF = {
+  const DEF = GM.tabla('copas.def', {
     COPA_REY: { liga: 'ACB', nombre: 'Copa del Rey', fecha: y => (y + 1) + '-02-18', min: 14 }, // 2027: 18-21 de febrero, Roig Arena (Valencia)
     NBA_CUP: { liga: 'NBA', nombre: 'NBA Cup', fecha: y => y + '-12-02', min: 20 },
     COPA_GRECIA: { liga: 'GBL', nombre: 'Copa de Grecia', fecha: y => (y + 1) + '-02-20', min: 14 },
     POKAL: { liga: 'BBL', nombre: 'BBL-Pokal', fecha: y => (y + 1) + '-02-18', min: 14 },
     COPPA_ITALIA: { liga: 'LEGA', nombre: 'Coppa Italia', fecha: y => (y + 1) + '-02-16', min: 12 },
     COPA_TURQUIA: { liga: 'BSL', nombre: 'Copa de Turquía', fecha: y => (y + 1) + '-02-25', min: 14 }
-  };
+  });
   const RONDAS = ['Cuartos de final', 'Semifinales', 'Final'];
   const getG = (st, id) => st.calendario.find(g => g.id === id);
   const ocupado = (st, d, a, b) => st.calendario.some(g => g.fecha === d && (g.local === a || g.visitante === a || g.local === b || g.visitante === b));

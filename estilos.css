@@ -590,3 +590,19 @@ body{background:var(--bg)}
 .casa-catalogo { max-height: 56vh; overflow-y: auto; }
 .rutina-chips { position: absolute; left: 12px; top: 74px; display: flex; gap: 8px; padding: 6px 10px; border-radius: 12px; background: rgba(20, 24, 30, 0.78); color: #fff; font-size: 0.78rem; z-index: 25; }
 .rutina-chips.bajo span:first-child, .rutina-chips.bajo span:nth-child(2) { color: #ffb15a; }
+
+/* Directo: estadísticas en vivo, repetición y cánticos de la grada (puntos 67 y 68) */
+.directo .dir-vista { position: relative; }
+.directo .dir-stats { position: absolute; left: 8px; bottom: 8px; width: min(94%, 560px); display: flex; gap: 12px; padding: 6px 10px; border-radius: 8px; background: rgba(10, 14, 18, 0.86); color: #e8edf2; font-size: 12.5px; z-index: 3; }
+.directo .dir-stats .dir-stat { flex: 1; min-width: 0; }
+.directo .dir-stats .fila { display: flex; justify-content: space-between; gap: 8px; }
+.directo .dir-repe { position: absolute; top: 14px; right: 14px; padding: 4px 12px; border-radius: 6px; background: #c0392b; color: #fff; font-weight: 700; letter-spacing: 0.04em; animation: dir-parpadeo 1s infinite; z-index: 3; }
+@keyframes dir-parpadeo { 50% { opacity: 0.55; } }
+.directo .dir-linea.grada { color: #f2d27a; font-style: italic; }
+
+/* Móvil con apps (punto 69) */
+.movil-rejilla { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
+.movil-app { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px; border-radius: 14px; border: 0; background: var(--sup, rgba(127, 127, 127, 0.12)); font-size: 12px; cursor: pointer; }
+.movil-app .movil-ico { font-size: 26px; line-height: 1; }
+.movil-app .movil-num { position: absolute; top: 4px; right: 8px; min-width: 18px; height: 18px; border-radius: 9px; background: #c0392b; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+.movil-apps h4 { margin: 10px 0 4px; }
