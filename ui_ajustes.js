@@ -5,7 +5,7 @@
 (function () {
   const { h, modal, toast, cerrarModales } = GM.ui._;
   const NOVEDADES = [
-    { v: '0.9.118', fecha: '2026-10', t: ['LEB Oro y LEB Plata con ascensos, descensos y cesiones de canteranos (también en el modo carrera).', 'Plantillas reales de 31 clubes de Francia, Lituania, la Liga Adriática e Israel.', 'Catalán e inglés, daltonismo, lector de pantalla, controles remapeables y mando.', 'Interfaz dentro del mundo 3D: brújula, reloj con velocidad, objetivos y menú radial.', 'Música dinámica, mezcla de sonido y misiones de inicio.', 'Iconos de ciudad, vehículos y mobiliario con los colores de cada país.'] },
+    { v: '0.9.123', fecha: '2026-10', t: ['LEB Oro y LEB Plata con ascensos, descensos y cesiones de canteranos (también en el modo carrera).', 'Plantillas reales de 31 clubes de Francia, Lituania, la Liga Adriática e Israel.', 'Catalán e inglés, daltonismo, lector de pantalla, controles remapeables y mando.', 'Interfaz dentro del mundo 3D: brújula, reloj con velocidad, objetivos y menú radial.', 'Música dinámica, mezcla de sonido y misiones de inicio.', 'Iconos de ciudad, vehículos y mobiliario con los colores de cada país.'] },
     { v: '0.9.117', fecha: '2026-10', t: ['Ligas nuevas solo con datos (Francia, Lituania, Adriática e Israel), narrador del directo, móvil con apps, personajes con historia.'] },
     { v: '0.9.115', fecha: '2026-10', t: ['Árbol de instalaciones, progresión de jugadores, pizarra táctica, traspasos negociados y selecciones jugables.'] }
   ];

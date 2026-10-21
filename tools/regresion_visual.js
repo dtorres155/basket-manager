@@ -6,7 +6,7 @@ const VISTAS = [['inicio', 'inicio', 'inicio'], ['plantilla', 'plantilla', 'plan
 (async () => {
   fs.mkdirSync(base, { recursive: true }); fs.mkdirSync(nuevo, { recursive: true });
   const b = await chromium.launch({ channel: 'msedge' }), p = await (await b.newContext({ viewport: { width: 1000, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'reduce' })).newPage(), errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://localhost:8080/'); await sleep(700); await p.evaluate(() => { try { localStorage.clear(); localStorage.setItem('gm1:consejos', JSON.stringify({ 'ayuda-inicio': 1, 'ayuda-plantilla': 1, 'ayuda-mercado': 1, 'ayuda-calendario': 1, 'ayuda-finanzas': 1, 'ayuda-muestra': 1 })); localStorage.setItem('gm1:novedades', '0.9.118'); } catch (e) { } });
+  await p.goto('http://localhost:8080/'); await sleep(700); await p.evaluate(() => { try { localStorage.clear(); localStorage.setItem('gm1:consejos', JSON.stringify({ 'ayuda-inicio': 1, 'ayuda-plantilla': 1, 'ayuda-mercado': 1, 'ayuda-calendario': 1, 'ayuda-finanzas': 1, 'ayuda-muestra': 1 })); localStorage.setItem('gm1:novedades', '0.9.123'); } catch (e) { } });
   await p.reload(); await sleep(600);
   await p.evaluate(() => { GM.rng.seed && GM.rng.seed(7); const pj = GM.mods.personaje.crear(); pj.nombre = 'Marc'; GM.newGame('joventut-badalona', 7, { modo: 'gestor', personaje: pj }); GM.state.misiones = { hechas: {}, cont: {}, oculta: true }; GM.ui.start(document.getElementById('app')); GM.diseno.setTema('dia'); });
   let ok = true; const filas = [];
