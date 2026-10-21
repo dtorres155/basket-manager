@@ -441,5 +441,5 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 
 ## Estado tras la tanda 33
 - Pendientes de la 32 cerrados: canal para plantillas reales (`docs/PLANTILLAS_REALES.md`; todavía sin datos cargados), canteras de todos los clubes que evolucionan cada año (con Dabone real en el Barça, datos estimados) y tifo del clásico (mosaico, banderas y bengalas).
-- 70 sistema de diseño y pantallas troncales (tablas ordenables, spark, consejos, arrastrar y soltar en la táctica, galería); 71 interfaz dentro del mundo (`hud_mundo.js`); 73 etiquetas y luz del mapa 3D; 74 idiomas (catalán e inglés parciales), daltonismo, lector de pantalla, controles remapeables y mando.
-- Pendiente: 72 (aún sin hacer según lo pedido, revisar), segunda y tercera categoría (LEB Oro y Plata) con ascensos y cesiones de canteranos, plantillas reales de las ligas nuevas, más canteras reales, ampliar las tablas de traducción, pruebas de navegador de los puntos 70 a 74.
+- 70 sistema de diseño; 71 pantallas troncales (tablas ordenables, spark, consejos, arrastrar y soltar en la táctica, galería); 72 interfaz dentro del mundo (`hud_mundo.js`); 73 etiquetas y luz del mapa 3D; 74 idiomas (catalán e inglés parciales), daltonismo, lector de pantalla, controles remapeables y mando.
+- Pendiente: segunda y tercera categoría (LEB Oro y Plata) con ascensos y cesiones de canteranos, plantillas reales de las ligas nuevas, más canteras reales, ampliar las tablas de traducción, pruebas de navegador de los puntos 70 a 74.
