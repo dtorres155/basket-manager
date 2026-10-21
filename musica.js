@@ -128,6 +128,65 @@
       if (i > 0.5 && p % 8 === 0) [0, 2, 4].forEach(k => nota(t, hz(grado(E, acorde + k + 5)), dur * 6, 'square', v * 0.04 * i));
     }
   }
+  // ---------- pistas reales (bucles CC0 de OpenGameArt en vendor/audio): sustituyen a la música generada en las escenas tranquilas ----------
+  const PISTAS = { menu: 'musica_menu', sede: 'musica_sede', casa: 'musica_sede', calle: 'musica_calle', pueblo: 'musica_pueblo' },
+    pistasBuf = {};
+  let pistaSrc = null,
+    pistaGan = null,
+    pistaNombre = null,
+    cargandoPistas = null;
+  function cargarPistas() {
+    if (cargandoPistas || !ctx || typeof fetch === 'undefined') return cargandoPistas;
+    const nombres = Object.values(PISTAS).filter((n, i, a) => a.indexOf(n) === i);
+    cargandoPistas = Promise.all(
+      nombres.map(n =>
+        fetch('audio/' + n + '.ogg')
+          .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
+          .then(b => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej)))
+          .then(buf => {
+            pistasBuf[n] = buf;
+          })
+          .catch(() => null)
+      )
+    ).then(() => {
+      if (actual && PISTAS[actual] && !pistaSrc) sonarPista();
+    });
+    return cargandoPistas;
+  }
+  function pararPista(seg) {
+    if (!pistaSrc) return;
+    const s = pistaSrc,
+      g = pistaGan;
+    pistaSrc = pistaGan = pistaNombre = null;
+    try {
+      g.gain.cancelScheduledValues(ctx.currentTime);
+      g.gain.setTargetAtTime(0, ctx.currentTime, (seg || 1) / 3);
+      s.stop(ctx.currentTime + (seg || 1) + 0.3);
+    } catch (e) {
+      /* ya parada */
+    }
+  }
+  // devuelve true si hay una pista real para el estado actual y suena (entonces no hace falta la música generada)
+  function sonarPista() {
+    const n = PISTAS[actual];
+    if (!n || !pistasBuf[n]) return false;
+    if (pistaNombre === n) return true;
+    pararPista(1.5);
+    const src = ctx.createBufferSource(),
+      g = ctx.createGain();
+    src.buffer = pistasBuf[n];
+    src.loop = true;
+    g.gain.value = 0;
+    src.connect(g);
+    g.connect(bus);
+    src.start();
+    g.gain.setTargetAtTime((0.55 * Math.max(0.05, volumen())) / Math.max(0.05, DEF.musica), ctx.currentTime, 0.8);
+    pistaSrc = src;
+    pistaGan = g;
+    pistaNombre = n;
+    parado = true; // la música generada se calla mientras suena la pista
+    return true;
+  }
   function bucle() {
     if (parado || !ctx || !actual) return;
     const E = ESTADOS[actual],
@@ -169,9 +228,17 @@
     clearTimeout(timer);
     if (!est) {
       aplicarVolumen(0.4);
+      pararPista(1);
       parado = true;
       return;
     }
+    cargarPistas();
+    if (PISTAS[est] && pistasBuf[PISTAS[est]]) {
+      aplicarVolumen(1.2);
+      sonarPista();
+      return;
+    }
+    pararPista(1);
     parado = false;
     paso = 0;
     tiempoSig = ctx.currentTime + 0.1;
@@ -205,6 +272,7 @@
     } catch (e) {
       /* sin guardado */
     }
+    if (pistaGan && ctx) pistaGan.gain.setTargetAtTime((0.55 * volumen()) / DEF.musica, ctx.currentTime, 0.2);
     if (GM.sonido && GM.sonido.nivelAmbiente) GM.sonido.nivelAmbiente(niveles.general * niveles.ambiente, niveles.general * niveles.interfaz);
     aplicarVolumen(0.1);
   }
@@ -234,7 +302,7 @@
       return false;
     }
   }
-  const estado = () => ({ actual, intensidad: inten, parado, contexto: !!ctx, corriendo: !!ctx && ctx.state === 'running', voces: vocesOn });
+  const estado = () => ({ actual, intensidad: inten, parado, contexto: !!ctx, corriendo: !!ctx && ctx.state === 'running', voces: vocesOn, pista: pistaNombre });
   function selfTest() {
     return (
       Object.keys(ESTADOS).length === 7 &&

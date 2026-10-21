@@ -6,9 +6,13 @@
   const { h, modal, toast, cerrarModales } = GM.ui._;
   const NOVEDADES = [
     {
-      v: '0.9.123',
+      v: '0.9.127',
       fecha: '2026-10',
       t: [
+        'Audio real: música de fondo, pasos, clics y botes de balón (CC0), con el sonido generado como respaldo.',
+        'Traducciones al catalán (75 %) y al inglés (80 %) de los textos fijos; plantillas reales de 38 clubes y segundas divisiones de Italia, Alemania, Francia y Grecia.',
+        'Autoguardado más ligero: simular muchos días seguidos ya no se para a guardar cada semana.',
+
         'LEB Oro y LEB Plata con ascensos, descensos y cesiones de canteranos (también en el modo carrera).',
         'Plantillas reales de 31 clubes de Francia, Lituania, la Liga Adriática e Israel.',
         'Catalán e inglés, daltonismo, lector de pantalla, controles remapeables y mando.',

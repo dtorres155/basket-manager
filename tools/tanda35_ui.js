@@ -56,7 +56,7 @@ const fs = require('fs');
     ['controles', /Restablecer teclas/],
     ['idioma', /Daltonismo/],
     ['datos', /Informe de errores/],
-    ['novedades', /Versión 0\.9\.123/]
+    ['novedades', /Versión 0.9.127/]
   ]) {
     await p.evaluate(a => {
       GM.ui._.cerrarModales();

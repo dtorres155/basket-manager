@@ -49,6 +49,8 @@ const { sleep, esperarEscena } = require('./ayudas');
   );
   const pasos = await p.evaluate(() => window.__pasos);
   chk(pasos >= 3, 'pasos al caminar: ' + pasos);
+  const mu = await p.evaluate(() => GM.musica.estado());
+  chk(mu.pista === 'musica_calle', 'suena la pista real de la calle: ' + JSON.stringify(mu));
   console.log(filas.join('\n'));
   console.log((ok && !errs.length ? 'ok' : 'FALLA') + ', errores: ' + (errs.length ? errs.slice(0, 3).join(' | ') : 'ninguno'));
   await b.close();
