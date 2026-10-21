@@ -92,7 +92,7 @@
     filas.forEach(f => {
       const nac = f[8] || def[4];
       const h = GM.util.hash(f[0]);
-      js.push(GM.mkJugador(eq.id, n++, f[0], f[1], f[2], GM.alturaPos(f[1], h), nac, pas(nac), f[3], f[4], f[5], Math.round(f[6] * mult * 1e6), f[7] === 2027 && h % 100 >= 35 ? 2028 + h % 3 : f[7]));
+      js.push(GM.mkJugador(eq.id, n++, f[0], f[1], f[2], f[9] || GM.alturaPos(f[1], h), nac, pas(nac), f[3], f[4], f[5], Math.round(f[6] * mult * 1e6), f[7] === 2027 && h % 100 >= 35 ? 2028 + h % 3 : f[7]));
     });
     const objetivo = opt.plantilla || 13;
     const minOvr = js.length ? Math.min.apply(null, js.map(j => j.ovr)) : (opt.baseOvr || 58);

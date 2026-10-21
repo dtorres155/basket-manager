@@ -1,6 +1,6 @@
 // Punto 68: ligas nuevas solo con datos (LNB, LKL, ABA e Israel): entran en el calendario, el mercado, las finanzas y el resto de módulos sin tocar código; una liga inventada en la propia prueba también.
 const L = require('./load');
-L(['core', 'ligas_config', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'datos_ligas_extra', 'finanzas', 'ciudad', 'contratos', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'estilo', 'movil', 'entrenador', 'ojeadores', 'economia', 'vida']);
+L(['core', 'ligas_config', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'datos_plantillas_extra', 'datos_ligas_extra', 'finanzas', 'ciudad', 'contratos', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'estilo', 'movil', 'entrenador', 'ojeadores', 'economia', 'vida']);
 let fallos = 0; const ok = (n, c) => { if (!c) { fallos++; console.log('FALLA', n); } else console.log('ok   ', n); };
 ok('selfTest ligasConfig', GM.mods.ligasConfig.selfTest());
 const st = GM.newGame('joventut-badalona', 11, { modo: 'gestor', personaje: GM.mods.personaje.crear() }); GM.state = st;

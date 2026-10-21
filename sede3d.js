@@ -844,7 +844,7 @@
       if (S.yo) { teclado(dt); moverPaso(S.yo, dt); if (!S.yo.sentado) S.yo.mixer.update(dt); else if (S.yo.bici && S.yo.actual === 'bici') pedalear(S.yo, dt); if (!S.construccion) S.foco.lerp(S.yo.obj.position, Math.min(1, dt * 4)); zonaCercana(); }
       if (S.redes) moverRedes(dt); charlas(dt);
       S.cuadro = (S.cuadro || 0) + 1;
-      if (!S.enFoto) { const mueve = S.real && S.yo && (S.conduciendo || S.yo.teclado || (S.yo.camino && S.yo.camino.length)); S.hora = Math.min(23, (S.hora || 9) + (mueve ? dt / 3600 : dt / 40)); } S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente();
+      if (!S.enFoto) { const mueve = S.real && S.yo && (S.conduciendo || S.yo.teclado || (S.yo.camino && S.yo.camino.length)); S.hora = Math.min(23, (S.hora || 9) + (mueve ? dt / 3600 : dt / 40) * (S.velTiempo === undefined ? 1 : S.velTiempo)); } S.tLuz = (S.tLuz || 0) - dt; if (S.tLuz <= 0) { S.tLuz = 0.5; aplicarAmbiente();
         if (S.nav && (S.tNav = (S.tNav || 0) + 0.5) >= 20) { S.tNav = 0; S.G.sucia = true; S.nav.sincronizar(); }   // la rejilla se reenvía al Worker cada 20 s por si algo ha cambiado
         if (S.lamparas && S.farolasPos && S.noche > 0.02) { const ord = S.farolasPos.map(q => [Math.hypot(q[0] - S.foco.x, q[1] - S.foco.z), q]).sort((a, b) => a[0] - b[0]); S.lamparas.forEach((l, i) => { const q = ord[i] && ord[i][1]; if (q) l.position.set(q[0], 4.3, q[1]); }); } }
       // fundido entre cielos HDRI: baja la luz de reflejos, cambia de cielo y vuelve a subirla

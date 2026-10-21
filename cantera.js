@@ -166,11 +166,32 @@
       for (let i = 0; i < retiros[club] && e.plantilla.length < 14; i++) nuevoRelevo(st, club);
     });
   }
-  GM.bus.on('temporada:fin', function () { const st = GM.state; if (st && st.cantera) { progresionAnual(st); renovarLigas(st); } });
+  GM.bus.on('temporada:fin', function () { const st = GM.state; if (st && st.cantera) { progresionAnual(st); renovarLigas(st); renovarCanterasIA(st); } });
 
+  // Canteras de todos los clubes (punto 66 pendiente): cada club tiene sus juveniles desde el principio. Si hay datos reales (GM.canteraReal, ver tools/importar_plantillas_extra.js; por ejemplo Dabone en el Barça) entran primero;
+  // el resto se genera con la calidad del club. Cada verano los mejores suben al primer equipo y los que cumplen 21 se van.
+  const N_CANTERA = 5;
+  function juvenilReal(st, clubId, r) {
+    const c = st.cantera[clubId]; c.seq++; const p = GM.mkJugador('jv', c.seq, r.nombre, r.pos || 'SG', r.edad || 18, r.altura || GM.alturaPos(r.pos || 'SG', U.hash(r.nombre)), r.nac || 'ES', GM.pasaporte(r.nac || 'ES'), r.ovr, r.pot, ['T', 'P', 'D', 'R', 'E'][U.hash(r.nombre) % 5], Math.round(40000 + r.ovr * 1500), yearOf(st) + 3);
+    p.id = clubId.slice(0, 8) + '-jv' + c.seq; p.equipoId = clubId; p.juvenil = true; p.real = true; if (r.estimado) p.nivelEstimado = true; st.jugadores[p.id] = p; c.juveniles.push(p.id); return p;
+  }
+  function ponerCantera(st, clubId, n) {
+    const real = (GM.canteraReal && GM.canteraReal[clubId]) || []; real.forEach(r => { if (st.cantera[clubId].juveniles.length < n + real.length) juvenilReal(st, clubId, r); });
+    const falta = Math.max(0, n - st.cantera[clubId].juveniles.length); if (falta) generarJuveniles(st, clubId, falta);
+  }
+  function renovarCanterasIA(st) {
+    Object.keys(st.cantera).forEach(id => {
+      const c = st.cantera[id], e = st.equipos[id]; if (!c || !e || (id === st.clubId && st.modo !== 'carrera' && st.modo !== 'entrenador')) return; if (!c.juveniles.length) return;
+      const orden = e.plantilla.map(i => st.jugadores[i]).filter(Boolean).sort((a, b) => b.ovr - a.ovr), corte = (orden[9] || { ovr: 50 }).ovr;
+      c.juveniles.slice().forEach(jid => { const p = st.jugadores[jid]; if (!p) { c.juveniles = c.juveniles.filter(x => x !== jid); return; }
+        if (p.edad >= 19 && e.plantilla.length < 15 && (p.ovr >= corte - 4 || p.pot >= 78) && !(st.ligas.NBA && st.ligas.NBA.equipos.indexOf(id) >= 0)) { c.juveniles = c.juveniles.filter(x => x !== jid); p.juvenil = false; e.plantilla.push(jid); const M = GM.mods.mercado; p.contrato = { salario: M && M.salarioPedido ? M.salarioPedido(st, jid, id) : 100000, hasta: yearOf(st) + 3 }; if (p.real && GM.noticia && (p.pot >= 76)) GM.noticia(st, p.nombre + ' da el salto al primer equipo del ' + e.nombre + '.'); }
+        else if (p.edad >= 21) { c.juveniles = c.juveniles.filter(x => x !== jid); delete st.jugadores[jid]; } });
+      generarJuveniles(st, id, Math.max(0, N_CANTERA - c.juveniles.length));
+    });
+  }
   function nuevaPartida(st) {
     Object.keys(st.equipos).forEach(id => { st.cantera[id] = { juveniles: [], prospectos: [], foco: 'equilibrado', scouts: [{ zona: 'espana', nivel: 1 }], seq: 0 }; });
-    generarJuveniles(st, st.clubId, 6);
+    Object.keys(st.equipos).forEach(id => { if (id === st.clubId) ponerCantera(st, id, 6); else ponerCantera(st, id, N_CANTERA); });
   }
   function selfTest() {
     if (!GM.mkJugador) return false;
@@ -184,5 +205,5 @@
     const jovenes = st.equipos.a.plantilla.map(i => st.jugadores[i]).filter(p => p.edad <= 25);
     return grupo(p => p.edad <= 25) >= y0 - 1 && grupo(p => p.edad >= 36) <= o0 + 1 && st.cantera.a.juveniles.length === 6 && jovenes.length > 0;
   }
-  GM.register('cantera', { generarJuveniles, ojear, ficharJuvenil, subirAlPrimerEquipo, soltarJuvenil, fijarFoco, progresionDiaria, progresionAnual, potAnual, renovarLigas, nuevaPartida, selfTest, FOCOS, ZONAS });
+  GM.register('cantera', { renovarCanterasIA, ponerCantera, N_CANTERA, generarJuveniles, ojear, ficharJuvenil, subirAlPrimerEquipo, soltarJuvenil, fijarFoco, progresionDiaria, progresionAnual, potAnual, renovarLigas, nuevaPartida, selfTest, FOCOS, ZONAS });
 })();

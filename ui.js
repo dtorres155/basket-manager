@@ -35,6 +35,7 @@
   const tacticaOn = () => !!S() && (S().modo === 'gestor' || S().modo === 'entrenador');
   const NAV_C = [['inicio', 'Inicio', 'home'], ['jugador', 'Jugador', 'users'], ['agente', 'Agente', 'dir'], ['plantilla', 'Equipo', 'club'], ['ciudad', 'Ciudad', 'city'], ['calendario', 'Calendario', 'cal'], ['trayectoria', 'Carrera', 'trofeo']];
   const navItems = () => entr() ? NAV_E : carrera() ? NAV_C : pres() ? NAV_P : NAV_G;
+  GM.ui._NAV = navItems;
   const ATT = { tiro3: 'Triple', tiro2: 'Tiro de 2', tl: 'Tiros libres', pase: 'Pase', bote: 'Bote', reb: 'Rebote', defInt: 'Defensa interior', defPer: 'Defensa exterior', fisico: 'Físico', iq: 'Visión de juego' };
   const POSN = { PG: 'Base', SG: 'Escolta', SF: 'Alero', PF: 'Ala-pívot', C: 'Pívot' };
   const CORTO = { EUROCUP: 'EuroCup', BCL: 'Champions', NBA: 'NBA', EUROLIGA: 'Euroliga', ACB: 'ACB', LEGA: 'Lega', GBL: 'Grecia', BBL: 'Alemania', BSL: 'Turquía', MUNDIAL: 'Mundial', EUROBASKET: 'EuroBasket', JJOO: 'Juegos Olímpicos', TORNEO_VERANO: 'Torneo de verano' };
@@ -51,7 +52,8 @@
     r.setProperty('--club-ink', contraste(fill, '#101c2e') >= contraste(fill, '#ffffff') ? '#101c2e' : '#ffffff');
     r.setProperty('--club-hi', lum(fill) < 0.1 ? mezcla(fill, 0.5) : fill);
   }
-  function setTema(t) { document.documentElement.setAttribute('data-tema', t); try { window.localStorage.setItem('gm1:tema', t); } catch (e) { } }
+  function setTema(t) { if (GM.diseno) { GM.diseno.setTema(t); return; } document.documentElement.setAttribute('data-tema', t); try { window.localStorage.setItem('gm1:tema', t); } catch (e) { } }
+  const cicloTema = () => setTema(({ auto: 'dia', dia: 'noche', noche: 'auto' })[GM.diseno ? GM.diseno.tema() : (document.documentElement.getAttribute('data-tema') === 'noche' ? 'noche' : 'dia')]);
   try { const t0 = window.localStorage.getItem('gm1:tema'); if (t0) document.documentElement.setAttribute('data-tema', t0); } catch (e) { }
   // Accesibilidad (por dispositivo, en localStorage): tamaño de letra, contraste alto y animaciones reducidas.
   // Se aplican como atributos de <html> que lee estilos.css; las animaciones reducidas siguen la preferencia del sistema si no hay elección.
@@ -64,6 +66,13 @@
     const cuerpo = h('div');
     const pintar = () => { const a = acces(); cuerpo.innerHTML = ''; cuerpo.append(h('h3', null, 'Accesibilidad'),
       ...[['letra', 'Tamaño de letra'], ['contraste', 'Contraste'], ['animaciones', 'Animaciones']].map(([k, t]) => h('div', { class: 'ajuste' }, h('b', null, t), h('div', { class: 'seg' }, ACCES[k].map(([v, n]) => h('button', { class: 'tab' + (a[k] === v ? ' on' : ''), onclick: () => { setAcces(k, v); pintar(); } }, n))))),
+      ...(GM.i18n ? [h('div', { class: 'ajuste' }, h('b', null, 'Idioma'), h('div', { class: 'seg' }, GM.i18n.IDIOMAS.map(([v, n]) => h('button', { class: 'tab' + (GM.i18n.idioma() === v ? ' on' : ''), 'data-no-i18n': '1', onclick: () => { GM.i18n.setIdioma(v); pintar(); } }, n))))] : []),
+      ...(GM.accesibilidad ? [h('div', { class: 'ajuste' }, h('b', null, 'Daltonismo'), h('div', { class: 'seg' }, GM.accesibilidad.DALTON.map(([v, n]) => h('button', { class: 'tab' + (GM.accesibilidad.estado().dalton === v ? ' on' : ''), onclick: () => { GM.accesibilidad.set('dalton', v); pintar(); } }, n)))),
+        h('div', { class: 'ajuste' }, h('b', null, 'Lector de pantalla'), h('div', { class: 'seg' }, [[false, 'No'], [true, 'Sí']].map(([v, n]) => h('button', { class: 'tab' + (GM.accesibilidad.estado().lector === v ? ' on' : ''), onclick: () => { GM.accesibilidad.set('lector', v); pintar(); } }, n))))] : []),
+      ...(GM.diseno ? [h('div', { class: 'ajuste' }, h('b', null, 'Sonidos de interfaz'), h('div', { class: 'seg' }, [[true, 'Sí'], [false, 'No']].map(([v, n]) => h('button', { class: 'tab' + (GM.diseno.sonidoActivo() === v ? ' on' : ''), onclick: () => { GM.diseno.setSonido(v); pintar(); } }, n))))] : []),
+      ...(GM.controles ? [h('div', { class: 'ajuste' }, h('b', null, 'Controles' + (GM.controles.hayMando() ? ' (mando conectado)' : '')),
+        h('div', null, GM.controles.ACCIONES.map(([id, n]) => h('button', { class: 'tab', title: 'Pulsa una tecla nueva', onclick: ev => { const b = ev.currentTarget; b.textContent = n + ': pulsa una tecla'; const f = e => { e.preventDefault(); e.stopPropagation(); window.removeEventListener('keydown', f, true); GM.controles.asignar(id, e.key.toLowerCase()); pintar(); }; window.addEventListener('keydown', f, true); } }, n + ': ' + GM.controles.tecla(id)))),
+        h('button', { class: 'tab', onclick: () => { GM.controles.restablecer(); pintar(); } }, 'Restablecer'))] : []),
       h('p', { class: 'muted' }, 'Se guarda en este dispositivo. Las animaciones reducidas quitan transiciones y fundidos de la interfaz.')); };
     pintar(); modal(cuerpo, [{ t: 'Cerrar', cls: 'btn-sec' }]);
   }
@@ -161,7 +170,7 @@
           slots.length > 1 ? h('button', { class: 'm-sec', onclick: () => cargarMenu(slots) }, 'Otras partidas') : null,
           g ? h('button', { class: 'm-sec', onclick: dialogoImportar }, 'Importar') : null,
           h('button', { class: 'm-sec', onclick: accesModal }, 'Accesibilidad'), h('button', { class: 'm-sec', onclick: ajustesModal }, 'Ajustes gráficos'),
-          h('button', { class: 'm-sec', onclick: () => { setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche'); } }, 'Tema claro u oscuro'))),
+          h('button', { class: 'm-sec', onclick: () => { cicloTema(); toast('Tema: ' + ({ auto: 'automático', dia: 'claro', noche: 'oscuro' })[GM.diseno ? GM.diseno.tema() : 'dia']); } }, 'Tema claro u oscuro'))),
       h('p', { class: 'm-pie' }, 'Clubes y jugadores reales; las valoraciones son estimaciones. Modelos 3D de Kenney y Quaternius (CC0).')));
   }
   function cargarMenu(slots) {
@@ -325,8 +334,9 @@
     modal(h('div', null, h('h3', null, 'Partida'), h('div', { class: 'lista' }, filas),
       h('div', { class: 'par' }, h('button', { class: 'btn btn-sec', onclick: dialogoExportar }, 'Copia de seguridad'), h('button', { class: 'btn btn-sec', onclick: dialogoImportar }, 'Importar')),
       M().copias ? h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: copiasModal }, 'Copias automáticas') : null,
+      screens.muestra ? h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { cerrarModales(); navegar('muestra'); } }, 'Galería de componentes') : null,
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { try { window.localStorage.setItem('gm1:directo', directoOn() ? 'no' : 'si'); } catch (e) { } toast(directoOn() ? 'Partidos en directo activados' : 'Partidos en directo desactivados'); } }, 'Ver los partidos en directo: activar o desactivar'),
-      h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => setTema(document.documentElement.getAttribute('data-tema') === 'noche' ? 'dia' : 'noche') }, 'Tema claro u oscuro'),
+      h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { cicloTema(); toast('Tema: ' + ({ auto: 'automático', dia: 'claro', noche: 'oscuro' })[GM.diseno ? GM.diseno.tema() : 'dia']); } }, 'Tema claro u oscuro'),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: accesModal }, 'Accesibilidad'),
       h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: ajustesModal }, 'Ajustes gráficos y de sonido'),
       GM.ui.tutorial ? h('button', { class: 'btn btn-sec', style: { marginTop: '8px' }, onclick: () => { cerrarModales(); navegar('inicio'); setTimeout(() => GM.ui.tutorial(), 300); } }, 'Ver el tutorial') : null,
@@ -514,6 +524,6 @@
     return ok;
   }
   // Utilidades compartidas con los archivos de pantallas (ui_gestion.js, ui_ciudad.js, ui_presidente.js, ui_carrera.js, ui_entrenador.js)
-  GM.ui._ = { ajustesModal, addTab, tabsExtra, tabExtra, accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
+  GM.ui._ = { NAV_ACTUAL: navItems, ajustesModal, addTab, tabsExtra, tabExtra, accesModal,  U, M, S, ICON, icon, NAV_G, NAV_P, pres, carrera, etqFase, catEdad, enCantera, lectura, avatarEl, dorsal, NAV_E, entr, tacticaOn, NAV_C, navItems, ATT, POSN, CORTO, rgb, lum, contraste, mezcla, aplicaKit, setTema, ui, screens, eq, clip, claro, tintaEscudo, escudo, chip, barra, num, clsOvr, lesionTxt, seccion, pestanas, aviso, toast, modal, cerrarModales, registerScreen, pistasScroll, start, fondoPortada, menu, cargarMenu, dialogoImportar, flujoNueva, personajeModal, perfilModal, jugadorModal, elegirLiga, ovrData, elegirClub, confirmarClub, empezar, elegirModo, elegirPilares, juego, cabecera, desmontar, navegar, refrescar, menuJuego, dialogoExportar, topStats, resultadoModal, directoOn, jugarUnDia, jugarDiaYa, hastaPartido, hastaFin, nuevaTemporada, ovrBarra, avisos, inicio, filaResultado, tablaClasif, selfTest, h };
   GM.register('ui', { start, navegar, refrescar, toast, modal, registerScreen, selfTest });
 })();

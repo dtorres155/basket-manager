@@ -59,7 +59,8 @@
           const piel = ['#f1c7a5', '#e0ac85', '#c68863', '#9a6142', '#6e4329'], pelo = ['#1d1510', '#3b2617', '#6a4425', '#a9793e', '#8a8a8a', '#c9a25f'];
           const fans = sitios.map(p => ({ x: p.x, y: p.y, z: p.z, ry: p.s > 0 ? Math.PI : 0, ropa: p.eq === 'A' ? cols[p.h0 % 2] : p.eq === 'B' ? cols[2] : cols[3 + p.h0 % 4], piel: piel[(p.h0 >>> 7) % 5], pelo: pelo[(p.h0 >>> 11) % 6], pantalon: ['#2f3640', '#3c4a5c', '#5a4a3a'][(p.h0 >>> 3) % 3] }));
           const PB = K.publico(fans, 0.82); W3.add(PB.grupo); ES.publico = { sitios, PB };
-          if (NAR && NAR.ambiente >= 2) [-1, 1].forEach(s => { [[-0.55, eL.colores[0]], [0.0, eL.colores[1] || '#ffffff'], [0.55, eL.colores[0]]].forEach(([dx, c]) => W3.add(K.caja(L * 0.5, 1.4, 0.06, c, dx * L * 1.1, 4.0, s * (W + 1.6 + 4 * 0.9 + 0.4)))); W3.add(K.caja(L * 0.9, 1.6, 0.06, eV.colores[0], s * 0 + L * 0.9, 4.0, (W + 6.0))); });   // tifos de clásico
+          if (NAR && NAR.ambiente >= 2) tifoClasico(W3, K, eL, eV, L, W, ES);
+          if (false) [-1, 1].forEach(s => { [[-0.55, eL.colores[0]], [0.0, eL.colores[1] || '#ffffff'], [0.55, eL.colores[0]]].forEach(([dx, c]) => W3.add(K.caja(L * 0.5, 1.4, 0.06, c, dx * L * 1.1, 4.0, s * (W + 1.6 + 4 * 0.9 + 0.4)))); W3.add(K.caja(L * 0.9, 1.6, 0.06, eV.colores[0], s * 0 + L * 0.9, 4.0, (W + 6.0))); });   // tifos de clásico
           ES.colocaPublico = (t) => { const C = ES.celebra, act = C && t - C.t0 < 1.4; PB.colocar(i => { const p = sitios[i]; if (!(act && p.eq === C.k)) return null; const f = 1 - (t - C.t0) / 1.4; return { salto: Math.abs(Math.sin((t - C.t0) * 9 + p.h0)) * 0.35 * f, brazos: Math.min(1, f * 1.6) }; }); };
           ES.colocaPublico(0);
         }
@@ -88,7 +89,7 @@
         };
         const _hb = new THREE.Vector3();
         V.anim = function (tm) {
-          const dt = 0.033; if (NAR && ES.cam && ES.cam !== 'general') GM.narrador.camara(V, ES.cam, balon, ES.ataca, window.innerWidth);
+          const dt = 0.033; if (ES.tifoAnim) ES.tifoAnim(performance.now() / 1000); if (NAR && ES.cam && ES.cam !== 'general') GM.narrador.camara(V, ES.cam, balon, ES.ataca, window.innerWidth);
           ['A', 'B'].forEach(k => jug[k].forEach(o => { const dx = (o.tx - o.x) * 0.12, dz = (o.tz - o.z) * 0.12; o.x += dx; o.z += dz; o.g.position.set(o.x, 0, o.z); const v = Math.hypot(dx, dz) / dt;
             if (o.p) { if (v > 0.25) { let a = Math.atan2(dx, dz) - o.g.rotation.y; while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; o.g.rotation.y += a * 0.25; } else { const hx = (ES.ataca === k ? 1 : -1) * (k === 'A' ? 1 : -1) * HX; o.g.rotation.y += (Math.atan2(hx - o.x, -o.z) - o.g.rotation.y) * 0.08; }
               nombreAnim(o, k, jug[k].indexOf(o), v); o.p.mixer.update(dt);
@@ -211,6 +212,16 @@
       ES.cierre.marcador = res.marcador; ES.cierre.terminado = res.terminado; c.hecha = true;
       const nj = nombre(res.jug), fin = res.r === 'ok' ? (res.extra ? '¡' + nj + ' anota con falta y adicional!' : '¡' + nj + ' la mete!' + (res.v === 3 ? ' Triple.' : '')) : res.r === 'falta' ? 'Falta sobre ' + nj + ': ' + res.ok + '/2 desde la línea.' : res.r === 'tov' ? 'Balón perdido en la jugada decisiva.' : nj + ' falla.';
       ES.fase = 'jugando'; ES.ult = performance.now() / 1000; juega(ES.cola[ES.idx++], true); narra(fin, res.pts ? 'bien' : ''); controles();
+    }
+    // Tifo de clásico: un mosaico con los colores y las siglas de cada club sobre la grada alta, banderas que ondean y bengalas; al celebrar el local el mosaico cambia de dibujo
+    function tifoClasico(W3, K, eL, eV, L, W, ES) {
+      const T3 = THREE, col = e => (e.colores[0] === '#000000' ? '#222222' : e.colores[0]), sec = e => e.colores[1] || '#ffffff', zf = W + 1.6 + 4 * 0.9 + 0.5;
+      const lienzo = (e, alt) => { try { const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d'); if (!x) return null; x.fillStyle = alt ? sec(e) : col(e); x.fillRect(0, 0, 256, 64); x.fillStyle = alt ? col(e) : sec(e); for (let i = -2; i < 12; i++) { x.beginPath(); x.moveTo(i * 24, 64); x.lineTo(i * 24 + 12, 64); x.lineTo(i * 24 + 44, 0); x.lineTo(i * 24 + 32, 0); x.closePath(); x.fill(); } x.fillStyle = alt ? sec(e) : col(e); x.fillRect(86, 12, 84, 40); x.fillStyle = alt ? col(e) : sec(e); x.font = 'bold 34px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(e.siglas, 128, 33); const t = new T3.CanvasTexture(c); return t; } catch (er) { return null; } };
+      const planos = []; [[eL, -1], [eV, 1]].forEach(([e, s]) => { const a = lienzo(e, false), b = lienzo(e, true); const m = new T3.Mesh(new T3.PlaneGeometry(L * 1.6, 3.4), a ? new T3.MeshBasicMaterial({ map: a, side: T3.DoubleSide }) : new T3.MeshBasicMaterial({ color: col(e), side: T3.DoubleSide })); m.position.set(0, 4.3, s * zf); m.rotation.y = s > 0 ? Math.PI : 0; W3.add(m); planos.push({ m, a, b, e }); });
+      const banderas = []; [-1, 1].forEach(s => { for (let i = 0; i < 7; i++) { const e = i % 2 ? eV : eL, g = new T3.Group(), mastil = new T3.Mesh(new T3.CylinderGeometry(0.03, 0.03, 2.2, 6), new T3.MeshBasicMaterial({ color: 0x444444 })); mastil.position.y = 1.1; const tela = new T3.Mesh(new T3.PlaneGeometry(0.9, 0.55, 6, 1), new T3.MeshBasicMaterial({ color: i % 2 ? sec(e) : col(e), side: T3.DoubleSide })); tela.position.set(0.47, 1.9, 0); g.add(mastil, tela); g.position.set(-L + 1.2 + i * (2 * L - 2.4) / 6, 2.4 + (i % 3) * 0.3, s * (zf - 0.7)); W3.add(g); banderas.push({ tela, i }); } });
+      const bengalas = []; [-1, 1].forEach(s => { for (let i = 0; i < 6; i++) { const b = new T3.Mesh(new T3.CylinderGeometry(0.05, 0.05, 0.35, 6), new T3.MeshBasicMaterial({ color: 0xff3b1a })); b.position.set(-L + 2 + i * (2 * L - 4) / 5, 3.1, s * (zf - 1.0)); b.visible = false; W3.add(b); bengalas.push(b); } });
+      ES.tifoAnim = t => { banderas.forEach(f => { const v = f.tela.geometry.attributes.position; for (let k = 0; k < v.count; k++) { const x0 = v.getX(k) + 0.45; v.setZ(k, Math.sin(t * 5 + x0 * 5 + f.i) * 0.08 * (x0 + 0.1)); } v.needsUpdate = true; });
+        const C = ES.celebra, act = C && t - C.t0 < 1.8; planos.forEach((p, i) => { if (p.a && p.b) { const map = act && (C.k === 'A') === (i === 0) ? p.b : p.a; if (p.m.material.map !== map) { p.m.material.map = map; p.m.material.needsUpdate = true; } } }); bengalas.forEach((b, i) => { b.visible = !!act && (i < 6 ? C.k === 'A' : C.k === 'B') ? Math.sin(t * 20 + i) > -0.3 : false; }); };
     }
     // Estadísticas en vivo y repetición de la última jugada notable
     function statsPinta() {

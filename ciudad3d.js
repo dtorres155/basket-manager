@@ -392,6 +392,9 @@
     if (GM.campus.config.calidad === 'alta') K.sombrear(W);
     V.pos = { cs: RB.map(r => ({ x: (r[0] + r[2]) / 2, z: (r[1] + r[3]) / 2 })) };
     marcarSeleccion();
+    // Etiquetas por altura de cámara, iguales a las del mapa 2D (punto 73)
+    if (V.etq) { V.etq.dispose(); V.etq = null; } const vx = V.raiz.querySelector('.vista3d');
+    if (GM.etiquetasMapa && vx) V.etq = GM.etiquetasMapa.montar(vx, v, { vec: Sx.mapaVec || null, real: R, max: 800, barrios: bar.map((b, i) => ({ nombre: b.nombre, x: V.pos.cs[i].x, z: V.pos.cs[i].z, aficion: b.aficion })), zonas: lugares(st).filter(l => V.posLugar[l.id]).map(l => ({ nombre: l.nombre || l.id, id: l.id, x: V.posLugar[l.id][0], z: V.posLugar[l.id][1], alClic: () => { V.sel = { lugar: l.id }; marcarSeleccion(); panel(st); } })) });
   }
   // Selección sin reconstruir la ciudad: aro sobre el lugar o barrio resaltado, y la cámara se acerca
   function marcarSeleccion() {
@@ -400,7 +403,9 @@
     if (V.sel && V.sel.lugar && V.posLugar[V.sel.lugar]) { const [x, z] = V.posLugar[V.sel.lugar]; V.aro = new THREE.Mesh(new THREE.RingGeometry(3.4, 4.2, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd54a })); V.aro.position.set(x, 0.4, z); if (V.real) V.aro.scale.setScalar(3); W.add(V.aro); enfocar(x, z, V.real ? 150 : 60); }
     else if (V.sel && V.sel.barrio !== undefined && V.pos) { const c = V.pos.cs[V.sel.barrio]; enfocar(c.x, c.z, V.real ? 300 : 110); }
   }
+  const HORA_MAPA = { dia: 12, tarde: 18.4, noche: 22 };
   function escena(st) {
+    if (V.vista && GM.etiquetasMapa) GM.etiquetasMapa.iluminar(V.vista, HORA_MAPA[V.hora] || 12, st);   // la misma luz que el mundo según la hora
     // la ciudad real se carga por red: mientras llega se ve el mapa de siempre
     if (V.modo !== 'calles' && GM.mods.calleReal && !GM.mods.calleReal.cargado(st.clubId)) GM.calle.preparar(st).then(d => { if (d && V && V.vista) { V.claveMapa = null; escena(st); camara(V.modo); } });
     if (V.modo === 'calles') escenaCalles(st); else if (paseable()) { try { mapaPaseable(st); } catch (e) { console.warn('ciudad paseable en el mapa', e); V.claveMapa = null; escenaMapa(st); } } else escenaMapa(st); }
@@ -454,7 +459,7 @@
     V.refrescar = () => { if (V.vista) escena(st); panel(st); };
     V.refrescar(); return true;
   }
-  function unmount() { if (!V) return; clearInterval(V.tw); if (V.vista) V.vista.dispose(); if (V.raiz && V.raiz.parentNode) V.raiz.parentNode.removeChild(V.raiz); V = null; }
+  function unmount() { if (!V) return; clearInterval(V.tw); if (V.etq) { V.etq.dispose(); V.etq = null; } if (V.vista) V.vista.dispose(); if (V.raiz && V.raiz.parentNode) V.raiz.parentNode.removeChild(V.raiz); V = null; }
   function selfTest() {
     const st = { modo: 'gestor', temporada: '2026-27', fecha: '2026-10-01', clubId: 'joventut-badalona', noticias: [], equipos: { 'joventut-badalona': { id: 'joventut-badalona', ciudad: 'Badalona', presupuesto: 14e6, reputacion: 62, pabellon: { nombre: 'Palau Olímpic', aforo: 12500 }, colores: ['#00a859', '#000000'] } }, ciudad: { 'joventut-badalona': { ambiente: 50, aficion: 50, apoyoAyuntamiento: 50, convenios: [], eventos: [] } }, finanzas: { 'joventut-badalona': { caja: 1e6, movimientos: [], patrocinios: [], temp: { ingresos: 0, gastos: 0 }, historial: [] } } };
     const l = lugares(st), cole = l.find(x => x.tipo === 'colegio'), b0 = barrios(st)[cole.barrio].aficion;

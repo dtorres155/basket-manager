@@ -27,7 +27,7 @@
     if (defs.some(d => d.id === def.id)) return; const p = completar(def); defs.push(Object.assign(p, { nombre: def.nombre, pais: def.pais, formato: def.formato || 'liga_simple' }));
     Object.keys(tablas).forEach(n => aplicarDef(n, tablas[n], p)); Object.keys(listas).forEach(n => { if (listas[n].indexOf(def.id) < 0) listas[n].push(def.id); });
     // los clubes y la liga entran con los demás datos (GM.club ya los dejó en el paquete si vienen en def.clubes)
-    const ids = (def.equipos || []).slice(); (def.clubes || []).forEach(c => { const e = GM.club(c.def, c.filas || [], c.opt || {}); ids.push(e.id); });
+    const ids = (def.equipos || []).slice(); (def.clubes || []).forEach(c => { const real = GM.plantillasExtra && GM.plantillasExtra[c.def[0]]; const e = GM.club(c.def, real || c.filas || [], c.opt || {}); ids.push(e.id); });   // plantillas reales importadas (tools/importar_plantillas_extra.js) o relleno ficticio
     GM._pack.ligas.push({ id: def.id, nombre: def.nombre, pais: def.pais, formato: def.formato || 'liga_simple', equipos: ids });
   }
   function selfTest() {

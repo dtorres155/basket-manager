@@ -606,3 +606,109 @@ body{background:var(--bg)}
 .movil-app .movil-ico { font-size: 26px; line-height: 1; }
 .movil-app .movil-num { position: absolute; top: 4px; right: 8px; min-width: 18px; height: 18px; border-radius: 9px; background: #c0392b; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; }
 .movil-apps h4 { margin: 10px 0 4px; }
+
+/* ========== Sistema de diseño (punto 70) ==========
+   Capa 1, tokens: espaciado, radios, sombras y movimiento (los colores están arriba, en :root y en [data-tema="noche"]).
+   Capa 2, componentes dz-*: estado vacío, tabla ordenable, mini gráfico, medidor, panel plegable, dato con tendencia, tecla.
+   Capa 3, movimiento: transiciones de 150 a 250 ms con una sola curva; las animaciones reducidas (Accesibilidad) las desactivan. */
+:root {
+  --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px; --r1: 4px; --r2: 8px; --r3: 14px;
+  --sh1: 0 1px 0 var(--linea); --sh2: 0 4px 14px rgba(8, 14, 22, 0.14); --sh3: 0 12px 34px rgba(8, 14, 22, 0.28);
+  --t-rapido: 150ms; --t-medio: 200ms; --t-lento: 250ms; --curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.btn, .tab, .jug, .chip, .item, .navb, .dz-fila, .dz-panel-cab { transition: background-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva), transform var(--t-rapido) var(--curva), box-shadow var(--t-medio) var(--curva), opacity var(--t-medio) var(--curva); }
+.btn:active, .jug:active, .tab:active { transform: scale(0.985); }
+.fondo > * { animation: dzEntra var(--t-lento) var(--curva); }
+@keyframes dzEntra { from { transform: translateY(14px) scale(0.98); opacity: 0; } to { transform: none; opacity: 1; } }
+.dz-vacio { display: flex; flex-direction: column; align-items: center; gap: var(--e2); padding: var(--e5) var(--e4); text-align: center; border: 2px dashed var(--linea); border-radius: var(--r2); color: var(--mut); }
+.dz-vacio b { color: var(--tinta); }
+.dz-vacio p { margin: 0; max-width: 34ch; }
+.dz-vacio-ic { font-size: 28px; line-height: 1; opacity: 0.7; }
+.dz-tabla { display: flex; flex-direction: column; gap: var(--e1); }
+.dz-tabla-barra { display: flex; gap: var(--e2); flex-wrap: wrap; margin-bottom: var(--e2); }
+.dz-tabla-barra .sel { flex: 1; min-width: 120px; }
+.dz-fila { display: flex; align-items: center; gap: var(--e2); padding: var(--e2) var(--e3); background: var(--bg2); border-radius: var(--r1); border: 0; width: 100%; text-align: left; color: var(--tinta); font: inherit; }
+.dz-clic { cursor: pointer; }
+.dz-clic:hover { background: var(--bg3); }
+.dz-cab { background: transparent; padding-top: 0; padding-bottom: 0; position: sticky; top: 0; z-index: 2; backdrop-filter: blur(4px); }
+.dz-celda { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; background: none; border: 0; color: inherit; font: inherit; text-align: left; padding: 6px 0; }
+.dz-cab .dz-celda { color: var(--mut); font-weight: 600; font-size: 12px; cursor: pointer; }
+.dz-cab .dz-celda.on { color: var(--tinta); }
+.dz-celda.num { text-align: right; flex: 0 0 52px; font-variant-numeric: tabular-nums; }
+.dz-pie { font-size: 12px; text-align: right; padding: var(--e1) var(--e1) 0; }
+@media (max-width: 480px) { .dz-corto { display: none; } }
+.dz-spark { vertical-align: middle; }
+.dz-medidor { display: flex; flex-direction: column; gap: var(--e1); }
+.dz-medidor-cab { display: flex; justify-content: space-between; font-size: 13px; }
+.dz-panel { background: var(--bg2); border-radius: var(--r2); margin-bottom: var(--e3); box-shadow: var(--sh1); overflow: hidden; }
+.dz-panel-cab { display: flex; align-items: center; gap: var(--e2); width: 100%; padding: var(--e3) var(--e4); background: none; border: 0; color: var(--tinta); font: inherit; cursor: pointer; text-align: left; }
+.dz-panel-cab .muted { flex: 1; text-align: right; font-size: 13px; }
+.dz-panel-cab .dz-flecha { font-style: normal; transition: transform var(--t-medio) var(--curva); }
+.dz-panel-cab[aria-expanded="false"] .dz-flecha { transform: rotate(-90deg); }
+.dz-panel-c { padding: 0 var(--e4) var(--e4); }
+.dz-dato { display: flex; flex-direction: column; gap: 2px; padding: var(--e3); background: var(--bg2); border-radius: var(--r2); box-shadow: var(--sh1); min-width: 96px; }
+.dz-dato b { font: 400 22px var(--fd); }
+.dz-delta { font-size: 12px; color: var(--mut); }
+.dz-delta.sube { color: var(--ok); }
+.dz-delta.baja { color: var(--mal); }
+.dz-tecla { display: inline-block; min-width: 26px; padding: 2px 8px; border-radius: var(--r1); background: var(--bg3); border: 1px solid var(--linea); border-bottom-width: 3px; font: 600 13px var(--fb); text-align: center; }
+.dz-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--e3); }
+.dz-muestra { display: flex; gap: var(--e3); flex-wrap: wrap; align-items: center; }
+.dz-ficha-token { display: flex; align-items: center; gap: var(--e2); font-size: 13px; }
+.dz-ficha-token i { width: 28px; height: 28px; border-radius: var(--r1); border: 1px solid var(--linea); display: inline-block; }
+.dz-ficha-token .cuadro { background: var(--club); }
+:root[data-tema="noche"] .dz-vacio { border-color: var(--linea); }
+
+/* Interfaz dentro del mundo 3D (punto 72) */
+.hm { position: absolute; inset: 0; pointer-events: none; z-index: 4; font-size: 13px; }
+.hm button { pointer-events: auto; }
+.hm-brujula { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); width: min(300px, 56vw); height: 30px; border-radius: 15px; background: rgba(12, 18, 24, 0.62); color: #eef2f4; overflow: hidden; backdrop-filter: blur(4px); }
+.hm-brj-tira { position: absolute; inset: 0; }
+.hm-brj-tira i { position: absolute; top: 6px; font-style: normal; font-weight: 700; font-size: 12px; transform: translateX(-50%); opacity: 0.85; }
+.hm-brj-g { position: absolute; left: 50%; bottom: 1px; transform: translateX(-50%); font-size: 10px; background: var(--club, #e8590c); color: var(--club-ink, #fff); padding: 0 6px; border-radius: 6px; }
+.hm-reloj { position: absolute; top: 64px; right: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding: 6px 8px; border-radius: 10px; background: rgba(12, 18, 24, 0.62); color: #eef2f4; backdrop-filter: blur(4px); }
+.hm-hora { font: 400 20px var(--fl, monospace); letter-spacing: 0.04em; }
+.hm-vel { display: flex; gap: 3px; }
+.hm-v { min-width: 30px; height: 24px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.3); background: transparent; color: #eef2f4; font-size: 11px; cursor: pointer; }
+.hm-v.on { background: var(--club, #e8590c); color: var(--club-ink, #fff); border-color: transparent; }
+.hm-lugar { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 14px; border-radius: 12px; background: rgba(12, 18, 24, 0.7); color: #eef2f4; text-align: center; max-width: min(360px, 80vw); backdrop-filter: blur(4px); }
+.hm-lugar .muted { color: #b9c4cc; font-size: 12px; }
+.hm-lugar-d { font-size: 12px; opacity: 0.85; }
+.hm-pin { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 1px; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); font-size: 11px; white-space: nowrap; }
+.hm-pin b { background: rgba(12, 18, 24, 0.72); padding: 1px 8px; border-radius: 8px; }
+.hm-punto { width: 14px; height: 14px; border-radius: 50%; background: #f2c94c; border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(242, 201, 76, 0.5); animation: hmLate 1.6s infinite; }
+.hm-pin.destino .hm-punto { background: #3ab0ff; box-shadow: 0 0 0 2px rgba(58, 176, 255, 0.5); }
+.hm-pin.borde { transform: translate(-50%, -50%); }
+.hm-flecha { font-size: 22px; color: #f2c94c; }
+@keyframes hmLate { 50% { transform: scale(1.25); } }
+.hm-notis { position: absolute; left: 10px; bottom: 90px; display: flex; flex-direction: column; gap: 6px; max-width: min(340px, 70vw); }
+.hm-noti { padding: 8px 12px; border-radius: 10px; background: rgba(12, 18, 24, 0.78); color: #eef2f4; border-left: 4px solid var(--club, #e8590c); animation: dzEntra var(--t-lento, 250ms) var(--curva, ease); transition: opacity var(--t-medio, 200ms), transform var(--t-medio, 200ms); }
+.hm-noti.bien { border-left-color: #4cc38a; }
+.hm-noti.mal { border-left-color: #ef6a58; }
+.hm-noti.sale { opacity: 0; transform: translateX(-12px); }
+.hm-nec { position: absolute; left: 10px; top: 64px; display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border-radius: 10px; background: rgba(12, 18, 24, 0.55); color: #eef2f4; width: 128px; }
+.hm-nec:empty { display: none; }
+.hm-n { display: flex; flex-direction: column; font-size: 11px; }
+.hm-n .barra { height: 6px; }
+.hm-viaje { position: absolute; left: 50%; bottom: 72px; transform: translateX(-50%); width: min(260px, 60vw); height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
+.hm-viaje i { display: block; height: 100%; background: var(--club, #e8590c); transition: width 200ms linear; }
+.hm-radial { position: absolute; width: 0; height: 0; z-index: 8; pointer-events: none; }
+.hm-radial button { pointer-events: auto; position: absolute; left: 0; top: 0; cursor: pointer; }
+.hm-r-centro { transform: translate(-50%, -50%); width: 78px; height: 78px; border-radius: 50%; background: rgba(12, 18, 24, 0.88); color: #eef2f4; border: 2px solid var(--club, #e8590c); font-size: 11px; padding: 4px; }
+.hm-r-item { width: 86px; min-height: 52px; margin: -26px 0 0 -43px; border-radius: 14px; background: var(--club, #e8590c); color: var(--club-ink, #fff); border: 0; font-size: 11px; padding: 4px 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); animation: dzEntra var(--t-medio, 200ms) var(--curva, ease); }
+@media (max-width: 480px) { .hm-brujula { top: 108px; } .hm-nec { top: 108px; width: 100px; } .hm-reloj { top: 108px; } }
+
+/* Etiquetas del mapa 3D de Ciudad (punto 73) */
+.em-capa { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.em-et { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font: 600 11px var(--fb); padding: 1px 6px; border-radius: 8px; background: rgba(255, 255, 255, 0.86); color: #1c2b3a; border: 0; text-shadow: none; }
+.em-et.barrio { font-size: 14px; background: rgba(16, 28, 46, 0.7); color: #fff; letter-spacing: 0.02em; }
+.em-et.barrio.bien { background: rgba(31, 143, 95, 0.78); } .em-et.barrio.mal { background: rgba(200, 64, 47, 0.78); }
+.em-et.lugar { font-size: 12px; background: #e8a400; color: #101c2e; pointer-events: auto; cursor: pointer; }
+.em-et.calle { opacity: 0.85; font-weight: 500; background: rgba(255, 255, 255, 0.7); }
+.em-et.comercio { background: rgba(226, 196, 162, 0.9); } .em-et.edif { background: rgba(195, 208, 220, 0.9); }
+/* Daltonismo (punto 74): paleta azul/naranja segura y símbolos en los chips de acierto y fallo */
+:root[data-dalton="protanopia"],:root[data-dalton="deuteranopia"]{--ok:#1f6fd6;--mal:#d9730d;--amb:#7a5cc9}
+:root[data-dalton="tritanopia"]{--ok:#1a8f8f;--mal:#c8402f;--amb:#e07a9a}
+:root[data-dalton]:not([data-dalton="ninguno"]) .chip.ok::before{content:"\2713 "}
+:root[data-dalton]:not([data-dalton="ninguno"]) .chip.mal::before{content:"\2717 "}
+:root[data-dalton]:not([data-dalton="ninguno"]) .pos-v::before{content:"+"}
