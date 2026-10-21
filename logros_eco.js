@@ -3,55 +3,260 @@
    al cumplirlos se anotan en los hitos y en las noticias. Se revisan cada día. Estado: state.carrera.vida.eco = { retos: { <etapa>: { <id>: fecha } }, etapa }.
    Expone: etapa, retos, revisar, logrosEco, resumen, selfTest. Prueba: t_logros_eco.js. */
 (function () {
-  const U = GM.util, clamp = U.clamp, k1 = k => (Math.round(k * 10) / 10).toLocaleString('es-ES');
-  const C = st => st.carrera, act = st => st && st.modo === 'carrera' && !!st.carrera;
-  const P = () => GM.patrimonio, neto = st => (P() ? P().neto(st).total : (C(st).dinero || 0));
+  const U = GM.util,
+    clamp = U.clamp,
+    k1 = k => (Math.round(k * 10) / 10).toLocaleString('es-ES');
+  const C = st => st.carrera,
+    act = st => st && st.modo === 'carrera' && !!st.carrera;
+  const P = () => GM.patrimonio,
+    neto = st => (P() ? P().neto(st).total : C(st).dinero || 0);
   const casas = st => (GM.casasProd ? GM.casasProd.lista(st).filter(p => p.modo === 'compra' || p.modo === 'hipoteca') : []);
-  const bienes = st => (P() ? P().est(st).bienes : []), negocios = st => (GM.negocios ? GM.negocios.est(st).lista : []), activos = st => negocios(st).filter(n => !n.cerrado);
-  const rentasMes = st => { if (!P()) return 0; const lim = U.addDays(st.fecha, -31); return Math.round(P().libro(st).filter(l => l.f >= lim && l.v > 0 && (l.c === 'alquiler' || l.c === 'negocio')).reduce((s, l) => s + l.v, 0) * 10) / 10; };
+  const bienes = st => (P() ? P().est(st).bienes : []),
+    negocios = st => (GM.negocios ? GM.negocios.est(st).lista : []),
+    activos = st => negocios(st).filter(n => !n.cerrado);
+  const rentasMes = st => {
+    if (!P()) return 0;
+    const lim = U.addDays(st.fecha, -31);
+    return (
+      Math.round(
+        P()
+          .libro(st)
+          .filter(l => l.f >= lim && l.v > 0 && (l.c === 'alquiler' || l.c === 'negocio'))
+          .reduce((s, l) => s + l.v, 0) * 10
+      ) / 10
+    );
+  };
   const nivelPueblo = st => (GM.mods.pueblo && C(st).pueblo ? GM.mods.pueblo.nivel(st) : 0);
   const seg = st => (P() ? P().est(st).seguros : {});
   const pg = (v, m) => [Math.min(v, m), m];
   // ---------- Logros económicos ----------
   const LOGROS = [
-    { id: 'eco_alquiler', t: 'Casero', d: 'Cobra tu primer alquiler.', grupo: 'Bienes', cond: st => !!P() && P().libro(st).some(l => l.c === 'alquiler') }, { id: 'eco_propietario', t: 'Propietario', d: 'Compra tu primera vivienda.', grupo: 'Bienes', cond: st => casas(st).length >= 1 },
-    { id: 'eco_inversor', t: 'Inversor', d: 'Compra un solar, un local, una plaza, un coche o una obra de arte.', grupo: 'Bienes', cond: st => bienes(st).length >= 1 }, { id: 'eco_local', t: 'Dueño de un local', d: 'Ten un local comercial.', grupo: 'Bienes', cond: st => bienes(st).some(b => b.tipo === 'local') },
-    { id: 'eco_edificar', t: 'Promotor', d: 'Convierte un solar en un local.', grupo: 'Bienes', cond: st => bienes(st).some(b => b.tipo === 'local' && b.mejora > 1) }, { id: 'eco_reforma', t: 'Manitas', d: 'Haz tres reformas en una casa.', grupo: 'Bienes', cond: st => casas(st).some(p => p.prod && p.prod.mejoras.length >= 3), prog: st => pg(Math.max(0, ...casas(st).map(p => p.prod ? p.prod.mejoras.length : 0)), 3) },
+    {
+      id: 'eco_alquiler',
+      t: 'Casero',
+      d: 'Cobra tu primer alquiler.',
+      grupo: 'Bienes',
+      cond: st =>
+        !!P() &&
+        P()
+          .libro(st)
+          .some(l => l.c === 'alquiler')
+    },
+    { id: 'eco_propietario', t: 'Propietario', d: 'Compra tu primera vivienda.', grupo: 'Bienes', cond: st => casas(st).length >= 1 },
+    { id: 'eco_inversor', t: 'Inversor', d: 'Compra un solar, un local, una plaza, un coche o una obra de arte.', grupo: 'Bienes', cond: st => bienes(st).length >= 1 },
+    { id: 'eco_local', t: 'Dueño de un local', d: 'Ten un local comercial.', grupo: 'Bienes', cond: st => bienes(st).some(b => b.tipo === 'local') },
+    { id: 'eco_edificar', t: 'Promotor', d: 'Convierte un solar en un local.', grupo: 'Bienes', cond: st => bienes(st).some(b => b.tipo === 'local' && b.mejora > 1) },
+    {
+      id: 'eco_reforma',
+      t: 'Manitas',
+      d: 'Haz tres reformas en una casa.',
+      grupo: 'Bienes',
+      cond: st => casas(st).some(p => p.prod && p.prod.mejoras.length >= 3),
+      prog: st => pg(Math.max(0, ...casas(st).map(p => (p.prod ? p.prod.mejoras.length : 0))), 3)
+    },
     { id: 'eco_plusvalia', t: 'Buen ojo', d: 'Vende una casa con beneficio.', grupo: 'Bienes', cond: st => C(st).hitos.some(h => /Vendes tu vivienda.*ganas/.test(h.texto)) },
-    { id: 'eco_n100', t: 'Cien mil', d: 'Patrimonio neto de 100.000 €.', grupo: 'Patrimonio', cond: st => neto(st) >= 100, prog: st => pg(neto(st), 100) }, { id: 'eco_n500', t: 'Medio millón', d: 'Patrimonio neto de 500.000 €.', grupo: 'Patrimonio', cond: st => neto(st) >= 500, prog: st => pg(neto(st), 500) },
-    { id: 'eco_n2000', t: 'Dos millones', d: 'Patrimonio neto de 2 millones.', grupo: 'Patrimonio', cond: st => neto(st) >= 2000, prog: st => pg(neto(st), 2000) }, { id: 'eco_n10000', t: 'Diez millones', d: 'Patrimonio neto de 10 millones.', grupo: 'Patrimonio', cond: st => neto(st) >= 10000, prog: st => pg(neto(st), 10000) },
+    { id: 'eco_n100', t: 'Cien mil', d: 'Patrimonio neto de 100.000 €.', grupo: 'Patrimonio', cond: st => neto(st) >= 100, prog: st => pg(neto(st), 100) },
+    { id: 'eco_n500', t: 'Medio millón', d: 'Patrimonio neto de 500.000 €.', grupo: 'Patrimonio', cond: st => neto(st) >= 500, prog: st => pg(neto(st), 500) },
+    { id: 'eco_n2000', t: 'Dos millones', d: 'Patrimonio neto de 2 millones.', grupo: 'Patrimonio', cond: st => neto(st) >= 2000, prog: st => pg(neto(st), 2000) },
+    { id: 'eco_n10000', t: 'Diez millones', d: 'Patrimonio neto de 10 millones.', grupo: 'Patrimonio', cond: st => neto(st) >= 10000, prog: st => pg(neto(st), 10000) },
     { id: 'eco_n50000', t: 'Fortuna', d: 'Patrimonio neto de 50 millones.', grupo: 'Patrimonio', cond: st => neto(st) >= 50000, prog: st => pg(neto(st), 50000) },
-    { id: 'eco_libre', t: 'Libre de deudas', d: 'Termina de pagar un préstamo o una hipoteca.', grupo: 'Patrimonio', cond: st => !!P() && P().deudaTotal(st) === 0 && P().libro(st).some(l => l.c === 'prestamo' && /Cuota|Amortizas/.test(l.t)) }, { id: 'eco_rentista', t: 'Rentista', d: 'Cobra 10.000 € al mes entre alquileres y negocios.', grupo: 'Patrimonio', cond: st => rentasMes(st) >= 10, prog: st => pg(rentasMes(st), 10) },
-    { id: 'eco_asegurado', t: 'Bien asegurado', d: 'Contrata los tres seguros.', grupo: 'Patrimonio', cond: st => seg(st).hogar && seg(st).coche && seg(st).lesion, prog: st => pg((seg(st).hogar ? 1 : 0) + (seg(st).coche ? 1 : 0) + (seg(st).lesion ? 1 : 0), 3) }, { id: 'eco_hacienda', t: 'En regla con Hacienda', d: 'Presenta tres declaraciones.', grupo: 'Patrimonio', cond: st => !!P() && P().est(st).imp.pagado.length >= 3, prog: st => pg(P() ? P().est(st).imp.pagado.length : 0, 3) },
-    { id: 'eco_negocio', t: 'Emprendedor', d: 'Abre tu primer negocio.', grupo: 'Negocios', cond: st => negocios(st).length >= 1 }, { id: 'eco_3negocios', t: 'Empresario', d: 'Ten tres negocios abiertos a la vez.', grupo: 'Negocios', cond: st => activos(st).filter(n => n.abierto).length >= 3, prog: st => pg(activos(st).filter(n => n.abierto).length, 3) },
-    { id: 'eco_rentable', t: 'Negocio redondo', d: 'Seis meses seguidos de beneficios en un negocio.', grupo: 'Negocios', cond: st => negocios(st).some(n => n.hist.length >= 6 && n.hist.slice(0, 6).every(x => x.beneficio > 0)) }, { id: 'eco_traspaso', t: 'Buen traspaso', d: 'Traspasa un negocio.', grupo: 'Negocios', cond: st => negocios(st).some(n => n.traspasado > 0) },
-    { id: 'eco_pueblo3', t: 'Alcalde sin cargo', d: 'Que tu pueblo llegue a villa.', grupo: 'Pueblo', cond: st => nivelPueblo(st) >= 3, prog: st => pg(nivelPueblo(st), 3) }, { id: 'eco_pueblo5', t: 'Ciudad del baloncesto', d: 'Lleva tu pueblo al máximo nivel.', grupo: 'Pueblo', cond: st => nivelPueblo(st) >= 5, prog: st => pg(nivelPueblo(st), 5) },
-    { id: 'eco_pob', t: 'Más de tres mil vecinos', d: 'Que tu pueblo llegue a 3.000 habitantes.', grupo: 'Pueblo', cond: st => !!GM.puebloGestion && !!GM.puebloGestion.gest(st) && GM.puebloGestion.gest(st).pob >= 3000, prog: st => pg(GM.puebloGestion && GM.puebloGestion.gest(st) ? GM.puebloGestion.gest(st).pob : 0, 3000) },
-    { id: 'eco_donante', t: 'Mecenas', d: 'Dona 100.000 € al ayuntamiento de tu pueblo.', grupo: 'Pueblo', cond: st => !!GM.puebloGestion && !!GM.puebloGestion.gest(st) && GM.puebloGestion.gest(st).donado >= 100, prog: st => pg(GM.puebloGestion && GM.puebloGestion.gest(st) ? GM.puebloGestion.gest(st).donado : 0, 100) },
-    { id: 'eco_coleccion', t: 'Coleccionista', d: 'Reúne 25 coleccionables.', grupo: 'Vida', cond: st => !!GM.coleccionables && GM.coleccionables.total(st) >= 25, prog: st => pg(GM.coleccionables ? GM.coleccionables.total(st) : 0, 25) }
+    {
+      id: 'eco_libre',
+      t: 'Libre de deudas',
+      d: 'Termina de pagar un préstamo o una hipoteca.',
+      grupo: 'Patrimonio',
+      cond: st =>
+        !!P() &&
+        P().deudaTotal(st) === 0 &&
+        P()
+          .libro(st)
+          .some(l => l.c === 'prestamo' && /Cuota|Amortizas/.test(l.t))
+    },
+    {
+      id: 'eco_rentista',
+      t: 'Rentista',
+      d: 'Cobra 10.000 € al mes entre alquileres y negocios.',
+      grupo: 'Patrimonio',
+      cond: st => rentasMes(st) >= 10,
+      prog: st => pg(rentasMes(st), 10)
+    },
+    {
+      id: 'eco_asegurado',
+      t: 'Bien asegurado',
+      d: 'Contrata los tres seguros.',
+      grupo: 'Patrimonio',
+      cond: st => seg(st).hogar && seg(st).coche && seg(st).lesion,
+      prog: st => pg((seg(st).hogar ? 1 : 0) + (seg(st).coche ? 1 : 0) + (seg(st).lesion ? 1 : 0), 3)
+    },
+    {
+      id: 'eco_hacienda',
+      t: 'En regla con Hacienda',
+      d: 'Presenta tres declaraciones.',
+      grupo: 'Patrimonio',
+      cond: st => !!P() && P().est(st).imp.pagado.length >= 3,
+      prog: st => pg(P() ? P().est(st).imp.pagado.length : 0, 3)
+    },
+    { id: 'eco_negocio', t: 'Emprendedor', d: 'Abre tu primer negocio.', grupo: 'Negocios', cond: st => negocios(st).length >= 1 },
+    {
+      id: 'eco_3negocios',
+      t: 'Empresario',
+      d: 'Ten tres negocios abiertos a la vez.',
+      grupo: 'Negocios',
+      cond: st => activos(st).filter(n => n.abierto).length >= 3,
+      prog: st => pg(activos(st).filter(n => n.abierto).length, 3)
+    },
+    {
+      id: 'eco_rentable',
+      t: 'Negocio redondo',
+      d: 'Seis meses seguidos de beneficios en un negocio.',
+      grupo: 'Negocios',
+      cond: st => negocios(st).some(n => n.hist.length >= 6 && n.hist.slice(0, 6).every(x => x.beneficio > 0))
+    },
+    { id: 'eco_traspaso', t: 'Buen traspaso', d: 'Traspasa un negocio.', grupo: 'Negocios', cond: st => negocios(st).some(n => n.traspasado > 0) },
+    { id: 'eco_pueblo3', t: 'Alcalde sin cargo', d: 'Que tu pueblo llegue a villa.', grupo: 'Pueblo', cond: st => nivelPueblo(st) >= 3, prog: st => pg(nivelPueblo(st), 3) },
+    { id: 'eco_pueblo5', t: 'Ciudad del baloncesto', d: 'Lleva tu pueblo al máximo nivel.', grupo: 'Pueblo', cond: st => nivelPueblo(st) >= 5, prog: st => pg(nivelPueblo(st), 5) },
+    {
+      id: 'eco_pob',
+      t: 'Más de tres mil vecinos',
+      d: 'Que tu pueblo llegue a 3.000 habitantes.',
+      grupo: 'Pueblo',
+      cond: st => !!GM.puebloGestion && !!GM.puebloGestion.gest(st) && GM.puebloGestion.gest(st).pob >= 3000,
+      prog: st => pg(GM.puebloGestion && GM.puebloGestion.gest(st) ? GM.puebloGestion.gest(st).pob : 0, 3000)
+    },
+    {
+      id: 'eco_donante',
+      t: 'Mecenas',
+      d: 'Dona 100.000 € al ayuntamiento de tu pueblo.',
+      grupo: 'Pueblo',
+      cond: st => !!GM.puebloGestion && !!GM.puebloGestion.gest(st) && GM.puebloGestion.gest(st).donado >= 100,
+      prog: st => pg(GM.puebloGestion && GM.puebloGestion.gest(st) ? GM.puebloGestion.gest(st).donado : 0, 100)
+    },
+    {
+      id: 'eco_coleccion',
+      t: 'Coleccionista',
+      d: 'Reúne 25 coleccionables.',
+      grupo: 'Vida',
+      cond: st => !!GM.coleccionables && GM.coleccionables.total(st) >= 25,
+      prog: st => pg(GM.coleccionables ? GM.coleccionables.total(st) : 0, 25)
+    }
   ];
   // ---------- Retos por etapa ----------
   const ETAPAS = { formacion: 'Formación', promesa: 'Promesa', profesional: 'Profesional', estrella: 'Estrella', retiro: 'Retiro' };
-  function etapa(st) { const c = C(st); if (c.fase === 'retirado') return 'retiro'; if (c.fase === 'ncaa' || c.etapa === 'cantera') return 'formacion'; return c.fama >= 65 ? 'estrella' : c.fama >= 35 ? 'profesional' : 'promesa'; }
+  function etapa(st) {
+    const c = C(st);
+    if (c.fase === 'retirado') return 'retiro';
+    if (c.fase === 'ncaa' || c.etapa === 'cantera') return 'formacion';
+    return c.fama >= 65 ? 'estrella' : c.fama >= 35 ? 'profesional' : 'promesa';
+  }
   const RETOS = {
-    formacion: [{ id: 'f1', t: 'Ahorra tus primeros 5.000 €', prog: st => pg(neto(st), 5), premio: { fama: 0.3, moral: 3, dinero: 0.5 } }, { id: 'f2', t: 'Llega a fin de mes sin deudas', prog: st => pg(P() && P().deudaTotal(st) === 0 ? 1 : 0, 1), premio: { fama: 0.2, moral: 2, dinero: 0.3 } }, { id: 'f3', t: 'Aprende a registrar tus gastos: 10 movimientos en el libro', prog: st => pg(P() ? P().libro(st).length : 0, 10), premio: { fama: 0.2, moral: 2, dinero: 0.3 } }],
-    promesa: [{ id: 'p1', t: 'Ten un patrimonio neto de 60.000 €', prog: st => pg(neto(st), 60), premio: { fama: 0.5, moral: 3, dinero: 3 } }, { id: 'p2', t: 'Contrata el seguro de lesión', prog: st => pg(seg(st).lesion ? 1 : 0, 1), premio: { fama: 0.3, moral: 2, dinero: 1 } }, { id: 'p3', t: 'Haz tu primera inversión (un bien)', prog: st => pg(bienes(st).length + casas(st).length, 1), premio: { fama: 0.4, moral: 3, dinero: 2 } }],
-    profesional: [{ id: 'q1', t: 'Ten un patrimonio neto de 400.000 €', prog: st => pg(neto(st), 400), premio: { fama: 0.8, moral: 4, dinero: 8 } }, { id: 'q2', t: 'Abre un negocio y ten un mes con beneficios', prog: st => pg(negocios(st).some(n => n.hist.some(x => x.beneficio > 0)) ? 1 : 0, 1), premio: { fama: 0.6, moral: 4, dinero: 5 } }, { id: 'q3', t: 'Posee dos propiedades (casas o bienes)', prog: st => pg(bienes(st).length + casas(st).length, 2), premio: { fama: 0.5, moral: 3, dinero: 4 } }],
-    estrella: [{ id: 'e1', t: 'Ten un patrimonio neto de 3 millones', prog: st => pg(neto(st), 3000), premio: { fama: 1, moral: 5, dinero: 40 } }, { id: 'e2', t: 'Dirige tres negocios a la vez', prog: st => pg(activos(st).filter(n => n.abierto).length, 3), premio: { fama: 0.8, moral: 4, dinero: 20 } }, { id: 'e3', t: 'Dona 100.000 € a tu pueblo', prog: st => pg(GM.puebloGestion && GM.puebloGestion.gest(st) ? GM.puebloGestion.gest(st).donado : 0, 100), premio: { fama: 1.2, moral: 5, dinero: 10 } }],
-    retiro: [{ id: 'r1', t: 'Ten un patrimonio neto de 5 millones', prog: st => pg(neto(st), 5000), premio: { fama: 0.8, moral: 5, dinero: 60 } }, { id: 'r2', t: 'Cobra 15.000 € al mes de rentas', prog: st => pg(rentasMes(st), 15), premio: { fama: 0.6, moral: 4, dinero: 30 } }, { id: 'r3', t: 'Lleva tu pueblo a ciudad del baloncesto', prog: st => pg(nivelPueblo(st), 5), premio: { fama: 1, moral: 6, dinero: 30 } }]
+    formacion: [
+      { id: 'f1', t: 'Ahorra tus primeros 5.000 €', prog: st => pg(neto(st), 5), premio: { fama: 0.3, moral: 3, dinero: 0.5 } },
+      { id: 'f2', t: 'Llega a fin de mes sin deudas', prog: st => pg(P() && P().deudaTotal(st) === 0 ? 1 : 0, 1), premio: { fama: 0.2, moral: 2, dinero: 0.3 } },
+      {
+        id: 'f3',
+        t: 'Aprende a registrar tus gastos: 10 movimientos en el libro',
+        prog: st => pg(P() ? P().libro(st).length : 0, 10),
+        premio: { fama: 0.2, moral: 2, dinero: 0.3 }
+      }
+    ],
+    promesa: [
+      { id: 'p1', t: 'Ten un patrimonio neto de 60.000 €', prog: st => pg(neto(st), 60), premio: { fama: 0.5, moral: 3, dinero: 3 } },
+      { id: 'p2', t: 'Contrata el seguro de lesión', prog: st => pg(seg(st).lesion ? 1 : 0, 1), premio: { fama: 0.3, moral: 2, dinero: 1 } },
+      { id: 'p3', t: 'Haz tu primera inversión (un bien)', prog: st => pg(bienes(st).length + casas(st).length, 1), premio: { fama: 0.4, moral: 3, dinero: 2 } }
+    ],
+    profesional: [
+      { id: 'q1', t: 'Ten un patrimonio neto de 400.000 €', prog: st => pg(neto(st), 400), premio: { fama: 0.8, moral: 4, dinero: 8 } },
+      {
+        id: 'q2',
+        t: 'Abre un negocio y ten un mes con beneficios',
+        prog: st => pg(negocios(st).some(n => n.hist.some(x => x.beneficio > 0)) ? 1 : 0, 1),
+        premio: { fama: 0.6, moral: 4, dinero: 5 }
+      },
+      { id: 'q3', t: 'Posee dos propiedades (casas o bienes)', prog: st => pg(bienes(st).length + casas(st).length, 2), premio: { fama: 0.5, moral: 3, dinero: 4 } }
+    ],
+    estrella: [
+      { id: 'e1', t: 'Ten un patrimonio neto de 3 millones', prog: st => pg(neto(st), 3000), premio: { fama: 1, moral: 5, dinero: 40 } },
+      { id: 'e2', t: 'Dirige tres negocios a la vez', prog: st => pg(activos(st).filter(n => n.abierto).length, 3), premio: { fama: 0.8, moral: 4, dinero: 20 } },
+      {
+        id: 'e3',
+        t: 'Dona 100.000 € a tu pueblo',
+        prog: st => pg(GM.puebloGestion && GM.puebloGestion.gest(st) ? GM.puebloGestion.gest(st).donado : 0, 100),
+        premio: { fama: 1.2, moral: 5, dinero: 10 }
+      }
+    ],
+    retiro: [
+      { id: 'r1', t: 'Ten un patrimonio neto de 5 millones', prog: st => pg(neto(st), 5000), premio: { fama: 0.8, moral: 5, dinero: 60 } },
+      { id: 'r2', t: 'Cobra 15.000 € al mes de rentas', prog: st => pg(rentasMes(st), 15), premio: { fama: 0.6, moral: 4, dinero: 30 } },
+      { id: 'r3', t: 'Lleva tu pueblo a ciudad del baloncesto', prog: st => pg(nivelPueblo(st), 5), premio: { fama: 1, moral: 6, dinero: 30 } }
+    ]
   };
-  function eco(st) { const V = GM.mods.vida; if (V) V.datos(st); const c = C(st); c.vida = c.vida || {}; return c.vida.eco = c.vida.eco || { retos: {}, etapa: null }; }
-  function retos(st) { if (!act(st)) return []; const e = eco(st), et = etapa(st), hechos = e.retos[et] || {}; return RETOS[et].map(r => { const p = r.prog(st); return { id: r.id, t: r.t, valor: Math.round(p[0] * 10) / 10, meta: p[1], hecho: !!hechos[r.id], fecha: hechos[r.id] || null, premio: r.premio, etapa: et }; }); }
+  function eco(st) {
+    const V = GM.mods.vida;
+    if (V) V.datos(st);
+    const c = C(st);
+    c.vida = c.vida || {};
+    return (c.vida.eco = c.vida.eco || { retos: {}, etapa: null });
+  }
+  function retos(st) {
+    if (!act(st)) return [];
+    const e = eco(st),
+      et = etapa(st),
+      hechos = e.retos[et] || {};
+    return RETOS[et].map(r => {
+      const p = r.prog(st);
+      return { id: r.id, t: r.t, valor: Math.round(p[0] * 10) / 10, meta: p[1], hecho: !!hechos[r.id], fecha: hechos[r.id] || null, premio: r.premio, etapa: et };
+    });
+  }
   function revisar(st) {
-    if (!act(st)) return; const e = eco(st), et = etapa(st); if (e.etapa !== et) { if (e.etapa && GM.noticia) GM.noticia(st, 'Nueva etapa de tu carrera: ' + ETAPAS[et].toLowerCase() + '. Tienes tres retos económicos nuevos.'); e.etapa = et; }
-    const hechos = e.retos[et] = e.retos[et] || {}; RETOS[et].forEach(r => { if (hechos[r.id]) return; const p = r.prog(st); if (p[0] >= p[1]) { hechos[r.id] = st.fecha; const c = C(st); c.fama = c.fama + r.premio.fama; c.moral = clamp(c.moral + r.premio.moral, 0, 100); if (GM.mods.hogar) GM.mods.hogar.ingresar(st, r.premio.dinero); if (GM.patrimonio) GM.patrimonio.reg(st, 'otros', 'Premio del reto: ' + r.t.toLowerCase(), r.premio.dinero); c.hitos.unshift({ fecha: st.fecha, texto: 'Reto económico cumplido: ' + r.t + '.' }); GM.noticia && GM.noticia(st, '🎯 Reto económico cumplido (' + ETAPAS[et].toLowerCase() + '): ' + r.t.toLowerCase() + ' (+' + k1(r.premio.dinero) + ' mil €).'); } });
+    if (!act(st)) return;
+    const e = eco(st),
+      et = etapa(st);
+    if (e.etapa !== et) {
+      if (e.etapa && GM.noticia) GM.noticia(st, 'Nueva etapa de tu carrera: ' + ETAPAS[et].toLowerCase() + '. Tienes tres retos económicos nuevos.');
+      e.etapa = et;
+    }
+    const hechos = (e.retos[et] = e.retos[et] || {});
+    RETOS[et].forEach(r => {
+      if (hechos[r.id]) return;
+      const p = r.prog(st);
+      if (p[0] >= p[1]) {
+        hechos[r.id] = st.fecha;
+        const c = C(st);
+        c.fama = c.fama + r.premio.fama;
+        c.moral = clamp(c.moral + r.premio.moral, 0, 100);
+        if (GM.mods.hogar) GM.mods.hogar.ingresar(st, r.premio.dinero);
+        if (GM.patrimonio) GM.patrimonio.reg(st, 'otros', 'Premio del reto: ' + r.t.toLowerCase(), r.premio.dinero);
+        c.hitos.unshift({ fecha: st.fecha, texto: 'Reto económico cumplido: ' + r.t + '.' });
+        GM.noticia && GM.noticia(st, '🎯 Reto económico cumplido (' + ETAPAS[et].toLowerCase() + '): ' + r.t.toLowerCase() + ' (+' + k1(r.premio.dinero) + ' mil €).');
+      }
+    });
     if (GM.mods.vida && GM.mods.vida.revisarExtra) GM.mods.vida.revisarExtra(st);
   }
-  GM.bus.on('dia:avanzado', () => { const st = GM.state; if (act(st)) { try { revisar(st); } catch (e) { console.error('logrosEco', e); } } });
+  GM.bus.on('dia:avanzado', () => {
+    const st = GM.state;
+    if (act(st)) {
+      try {
+        revisar(st);
+      } catch (e) {
+        console.error('logrosEco', e);
+      }
+    }
+  });
   if (GM.mods.vida && GM.mods.vida.registrarLogros) GM.mods.vida.registrarLogros(LOGROS);
   const logrosEco = st => (GM.mods.vida ? GM.mods.vida.logros(st).filter(x => /^eco_/.test(x.id)) : []);
-  function resumen(st) { const L = logrosEco(st), R = retos(st); return { etapa: ETAPAS[etapa(st)], retos: R, logros: L.length, hechos: L.filter(x => x.fecha).length, neto: neto(st) }; }
-  function selfTest() { return LOGROS.length >= 24 && LOGROS.every(x => x.id && x.t && typeof x.cond === 'function') && Object.keys(RETOS).every(k => RETOS[k].length === 3) && Object.keys(ETAPAS).length === 5; }
+  function resumen(st) {
+    const L = logrosEco(st),
+      R = retos(st);
+    return { etapa: ETAPAS[etapa(st)], retos: R, logros: L.length, hechos: L.filter(x => x.fecha).length, neto: neto(st) };
+  }
+  function selfTest() {
+    return (
+      LOGROS.length >= 24 &&
+      LOGROS.every(x => x.id && x.t && typeof x.cond === 'function') &&
+      Object.keys(RETOS).every(k => RETOS[k].length === 3) &&
+      Object.keys(ETAPAS).length === 5
+    );
+  }
   GM.logrosEco = { LOGROS, RETOS, ETAPAS, etapa, retos, revisar, logrosEco, resumen, selfTest };
   GM.register && GM.register('logrosEco', GM.logrosEco);
 })();

@@ -1,9 +1,179 @@
 // Ensambla el juego en dist/ (autocontenido, funciona sin conexión): index.html + three.min.js + fuentes locales.
-const fs = require('fs'), path = require('path');
-const mods = ['core','registro','ligas_config','datos_util','datos_valoraciones','datos_clima','datos_nba_este','datos_nba_oeste','datos_nba_fin','datos_euroliga','datos_ligas','datos_ligas2','datos_movimientos','datos_ligas3','datos_plantillas_extra','datos_ligas_extra','datos_ligas_ascenso','three_kit','diseno','i18n_datos','i18n','controles','accesibilidad','relieve3d','texturas','sol','catalogo_personas','urbano','vehiculos','mobiliario_ciudad','monumentos_ciudad','iconos','sonido','musica','finanzas','ciudad','campus','contratos','ciudad3d','etiquetas_mapa','ciudad_deportiva','estadio','arbol_instalaciones','progresion','legado','directiva_ia','guardado','copias','partidos','competiciones','mercado','cantera','personaje','carrera','estilo','movil','fans','copas','continental','rivalidades','pretemporada','seleccion_juego','allstar','ojeadores','negociacion','traspasos','traspasos_modos','prensa','tactica','tactica_plus','crecimiento','narrador','directo','rua','entrenador','social','sponsor','pueblo','vida','ascensos','gente','gente_historias','pueblo3d','hogar','hogar3d','sede_plano','sede_acciones','nav_worker','multitud_gpu','sede_luz','sede_mapa','sede_decorar','sede_construir','animaciones_codigo','sede_personaje','sede_tiro','sede_paneles','sede_hud','hud_mundo','sede_grupo','sede3d','edificio_kit','calle_vida','vecinos','dialogo','calle3d','ciudad_barrios','interiores_pueblo','interiores_vida','interaccion','casas_realistas','arboles','curvas_pueblo','arquitectura_club','calle_sintetica','calle_real','calle_real_vida','demografia','ciudad_dia','movilidad','calle_real_detalle','pueblo_vida','pueblo_juego','negocios_3d','movil_apps','interiores','deportiva_mundo','pueblo_mundo','casa3d','casa_editor','casas_producto','economia','patrimonio','negocios','pueblo_gestion','ciudad_juego','coleccionables','rutina','logros_eco','decorar_interior','portada3d','ui','ui_gestion','ui_ciudad','ui_presidente','ui_carrera','ui_entrenador','ui_extra','ui_instalaciones','ui_ascensos','ui_muestra','ui_tactica_plus','ui_movil','ui_traspasos','ui_seleccion','ui_patrimonio','ui_negocios','ui_pueblo','ui_rutina','ui_coleccion','ui_tutorial','misiones','ui_ajustes'];
-const DIST = path.join(__dirname, 'dist'), VENDOR = path.join(__dirname, 'vendor');
+const fs = require('fs'),
+  path = require('path');
+const mods = [
+  'core',
+  'registro',
+  'ligas_config',
+  'datos_util',
+  'datos_valoraciones',
+  'datos_clima',
+  'datos_nba_este',
+  'datos_nba_oeste',
+  'datos_nba_fin',
+  'datos_euroliga',
+  'datos_ligas',
+  'datos_ligas2',
+  'datos_movimientos',
+  'datos_ligas3',
+  'datos_plantillas_extra',
+  'datos_ligas_extra',
+  'datos_ligas_ascenso',
+  'datos_ligas_ascenso2',
+  'three_kit',
+  'diseno',
+  'i18n_datos',
+  'datos_i18n',
+  'i18n',
+  'controles',
+  'accesibilidad',
+  'relieve3d',
+  'texturas',
+  'sol',
+  'catalogo_personas',
+  'urbano',
+  'vehiculos',
+  'mobiliario_ciudad',
+  'monumentos_ciudad',
+  'iconos',
+  'sonido',
+  'muestras',
+  'musica',
+  'finanzas',
+  'ciudad',
+  'campus',
+  'contratos',
+  'ciudad3d',
+  'etiquetas_mapa',
+  'ciudad_deportiva',
+  'estadio',
+  'arbol_instalaciones',
+  'progresion',
+  'legado',
+  'directiva_ia',
+  'guardado',
+  'copias',
+  'partidos',
+  'competiciones',
+  'mercado',
+  'cantera',
+  'personaje',
+  'carrera',
+  'estilo',
+  'movil',
+  'fans',
+  'copas',
+  'continental',
+  'rivalidades',
+  'pretemporada',
+  'seleccion_juego',
+  'allstar',
+  'ojeadores',
+  'negociacion',
+  'traspasos',
+  'traspasos_modos',
+  'prensa',
+  'tactica',
+  'tactica_plus',
+  'crecimiento',
+  'narrador',
+  'directo',
+  'rua',
+  'entrenador',
+  'social',
+  'sponsor',
+  'pueblo',
+  'vida',
+  'ascensos',
+  'gente',
+  'gente_historias',
+  'pueblo3d',
+  'hogar',
+  'hogar3d',
+  'sede_plano',
+  'sede_acciones',
+  'nav_worker',
+  'multitud_gpu',
+  'sede_luz',
+  'sede_mapa',
+  'sede_decorar',
+  'sede_construir',
+  'animaciones_codigo',
+  'sede_personaje',
+  'sede_tiro',
+  'sede_paneles',
+  'sede_hud',
+  'hud_mundo',
+  'sede_grupo',
+  'sede3d',
+  'edificio_kit',
+  'calle_vida',
+  'vecinos',
+  'dialogo',
+  'calle3d',
+  'ciudad_barrios',
+  'interiores_pueblo',
+  'interiores_vida',
+  'interaccion',
+  'casas_realistas',
+  'arboles',
+  'curvas_pueblo',
+  'arquitectura_club',
+  'calle_sintetica',
+  'calle_real',
+  'calle_real_vida',
+  'demografia',
+  'ciudad_dia',
+  'movilidad',
+  'calle_real_detalle',
+  'pueblo_vida',
+  'pueblo_juego',
+  'negocios_3d',
+  'movil_apps',
+  'interiores',
+  'deportiva_mundo',
+  'pueblo_mundo',
+  'casa3d',
+  'casa_editor',
+  'casas_producto',
+  'economia',
+  'patrimonio',
+  'negocios',
+  'pueblo_gestion',
+  'ciudad_juego',
+  'coleccionables',
+  'rutina',
+  'logros_eco',
+  'decorar_interior',
+  'portada3d',
+  'ui',
+  'ui_gestion',
+  'ui_ciudad',
+  'ui_presidente',
+  'ui_carrera',
+  'ui_entrenador',
+  'ui_extra',
+  'ui_instalaciones',
+  'ui_ascensos',
+  'ui_muestra',
+  'ui_tactica_plus',
+  'ui_movil',
+  'ui_traspasos',
+  'ui_seleccion',
+  'ui_patrimonio',
+  'ui_negocios',
+  'ui_pueblo',
+  'ui_rutina',
+  'ui_coleccion',
+  'ui_tutorial',
+  'misiones',
+  'ui_ajustes'
+];
+const DIST = path.join(__dirname, 'dist'),
+  VENDOR = path.join(__dirname, 'vendor');
 const LAT = 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD';
-const EXT = 'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF';
+const EXT =
+  'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF';
 // [familia, peso, archivo, rango]
 const FUENTES = [
   ['Graduate', '400', 'graduate-latin-400-normal.woff2', LAT],
@@ -12,15 +182,29 @@ const FUENTES = [
   ['Doto', '100 900', 'doto-latin-wght-normal.woff2', LAT],
   ['Doto', '100 900', 'doto-latin-ext-wght-normal.woff2', EXT]
 ];
-const fontFace = FUENTES.map(([f, w, a, r]) => `@font-face{font-family:'${f}';font-style:normal;font-display:swap;font-weight:${w};src:url(fonts/${a}) format('woff2');unicode-range:${r}}`).join('\n');
-const precarga = FUENTES.filter(x => x[3] === LAT).map(x => `<link rel="preload" href="fonts/${x[2]}" as="font" type="font/woff2" crossorigin>`).join('');
+const fontFace = FUENTES.map(
+  ([f, w, a, r]) => `@font-face{font-family:'${f}';font-style:normal;font-display:swap;font-weight:${w};src:url(fonts/${a}) format('woff2');unicode-range:${r}}`
+).join('\n');
+const precarga = FUENTES.filter(x => x[3] === LAT)
+  .map(x => `<link rel="preload" href="fonts/${x[2]}" as="font" type="font/woff2" crossorigin>`)
+  .join('');
 
-const NARANJA = '#e8590c', NAVY = '#1c2b3a';
+const NARANJA = '#e8590c',
+  NAVY = '#1c2b3a';
 const ICONOS = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 const manifest = {
-  name: 'Basket Manager 26/27', short_name: 'Basket 26/27', description: 'Gestión de baloncesto: NBA, Euroliga y ligas europeas, temporada 2026-27.',
-  lang: 'es', start_url: './', scope: './', id: './', display: 'standalone', orientation: 'portrait',
-  background_color: NAVY, theme_color: NARANJA, categories: ['games', 'sports'],
+  name: 'Basket Manager 26/27',
+  short_name: 'Basket 26/27',
+  description: 'Gestión de baloncesto: NBA, Euroliga y ligas europeas, temporada 2026-27.',
+  lang: 'es',
+  start_url: './',
+  scope: './',
+  id: './',
+  display: 'standalone',
+  orientation: 'portrait',
+  background_color: NAVY,
+  theme_color: NARANJA,
+  categories: ['games', 'sports'],
   icons: [
     { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
     { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
@@ -51,7 +235,11 @@ const registroSW = `
 
 const css = fs.readFileSync('estilos.css', 'utf8');
 // lz-string (MIT, Pieroxy) va delante de los módulos: comprime la partida guardada (guardado.js)
-const js = '/* ===== lz-string ===== */\n' + fs.readFileSync(path.join(VENDOR, 'lz-string.min.js'), 'utf8') + '\n' + mods.map(m => '/* ===== ' + m + ' ===== */\n' + fs.readFileSync(m + '.js', 'utf8')).join('\n');
+const js =
+  '/* ===== lz-string ===== */\n' +
+  fs.readFileSync(path.join(VENDOR, 'lz-string.min.js'), 'utf8') +
+  '\n' +
+  mods.map(m => '/* ===== ' + m + ' ===== */\n' + fs.readFileSync(m + '.js', 'utf8')).join('\n');
 const html = `<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, interactive-widget=resizes-content">
@@ -89,23 +277,76 @@ fs.mkdirSync(path.join(DIST, 'icons'));
 ICONOS.forEach(f => fs.copyFileSync(path.join(VENDOR, 'icons', f), path.join(DIST, 'icons', f)));
 // Modelos 3D (glb y texturas, CC0): vendor/modelos -> dist/modelos (las licencias .txt no se publican)
 const MODELOS = [];
-(function copia(rel) { const src = path.join(VENDOR, 'modelos', rel); fs.readdirSync(src, { withFileTypes: true }).forEach(e => { const r = rel ? rel + '/' + e.name : e.name; if (e.isDirectory()) { fs.mkdirSync(path.join(DIST, 'modelos', r), { recursive: true }); copia(r); } else if (!/.txt$/.test(e.name)) { fs.copyFileSync(path.join(src, e.name), path.join(DIST, 'modelos', r)); if (!/^reales\//.test(r)) MODELOS.push('modelos/' + r); } }); })('');
+(function copia(rel) {
+  const src = path.join(VENDOR, 'modelos', rel);
+  fs.readdirSync(src, { withFileTypes: true }).forEach(e => {
+    const r = rel ? rel + '/' + e.name : e.name;
+    if (e.isDirectory()) {
+      fs.mkdirSync(path.join(DIST, 'modelos', r), { recursive: true });
+      copia(r);
+    } else if (!/.txt$/.test(e.name)) {
+      fs.copyFileSync(path.join(src, e.name), path.join(DIST, 'modelos', r));
+      if (!/^reales\//.test(r)) MODELOS.push('modelos/' + r);
+    }
+  });
+})('');
+// Sonidos (ogg, CC0, Kenney): vendor/audio -> dist/audio
+const AUDIO = [];
+if (fs.existsSync(path.join(VENDOR, 'audio'))) {
+  fs.mkdirSync(path.join(DIST, 'audio'), { recursive: true });
+  fs.readdirSync(path.join(VENDOR, 'audio')).forEach(f => {
+    if (/.ogg$/.test(f)) {
+      fs.copyFileSync(path.join(VENDOR, 'audio', f), path.join(DIST, 'audio', f));
+      AUDIO.push('audio/' + f);
+    }
+  });
+}
 // Texturas reales (CC0, ambientCG): vendor/texturas -> dist/texturas
-const TEXTURAS = []; fs.mkdirSync(path.join(DIST, 'texturas'), { recursive: true });
-fs.readdirSync(path.join(VENDOR, 'texturas')).filter(f => /\.jpg$/.test(f)).forEach(f => { fs.copyFileSync(path.join(VENDOR, 'texturas', f), path.join(DIST, 'texturas', f)); TEXTURAS.push('texturas/' + f); });
+const TEXTURAS = [];
+fs.mkdirSync(path.join(DIST, 'texturas'), { recursive: true });
+fs.readdirSync(path.join(VENDOR, 'texturas'))
+  .filter(f => /\.jpg$/.test(f))
+  .forEach(f => {
+    fs.copyFileSync(path.join(VENDOR, 'texturas', f), path.join(DIST, 'texturas', f));
+    TEXTURAS.push('texturas/' + f);
+  });
 // Transcodificador Basis (KTX2) y texturas KTX2: vendor/basis -> dist/basis, vendor/texturas_ktx2 -> dist/texturas (se piden por fetch en calidad alta; las JPG quedan de respaldo)
-if (fs.existsSync(path.join(VENDOR, 'basis'))) { fs.mkdirSync(path.join(DIST, 'basis'), { recursive: true }); fs.readdirSync(path.join(VENDOR, 'basis')).forEach(f => fs.copyFileSync(path.join(VENDOR, 'basis', f), path.join(DIST, 'basis', f))); }
-if (fs.existsSync(path.join(VENDOR, 'texturas_ktx2'))) fs.readdirSync(path.join(VENDOR, 'texturas_ktx2')).filter(f => /\.ktx2$/.test(f)).forEach(f => fs.copyFileSync(path.join(VENDOR, 'texturas_ktx2', f), path.join(DIST, 'texturas', f)));
+if (fs.existsSync(path.join(VENDOR, 'basis'))) {
+  fs.mkdirSync(path.join(DIST, 'basis'), { recursive: true });
+  fs.readdirSync(path.join(VENDOR, 'basis')).forEach(f => fs.copyFileSync(path.join(VENDOR, 'basis', f), path.join(DIST, 'basis', f)));
+}
+if (fs.existsSync(path.join(VENDOR, 'texturas_ktx2')))
+  fs.readdirSync(path.join(VENDOR, 'texturas_ktx2'))
+    .filter(f => /\.ktx2$/.test(f))
+    .forEach(f => fs.copyFileSync(path.join(VENDOR, 'texturas_ktx2', f), path.join(DIST, 'texturas', f)));
 // Cielos HDRI (Poly Haven, CC0): vendor/hdri -> dist/hdri; se piden por fetch en calidad alta y no van a la caché de arranque
-if (fs.existsSync(path.join(VENDOR, 'hdri'))) { fs.mkdirSync(path.join(DIST, 'hdri'), { recursive: true }); fs.readdirSync(path.join(VENDOR, 'hdri')).filter(f => /.hdr$/.test(f)).forEach(f => fs.copyFileSync(path.join(VENDOR, 'hdri', f), path.join(DIST, 'hdri', f))); }
+if (fs.existsSync(path.join(VENDOR, 'hdri'))) {
+  fs.mkdirSync(path.join(DIST, 'hdri'), { recursive: true });
+  fs.readdirSync(path.join(VENDOR, 'hdri'))
+    .filter(f => /.hdr$/.test(f))
+    .forEach(f => fs.copyFileSync(path.join(VENDOR, 'hdri', f), path.join(DIST, 'hdri', f)));
+}
 // Ciudades reales (OpenStreetMap, ODbL): vendor/osm -> dist/osm (calle_real.js las pide por fetch)
-const OSM = []; fs.mkdirSync(path.join(DIST, 'osm'), { recursive: true });
-if (fs.existsSync(path.join(VENDOR, 'osm'))) fs.readdirSync(path.join(VENDOR, 'osm')).filter(f => /.json$/.test(f)).forEach(f => { fs.copyFileSync(path.join(VENDOR, 'osm', f), path.join(DIST, 'osm', f)); OSM.push('osm/' + f); });
+const OSM = [];
+fs.mkdirSync(path.join(DIST, 'osm'), { recursive: true });
+if (fs.existsSync(path.join(VENDOR, 'osm')))
+  fs.readdirSync(path.join(VENDOR, 'osm'))
+    .filter(f => /.json$/.test(f))
+    .forEach(f => {
+      fs.copyFileSync(path.join(VENDOR, 'osm', f), path.join(DIST, 'osm', f));
+      OSM.push('osm/' + f);
+    });
 fs.writeFileSync(path.join(DIST, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2));
 
 // Service worker: precarga todo dist/. La versión es un hash del contenido, así que cada cambio crea una caché nueva
 // y el juego ofrece actualizar (ver registroSW). Estrategia: primero caché, red como respaldo.
-const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].concat(FUENTES.map(x => 'fonts/' + x[2]), ICONOS.map(f => 'icons/' + f), MODELOS, TEXTURAS);   // las ciudades (osm/), los cielos HDRI, el transcodificador Basis, las texturas KTX2 y los modelos realistas se piden la primera vez y se guardan en la caché (ya no se descargan las 120 ciudades al instalar)
+const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].concat(
+  FUENTES.map(x => 'fonts/' + x[2]),
+  ICONOS.map(f => 'icons/' + f),
+  MODELOS,
+  AUDIO,
+  TEXTURAS
+); // las ciudades (osm/), los cielos HDRI, el transcodificador Basis, las texturas KTX2 y los modelos realistas se piden la primera vez y se guardan en la caché (ya no se descargan las 120 ciudades al instalar)
 const hash = require('crypto').createHash('sha1');
 archivos.filter(f => f !== './').forEach(f => hash.update(fs.readFileSync(path.join(DIST, f))));
 const VERSION = hash.digest('hex').slice(0, 10);
@@ -125,4 +366,14 @@ self.addEventListener('fetch', e => {
 fs.writeFileSync(path.join(DIST, 'sw.js'), sw);
 console.log('dist/index.html', (html.length / 1024).toFixed(0), 'KB, versión', VERSION);
 // Punto 79: aviso si algún modelo de vendor/modelos supera su presupuesto (node tools/modelos_presupuesto.js --optimizar lo arregla); con MODELOS_ESTRICTO=1 el build falla
-try { const fuera = require('./tools/modelos_presupuesto').revisar().filter(x => x.error || !x.pasa); if (fuera.length) { console.log('AVISO: ' + fuera.length + ' modelos fuera de presupuesto (node tools/modelos_presupuesto.js)'); if (process.env.MODELOS_ESTRICTO) process.exit(1); } } catch (e) { console.log('presupuesto de modelos no comprobado: ' + e.message); }
+try {
+  const fuera = require('./tools/modelos_presupuesto')
+    .revisar()
+    .filter(x => x.error || !x.pasa);
+  if (fuera.length) {
+    console.log('AVISO: ' + fuera.length + ' modelos fuera de presupuesto (node tools/modelos_presupuesto.js)');
+    if (process.env.MODELOS_ESTRICTO) process.exit(1);
+  }
+} catch (e) {
+  console.log('presupuesto de modelos no comprobado: ' + e.message);
+}

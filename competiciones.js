@@ -5,19 +5,59 @@
    Escribe state.calendario, clasificaciones, playoffs, estadisticas, historial. Emite partido:jugado, dia:avanzado, temporada:fin. */
 (function () {
   const U = GM.util;
-  const mx = (a, b) => a > b ? a : b;
+  const mx = (a, b) => (a > b ? a : b);
   const yearOf = st => parseInt(st.temporada.slice(0, 4), 10);
   const swap = m => [m[1], m[0]];
   const PATRON = { 1: ['a'], 3: ['a', 'b', 'a'], 5: ['a', 'a', 'b', 'b', 'a'], 7: ['a', 'a', 'b', 'b', 'a', 'b', 'a'] };
   const FORM = {
-    nba: { ini: y => y + '-10-20', paso: 2.1, snap: false, dos: true, pi: y => (y + 1) + '-04-14', po: y => (y + 1) + '-04-18',
-      rondas: [{ n: 'Primera ronda', m: 7 }, { n: 'Semifinales de conferencia', m: 7 }, { n: 'Finales de conferencia', m: 7 }, { n: 'Finales de la NBA', m: 7 }] },
-    euroliga: { ini: y => y + '-09-24', paso: 5.5, snap: false, dos: true, pi: y => (y + 1) + '-04-20', po: y => (y + 1) + '-04-27',
-      rondas: [{ n: 'Playoffs', m: 5 }, { n: 'Semifinales (Final Four)', m: 1, min: y => (y + 1) + '-05-28' }, { n: 'Final', m: 1, min: y => (y + 1) + '-05-30' }] },
-    acb: { ini: y => y + '-10-03', paso: 6.4, snap: true, po: y => (y + 1) + '-05-05',
-      rondas: [{ n: 'Cuartos de final', m: 3 }, { n: 'Semifinales', m: 5 }, { n: 'Final', m: 5 }] },
-    liga_simple: { ini: y => y + '-10-04', paso: 7.2, snap: true, po: y => (y + 1) + '-04-20',
-      rondas: [{ n: 'Semifinales', m: 3 }, { n: 'Final', m: 3 }] }
+    nba: {
+      ini: y => y + '-10-20',
+      paso: 2.1,
+      snap: false,
+      dos: true,
+      pi: y => y + 1 + '-04-14',
+      po: y => y + 1 + '-04-18',
+      rondas: [
+        { n: 'Primera ronda', m: 7 },
+        { n: 'Semifinales de conferencia', m: 7 },
+        { n: 'Finales de conferencia', m: 7 },
+        { n: 'Finales de la NBA', m: 7 }
+      ]
+    },
+    euroliga: {
+      ini: y => y + '-09-24',
+      paso: 5.5,
+      snap: false,
+      dos: true,
+      pi: y => y + 1 + '-04-20',
+      po: y => y + 1 + '-04-27',
+      rondas: [
+        { n: 'Playoffs', m: 5 },
+        { n: 'Semifinales (Final Four)', m: 1, min: y => y + 1 + '-05-28' },
+        { n: 'Final', m: 1, min: y => y + 1 + '-05-30' }
+      ]
+    },
+    acb: {
+      ini: y => y + '-10-03',
+      paso: 6.4,
+      snap: true,
+      po: y => y + 1 + '-05-05',
+      rondas: [
+        { n: 'Cuartos de final', m: 3 },
+        { n: 'Semifinales', m: 5 },
+        { n: 'Final', m: 5 }
+      ]
+    },
+    liga_simple: {
+      ini: y => y + '-10-04',
+      paso: 7.2,
+      snap: true,
+      po: y => y + 1 + '-04-20',
+      rondas: [
+        { n: 'Semifinales', m: 3 },
+        { n: 'Final', m: 3 }
+      ]
+    }
   };
   // Fechas de 2026-27 por liga (inicio, última jornada y comienzo de los playoffs). ACB: calendario oficial (26 de septiembre
   // al 22 de mayo, playoffs desde el 25 de mayo). BBL: 19 de septiembre en realidad, pero la partida empieza el 24. El resto, aproximadas.
@@ -28,17 +68,28 @@
     GBL: { ini: '-10-03', fin: '-04-18', po: '-04-25' },
     BSL: { ini: '-10-03', fin: '-05-09', po: '-05-15' }
   });
-  const fechaLiga = (comp, k, y) => FECHAS[comp] ? (k === 'ini' ? y : y + 1) + FECHAS[comp][k] : null;
+  const fechaLiga = (comp, k, y) => (FECHAS[comp] ? (k === 'ini' ? y : y + 1) + FECHAS[comp][k] : null);
   const ORDEN = { nba: 0, euroliga: 1, acb: 2, liga_simple: 3 };
 
-  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = GM.rng.int(0, i); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = GM.rng.int(0, i);
+      const t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+    return a;
+  }
   function rondasRR(ids) {
-    const t = ids.slice(); if (t.length % 2) t.push(null);
-    const n = t.length, rs = [];
+    const t = ids.slice();
+    if (t.length % 2) t.push(null);
+    const n = t.length,
+      rs = [];
     for (let r = 0; r < n - 1; r++) {
       const m = [];
       for (let i = 0; i < n / 2; i++) {
-        const a = t[i], b = t[n - 1 - i];
+        const a = t[i],
+          b = t[n - 1 - i];
         if (a && b) m.push((r + i) % 2 === 0 ? [a, b] : [b, a]);
       }
       rs.push(m);
@@ -47,48 +98,74 @@
     return rs;
   }
   // Calendario realista (punto 68): las ligas europeas paran en las ventanas FIBA de selecciones (finales de noviembre y de febrero) y no juegan el día de Navidad ni Año Nuevo
-  const PAUSAS = y => [[y + '-11-23', y + '-11-30'], [(y + 1) + '-02-22', (y + 1) + '-03-01']];
-  function fechaReal(d, formato, y) { if (formato === 'nba') return d; PAUSAS(y).forEach(([a, b]) => { if (d >= a && d <= b) d = U.addDays(b, 1); }); if (d.slice(5) === '12-25' || d.slice(5) === '01-01') d = U.addDays(d, 1); return d; }
+  const PAUSAS = y => [
+    [y + '-11-23', y + '-11-30'],
+    [y + 1 + '-02-22', y + 1 + '-03-01']
+  ];
+  function fechaReal(d, formato, y) {
+    if (formato === 'nba') return d;
+    PAUSAS(y).forEach(([a, b]) => {
+      if (d >= a && d <= b) d = U.addDays(b, 1);
+    });
+    if (d.slice(5) === '12-25' || d.slice(5) === '01-01') d = U.addDays(d, 1);
+    return d;
+  }
   const getG = (st, id) => st.calendario.find(g => g.id === id);
   function creaG(st, comp, fase, local, vis, fecha, jornada, extra) {
-    if (fase !== 'regular') { let k = 0; while (k++ < 30 && st.calendario.some(g => g.fecha === fecha && (g.local === local || g.visitante === local || g.local === vis || g.visitante === vis))) fecha = U.addDays(fecha, 1); }
-    const g = Object.assign({ id: 'g' + (++st.seq), fecha, comp, fase, jornada, local, visitante: vis, resultado: null }, extra || {});
-    st.calendario.push(g); return g.id;
+    if (fase !== 'regular') {
+      let k = 0;
+      while (k++ < 30 && st.calendario.some(g => g.fecha === fecha && (g.local === local || g.visitante === local || g.local === vis || g.visitante === vis)))
+        fecha = U.addDays(fecha, 1);
+    }
+    const g = Object.assign({ id: 'g' + ++st.seq, fecha, comp, fase, jornada, local, visitante: vis, resultado: null }, extra || {});
+    st.calendario.push(g);
+    return g.id;
   }
-  const ganadorG = g => g.resultado.local > g.resultado.visitante ? g.local : g.visitante;
-  const perdedorG = g => g.resultado.local > g.resultado.visitante ? g.visitante : g.local;
+  const ganadorG = g => (g.resultado.local > g.resultado.visitante ? g.local : g.visitante);
+  const perdedorG = g => (g.resultado.local > g.resultado.visitante ? g.visitante : g.local);
 
   function generarCalendario(st) {
-    st.calendario = []; st.clasificaciones = {}; st.playoffs = {}; st.pendReg = {}; st.seq = 0; st.temporadaTerminada = false;
-    const y = yearOf(st), ocupado = {};
-    Object.keys(st.ligas).sort((a, b) => ORDEN[st.ligas[a].formato] - ORDEN[st.ligas[b].formato]).forEach(comp => {
-      const liga = st.ligas[comp], F = FORM[liga.formato];
-      if (!F) return;
-      const ids = shuffle(liga.equipos.slice());
-      const rr = rondasRR(ids);
-      let rondas = rr.concat(rr.map(r => r.map(swap)));
-      if (liga.formato === 'nba') rondas = rondas.concat(rr.slice(0, 82 - rondas.length).map((r, i) => i % 2 ? r : r.map(swap)));
-      st.clasificaciones[comp] = ids.map(id => ({ equipoId: id, pj: 0, g: 0, p: 0, pf: 0, pc: 0 }));
-      let count = 0;
-      const ini = fechaLiga(comp, 'ini', y) || F.ini(y), paso = FECHAS[comp] ? U.diffDays(ini, fechaLiga(comp, 'fin', y)) / (rondas.length - 1) : F.paso;
-      rondas.forEach((games, r) => {
-        let d0 = U.addDays(ini, Math.floor(r * paso));
-        if (F.snap) while ([0, 6].indexOf(U.weekday(d0)) < 0) d0 = U.addDays(d0, 1);
-        d0 = fechaReal(d0, liga.formato, y);
-        games.forEach((g, i) => {
-          let d = F.dos && i >= games.length / 2 ? U.addDays(d0, 1) : d0;
-          while (ocupado[d + g[0]] || ocupado[d + g[1]]) d = U.addDays(d, 1);
-          ocupado[d + g[0]] = ocupado[d + g[1]] = 1;
-          creaG(st, comp, 'regular', g[0], g[1], d, r + 1); count++;
+    st.calendario = [];
+    st.clasificaciones = {};
+    st.playoffs = {};
+    st.pendReg = {};
+    st.seq = 0;
+    st.temporadaTerminada = false;
+    const y = yearOf(st),
+      ocupado = {};
+    Object.keys(st.ligas)
+      .sort((a, b) => ORDEN[st.ligas[a].formato] - ORDEN[st.ligas[b].formato])
+      .forEach(comp => {
+        const liga = st.ligas[comp],
+          F = FORM[liga.formato];
+        if (!F) return;
+        const ids = shuffle(liga.equipos.slice());
+        const rr = rondasRR(ids);
+        let rondas = rr.concat(rr.map(r => r.map(swap)));
+        if (liga.formato === 'nba') rondas = rondas.concat(rr.slice(0, 82 - rondas.length).map((r, i) => (i % 2 ? r : r.map(swap))));
+        st.clasificaciones[comp] = ids.map(id => ({ equipoId: id, pj: 0, g: 0, p: 0, pf: 0, pc: 0 }));
+        let count = 0;
+        const ini = fechaLiga(comp, 'ini', y) || F.ini(y),
+          paso = FECHAS[comp] ? U.diffDays(ini, fechaLiga(comp, 'fin', y)) / (rondas.length - 1) : F.paso;
+        rondas.forEach((games, r) => {
+          let d0 = U.addDays(ini, Math.floor(r * paso));
+          if (F.snap) while ([0, 6].indexOf(U.weekday(d0)) < 0) d0 = U.addDays(d0, 1);
+          d0 = fechaReal(d0, liga.formato, y);
+          games.forEach((g, i) => {
+            let d = F.dos && i >= games.length / 2 ? U.addDays(d0, 1) : d0;
+            while (ocupado[d + g[0]] || ocupado[d + g[1]]) d = U.addDays(d, 1);
+            ocupado[d + g[0]] = ocupado[d + g[1]] = 1;
+            creaG(st, comp, 'regular', g[0], g[1], d, r + 1);
+            count++;
+          });
         });
+        st.pendReg[comp] = count;
       });
-      st.pendReg[comp] = count;
-    });
-    st.calendario.sort((a, b) => a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0);
+    st.calendario.sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
   }
 
   function ordenar(rows) {
-    return rows.slice().sort((a, b) => b.g - a.g || (b.pf - b.pc) - (a.pf - a.pc) || b.pf - a.pf);
+    return rows.slice().sort((a, b) => b.g - a.g || b.pf - b.pc - (a.pf - a.pc) || b.pf - a.pf);
   }
   function clasificacion(st, comp, conf) {
     let rows = st.clasificaciones[comp] || [];
@@ -97,16 +174,34 @@
   }
   function anota(st, g, res) {
     const c = st.clasificaciones[g.comp];
-    const a = c.find(r => r.equipoId === g.local), b = c.find(r => r.equipoId === g.visitante);
-    a.pj++; b.pj++; a.pf += res.local; a.pc += res.visitante; b.pf += res.visitante; b.pc += res.local;
-    if (res.local > res.visitante) { a.g++; b.p++; } else { b.g++; a.p++; }
+    const a = c.find(r => r.equipoId === g.local),
+      b = c.find(r => r.equipoId === g.visitante);
+    a.pj++;
+    b.pj++;
+    a.pf += res.local;
+    a.pc += res.visitante;
+    b.pf += res.visitante;
+    b.pc += res.local;
+    if (res.local > res.visitante) {
+      a.g++;
+      b.p++;
+    } else {
+      b.g++;
+      a.p++;
+    }
   }
 
   // ---------- Playoffs ----------
   function iniciarPO(st, comp) {
-    const liga = st.ligas[comp], f = liga.formato, F = FORM[f], y = yearOf(st);
+    const liga = st.ligas[comp],
+      f = liga.formato,
+      F = FORM[f],
+      y = yearOf(st);
     const tabla = clasificacion(st, comp);
-    const rank = {}; tabla.forEach((r, i) => { rank[r.equipoId] = i + 1; });
+    const rank = {};
+    tabla.forEach((r, i) => {
+      rank[r.equipoId] = i + 1;
+    });
     const po = { comp, formato: f, rank, fase: 'rondas', rondas: [], ri: -1, campeon: null, playin: null };
     st.playoffs[comp] = po;
     if (f === 'nba' || f === 'euroliga') {
@@ -126,8 +221,17 @@
     }
   }
   function parejasR1(seeds) {
-    if (seeds.length === 8) return [[0, 7], [3, 4], [1, 6], [2, 5]].map(p => [seeds[p[0]], seeds[p[1]]]);
-    return [[seeds[0], seeds[3]], [seeds[1], seeds[2]]];
+    if (seeds.length === 8)
+      return [
+        [0, 7],
+        [3, 4],
+        [1, 6],
+        [2, 5]
+      ].map(p => [seeds[p[0]], seeds[p[1]]]);
+    return [
+      [seeds[0], seeds[3]],
+      [seeds[1], seeds[2]]
+    ];
   }
   function armaR1(st, po, listas) {
     const pares = [];
@@ -135,30 +239,42 @@
     crearRonda(st, po, 0, pares);
   }
   function crearRonda(st, po, idx, pares) {
-    const y = yearOf(st), F = FORM[po.formato], cfg = F.rondas[idx];
+    const y = yearOf(st),
+      F = FORM[po.formato],
+      cfg = F.rondas[idx];
     let ini = U.addDays(st.fecha, idx === 0 ? 1 : 2);
     if (idx === 0) ini = mx(ini, fechaLiga(po.comp, 'po', y) || F.po(y));
     if (cfg.min) ini = mx(ini, cfg.min(y));
-    po.ri = idx; po.fase = 'rondas';
-    po.rondas.push({ nombre: cfg.n, mejorDe: cfg.m, series: pares.map((p, i) => {
-      const a = po.rank[p[0]] <= po.rank[p[1]] ? p[0] : p[1], b = a === p[0] ? p[1] : p[0];
-      return { id: po.comp + '-r' + idx + '-s' + i, a, b, mejorDe: cfg.m, wa: 0, wb: 0, ganador: null, pend: null, last: null, inicio: ini };
-    }) });
+    po.ri = idx;
+    po.fase = 'rondas';
+    po.rondas.push({
+      nombre: cfg.n,
+      mejorDe: cfg.m,
+      series: pares.map((p, i) => {
+        const a = po.rank[p[0]] <= po.rank[p[1]] ? p[0] : p[1],
+          b = a === p[0] ? p[1] : p[0];
+        return { id: po.comp + '-r' + idx + '-s' + i, a, b, mejorDe: cfg.m, wa: 0, wb: 0, ganador: null, pend: null, last: null, inicio: ini };
+      })
+    });
   }
   function procesaSerie(st, po, s) {
     if (s.ganador) return;
     if (s.pend) {
       const g = getG(st, s.pend);
       if (g && g.resultado) {
-        if (ganadorG(g) === s.a) s.wa++; else s.wb++;
-        s.pend = null; s.last = g.fecha;
+        if (ganadorG(g) === s.a) s.wa++;
+        else s.wb++;
+        s.pend = null;
+        s.last = g.fecha;
         const need = Math.floor(s.mejorDe / 2) + 1;
-        if (s.wa >= need) s.ganador = s.a; else if (s.wb >= need) s.ganador = s.b;
+        if (s.wa >= need) s.ganador = s.a;
+        else if (s.wb >= need) s.ganador = s.b;
       }
     }
     if (!s.ganador && !s.pend) {
       const n = s.wa + s.wb;
-      const host = PATRON[s.mejorDe][n] === 'a' ? s.a : s.b, other = host === s.a ? s.b : s.a;
+      const host = PATRON[s.mejorDe][n] === 'a' ? s.a : s.b,
+        other = host === s.a ? s.b : s.a;
       const fecha = s.last ? U.addDays(s.last, 2) : mx(s.inicio, U.addDays(st.fecha, 1));
       s.pend = creaG(st, po.comp, 'playoff', host, other, fecha, n + 1, { ronda: po.ri + 1, serie: s.id });
     }
@@ -174,7 +290,8 @@
             gr.g1 = creaG(st, comp, 'playin', gr.seeds[6], gr.seeds[7], f, 1);
             gr.g2 = creaG(st, comp, 'playin', gr.seeds[8], gr.seeds[9], f, 1);
           } else if (!gr.g3) {
-            const a = getG(st, gr.g1), b = getG(st, gr.g2);
+            const a = getG(st, gr.g1),
+              b = getG(st, gr.g2);
             if (a.resultado && b.resultado) {
               gr.s7 = ganadorG(a);
               gr.g3 = creaG(st, comp, 'playin', perdedorG(a), ganadorG(b), U.addDays(mx(a.fecha, b.fecha), 2), 2);
@@ -185,7 +302,11 @@
           }
         });
         if (po.playin.every(gr => gr.s8)) {
-          armaR1(st, po, po.playin.map(gr => gr.directos.concat([gr.s7, gr.s8])));
+          armaR1(
+            st,
+            po,
+            po.playin.map(gr => gr.directos.concat([gr.s7, gr.s8]))
+          );
         }
         return;
       }
@@ -199,7 +320,8 @@
           st.historial.push({ temporada: st.temporada, comp: po.comp, campeon: po.campeon });
           GM.noticia(st, '🏆 ' + st.equipos[po.campeon].nombre + ' campeón de ' + liga.nombre + '.');
         } else {
-          const w = R.series.map(s => s.ganador), pares = [];
+          const w = R.series.map(s => s.ganador),
+            pares = [];
           for (let i = 0; i < w.length; i += 2) pares.push([w[i], w[i + 1]]);
           crearRonda(st, po, po.ri + 1, pares);
         }
@@ -217,23 +339,52 @@
       if (st._directo) delete st._directo[g.id];
       const mio = g.local === st.clubId || g.visitante === st.clubId;
       g.resultado = mio ? sim : { local: sim.local, visitante: sim.visitante, ot: sim.ot, cuartos: sim.cuartos };
-      if (g.fase === 'amistoso') { GM.bus.emit('amistoso:jugado', { partido: g }); return; }   // los amistosos no cuentan para estadísticas, taquilla ni clasificación (pretemporada.js)
+      if (g.fase === 'amistoso') {
+        GM.bus.emit('amistoso:jugado', { partido: g });
+        return;
+      } // los amistosos no cuentan para estadísticas, taquilla ni clasificación (pretemporada.js)
       for (const pid in sim.stats) {
-        const s = sim.stats[pid], t = st.estadisticas[pid] || (st.estadisticas[pid] = { pj: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fal: 0 });
+        const s = sim.stats[pid],
+          t = st.estadisticas[pid] || (st.estadisticas[pid] = { pj: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fal: 0 });
         if (sim.pm && sim.pm[pid] !== undefined) t.pm = (t.pm || 0) + sim.pm[pid];
-        t.pj++; t.min += s.min; t.pts += s.pts; t.reb += s.reb; t.ast += s.ast; t.stl += s.stl; t.blk += s.blk; t.tov += s.tov; t.fal += s.fal;
+        t.pj++;
+        t.min += s.min;
+        t.pts += s.pts;
+        t.reb += s.reb;
+        t.ast += s.ast;
+        t.stl += s.stl;
+        t.blk += s.blk;
+        t.tov += s.tov;
+        t.fal += s.fal;
         // Por competición (líderes): [pj, min, pts, reb, ast, rob, tap]; las copas no cuentan para los líderes de la liga
         const k = g.cont || (g.fase === 'copa' ? null : g.comp);
-        if (k && s.min > 0) { const E = st.estComp || (st.estComp = {}), c = E[k] || (E[k] = {}), a = c[pid] || (c[pid] = [0, 0, 0, 0, 0, 0, 0]); a[0]++; a[1] += s.min; a[2] += s.pts; a[3] += s.reb; a[4] += s.ast; a[5] += s.stl; a[6] += s.blk; }
+        if (k && s.min > 0) {
+          const E = st.estComp || (st.estComp = {}),
+            c = E[k] || (E[k] = {}),
+            a = c[pid] || (c[pid] = [0, 0, 0, 0, 0, 0, 0]);
+          a[0]++;
+          a[1] += s.min;
+          a[2] += s.pts;
+          a[3] += s.reb;
+          a[4] += s.ast;
+          a[5] += s.stl;
+          a[6] += s.blk;
+        }
       }
-      if (g.fase === 'regular') { anota(st, g, sim); st.pendReg[g.comp]--; }
+      if (g.fase === 'regular') {
+        anota(st, g, sim);
+        st.pendReg[g.comp]--;
+      }
       GM.bus.emit('partido:jugado', { partido: g });
     });
-    Object.keys(st.pendReg).forEach(c => { if (st.pendReg[c] === 0 && !st.playoffs[c]) iniciarPO(st, c); });
+    Object.keys(st.pendReg).forEach(c => {
+      if (st.pendReg[c] === 0 && !st.playoffs[c]) iniciarPO(st, c);
+    });
     procesarPO(st);
     st.fecha = U.addDays(hoy, 1);
     GM.bus.emit('dia:avanzado', { fecha: st.fecha });
-    if (!st.temporadaTerminada && Object.keys(st.playoffs).length && Object.keys(st.ligas).every(c => !FORM[st.ligas[c].formato] || (st.playoffs[c] && st.playoffs[c].campeon))) finTemporada(st);
+    if (!st.temporadaTerminada && Object.keys(st.playoffs).length && Object.keys(st.ligas).every(c => !FORM[st.ligas[c].formato] || (st.playoffs[c] && st.playoffs[c].campeon)))
+      finTemporada(st);
     return juegos;
   }
   function proximoPartido(st, clubId) {
@@ -246,20 +397,24 @@
     return best;
   }
   function avanzarHastaPartido(st, clubId, max) {
-    let n = 0; max = max || 400;
+    let n = 0;
+    max = max || 400;
     while (n < max) {
       const p = proximoPartido(st, clubId);
       if (p && p.fecha <= st.fecha) break;
       if (!p && st.temporadaTerminada) break;
-      jugarDia(st); n++;
+      jugarDia(st);
+      n++;
       if (st.temporadaTerminada) break;
     }
     return n;
   }
   function calendarioClub(st, clubId) {
-    return st.calendario.filter(g => g.local === clubId || g.visitante === clubId).sort((a, b) => a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0);
+    return st.calendario.filter(g => g.local === clubId || g.visitante === clubId).sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
   }
-  function playoffs(st, comp) { return st.playoffs[comp] || null; }
+  function playoffs(st, comp) {
+    return st.playoffs[comp] || null;
+  }
   function finTemporada(st) {
     st.temporadaTerminada = true;
     GM.noticia(st, 'Se acaba la temporada ' + st.temporada + '. Toca preparar la siguiente.');
@@ -271,12 +426,17 @@
     st.temporada = y + '-' + String((y + 1) % 100).padStart(2, '0');
     const base = y + '-07-01';
     if (st.fecha < base) st.fecha = base;
-    st.estadisticas = {}; st.estComp = {};
+    st.estadisticas = {};
+    st.estComp = {};
     generarCalendario(st);
     GM.noticia(st, 'Arranca la temporada ' + st.temporada + '.');
     GM.bus.emit('temporada:nueva', { temporada: st.temporada });
   }
-  function nuevaPartida(st) { st.estadisticas = {}; st.estComp = {}; generarCalendario(st); }
+  function nuevaPartida(st) {
+    st.estadisticas = {};
+    st.estComp = {};
+    generarCalendario(st);
+  }
 
   function selfTest() {
     if (!GM.mkJugador || !GM.mods.partidos) return false;
@@ -284,7 +444,11 @@
     const ids = ['t1', 't2', 't3', 't4', 't5', 't6'];
     ids.forEach((id, k) => {
       const pl = [];
-      ['PG', 'SG', 'SF', 'PF', 'C', 'PG', 'SG', 'SF'].forEach((pos, i) => { const j = GM.mkJugador(id, i + 1, id + i, pos, 26, 200, 'ES', 'UE', 70 + k - i, 70, 'E', 1e6, 2027); st.jugadores[j.id] = j; pl.push(j.id); });
+      ['PG', 'SG', 'SF', 'PF', 'C', 'PG', 'SG', 'SF'].forEach((pos, i) => {
+        const j = GM.mkJugador(id, i + 1, id + i, pos, 26, 200, 'ES', 'UE', 70 + k - i, 70, 'E', 1e6, 2027);
+        st.jugadores[j.id] = j;
+        pl.push(j.id);
+      });
       st.equipos[id] = { id, nombre: id, plantilla: pl };
     });
     st.ligas.L = { id: 'L', nombre: 'Liga de prueba', formato: 'liga_simple', equipos: ids };
@@ -298,9 +462,33 @@
 
   const COL = { pts: 2, reb: 3, ast: 4, rob: 5, tap: 6 };
   function lideres(st, comp, cat, n) {
-    const c = (st.estComp || {})[comp]; if (!c) return [];
-    const ids = Object.keys(c).filter(i => st.jugadores[i]), max = ids.reduce((m, i) => Math.max(m, c[i][0]), 0), min = Math.max(1, Math.ceil(max * 0.4)), k = COL[cat];
-    return ids.filter(i => c[i][0] >= min).map(i => ({ id: i, pj: c[i][0], media: c[i][k] / c[i][0], total: c[i][k], min: c[i][1] / c[i][0] })).sort((a, b) => b.media - a.media).slice(0, n || 10);
+    const c = (st.estComp || {})[comp];
+    if (!c) return [];
+    const ids = Object.keys(c).filter(i => st.jugadores[i]),
+      max = ids.reduce((m, i) => Math.max(m, c[i][0]), 0),
+      min = Math.max(1, Math.ceil(max * 0.4)),
+      k = COL[cat];
+    return ids
+      .filter(i => c[i][0] >= min)
+      .map(i => ({ id: i, pj: c[i][0], media: c[i][k] / c[i][0], total: c[i][k], min: c[i][1] / c[i][0] }))
+      .sort((a, b) => b.media - a.media)
+      .slice(0, n || 10);
   }
-  GM.register('competiciones', { PAUSAS, fechaReal, lideres, generarCalendario, proximoPartido, clasificacion, playoffs, jugarDia, avanzarHastaPartido, calendarioClub, finTemporada, nuevaTemporada, nuevaPartida, selfTest, FORM });
+  GM.register('competiciones', {
+    PAUSAS,
+    fechaReal,
+    lideres,
+    generarCalendario,
+    proximoPartido,
+    clasificacion,
+    playoffs,
+    jugarDia,
+    avanzarHastaPartido,
+    calendarioClub,
+    finTemporada,
+    nuevaTemporada,
+    nuevaPartida,
+    selfTest,
+    FORM
+  });
 })();

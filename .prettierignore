@@ -1,0 +1,9 @@
+node_modules
+dist
+vendor
+recursos
+capturas
+escritorio
+datos_*.js
+datos_clima.js
+*.min.js

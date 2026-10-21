@@ -1,9 +1,57 @@
 // Ciudad más allá de 480 m (punto 18): cámara libre elevada mirando al horizonte, para ver el anillo lejano (piloto: Badalona hasta 1000 m). Uso: node tools/anillo_lejano.js [club]   (requiere `npm run serve`)
-const { chromium } = require('playwright'); const path = require('path'), fs = require('fs'); const sleep = ms => new Promise(r => setTimeout(r, ms));
-const club = process.argv[2] || 'joventut-badalona', DIR = path.join(__dirname, '..', 'capturas', 'anillo'); fs.mkdirSync(DIR, { recursive: true });
+const { chromium } = require('playwright');
+const path = require('path'),
+  fs = require('fs');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const club = process.argv[2] || 'joventut-badalona',
+  DIR = path.join(__dirname, '..', 'capturas', 'anillo');
+fs.mkdirSync(DIR, { recursive: true });
 (async () => {
-  const b = await chromium.launch({ channel: 'msedge' }), p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); await p.goto('http://localhost:8080/'); await sleep(800);
-  await p.evaluate(c => { GM.newGame(c, undefined, { modo: 'carrera', personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } }); GM.ui.start(document.getElementById('app')); GM.sede.abrir(GM.state, 'calle'); }, club); await sleep(16000);
-  for (const [n, pos, pitch, yaw] of [['alto', [-250, 120, 250], -0.22, -0.785], ['bajo', [0, 70, -330], -0.1, 0]]) { await p.evaluate(([pos, pi, ya]) => { const S = GM.sede._estado(); S.enFoto = true; S.camLibre = { pos: new THREE.Vector3(pos[0], pos[1], pos[2]), yaw: ya, pitch: pi }; S.camera.fov = 55; S.camera.updateProjectionMatrix(); }, [pos, pitch, yaw]); await sleep(2500); await p.screenshot({ path: path.join(DIR, n + '.png') }); }
-  console.log(JSON.stringify(await p.evaluate(() => { const i = GM.sede._estado().renderer.info; return { llamadas: i.render.calls, triangulos: i.render.triangles }; })), 'errores:', errs.length ? errs.slice(0, 4) : 'ninguno'); await b.close();
+  const b = await chromium.launch({ channel: 'msedge' }),
+    p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(),
+    errs = [];
+  p.on('pageerror', e => errs.push(e.message));
+  p.on('console', m => {
+    if (m.type() === 'error') errs.push(m.text());
+  });
+  await p.goto('http://localhost:8080/');
+  await sleep(800);
+  await p.evaluate(c => {
+    GM.newGame(c, undefined, {
+      modo: 'carrera',
+      personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }),
+      carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 }
+    });
+    GM.ui.start(document.getElementById('app'));
+    GM.sede.abrir(GM.state, 'calle');
+  }, club);
+  await sleep(16000);
+  for (const [n, pos, pitch, yaw] of [
+    ['alto', [-250, 120, 250], -0.22, -0.785],
+    ['bajo', [0, 70, -330], -0.1, 0]
+  ]) {
+    await p.evaluate(
+      ([pos, pi, ya]) => {
+        const S = GM.sede._estado();
+        S.enFoto = true;
+        S.camLibre = { pos: new THREE.Vector3(pos[0], pos[1], pos[2]), yaw: ya, pitch: pi };
+        S.camera.fov = 55;
+        S.camera.updateProjectionMatrix();
+      },
+      [pos, pitch, yaw]
+    );
+    await sleep(2500);
+    await p.screenshot({ path: path.join(DIR, n + '.png') });
+  }
+  console.log(
+    JSON.stringify(
+      await p.evaluate(() => {
+        const i = GM.sede._estado().renderer.info;
+        return { llamadas: i.render.calls, triangulos: i.render.triangles };
+      })
+    ),
+    'errores:',
+    errs.length ? errs.slice(0, 4) : 'ninguno'
+  );
+  await b.close();
 })();

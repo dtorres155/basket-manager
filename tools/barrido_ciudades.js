@@ -1,30 +1,248 @@
 // Barrido de todas las ciudades (punto 46): abre cada club en la ciudad real, mide una lista de comprobaciones automáticas (datos, edificios, calles con nombre, plazas, relieve, transporte, tipologías, errores, tiempo de carga)
 // y escribe docs/BARRIDO_CIUDADES.md con una fila por ciudad; guarda además vistas de varias ciudades al azar (capturas/barrido/) para revisarlas a mano.
 // Uso: node tools/barrido_ciudades.js [--n=120] [--desde=0] [--vistas=10]   (requiere `npm run serve`; tarda unos 20 s por ciudad)
-const { chromium } = require('playwright'); const path = require('path'), fs = require('fs'); const sleep = ms => new Promise(r => setTimeout(r, ms));
-const arg = (k, d) => { const a = process.argv.find(x => x.startsWith('--' + k + '=')); return a ? +a.split('=')[1] : d; }, N = arg('n', 999), DESDE = arg('desde', 0), VISTAS = arg('vistas', 10), DIR = path.join(__dirname, '..', 'capturas', 'barrido'); fs.mkdirSync(DIR, { recursive: true });
+const { chromium } = require('playwright');
+const path = require('path'),
+  fs = require('fs');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const arg = (k, d) => {
+    const a = process.argv.find(x => x.startsWith('--' + k + '='));
+    return a ? +a.split('=')[1] : d;
+  },
+  N = arg('n', 999),
+  DESDE = arg('desde', 0),
+  VISTAS = arg('vistas', 10),
+  DIR = path.join(__dirname, '..', 'capturas', 'barrido');
+fs.mkdirSync(DIR, { recursive: true });
 (async () => {
-  const b = await chromium.launch({ channel: 'msedge' }), p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(); let errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text().slice(0, 120)); });
-  await p.goto('http://localhost:8080/'); await sleep(800);
-  const clubs = await p.evaluate(() => { GM.newGame('joventut-badalona'); return Object.values(GM.state.equipos).map(e => [e.id, e.nombre, e.pais]); }), lista = clubs.slice(DESDE, DESDE + N), filas = [];
-  const azar = new Set(); { let a = 20261013; const r = () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; }; while (azar.size < Math.min(VISTAS, lista.length)) azar.add(lista[(r() * lista.length) | 0][0]); }
-  for (const [id, nombre, pais] of lista) {
-    errs = []; const t0 = Date.now();
-    try {
-      await p.evaluate(c => { GM.sede.cerrar && GM.sede.activa() && GM.sede.cerrar(); GM.newGame(c, undefined, { modo: 'carrera', personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } }); GM.state.fecha = '2026-10-14'; GM.ui.start(document.getElementById('app')); window.__t0 = performance.now(); GM.sede.abrir(GM.state, 'calle'); }, id);
-      let listo = false; for (let i = 0; i < 60 && !listo; i++) { await sleep(500); listo = await p.evaluate(() => { const S = GM.sede.activa() && GM.sede._estado(); return !!(S && S.yo && S.gente && S.gente.length > 0 && !document.querySelector('.sede-cargando')); }).catch(() => false); }
-      const ms = Date.now() - t0; await sleep(1500);
-      const d = await p.evaluate(() => { const S = GM.sede._estado(), X = S.datosX; if (!S.real || !X) return { real: false }; const D = GM.mods.calleReal.datos(GM.state.clubId) || {}, tipos = {}; (S.edificiosDatos || []).forEach(b => { tipos[b.tipo] = 1; });
-        const H = X.H; let dif = 0; if (H) { const n = H.n, g = (i, j) => H.v[Math.max(0, Math.min(n - 1, j)) * n + Math.max(0, Math.min(n - 1, i))], c0 = g((n - 1) / 2, (n - 1) / 2); for (let x = -280; x <= 280; x += 140) for (let z = -280; z <= 280; z += 140) { const fx = x / H.p + (n - 1) / 2, fz = z / H.p + (n - 1) / 2, i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, dem = g(i, j) * (1 - u) * (1 - v) + g(i + 1, j) * u * (1 - v) + g(i, j + 1) * (1 - u) * v + g(i + 1, j + 1) * u * v - c0; dif = Math.max(dif, Math.abs(GM.relieve.altura(x, z) - dem)); } }
-        return { real: true, sintetica: !!D.sintetica, edificios: (S.edificiosDatos || []).length, calles: (S.calles || []).length, carriles: (S.callesTodas || []).filter(c => c.lanes > 0).length, todas: (S.callesTodas || []).length, plazas: (S.plazas || []).length, relieve: !!H, relieveDif: +dif.toFixed(1), metro: Object.keys(S.estacionesReal || {}).length, zonas: (S.zonas || []).length, gente: S.gente.length, tipos: Object.keys(tipos).length, anillo: !!(X.L && X.L.e && X.L.e.length), RW: S.RW, tranvia: (X.TR || []).length, bus: S.rutaBus || '', tiendas: (S.tiendas || []).length, flota: (S.flota || []).length, concesionario: (S.zonas || []).some(z => z.sala.id === 'concesionario'), habitantes: S.demo ? S.demo.res : 0, pabellon: S.ptoPab ? Math.round(Math.hypot(S.ptoPab[0], S.ptoPab[1])) : -1 }; });
-      d.ms = ms; d.errores = errs.length; d.errTxt = errs.slice(0, 2); d.id = id; d.nombre = nombre; d.pais = pais;
-      const fallos = []; if (!d.real) fallos.push('no es ciudad real'); else { if (d.sintetica) fallos.push('plano inventado'); if (d.edificios < 40) fallos.push('pocos edificios (' + d.edificios + ')'); if (d.calles < 5 && d.edificios > 150) fallos.push('pocas calles con nombre'); if (!d.relieve) fallos.push('sin relieve'); else if (d.relieveDif > 4) fallos.push('relieve difiere ' + d.relieveDif); if (d.metro < 2 && pais !== 'US') fallos.push('metro < 2'); if (d.zonas < 24) fallos.push('pocas zonas (' + d.zonas + ')'); if (d.tipos < 3) fallos.push('pocas tipologías'); if (!d.anillo) fallos.push('sin anillo'); if (d.pabellon > 220) fallos.push('pabellón lejos (' + d.pabellon + ' m)'); if (!d.concesionario) fallos.push('sin concesionario'); if (d.errores) fallos.push(d.errores + ' errores'); if (ms > 40000) fallos.push('carga lenta'); }
-      d.fallos = fallos; filas.push(d); console.log((fallos.length ? 'REVISAR ' : 'ok      ') + id.padEnd(26), d.real ? 'edif ' + d.edificios + ', calles ' + d.calles + ', plazas ' + d.plazas + ', tipos ' + d.tipos + ', tram ' + d.tranvia + ', bus ' + (d.bus || '-') + ', ' + (ms / 1000).toFixed(1) + ' s' : '', fallos.join('; '));
-      if (azar.has(id)) { await p.evaluate(() => { GM.sede._clima('sol'); const S = GM.sede._estado(); S.hora = 12; S.enFoto = true; S.camLibre = { pos: new THREE.Vector3(-150, 100, 160), yaw: -0.7, pitch: -0.4 }; S.camera.fov = 62; S.camera.updateProjectionMatrix(); }); await sleep(3500); await p.screenshot({ path: path.join(DIR, id + '_aerea.png') }); await p.evaluate(() => { const S = GM.sede._estado(); S.enFoto = false; S.camLibre = null; S.zoom = 22; }); await sleep(1500); await p.screenshot({ path: path.join(DIR, id + '_calle.png') }); }
-    } catch (e) { filas.push({ id, nombre, pais, fallos: ['excepción: ' + String(e).slice(0, 80)], real: false }); console.log('REVISAR', id, String(e).slice(0, 100)); }
+  const b = await chromium.launch({ channel: 'msedge' }),
+    p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+  let errs = [];
+  p.on('pageerror', e => errs.push(e.message));
+  p.on('console', m => {
+    if (m.type() === 'error') errs.push(m.text().slice(0, 120));
+  });
+  await p.goto('http://localhost:8080/');
+  await sleep(800);
+  const clubs = await p.evaluate(() => {
+      GM.newGame('joventut-badalona');
+      return Object.values(GM.state.equipos).map(e => [e.id, e.nombre, e.pais]);
+    }),
+    lista = clubs.slice(DESDE, DESDE + N),
+    filas = [];
+  const azar = new Set();
+  {
+    let a = 20261013;
+    const r = () => {
+      a = (a * 1664525 + 1013904223) >>> 0;
+      return a / 4294967296;
+    };
+    while (azar.size < Math.min(VISTAS, lista.length)) azar.add(lista[(r() * lista.length) | 0][0]);
   }
-  await b.close(); fs.writeFileSync(path.join(DIR, 'barrido.json'), JSON.stringify(filas, null, 1));
-  const malas = filas.filter(f => f.fallos.length), media = k => Math.round(filas.filter(f => f.real).reduce((a, f) => a + (f[k] || 0), 0) / Math.max(1, filas.filter(f => f.real).length));
-  const md = '# Barrido de ciudades\n\nGenerado el ' + new Date().toISOString().slice(0, 10) + ' con `node tools/barrido_ciudades.js`. Abre cada club en la ciudad real y comprueba datos, edificios, calles, plazas, relieve, transporte, tipologías, errores y tiempo de carga. ' + (filas.length - malas.length) + ' de ' + filas.length + ' ciudades sin ningún aviso. Medias: ' + media('edificios') + ' edificios, ' + media('calles') + ' calles con nombre, ' + media('plazas') + ' plazas, carga de ' + (media('ms') / 1000).toFixed(1) + ' s.\n\nRevisadas a mano (vistas en `capturas/barrido/`, fuera de git): ' + [...azar].join(', ') + '.\n\n| Ciudad | País | Edificios | Calles | Plazas | Tipologías | Tranvía | Bus | Vecinos | Carga (s) | Avisos |\n|---|---|---|---|---|---|---|---|---|---|---|\n' + filas.map(f => '| ' + f.id + ' | ' + f.pais + ' | ' + (f.edificios || '') + ' | ' + (f.calles || '') + ' | ' + (f.plazas === undefined ? '' : f.plazas) + ' | ' + (f.tipos || '') + ' | ' + (f.tranvia === undefined ? '' : f.tranvia) + ' | ' + (f.bus || '') + ' | ' + (f.habitantes || '') + ' | ' + (f.ms ? (f.ms / 1000).toFixed(1) : '') + ' | ' + (f.fallos.join('; ') || 'ninguno') + ' |').join('\n') + '\n';
-  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'BARRIDO_CIUDADES.md'), md); console.log('\n' + (filas.length - malas.length) + ' de ' + filas.length + ' sin avisos; informe en docs/BARRIDO_CIUDADES.md'); process.exit(malas.length ? 1 : 0);
+  for (const [id, nombre, pais] of lista) {
+    errs = [];
+    const t0 = Date.now();
+    try {
+      await p.evaluate(c => {
+        GM.sede.cerrar && GM.sede.activa() && GM.sede.cerrar();
+        GM.newGame(c, undefined, {
+          modo: 'carrera',
+          personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }),
+          carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 }
+        });
+        GM.state.fecha = '2026-10-14';
+        GM.ui.start(document.getElementById('app'));
+        window.__t0 = performance.now();
+        GM.sede.abrir(GM.state, 'calle');
+      }, id);
+      let listo = false;
+      for (let i = 0; i < 60 && !listo; i++) {
+        await sleep(500);
+        listo = await p
+          .evaluate(() => {
+            const S = GM.sede.activa() && GM.sede._estado();
+            return !!(S && S.yo && S.gente && S.gente.length > 0 && !document.querySelector('.sede-cargando'));
+          })
+          .catch(() => false);
+      }
+      const ms = Date.now() - t0;
+      await sleep(1500);
+      const d = await p.evaluate(() => {
+        const S = GM.sede._estado(),
+          X = S.datosX;
+        if (!S.real || !X) return { real: false };
+        const D = GM.mods.calleReal.datos(GM.state.clubId) || {},
+          tipos = {};
+        (S.edificiosDatos || []).forEach(b => {
+          tipos[b.tipo] = 1;
+        });
+        const H = X.H;
+        let dif = 0;
+        if (H) {
+          const n = H.n,
+            g = (i, j) => H.v[Math.max(0, Math.min(n - 1, j)) * n + Math.max(0, Math.min(n - 1, i))],
+            c0 = g((n - 1) / 2, (n - 1) / 2);
+          for (let x = -280; x <= 280; x += 140)
+            for (let z = -280; z <= 280; z += 140) {
+              const fx = x / H.p + (n - 1) / 2,
+                fz = z / H.p + (n - 1) / 2,
+                i = Math.floor(fx),
+                j = Math.floor(fz),
+                u = fx - i,
+                v = fz - j,
+                dem = g(i, j) * (1 - u) * (1 - v) + g(i + 1, j) * u * (1 - v) + g(i, j + 1) * (1 - u) * v + g(i + 1, j + 1) * u * v - c0;
+              dif = Math.max(dif, Math.abs(GM.relieve.altura(x, z) - dem));
+            }
+        }
+        return {
+          real: true,
+          sintetica: !!D.sintetica,
+          edificios: (S.edificiosDatos || []).length,
+          calles: (S.calles || []).length,
+          carriles: (S.callesTodas || []).filter(c => c.lanes > 0).length,
+          todas: (S.callesTodas || []).length,
+          plazas: (S.plazas || []).length,
+          relieve: !!H,
+          relieveDif: +dif.toFixed(1),
+          metro: Object.keys(S.estacionesReal || {}).length,
+          zonas: (S.zonas || []).length,
+          gente: S.gente.length,
+          tipos: Object.keys(tipos).length,
+          anillo: !!(X.L && X.L.e && X.L.e.length),
+          RW: S.RW,
+          tranvia: (X.TR || []).length,
+          bus: S.rutaBus || '',
+          tiendas: (S.tiendas || []).length,
+          flota: (S.flota || []).length,
+          concesionario: (S.zonas || []).some(z => z.sala.id === 'concesionario'),
+          habitantes: S.demo ? S.demo.res : 0,
+          pabellon: S.ptoPab ? Math.round(Math.hypot(S.ptoPab[0], S.ptoPab[1])) : -1
+        };
+      });
+      d.ms = ms;
+      d.errores = errs.length;
+      d.errTxt = errs.slice(0, 2);
+      d.id = id;
+      d.nombre = nombre;
+      d.pais = pais;
+      const fallos = [];
+      if (!d.real) fallos.push('no es ciudad real');
+      else {
+        if (d.sintetica) fallos.push('plano inventado');
+        if (d.edificios < 40) fallos.push('pocos edificios (' + d.edificios + ')');
+        if (d.calles < 5 && d.edificios > 150) fallos.push('pocas calles con nombre');
+        if (!d.relieve) fallos.push('sin relieve');
+        else if (d.relieveDif > 4) fallos.push('relieve difiere ' + d.relieveDif);
+        if (d.metro < 2 && pais !== 'US') fallos.push('metro < 2');
+        if (d.zonas < 24) fallos.push('pocas zonas (' + d.zonas + ')');
+        if (d.tipos < 3) fallos.push('pocas tipologías');
+        if (!d.anillo) fallos.push('sin anillo');
+        if (d.pabellon > 220) fallos.push('pabellón lejos (' + d.pabellon + ' m)');
+        if (!d.concesionario) fallos.push('sin concesionario');
+        if (d.errores) fallos.push(d.errores + ' errores');
+        if (ms > 40000) fallos.push('carga lenta');
+      }
+      d.fallos = fallos;
+      filas.push(d);
+      console.log(
+        (fallos.length ? 'REVISAR ' : 'ok      ') + id.padEnd(26),
+        d.real
+          ? 'edif ' +
+              d.edificios +
+              ', calles ' +
+              d.calles +
+              ', plazas ' +
+              d.plazas +
+              ', tipos ' +
+              d.tipos +
+              ', tram ' +
+              d.tranvia +
+              ', bus ' +
+              (d.bus || '-') +
+              ', ' +
+              (ms / 1000).toFixed(1) +
+              ' s'
+          : '',
+        fallos.join('; ')
+      );
+      if (azar.has(id)) {
+        await p.evaluate(() => {
+          GM.sede._clima('sol');
+          const S = GM.sede._estado();
+          S.hora = 12;
+          S.enFoto = true;
+          S.camLibre = { pos: new THREE.Vector3(-150, 100, 160), yaw: -0.7, pitch: -0.4 };
+          S.camera.fov = 62;
+          S.camera.updateProjectionMatrix();
+        });
+        await sleep(3500);
+        await p.screenshot({ path: path.join(DIR, id + '_aerea.png') });
+        await p.evaluate(() => {
+          const S = GM.sede._estado();
+          S.enFoto = false;
+          S.camLibre = null;
+          S.zoom = 22;
+        });
+        await sleep(1500);
+        await p.screenshot({ path: path.join(DIR, id + '_calle.png') });
+      }
+    } catch (e) {
+      filas.push({ id, nombre, pais, fallos: ['excepción: ' + String(e).slice(0, 80)], real: false });
+      console.log('REVISAR', id, String(e).slice(0, 100));
+    }
+  }
+  await b.close();
+  fs.writeFileSync(path.join(DIR, 'barrido.json'), JSON.stringify(filas, null, 1));
+  const malas = filas.filter(f => f.fallos.length),
+    media = k => Math.round(filas.filter(f => f.real).reduce((a, f) => a + (f[k] || 0), 0) / Math.max(1, filas.filter(f => f.real).length));
+  const md =
+    '# Barrido de ciudades\n\nGenerado el ' +
+    new Date().toISOString().slice(0, 10) +
+    ' con `node tools/barrido_ciudades.js`. Abre cada club en la ciudad real y comprueba datos, edificios, calles, plazas, relieve, transporte, tipologías, errores y tiempo de carga. ' +
+    (filas.length - malas.length) +
+    ' de ' +
+    filas.length +
+    ' ciudades sin ningún aviso. Medias: ' +
+    media('edificios') +
+    ' edificios, ' +
+    media('calles') +
+    ' calles con nombre, ' +
+    media('plazas') +
+    ' plazas, carga de ' +
+    (media('ms') / 1000).toFixed(1) +
+    ' s.\n\nRevisadas a mano (vistas en `capturas/barrido/`, fuera de git): ' +
+    [...azar].join(', ') +
+    '.\n\n| Ciudad | País | Edificios | Calles | Plazas | Tipologías | Tranvía | Bus | Vecinos | Carga (s) | Avisos |\n|---|---|---|---|---|---|---|---|---|---|---|\n' +
+    filas
+      .map(
+        f =>
+          '| ' +
+          f.id +
+          ' | ' +
+          f.pais +
+          ' | ' +
+          (f.edificios || '') +
+          ' | ' +
+          (f.calles || '') +
+          ' | ' +
+          (f.plazas === undefined ? '' : f.plazas) +
+          ' | ' +
+          (f.tipos || '') +
+          ' | ' +
+          (f.tranvia === undefined ? '' : f.tranvia) +
+          ' | ' +
+          (f.bus || '') +
+          ' | ' +
+          (f.habitantes || '') +
+          ' | ' +
+          (f.ms ? (f.ms / 1000).toFixed(1) : '') +
+          ' | ' +
+          (f.fallos.join('; ') || 'ninguno') +
+          ' |'
+      )
+      .join('\n') +
+    '\n';
+  fs.writeFileSync(path.join(__dirname, '..', 'docs', 'BARRIDO_CIUDADES.md'), md);
+  console.log('\n' + (filas.length - malas.length) + ' de ' + filas.length + ' sin avisos; informe en docs/BARRIDO_CIUDADES.md');
+  process.exit(malas.length ? 1 : 0);
 })();

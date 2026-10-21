@@ -1,10 +1,14 @@
 // Genera los iconos de la PWA en vendor/icons/ a partir de un SVG propio (escudo con balón).
 // Uso: node tools/iconos.js   (usa Edge con Playwright; los PNG se guardan en git)
 const { chromium } = require('playwright');
-const fs = require('fs'), path = require('path');
-const OUT = path.join(__dirname, '..', 'vendor', 'icons'); fs.mkdirSync(OUT, { recursive: true });
+const fs = require('fs'),
+  path = require('path');
+const OUT = path.join(__dirname, '..', 'vendor', 'icons');
+fs.mkdirSync(OUT, { recursive: true });
 const fuente = 'data:font/woff2;base64,' + fs.readFileSync(path.join(__dirname, '..', 'vendor', 'fonts', 'graduate-latin-400-normal.woff2')).toString('base64');
-const NARANJA = '#e8590c', NAVY = '#1c2b3a', CREMA = '#f6efe4';
+const NARANJA = '#e8590c',
+  NAVY = '#1c2b3a',
+  CREMA = '#f6efe4';
 
 // Escudo de camiseta (ribete doble) con un balón y «26/27». Lienzo de 512.
 const escudo = `
@@ -27,7 +31,8 @@ const svg = (fondo, escala) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
 (async () => {
   const b = await chromium.launch({ channel: process.env.CANAL || 'msedge' });
   const p = await b.newPage();
-  const html = s => `<!doctype html><style>@font-face{font-family:Graduate;src:url(${fuente})}html,body{margin:0;background:transparent}svg{display:block;width:100vw;height:100vh}</style>${s}`;
+  const html = s =>
+    `<!doctype html><style>@font-face{font-family:Graduate;src:url(${fuente})}html,body{margin:0;background:transparent}svg{display:block;width:100vw;height:100vh}</style>${s}`;
   const variantes = [
     // [archivo, tamaño, svg, fondo transparente]
     ['icon-192.png', 192, svg(false, 1), true],
@@ -37,7 +42,8 @@ const svg = (fondo, escala) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
   ];
   for (const [f, n, s, transp] of variantes) {
     await p.setViewportSize({ width: n, height: n });
-    await p.setContent(html(s)); await p.evaluate(() => document.fonts.load('58px Graduate'));
+    await p.setContent(html(s));
+    await p.evaluate(() => document.fonts.load('58px Graduate'));
     await p.screenshot({ path: path.join(OUT, f), omitBackground: transp });
     console.log(f, n);
   }

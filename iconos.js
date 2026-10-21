@@ -23,7 +23,8 @@
     pan: '<path d="M3.5 12.5c0-3.5 3.8-6.5 8.5-6.5s8.5 3 8.5 6.5c0 1.8-1 2.5-2 2.5v3.5h-13V15c-1 0-2-.7-2-2.5zM8 11l1.5 2M12 10.5l1.5 2.5M16 11l-1 2.5"/>',
     llave: '<path d="M14.5 4a5 5 0 0 0-4.7 6.7L3.5 17l3.5 3.5 6.3-6.3A5 5 0 0 0 20 9.5l-3.3 3.3-3-.5-.5-3z"/>',
     cubiertos: '<path d="M7 3v8M5 3v5.5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4.5-3.5 8H17"/>',
-    moneda: '<circle cx="12" cy="12" r="8.5"/><path d="M14.7 9c-.5-1-1.5-1.5-2.7-1.5-1.7 0-2.8.9-2.8 2.1 0 3 5.6 1.5 5.6 4.3 0 1.2-1.1 2.1-2.8 2.1-1.3 0-2.4-.6-2.9-1.6M12 6v1.5M12 16.5V18"/>',
+    moneda:
+      '<circle cx="12" cy="12" r="8.5"/><path d="M14.7 9c-.5-1-1.5-1.5-2.7-1.5-1.7 0-2.8.9-2.8 2.1 0 3 5.6 1.5 5.6 4.3 0 1.2-1.1 2.1-2.8 2.1-1.3 0-2.4-.6-2.9-1.6M12 6v1.5M12 16.5V18"/>',
     estrella: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/>',
     reloj: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
     candado: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
@@ -36,28 +37,144 @@
     mapa: '<path d="M9 4L3.5 6v14L9 18l6 2 5.5-2V4L15 6zM9 4v14M15 6v14"/>',
     sol: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>'
   };
-  const POR_EDIFICIO = { canasta: 'balon', bar: 'bar', escuela: 'escuela', mural: 'mural', ambulatorio: 'cruz', polideportivo: 'balon', tienda: 'tienda', hotel: 'hotel', pabellon: 'pabellon', plaza: 'plaza', parque: 'parque', alumbrado: 'farola', biblioteca: 'libro', centrodia: 'corazon', carretera: 'carretera', casapadres: 'casa', micasa: 'casa', casaamigos: 'casa', cine: 'cine', industrial: 'fabrica', panaderia: 'pan', taller: 'llave', restaurantep: 'cubiertos' };
-  function svg(n, t) { return '<svg viewBox="0 0 24 24" width="' + (t || 20) + '" height="' + (t || 20) + '" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[n] || P.casa) + '</svg>'; }
-  function el(n, t) { const s = document.createElement('span'); s.className = 'ico'; s.innerHTML = svg(POR_EDIFICIO[n] || n, t); return s; }
+  const POR_EDIFICIO = {
+    canasta: 'balon',
+    bar: 'bar',
+    escuela: 'escuela',
+    mural: 'mural',
+    ambulatorio: 'cruz',
+    polideportivo: 'balon',
+    tienda: 'tienda',
+    hotel: 'hotel',
+    pabellon: 'pabellon',
+    plaza: 'plaza',
+    parque: 'parque',
+    alumbrado: 'farola',
+    biblioteca: 'libro',
+    centrodia: 'corazon',
+    carretera: 'carretera',
+    casapadres: 'casa',
+    micasa: 'casa',
+    casaamigos: 'casa',
+    cine: 'cine',
+    industrial: 'fabrica',
+    panaderia: 'pan',
+    taller: 'llave',
+    restaurantep: 'cubiertos'
+  };
+  function svg(n, t) {
+    return (
+      '<svg viewBox="0 0 24 24" width="' +
+      (t || 20) +
+      '" height="' +
+      (t || 20) +
+      '" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (P[n] || P.casa) +
+      '</svg>'
+    );
+  }
+  function el(n, t) {
+    const s = document.createElement('span');
+    s.className = 'ico';
+    s.innerHTML = svg(POR_EDIFICIO[n] || n, t);
+    return s;
+  }
   // Ficha de edificio: cabecera con icono y niveles, rentas, gestor, obra en curso, mejora, ruta de mejoras y acciones.
   // f: { icono, titulo, sub, nivel, max, niveles, stats, gestor, obra, mejora, acciones }; hecho(r) recibe el resultado de cada acción.
   function ficha(c, f, hecho) {
-    const h = GM.h, I = (n, t) => el(n, t), K = GM.mods.pueblo && GM.mods.pueblo.fmtK || (x => x + ' mil €');
-    const w = h('div', { class: 'pb' }); c.append(w);
-    const pips = h('div', { class: 'pb-pips' }); for (let i = 0; i < f.max; i++) pips.append(h('i', { class: i < f.nivel ? 'on' : '' }));
-    w.append(h('div', { class: 'pb-hero' }, h('div', { class: 'pb-ic' }, I(f.icono, 30)), h('div', null, h('h3', null, f.titulo), h('p', null, f.sub || ''), f.max > 1 || f.nivel ? pips : null)));
-    if (f.stats && f.stats.length) w.append(h('div', { class: 'pb-stats' }, f.stats.map(s => h('div', { class: 'pb-stat' }, I(s.ico, 18), h('b', null, s.val), h('span', null, s.etq)))));
-    if (f.gestor) w.append(h('div', { class: 'pb-gestor' }, h('div', { class: 'av' }, f.gestor.nombre.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ ]/g, '').trim()[0] || '?'), h('div', null, h('b', null, f.gestor.nombre), h('span', null, 'Lo lleva ' + f.gestor.rol + '. Te da una parte de lo que gana cada mes.'))));
-    if (f.obra) w.append(h('div', { class: 'pb-obra' }, h('div', { class: 'cab' }, I('obra', 20), 'Obra en marcha', h('small', null, f.obra.dias + ' días')), h('div', { class: 'tira' }, h('i', { style: { width: Math.max(4, Math.round(f.obra.prog * 100)) + '%' } })), h('p', null, f.obra.fase + ' (' + Math.round(f.obra.prog * 100) + ' %). ' + f.obra.texto + '. Inauguración el ' + f.obra.fin + '.')));
+    const h = GM.h,
+      I = (n, t) => el(n, t),
+      K = (GM.mods.pueblo && GM.mods.pueblo.fmtK) || (x => x + ' mil €');
+    const w = h('div', { class: 'pb' });
+    c.append(w);
+    const pips = h('div', { class: 'pb-pips' });
+    for (let i = 0; i < f.max; i++) pips.append(h('i', { class: i < f.nivel ? 'on' : '' }));
+    w.append(
+      h(
+        'div',
+        { class: 'pb-hero' },
+        h('div', { class: 'pb-ic' }, I(f.icono, 30)),
+        h('div', null, h('h3', null, f.titulo), h('p', null, f.sub || ''), f.max > 1 || f.nivel ? pips : null)
+      )
+    );
+    if (f.stats && f.stats.length)
+      w.append(
+        h(
+          'div',
+          { class: 'pb-stats' },
+          f.stats.map(s => h('div', { class: 'pb-stat' }, I(s.ico, 18), h('b', null, s.val), h('span', null, s.etq)))
+        )
+      );
+    if (f.gestor)
+      w.append(
+        h(
+          'div',
+          { class: 'pb-gestor' },
+          h('div', { class: 'av' }, f.gestor.nombre.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ ]/g, '').trim()[0] || '?'),
+          h('div', null, h('b', null, f.gestor.nombre), h('span', null, 'Lo lleva ' + f.gestor.rol + '. Te da una parte de lo que gana cada mes.'))
+        )
+      );
+    if (f.obra)
+      w.append(
+        h(
+          'div',
+          { class: 'pb-obra' },
+          h('div', { class: 'cab' }, I('obra', 20), 'Obra en marcha', h('small', null, f.obra.dias + ' días')),
+          h('div', { class: 'tira' }, h('i', { style: { width: Math.max(4, Math.round(f.obra.prog * 100)) + '%' } })),
+          h('p', null, f.obra.fase + ' (' + Math.round(f.obra.prog * 100) + ' %). ' + f.obra.texto + '. Inauguración el ' + f.obra.fin + '.')
+        )
+      );
     if (f.mejora) {
-      const m = f.mejora, bt = h('button', { class: 'pb-cta', disabled: !m.disponible, onclick: () => hecho(m.fn()) }, I(m.disponible ? 'obra' : 'candado', 18), m.titulo);
-      w.append(h('div', { class: 'pb-mejora' }, h('div', { class: 'fila' }, h('span', { class: 'pb-chip' }, I('moneda', 14), K(m.coste)), h('span', { class: 'pb-chip' }, I('reloj', 14), m.dias + ' días de obra'),
-        m.falta ? h('span', { class: 'pb-chip mal' }, 'Te faltan ' + K(m.falta.necesitas - m.falta.tienes)) : (m.motivo ? null : h('span', { class: 'pb-chip ok' }, I('check', 14), 'Puedes pagarlo'))),
-        m.falta ? h('div', { class: 'pb-falta' }, h('i', { style: { width: Math.round(Math.min(1, m.falta.tienes / m.falta.necesitas) * 100) + '%' } })) : null, bt,
-        !m.disponible && m.motivo && !m.falta ? h('span', { style: { fontSize: '12.5px', opacity: 0.75 } }, m.motivo) : null));
+      const m = f.mejora,
+        bt = h('button', { class: 'pb-cta', disabled: !m.disponible, onclick: () => hecho(m.fn()) }, I(m.disponible ? 'obra' : 'candado', 18), m.titulo);
+      w.append(
+        h(
+          'div',
+          { class: 'pb-mejora' },
+          h(
+            'div',
+            { class: 'fila' },
+            h('span', { class: 'pb-chip' }, I('moneda', 14), K(m.coste)),
+            h('span', { class: 'pb-chip' }, I('reloj', 14), m.dias + ' días de obra'),
+            m.falta
+              ? h('span', { class: 'pb-chip mal' }, 'Te faltan ' + K(m.falta.necesitas - m.falta.tienes))
+              : m.motivo
+                ? null
+                : h('span', { class: 'pb-chip ok' }, I('check', 14), 'Puedes pagarlo')
+          ),
+          m.falta ? h('div', { class: 'pb-falta' }, h('i', { style: { width: Math.round(Math.min(1, m.falta.tienes / m.falta.necesitas) * 100) + '%' } })) : null,
+          bt,
+          !m.disponible && m.motivo && !m.falta ? h('span', { style: { fontSize: '12.5px', opacity: 0.75 } }, m.motivo) : null
+        )
+      );
     }
-    if (f.niveles && f.niveles.length > 1) w.append(h('div', { class: 'pb-tit' }, 'Ruta de mejoras'), h('div', { class: 'pb-ruta' }, f.niveles.map(n => h('div', { class: 'pb-paso ' + n.estado }, h('div', { class: 'pt' }, n.estado === 'hecho' ? I('check', 12) : null), h('div', null, h('b', null, n.nombre), h('span', null, n.estado === 'hecho' ? 'Hecho' : n.estado === 'sig' ? 'Siguiente mejora' : 'Más adelante'))))));
-    (f.acciones || []).forEach(x => w.append(h('button', { class: 'pb-acc', disabled: !x.disponible, onclick: () => hecho(x.fn()) }, h('div', { class: 'ic' }, I(x.ico || f.icono, 20)), h('div', null, h('b', null, x.t), h('span', null, x.disponible ? x.d : x.motivo || x.d)), h('span', { class: 'fl' }, I('flecha', 16)))));
+    if (f.niveles && f.niveles.length > 1)
+      w.append(
+        h('div', { class: 'pb-tit' }, 'Ruta de mejoras'),
+        h(
+          'div',
+          { class: 'pb-ruta' },
+          f.niveles.map(n =>
+            h(
+              'div',
+              { class: 'pb-paso ' + n.estado },
+              h('div', { class: 'pt' }, n.estado === 'hecho' ? I('check', 12) : null),
+              h('div', null, h('b', null, n.nombre), h('span', null, n.estado === 'hecho' ? 'Hecho' : n.estado === 'sig' ? 'Siguiente mejora' : 'Más adelante'))
+            )
+          )
+        )
+      );
+    (f.acciones || []).forEach(x =>
+      w.append(
+        h(
+          'button',
+          { class: 'pb-acc', disabled: !x.disponible, onclick: () => hecho(x.fn()) },
+          h('div', { class: 'ic' }, I(x.ico || f.icono, 20)),
+          h('div', null, h('b', null, x.t), h('span', null, x.disponible ? x.d : x.motivo || x.d)),
+          h('span', { class: 'fl' }, I('flecha', 16))
+        )
+      )
+    );
     return w;
   }
   GM.iconos = { svg, el, ficha, NOMBRES: Object.keys(P), POR_EDIFICIO };

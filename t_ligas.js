@@ -1,30 +1,138 @@
 // Punto 68: ligas nuevas solo con datos (LNB, LKL, ABA e Israel): entran en el calendario, el mercado, las finanzas y el resto de módulos sin tocar código; una liga inventada en la propia prueba también.
 const L = require('./load');
-L(['core', 'ligas_config', 'datos_util', 'datos_valoraciones', 'datos_nba_este', 'datos_nba_oeste', 'datos_nba_fin', 'datos_euroliga', 'datos_ligas', 'datos_ligas2', 'datos_movimientos', 'datos_ligas3', 'datos_plantillas_extra', 'datos_ligas_extra', 'finanzas', 'ciudad', 'contratos', 'partidos', 'competiciones', 'mercado', 'cantera', 'copas', 'continental', 'rivalidades', 'personaje', 'carrera', 'estilo', 'movil', 'entrenador', 'ojeadores', 'economia', 'vida']);
-let fallos = 0; const ok = (n, c) => { if (!c) { fallos++; console.log('FALLA', n); } else console.log('ok   ', n); };
+L([
+  'core',
+  'ligas_config',
+  'datos_util',
+  'datos_valoraciones',
+  'datos_nba_este',
+  'datos_nba_oeste',
+  'datos_nba_fin',
+  'datos_euroliga',
+  'datos_ligas',
+  'datos_ligas2',
+  'datos_movimientos',
+  'datos_ligas3',
+  'datos_plantillas_extra',
+  'datos_ligas_extra',
+  'finanzas',
+  'ciudad',
+  'contratos',
+  'partidos',
+  'competiciones',
+  'mercado',
+  'cantera',
+  'copas',
+  'continental',
+  'rivalidades',
+  'personaje',
+  'carrera',
+  'estilo',
+  'movil',
+  'entrenador',
+  'ojeadores',
+  'economia',
+  'vida'
+]);
+let fallos = 0;
+const ok = (n, c) => {
+  if (!c) {
+    fallos++;
+    console.log('FALLA', n);
+  } else console.log('ok   ', n);
+};
 ok('selfTest ligasConfig', GM.mods.ligasConfig.selfTest());
-const st = GM.newGame('joventut-badalona', 11, { modo: 'gestor', personaje: GM.mods.personaje.crear() }); GM.state = st;
-['LNB', 'LKL', 'ABA', 'ISR'].forEach(l => { const g = st.ligas[l]; ok(l + ': ' + (g ? g.equipos.length + ' clubes' : 'no existe'), !!g && g.equipos.length >= 9 && g.equipos.every(id => !!st.equipos[id] && st.equipos[id].plantilla.length >= 8)); });
-ok('los clubes nuevos tienen jugadores del país y relleno ficticio', st.jugadores['rytas-vilnius-01'] && st.jugadores['rytas-vilnius-01'].nac === 'LT' && st.jugadores['rytas-vilnius-01'].ficticio);
-ok('la liga adriática mezcla países (relleno croata y esloveno)', st.equipos['cedevita-olimpija'].plantilla.some(i => st.jugadores[i].nac === 'SI') && st.equipos['zadar'].plantilla.some(i => st.jugadores[i].nac === 'HR'));
-const M = GM.mods.mercado; ok('ligaDe: un club nuevo y uno compartido con la Euroliga', M.ligaDe(st, 'monaco') === 'LNB' && M.ligaDe(st, 'asvel') === 'EUROLIGA' && M.ligaDe(st, 'rytas-vilnius') === 'LKL');
-const g = st.calendario.filter(x => x.comp === 'LNB'); ok('el calendario de la LNB: ' + g.length + ' partidos (16 clubes, doble vuelta + playoffs)', g.filter(x => x.fase === 'regular').length >= 16 * 15 && g[0].fecha >= '2026-09-26');
+const st = GM.newGame('joventut-badalona', 11, { modo: 'gestor', personaje: GM.mods.personaje.crear() });
+GM.state = st;
+['LNB', 'LKL', 'ABA', 'ISR'].forEach(l => {
+  const g = st.ligas[l];
+  ok(l + ': ' + (g ? g.equipos.length + ' clubes' : 'no existe'), !!g && g.equipos.length >= 9 && g.equipos.every(id => !!st.equipos[id] && st.equipos[id].plantilla.length >= 8));
+});
+ok(
+  'los clubes nuevos tienen jugadores del país y relleno ficticio',
+  st.jugadores['mazeikiai-01'] && st.jugadores['mazeikiai-01'].nac === 'LT' && st.jugadores['mazeikiai-01'].ficticio
+);
+ok(
+  'la liga adriática mezcla países (relleno croata y esloveno)',
+  st.equipos['cedevita-olimpija'].plantilla.some(i => st.jugadores[i].nac === 'SI') && st.equipos['zadar'].plantilla.some(i => st.jugadores[i].nac === 'HR')
+);
+const M = GM.mods.mercado;
+ok('ligaDe: un club nuevo y uno compartido con la Euroliga', M.ligaDe(st, 'monaco') === 'LNB' && M.ligaDe(st, 'asvel') === 'EUROLIGA' && M.ligaDe(st, 'rytas-vilnius') === 'LKL');
+const g = st.calendario.filter(x => x.comp === 'LNB');
+ok('el calendario de la LNB: ' + g.length + ' partidos (16 clubes, doble vuelta + playoffs)', g.filter(x => x.fase === 'regular').length >= 16 * 15 && g[0].fecha >= '2026-09-26');
 ok('las fechas de cada liga salen de sus datos: LKL ' + st.calendario.filter(x => x.comp === 'LKL')[0].fecha, st.calendario.filter(x => x.comp === 'LKL')[0].fecha >= '2026-09-24');
-const sal = M.salarioPedido(st, st.equipos['monaco'].plantilla[0], 'monaco'); ok('el mercado calcula sueldos en la liga nueva: ' + sal, sal >= 1e5 && sal <= 2.4e6);
-ok('la liga nueva tiene copa propia y especialidad de ojeo', !!GM.mods.copas && Object.keys(st.copas || {}).some(k => /FRANCIA|MINDAUGAS|ISRAEL/.test(k)) || true); ok('los ojeadores ven las ligas nuevas', GM.mods.ojeadores.destinos(st).some(d => d.id === 'LNB') && GM.mods.ojeadores.ESPEC.LNB === 'Francia y África occidental');
+const sal = M.salarioPedido(st, st.equipos['monaco'].plantilla[0], 'monaco');
+ok('el mercado calcula sueldos en la liga nueva: ' + sal, sal >= 1e5 && sal <= 2.4e6);
+ok('la liga nueva tiene copa propia y especialidad de ojeo', (!!GM.mods.copas && Object.keys(st.copas || {}).some(k => /FRANCIA|MINDAUGAS|ISRAEL/.test(k))) || true);
+ok('los ojeadores ven las ligas nuevas', GM.mods.ojeadores.destinos(st).some(d => d.id === 'LNB') && GM.mods.ojeadores.ESPEC.LNB === 'Francia y África occidental');
 // una temporada completa
-let n = 0; while (!st.temporadaTerminada && n++ < 400) GM.mods.competiciones.jugarDia(st);
-['LNB', 'LKL', 'ABA', 'ISR'].forEach(l => { const h = st.historial.find(x => x.comp === l && x.temporada === '2026-27'); ok(l + ' tiene campeón: ' + (h ? st.equipos[h.campeon].nombre : 'ninguno'), !!h); });
-const caja = Object.keys(st.finanzas).filter(id => ['LNB', 'LKL', 'ABA', 'ISR'].some(l => st.ligas[l].equipos.indexOf(id) >= 0)).map(id => st.finanzas[id].caja); ok('las finanzas de los clubes nuevos no se rompen: ' + caja.length, caja.every(c => isFinite(c)));
+let n = 0;
+while (!st.temporadaTerminada && n++ < 400) GM.mods.competiciones.jugarDia(st);
+['LNB', 'LKL', 'ABA', 'ISR'].forEach(l => {
+  const h = st.historial.find(x => x.comp === l && x.temporada === '2026-27');
+  ok(l + ' tiene campeón: ' + (h ? st.equipos[h.campeon].nombre : 'ninguno'), !!h);
+});
+const caja = Object.keys(st.finanzas)
+  .filter(id => ['LNB', 'LKL', 'ABA', 'ISR'].some(l => st.ligas[l].equipos.indexOf(id) >= 0))
+  .map(id => st.finanzas[id].caja);
+ok(
+  'las finanzas de los clubes nuevos no se rompen: ' + caja.length,
+  caja.every(c => isFinite(c))
+);
 // una liga inventada solo con datos
-GM.registrarLiga({ id: 'PRU', nombre: 'Liga de prueba', pais: 'ES', clubes: [['pru-a', 'Prueba A', 'PRA', 'Ciudad A', 'ES', ['#111111', '#eeeeee'], 40, 2, 'Pabellón A', 2000], ['pru-b', 'Prueba B', 'PRB', 'Ciudad B', 'ES', ['#222222', '#dddddd'], 40, 2, 'Pabellón B', 2000], ['pru-c', 'Prueba C', 'PRC', 'Ciudad C', 'ES', ['#333333', '#cccccc'], 40, 2, 'Pabellón C', 2000], ['pru-d', 'Prueba D', 'PRD', 'Ciudad D', 'ES', ['#444444', '#bbbbbb'], 40, 2, 'Pabellón D', 2000]].map(d => ({ def: d, filas: [], opt: { plantilla: 12 } })), params: { fact: 0.04 } }); GM.commitDatos([]);
-const st2 = GM.newGame('pru-a', 5, { modo: 'gestor', personaje: GM.mods.personaje.crear() }); GM.state = st2; ok('una liga nueva entra sin tocar código: ' + st2.ligas.PRU.equipos.length + ' clubes', !!st2.ligas.PRU && st2.calendario.filter(x => x.comp === 'PRU').length >= 12);
-let m = 0; while (!st2.temporadaTerminada && m++ < 400) GM.mods.competiciones.jugarDia(st2); ok('y su temporada termina', st2.historial.some(x => x.comp === 'PRU'));
+GM.registrarLiga({
+  id: 'PRU',
+  nombre: 'Liga de prueba',
+  pais: 'ES',
+  clubes: [
+    ['pru-a', 'Prueba A', 'PRA', 'Ciudad A', 'ES', ['#111111', '#eeeeee'], 40, 2, 'Pabellón A', 2000],
+    ['pru-b', 'Prueba B', 'PRB', 'Ciudad B', 'ES', ['#222222', '#dddddd'], 40, 2, 'Pabellón B', 2000],
+    ['pru-c', 'Prueba C', 'PRC', 'Ciudad C', 'ES', ['#333333', '#cccccc'], 40, 2, 'Pabellón C', 2000],
+    ['pru-d', 'Prueba D', 'PRD', 'Ciudad D', 'ES', ['#444444', '#bbbbbb'], 40, 2, 'Pabellón D', 2000]
+  ].map(d => ({ def: d, filas: [], opt: { plantilla: 12 } })),
+  params: { fact: 0.04 }
+});
+GM.commitDatos([]);
+const st2 = GM.newGame('pru-a', 5, { modo: 'gestor', personaje: GM.mods.personaje.crear() });
+GM.state = st2;
+ok('una liga nueva entra sin tocar código: ' + st2.ligas.PRU.equipos.length + ' clubes', !!st2.ligas.PRU && st2.calendario.filter(x => x.comp === 'PRU').length >= 12);
+let m = 0;
+while (!st2.temporadaTerminada && m++ < 400) GM.mods.competiciones.jugarDia(st2);
+ok(
+  'y su temporada termina',
+  st2.historial.some(x => x.comp === 'PRU')
+);
 // ---- calendario realista y lotería del draft
-const p0 = GM.mods.competiciones.PAUSAS(2026), malas = st.calendario.filter(x => x.fase === 'regular' && ['ACB', 'LNB', 'BBL', 'LEGA', 'ISR'].indexOf(x.comp) >= 0 && ((x.fecha >= p0[0][0] && x.fecha <= p0[0][1]) || (x.fecha >= p0[1][0] && x.fecha <= p0[1][1]) || x.fecha.slice(5) === '12-25' || x.fecha.slice(5) === '01-01'));
-ok('las ligas europeas paran en las ventanas FIBA y en Navidad (' + malas.length + ' partidos en esas fechas)', malas.length === 0 && st.calendario.some(x => x.comp === 'NBA' && x.fecha.slice(5) === '12-25'));
-const ids = Object.keys(st.equipos).filter(i => st.ligas.NBA.equipos.indexOf(i) >= 0); let primero = 0, subidas = 0; for (let i = 0; i < 3000; i++) { const r = M.loteria(st, ids); if (r.orden[0] === ids[0]) primero++; if (r.equipos.some(e => e.despues < e.antes - 3)) subidas++; }
-ok('la lotería da al peor equipo el 14 % del número 1: ' + (primero / 30).toFixed(1) + ' %', primero / 3000 > 0.115 && primero / 3000 < 0.165); ok('y a veces un equipo salta varios puestos (' + subidas + ' de 3000)', subidas > 300);
+const p0 = GM.mods.competiciones.PAUSAS(2026),
+  malas = st.calendario.filter(
+    x =>
+      x.fase === 'regular' &&
+      ['ACB', 'LNB', 'BBL', 'LEGA', 'ISR'].indexOf(x.comp) >= 0 &&
+      ((x.fecha >= p0[0][0] && x.fecha <= p0[0][1]) || (x.fecha >= p0[1][0] && x.fecha <= p0[1][1]) || x.fecha.slice(5) === '12-25' || x.fecha.slice(5) === '01-01')
+  );
+ok(
+  'las ligas europeas paran en las ventanas FIBA y en Navidad (' + malas.length + ' partidos en esas fechas)',
+  malas.length === 0 && st.calendario.some(x => x.comp === 'NBA' && x.fecha.slice(5) === '12-25')
+);
+const ids = Object.keys(st.equipos).filter(i => st.ligas.NBA.equipos.indexOf(i) >= 0);
+let primero = 0,
+  subidas = 0;
+for (let i = 0; i < 3000; i++) {
+  const r = M.loteria(st, ids);
+  if (r.orden[0] === ids[0]) primero++;
+  if (r.equipos.some(e => e.despues < e.antes - 3)) subidas++;
+}
+ok('la lotería da al peor equipo el 14 % del número 1: ' + (primero / 30).toFixed(1) + ' %', primero / 3000 > 0.115 && primero / 3000 < 0.165);
+ok('y a veces un equipo salta varios puestos (' + subidas + ' de 3000)', subidas > 300);
 ok('el draft del fin de temporada guarda su lotería', st.mercado.loteria && st.mercado.loteria.equipos.length === 14);
-const cont = st.continental || {}; const part = Object.keys(cont).map(k => (cont[k].directos || []).concat(cont[k].pre || [])).reduce((a, b) => a.concat(b), []); ok('los clubes de las ligas nuevas juegan competiciones europeas: ' + ['monaco', 'rytas-vilnius', 'cedevita-olimpija', 'hapoel-jerusalem'].filter(c => part.indexOf(c) >= 0).join(', '), ['monaco', 'cedevita-olimpija', 'hapoel-jerusalem', 'rytas-vilnius'].filter(c => part.indexOf(c) >= 0).length >= 2);
-console.log(fallos ? 'fallos ' + fallos : 'Sin fallos'); process.exit(fallos ? 1 : 0);
+const cont = st.continental || {};
+const part = Object.keys(cont)
+  .map(k => (cont[k].directos || []).concat(cont[k].pre || []))
+  .reduce((a, b) => a.concat(b), []);
+ok(
+  'los clubes de las ligas nuevas juegan competiciones europeas: ' +
+    ['monaco', 'rytas-vilnius', 'cedevita-olimpija', 'hapoel-jerusalem'].filter(c => part.indexOf(c) >= 0).join(', '),
+  ['monaco', 'cedevita-olimpija', 'hapoel-jerusalem', 'rytas-vilnius'].filter(c => part.indexOf(c) >= 0).length >= 2
+);
+console.log(fallos ? 'fallos ' + fallos : 'Sin fallos');
+process.exit(fallos ? 1 : 0);

@@ -1,13 +1,66 @@
 // Biblioteca de animaciones (punto 26): hoja con cada clip de código en varios instantes. Uso: node tools/anim_poses.js [clip1,clip2,...] [t1,t2,...] [vista=frente|lado]   (requiere `npm run serve`)
 // Cada fila es un instante (en segundos, o 0..1 de la duración si es menor que 1 con «u»), cada columna un clip. Guarda capturas/anim/poses_<n>.png
-const { chromium } = require('playwright'); const path = require('path'), fs = require('fs'); const sleep = ms => new Promise(r => setTimeout(r, ms));
-const clips = (process.argv[2] || 'hablar,movil,aplaudir,comer,celebrar,bote,defensa,tiro').split(','), tiempos = (process.argv[3] || '0.1,0.4,0.7').split(',').map(Number), vista = process.argv[4] || 'frente', DIR = path.join(__dirname, '..', 'capturas', 'anim'); fs.mkdirSync(DIR, { recursive: true });
+const { chromium } = require('playwright');
+const path = require('path'),
+  fs = require('fs');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clips = (process.argv[2] || 'hablar,movil,aplaudir,comer,celebrar,bote,defensa,tiro').split(','),
+  tiempos = (process.argv[3] || '0.1,0.4,0.7').split(',').map(Number),
+  vista = process.argv[4] || 'frente',
+  DIR = path.join(__dirname, '..', 'capturas', 'anim');
+fs.mkdirSync(DIR, { recursive: true });
 (async () => {
-  const b = await chromium.launch({ channel: 'msedge' }), p = await (await b.newContext({ viewport: { width: 1500, height: 900 } })).newPage(), errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); await p.goto('http://localhost:8080/'); await sleep(800);
-  await p.evaluate(() => { const c = 'joventut-badalona'; GM.newGame(c, undefined, { modo: 'carrera', personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } }); GM.ui.start(document.getElementById('app')); GM.sede.abrir(GM.state, 'calle'); }); await sleep(14000);
-  await p.evaluate(async ([clips, tiempos, vista]) => { const S = GM.sede._estado(), y = S.yo.obj.position; document.querySelectorAll('.sede-hud,.sede-panel,.panel').forEach(e => { e.style.display = 'none'; });
-    for (let r = 0; r < tiempos.length; r++) for (let i = 0; i < clips.length; i++) { const q = await GM.sede.personaje({ modelo: 'h-casual_2', altura: 180, piel: '#e0ac85', pelo: '#3b2617', ropa: ['#2d6a4f', '#333'] }); const a = q.acc[clips[i]]; if (!a) { console.error('no hay clip ' + clips[i]); continue; }
-      q.obj.position.set(y.x + (i - (clips.length - 1) / 2) * 1.35, 80 - r * 2.6, y.z - 8); q.obj.rotation.y = vista === 'lado' ? Math.PI / 2 : 0; S.mundo.add(q.obj); a.reset().play(); a.time = tiempos[r] < 1 && a.getClip().duration > 1.5 ? tiempos[r] * a.getClip().duration : tiempos[r]; q.mixer.update(0); }
-    S.enFoto = true; S.camLibre = { pos: new THREE.Vector3(y.x, 79.4 - (tiempos.length - 1) * 1.3, y.z - 2.5), yaw: 0, pitch: 0 }; S.camera.fov = 55; S.camera.updateProjectionMatrix(); }, [clips, tiempos, vista]);
-  await sleep(1500); await p.screenshot({ path: path.join(DIR, 'poses_' + clips[0] + '.png') }); console.log('errores:', errs.length ? errs.slice(0, 5) : 'ninguno'); await b.close();
+  const b = await chromium.launch({ channel: 'msedge' }),
+    p = await (await b.newContext({ viewport: { width: 1500, height: 900 } })).newPage(),
+    errs = [];
+  p.on('pageerror', e => errs.push(e.message));
+  p.on('console', m => {
+    if (m.type() === 'error') errs.push(m.text());
+  });
+  await p.goto('http://localhost:8080/');
+  await sleep(800);
+  await p.evaluate(() => {
+    const c = 'joventut-badalona';
+    GM.newGame(c, undefined, {
+      modo: 'carrera',
+      personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }),
+      carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 }
+    });
+    GM.ui.start(document.getElementById('app'));
+    GM.sede.abrir(GM.state, 'calle');
+  });
+  await sleep(14000);
+  await p.evaluate(
+    async ([clips, tiempos, vista]) => {
+      const S = GM.sede._estado(),
+        y = S.yo.obj.position;
+      document.querySelectorAll('.sede-hud,.sede-panel,.panel').forEach(e => {
+        e.style.display = 'none';
+      });
+      for (let r = 0; r < tiempos.length; r++)
+        for (let i = 0; i < clips.length; i++) {
+          const q = await GM.sede.personaje({ modelo: 'h-casual_2', altura: 180, piel: '#e0ac85', pelo: '#3b2617', ropa: ['#2d6a4f', '#333'] });
+          const a = q.acc[clips[i]];
+          if (!a) {
+            console.error('no hay clip ' + clips[i]);
+            continue;
+          }
+          q.obj.position.set(y.x + (i - (clips.length - 1) / 2) * 1.35, 80 - r * 2.6, y.z - 8);
+          q.obj.rotation.y = vista === 'lado' ? Math.PI / 2 : 0;
+          S.mundo.add(q.obj);
+          a.reset().play();
+          a.time = tiempos[r] < 1 && a.getClip().duration > 1.5 ? tiempos[r] * a.getClip().duration : tiempos[r];
+          q.mixer.update(0);
+        }
+      S.enFoto = true;
+      S.camLibre = { pos: new THREE.Vector3(y.x, 79.4 - (tiempos.length - 1) * 1.3, y.z - 2.5), yaw: 0, pitch: 0 };
+      S.camera.fov = 55;
+      S.camera.updateProjectionMatrix();
+    },
+    [clips, tiempos, vista]
+  );
+  await sleep(1500);
+  await p.screenshot({ path: path.join(DIR, 'poses_' + clips[0] + '.png') });
+  console.log('errores:', errs.length ? errs.slice(0, 5) : 'ninguno');
+  await b.close();
 })();

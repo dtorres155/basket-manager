@@ -49,30 +49,101 @@
     ]
   };
   const clave = m => 'gm1:tutorial:' + m;
-  const hecho = m => { try { return window.localStorage.getItem(clave(m)) === 'hecho'; } catch (e) { return true; } };
+  const hecho = m => {
+    try {
+      return window.localStorage.getItem(clave(m)) === 'hecho';
+    } catch (e) {
+      return true;
+    }
+  };
   let abierto = null;
-  function cerrar(m) { const f = abierto && abierto.recolocar; if (abierto) { abierto.forEach(e => e.remove()); abierto = null; } if (f) window.removeEventListener('resize', f); try { window.localStorage.setItem(clave(m), 'hecho'); } catch (e) { } }
+  function cerrar(m) {
+    const f = abierto && abierto.recolocar;
+    if (abierto) {
+      abierto.forEach(e => e.remove());
+      abierto = null;
+    }
+    if (f) window.removeEventListener('resize', f);
+    try {
+      window.localStorage.setItem(clave(m), 'hecho');
+    } catch (e) {}
+  }
   function tutorial(modo) {
-    const st = S(); modo = modo || (st && st.modo); const pasos = (PASOS[modo] || PASOS.gestor).concat(COMUN_FIN); if (abierto) cerrar(modo);
-    const velo = h('div', { class: 'tuto-velo' }), aro = h('div', { class: 'tuto-aro' }), carta = h('div', { class: 'tuto-carta', role: 'dialog', 'aria-live': 'polite' });
-    document.body.append(velo, aro, carta); abierto = [velo, aro, carta];
+    const st = S();
+    modo = modo || (st && st.modo);
+    const pasos = (PASOS[modo] || PASOS.gestor).concat(COMUN_FIN);
+    if (abierto) cerrar(modo);
+    const velo = h('div', { class: 'tuto-velo' }),
+      aro = h('div', { class: 'tuto-aro' }),
+      carta = h('div', { class: 'tuto-carta', role: 'dialog', 'aria-live': 'polite' });
+    document.body.append(velo, aro, carta);
+    abierto = [velo, aro, carta];
     let i = 0;
     const pintar = () => {
-      const p = pasos[i], el = p.sel && document.querySelector(p.sel);
-      if (p.sel && !el) { i++; if (i >= pasos.length) return cerrar(modo); return pintar(); }   // si no está en pantalla, se salta
-      if (el) { el.scrollIntoView && el.scrollIntoView({ block: 'nearest' }); const r = el.getBoundingClientRect(); Object.assign(aro.style, { display: 'block', left: (r.left - 6) + 'px', top: (r.top - 6) + 'px', width: (r.width + 12) + 'px', height: (r.height + 12) + 'px' }); }
-      else aro.style.display = 'none';
-      const arriba = el && el.getBoundingClientRect().top > window.innerHeight * 0.55; carta.classList.toggle('arriba', !!arriba);
+      const p = pasos[i],
+        el = p.sel && document.querySelector(p.sel);
+      if (p.sel && !el) {
+        i++;
+        if (i >= pasos.length) return cerrar(modo);
+        return pintar();
+      } // si no está en pantalla, se salta
+      if (el) {
+        el.scrollIntoView && el.scrollIntoView({ block: 'nearest' });
+        const r = el.getBoundingClientRect();
+        Object.assign(aro.style, { display: 'block', left: r.left - 6 + 'px', top: r.top - 6 + 'px', width: r.width + 12 + 'px', height: r.height + 12 + 'px' });
+      } else aro.style.display = 'none';
+      const arriba = el && el.getBoundingClientRect().top > window.innerHeight * 0.55;
+      carta.classList.toggle('arriba', !!arriba);
       carta.innerHTML = '';
-      carta.append(h('div', { class: 'tuto-paso' }, (i + 1) + ' de ' + pasos.length), h('b', null, p.t), h('p', null, p.d),
-        h('div', { class: 'par' }, h('button', { class: 'btn btn-sec peq', onclick: () => cerrar(modo) }, 'Saltar'),
-          i > 0 ? h('button', { class: 'btn btn-sec peq', onclick: () => { i--; pintar(); } }, 'Atrás') : null,
-          h('button', { class: 'btn peq', onclick: () => { i++; if (i >= pasos.length) cerrar(modo); else pintar(); } }, i === pasos.length - 1 ? 'Empezar' : 'Siguiente')));
+      carta.append(
+        h('div', { class: 'tuto-paso' }, i + 1 + ' de ' + pasos.length),
+        h('b', null, p.t),
+        h('p', null, p.d),
+        h(
+          'div',
+          { class: 'par' },
+          h('button', { class: 'btn btn-sec peq', onclick: () => cerrar(modo) }, 'Saltar'),
+          i > 0
+            ? h(
+                'button',
+                {
+                  class: 'btn btn-sec peq',
+                  onclick: () => {
+                    i--;
+                    pintar();
+                  }
+                },
+                'Atrás'
+              )
+            : null,
+          h(
+            'button',
+            {
+              class: 'btn peq',
+              onclick: () => {
+                i++;
+                if (i >= pasos.length) cerrar(modo);
+                else pintar();
+              }
+            },
+            i === pasos.length - 1 ? 'Empezar' : 'Siguiente'
+          )
+        )
+      );
     };
-    abierto.recolocar = pintar; window.addEventListener('resize', pintar);
+    abierto.recolocar = pintar;
+    window.addEventListener('resize', pintar);
     pintar();
   }
   // Se lanza solo la primera vez de cada modo (lo llama ui.js al montar la partida)
-  function auto() { const st = S(); if (!st || hecho(st.modo) || navigator.webdriver) return; setTimeout(() => { if (S() === st && !document.querySelector('.fondo')) tutorial(st.modo); }, 900); }
-  GM.ui.tutorial = tutorial; GM.ui.tutorialAuto = auto; GM.ui.tutorialPasos = PASOS;
+  function auto() {
+    const st = S();
+    if (!st || hecho(st.modo) || navigator.webdriver) return;
+    setTimeout(() => {
+      if (S() === st && !document.querySelector('.fondo')) tutorial(st.modo);
+    }, 900);
+  }
+  GM.ui.tutorial = tutorial;
+  GM.ui.tutorialAuto = auto;
+  GM.ui.tutorialPasos = PASOS;
 })();

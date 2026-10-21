@@ -12,11 +12,15 @@
   const FACT = GM.tabla('mercado.fact', { NBA: 1, EUROLIGA: 0.18, ACB: 0.07, LEGA: 0.06, GBL: 0.06, BBL: 0.07, BSL: 0.08 });
   const MINSAL = GM.tabla('mercado.minsal', { NBA: 2.2e6, EUROLIGA: 0.15e6, ACB: 0.1e6, LEGA: 0.1e6, GBL: 0.1e6, BBL: 0.1e6, BSL: 0.1e6 });
   const MAXSAL = GM.tabla('mercado.maxsal', { NBA: 62e6, EUROLIGA: 6e6, ACB: 2.5e6, LEGA: 2e6, GBL: 2.5e6, BBL: 2e6, BSL: 3e6 });
-  const TOPE_NBA = 140e6, TECHO_NBA = 190e6, MAXP = 15;
+  const TOPE_NBA = 140e6,
+    TECHO_NBA = 190e6,
+    MAXP = 15;
   const POS = ['PG', 'SG', 'SF', 'PF', 'C'];
   const F = () => GM.mods.finanzas;
 
-  function ligaDe(st, eqId) { return PRIO.find(l => st.ligas[l] && st.ligas[l].equipos.indexOf(eqId) >= 0) || 'LEGA'; }
+  function ligaDe(st, eqId) {
+    return PRIO.find(l => st.ligas[l] && st.ligas[l].equipos.indexOf(eqId) >= 0) || 'LEGA';
+  }
   function valorJugador(p) {
     let v = Math.pow(Math.max(0, p.ovr - 42) / 50, 3.6) * 58e6;
     if (p.edad <= 22) v *= 1 + Math.max(0, p.pot - p.ovr) * 0.03;
@@ -24,20 +28,25 @@
     return Math.round(v + 100000);
   }
   function salarioPedido(st, jugId, eqId) {
-    const p = st.jugadores[jugId], l = ligaDe(st, eqId);
+    const p = st.jugadores[jugId],
+      l = ligaDe(st, eqId);
     const s = valorJugador(p) * FACT[l] * (0.9 + (U.hash(jugId) % 21) / 100) * (GM.economia ? GM.economia.factorSalario(st, eqId) : 1);
     return Math.min(MAXSAL[l], Math.max(MINSAL[l], Math.round(s / 10000) * 10000));
   }
   const masaMax = (st, eqId) => Math.round(2e6 + Math.pow(st.equipos[eqId].reputacion / 100, 3) * 60e6);
-  function masa(st, eqId) { return F() ? F().masaSalarial(st, eqId) : st.equipos[eqId].plantilla.reduce((a, i) => a + st.jugadores[i].contrato.salario, 0); }
+  function masa(st, eqId) {
+    return F() ? F().masaSalarial(st, eqId) : st.equipos[eqId].plantilla.reduce((a, i) => a + st.jugadores[i].contrato.salario, 0);
+  }
   function topeSalarial(st, eqId) {
-    const l = ligaDe(st, eqId), m = masa(st, eqId);
+    const l = ligaDe(st, eqId),
+      m = masa(st, eqId);
     if (l === 'NBA') return { tope: TOPE_NBA, techo: TECHO_NBA, masa: m, margen: TOPE_NBA - m, tipo: 'Tope blando de la NBA' };
     const t = masaMax(st, eqId);
     return { tope: t, techo: t, masa: m, margen: t - m, tipo: 'Límite salarial del club' };
   }
   function motivoNoAnadir(st, eqId, salario, via, antiguo) {
-    const l = ligaDe(st, eqId), m = masa(st, eqId) - (antiguo || 0);
+    const l = ligaDe(st, eqId),
+      m = masa(st, eqId) - (antiguo || 0);
     if (via !== 'renovar' && st.equipos[eqId].plantilla.length >= MAXP) return 'Plantilla completa (' + MAXP + ' jugadores).';
     if (l === 'NBA') {
       if (via === 'renovar') return m + salario > TECHO_NBA ? 'Superarías el techo salarial de 190 M€.' : null;
@@ -49,10 +58,11 @@
   const nl = (st, id) => st.equipos[id].plantilla.length;
 
   function evaluarOferta(st, jugId, eqId, salario, anos, renov) {
-    const p = st.jugadores[jugId], eq = st.equipos[eqId];
+    const p = st.jugadores[jugId],
+      eq = st.equipos[eqId];
     const ask = salarioPedido(st, jugId, eqId) * (renov ? 1.04 : 1);
     const ratio = salario / ask;
-    let prob = ratio >= 1 ? 1 : ratio < 0.8 ? 0 : (ratio - 0.8) / 0.2 * 0.85 + (eq.reputacion - 60) / 300;
+    let prob = ratio >= 1 ? 1 : ratio < 0.8 ? 0 : ((ratio - 0.8) / 0.2) * 0.85 + (eq.reputacion - 60) / 300;
     if (p.edad >= 32 && anos >= 3) prob -= 0.1;
     if (p.edad <= 23 && anos === 1) prob -= 0.1;
     if (renov) prob += (p.estado.moral - 60) / 300;
@@ -60,29 +70,35 @@
   }
   function ficha(st, p, eqId, salario, anos) {
     st.mercado.libres = st.mercado.libres.filter(i => i !== p.id);
-    p.libre = false; p.equipoId = eqId;
+    p.libre = false;
+    p.equipoId = eqId;
     p.contrato = { salario, hasta: yearOf(st) + anos };
     if (st.equipos[eqId].plantilla.indexOf(p.id) < 0) st.equipos[eqId].plantilla.push(p.id);
   }
   function ofertar(st, jugId, o) {
-    const p = st.jugadores[jugId], club = st.clubId;
+    const p = st.jugadores[jugId],
+      club = st.clubId;
     if (!p) return { ok: false, motivo: 'Jugador desconocido.' };
     if (!p.libre) return { ok: false, motivo: 'Tiene contrato con otro club: negocia un traspaso.' };
-    const salario = Math.round(o.salario), anos = U.clamp(o.anos || 1, 1, 4);
+    const salario = Math.round(o.salario),
+      anos = U.clamp(o.anos || 1, 1, 4);
     if (p.origen === 'NBA' && ligaDe(st, club) !== 'NBA' && p.ovr > 72) return { ok: false, motivo: 'Prefiere seguir en la NBA.' };
     const nope = motivoNoAnadir(st, club, salario, 'fichaje');
     if (nope) return { ok: false, motivo: nope };
     const ev = evaluarOferta(st, jugId, club, salario, anos, false);
-    if (GM.rng.next() > ev.prob) return { ok: false, motivo: ev.prob === 0 ? 'Quiere bastante más: pide unos ' + U.eur(ev.pedido) + ' al año.' : 'Prefiere esperar otras ofertas. Mejora el salario.' };
+    if (GM.rng.next() > ev.prob)
+      return { ok: false, motivo: ev.prob === 0 ? 'Quiere bastante más: pide unos ' + U.eur(ev.pedido) + ' al año.' : 'Prefiere esperar otras ofertas. Mejora el salario.' };
     ficha(st, p, club, salario, anos);
     GM.noticia(st, 'Fichaje: ' + p.nombre + ' (' + p.ovr + ') firma por ' + anos + (anos === 1 ? ' temporada.' : ' temporadas.'));
     GM.bus.emit('fichaje:hecho', { jugadorId: p.id, de: null, a: club });
     return { ok: true };
   }
   function renovar(st, jugId, o) {
-    const p = st.jugadores[jugId], club = st.clubId;
+    const p = st.jugadores[jugId],
+      club = st.clubId;
     if (!p || p.equipoId !== club) return { ok: false, motivo: 'Solo puedes renovar a jugadores de tu plantilla.' };
-    const salario = Math.round(o.salario), anos = U.clamp(o.anos || 1, 1, 4);
+    const salario = Math.round(o.salario),
+      anos = U.clamp(o.anos || 1, 1, 4);
     const nope = motivoNoAnadir(st, club, salario, 'renovar', p.contrato.salario);
     if (nope) return { ok: false, motivo: nope };
     const ev = evaluarOferta(st, jugId, club, salario, anos, true);
@@ -94,21 +110,34 @@
   }
   // Firma un contrato ya pactado en una negociación (negociacion.js): no hay azar, solo las reglas salariales. Lleva cláusula, opción y bonus.
   function firmar(st, jugId, o, renov) {
-    const p = st.jugadores[jugId], club = st.clubId; if (!p) return { ok: false, motivo: 'Jugador desconocido.' };
-    const salario = Math.round(o.salario), anos = U.clamp(o.anos || 1, 1, 4), extra = { clausula: o.clausula || 0, opcion: o.opcion || null, bonus: o.bonus || [] };
+    const p = st.jugadores[jugId],
+      club = st.clubId;
+    if (!p) return { ok: false, motivo: 'Jugador desconocido.' };
+    const salario = Math.round(o.salario),
+      anos = U.clamp(o.anos || 1, 1, 4),
+      extra = { clausula: o.clausula || 0, opcion: o.opcion || null, bonus: o.bonus || [] };
     if (renov) {
       if (p.equipoId !== club) return { ok: false, motivo: 'Solo puedes renovar a jugadores de tu plantilla.' };
-      const nope = motivoNoAnadir(st, club, salario, 'renovar', p.contrato.salario); if (nope) return { ok: false, motivo: nope };
-      p.contrato = Object.assign({ salario, hasta: Math.max(p.contrato.hasta, yearOf(st) + 1) + anos }, extra); p.estado.moral = U.clamp(p.estado.moral + 8, 0, 100);
-      GM.noticia(st, 'Renovación: ' + p.nombre + ' continúa hasta ' + p.contrato.hasta + '.'); GM.bus.emit('contrato:renovado', { jugadorId: p.id }); return { ok: true };
+      const nope = motivoNoAnadir(st, club, salario, 'renovar', p.contrato.salario);
+      if (nope) return { ok: false, motivo: nope };
+      p.contrato = Object.assign({ salario, hasta: Math.max(p.contrato.hasta, yearOf(st) + 1) + anos }, extra);
+      p.estado.moral = U.clamp(p.estado.moral + 8, 0, 100);
+      GM.noticia(st, 'Renovación: ' + p.nombre + ' continúa hasta ' + p.contrato.hasta + '.');
+      GM.bus.emit('contrato:renovado', { jugadorId: p.id });
+      return { ok: true };
     }
     if (!p.libre) return { ok: false, motivo: 'Tiene contrato con otro club.' };
-    const nope = motivoNoAnadir(st, club, salario, 'fichaje'); if (nope) return { ok: false, motivo: nope };
-    ficha(st, p, club, salario, anos); Object.assign(p.contrato, extra);
-    GM.noticia(st, 'Fichaje: ' + p.nombre + ' (' + p.ovr + ') firma por ' + anos + (anos === 1 ? ' temporada.' : ' temporadas.')); GM.bus.emit('fichaje:hecho', { jugadorId: p.id, de: null, a: club }); return { ok: true };
+    const nope = motivoNoAnadir(st, club, salario, 'fichaje');
+    if (nope) return { ok: false, motivo: nope };
+    ficha(st, p, club, salario, anos);
+    Object.assign(p.contrato, extra);
+    GM.noticia(st, 'Fichaje: ' + p.nombre + ' (' + p.ovr + ') firma por ' + anos + (anos === 1 ? ' temporada.' : ' temporadas.'));
+    GM.bus.emit('fichaje:hecho', { jugadorId: p.id, de: null, a: club });
+    return { ok: true };
   }
   function liberar(st, jugId) {
-    const p = st.jugadores[jugId], club = st.clubId;
+    const p = st.jugadores[jugId],
+      club = st.clubId;
     if (!p || p.equipoId !== club) return { ok: false, motivo: 'No es de tu plantilla.' };
     if (nl(st, club) <= 10) return { ok: false, motivo: 'Necesitas al menos 10 jugadores.' };
     const quedan = Math.max(0, p.contrato.hasta - yearOf(st));
@@ -122,28 +151,38 @@
     if (p.equipoId) p.origen = ligaDe(st, p.equipoId);
     const eq = st.equipos[p.equipoId];
     if (eq) eq.plantilla = eq.plantilla.filter(i => i !== p.id);
-    p.equipoId = null; p.libre = true;
+    p.equipoId = null;
+    p.libre = true;
     p.contrato = { salario: 0, hasta: 0 };
     if (st.mercado.libres.indexOf(p.id) < 0) st.mercado.libres.push(p.id);
   }
 
   // ----- Traspasos -----
   function precioMinimo(st, jugId) {
-    const p = st.jugadores[jugId]; if (!p.equipoId) return 0;
-    const l = ligaDe(st, p.equipoId), anos = Math.max(1, p.contrato.hasta - yearOf(st));
-    return Math.max(50000, Math.round(valorJugador(p) * FACT[l] * 1.25 * (0.6 + 0.2 * Math.min(anos, 3)) / 50000) * 50000);
+    const p = st.jugadores[jugId];
+    if (!p.equipoId) return 0;
+    const l = ligaDe(st, p.equipoId),
+      anos = Math.max(1, p.contrato.hasta - yearOf(st));
+    return Math.max(50000, Math.round((valorJugador(p) * FACT[l] * 1.25 * (0.6 + 0.2 * Math.min(anos, 3))) / 50000) * 50000);
   }
   function valorIA(st, jugId, compradorId) {
-    const p = st.jugadores[jugId], lv = ligaDe(st, p.equipoId), lc = ligaDe(st, compradorId);
-    return Math.max(50000, Math.round(precioMinimo(st, jugId) * 0.95 * U.clamp(FACT[lc] / FACT[lv], 0.4, 1.6) / 50000) * 50000);
+    const p = st.jugadores[jugId],
+      lv = ligaDe(st, p.equipoId),
+      lc = ligaDe(st, compradorId);
+    return Math.max(50000, Math.round((precioMinimo(st, jugId) * 0.95 * U.clamp(FACT[lc] / FACT[lv], 0.4, 1.6)) / 50000) * 50000);
   }
   function top2(st, eqId, jugId) {
-    return st.equipos[eqId].plantilla.map(i => st.jugadores[i]).sort((a, b) => b.ovr - a.ovr).slice(0, 2).some(p => p.id === jugId);
+    return st.equipos[eqId].plantilla
+      .map(i => st.jugadores[i])
+      .sort((a, b) => b.ovr - a.ovr)
+      .slice(0, 2)
+      .some(p => p.id === jugId);
   }
   function mover(st, p, aId, precio) {
     const de = p.equipoId;
     st.equipos[de].plantilla = st.equipos[de].plantilla.filter(i => i !== p.id);
-    st.equipos[aId].plantilla.push(p.id); p.equipoId = aId;
+    st.equipos[aId].plantilla.push(p.id);
+    p.equipoId = aId;
     if (F()) {
       F().registrar(st, aId, 'Traspaso de ' + p.nombre, -precio);
       F().registrar(st, de, 'Traspaso de ' + p.nombre, precio);
@@ -151,9 +190,13 @@
     GM.bus.emit('fichaje:hecho', { jugadorId: p.id, de, a: aId });
   }
   function traspasar(st, jugId, aId, precio) {
-    const p = st.jugadores[jugId], user = st.clubId;
+    const p = st.jugadores[jugId],
+      user = st.clubId;
     if (!p || !p.equipoId) return { ok: false, motivo: 'Jugador no disponible para traspaso.' };
-    if (GM.traspasos && st.modo === 'gestor' && st.mercado) { const cerrado = GM.traspasos.motivoCerrado(st, [user, aId === user ? p.equipoId : aId]); if (cerrado) return { ok: false, motivo: cerrado }; }   // fechas límite (punto 65)
+    if (GM.traspasos && st.modo === 'gestor' && st.mercado) {
+      const cerrado = GM.traspasos.motivoCerrado(st, [user, aId === user ? p.equipoId : aId]);
+      if (cerrado) return { ok: false, motivo: cerrado };
+    } // fechas límite (punto 65)
     precio = Math.round(precio);
     if (aId === user && p.equipoId !== user) {
       if (precio < precioMinimo(st, jugId)) return { ok: false, motivo: 'El club pide al menos ' + U.eur(precioMinimo(st, jugId)) + '.' };
@@ -180,13 +223,22 @@
   }
   const comprar = (st, jugId) => traspasar(st, jugId, st.clubId, precioMinimo(st, jugId));
   function ofertasVenta(st, jugId) {
-    const p = st.jugadores[jugId], out = [];
+    const p = st.jugadores[jugId],
+      out = [];
     Object.keys(st.equipos).forEach(id => {
       if (id === st.clubId || nl(st, id) >= MAXP) return;
       const l = ligaDe(st, id);
       if (FACT[l] < FACT[ligaDe(st, st.clubId)] * 0.35) return;
       if (motivoNoAnadir(st, id, p.contrato.salario, 'traspaso')) return;
-      if (p.ovr < Math.max.apply(null, st.equipos[id].plantilla.map(i => st.jugadores[i].ovr)) - 12) return;
+      if (
+        p.ovr <
+        Math.max.apply(
+          null,
+          st.equipos[id].plantilla.map(i => st.jugadores[i].ovr)
+        ) -
+          12
+      )
+        return;
       const precio = valorIA(st, jugId, id);
       if (F() && st.finanzas[id].caja < precio * 1.5) return;
       out.push({ equipoId: id, precio });
@@ -197,29 +249,67 @@
 
   // ----- Agentes libres -----
   function nuevoLibre(st, ovr, edad, pais) {
-    const m = st.mercado; m.seq = (m.seq || 0) + 1;
+    const m = st.mercado;
+    m.seq = (m.seq || 0) + 1;
     const h = U.hash('fa' + m.seq + st.fecha);
     const pos = POS[h % 5];
     const pa = pais || GM.rng.pick(['US', 'US', 'US', 'ES', 'FR', 'RS', 'GR', 'LT', 'IT', 'DE', 'TR', 'IL']);
-    const p = GM.mkJugador('fa', m.seq, GM.nombreAleatorio(pa, h), pos, edad, GM.alturaPos(pos, h), pa, GM.pasaporte(pa), ovr, ovr + (edad < 25 ? 3 : 0), ['E', 'T', 'D', 'R', 'P'][(h >>> 4) % 5], 0, 0);
-    p.id = 'fa-' + m.seq; p.equipoId = null; p.libre = true; p.ficticio = true;
-    st.jugadores[p.id] = p; m.libres.push(p.id);
+    const p = GM.mkJugador(
+      'fa',
+      m.seq,
+      GM.nombreAleatorio(pa, h),
+      pos,
+      edad,
+      GM.alturaPos(pos, h),
+      pa,
+      GM.pasaporte(pa),
+      ovr,
+      ovr + (edad < 25 ? 3 : 0),
+      ['E', 'T', 'D', 'R', 'P'][(h >>> 4) % 5],
+      0,
+      0
+    );
+    p.id = 'fa-' + m.seq;
+    p.equipoId = null;
+    p.libre = true;
+    p.ficticio = true;
+    st.jugadores[p.id] = p;
+    m.libres.push(p.id);
     return p;
   }
-  function libres(st) { return st.mercado.libres.map(i => st.jugadores[i]).filter(Boolean).sort((a, b) => b.ovr - a.ovr); }
+  function libres(st) {
+    return st.mercado.libres
+      .map(i => st.jugadores[i])
+      .filter(Boolean)
+      .sort((a, b) => b.ovr - a.ovr);
+  }
   function buscar(st, f) {
     f = f || {};
     const q = (f.texto || '').toLowerCase();
-    return Object.keys(st.jugadores).map(i => st.jugadores[i]).filter(p => p.equipoId && p.equipoId !== st.clubId && !p.juvenil &&
-      (!f.liga || st.ligas[f.liga].equipos.indexOf(p.equipoId) >= 0) && (!f.equipo || p.equipoId === f.equipo) && (!f.pos || p.pos === f.pos) &&
-      (!f.minOvr || p.ovr >= f.minOvr) && (!q || p.nombre.toLowerCase().indexOf(q) >= 0)).sort((a, b) => b.ovr - a.ovr);
+    return Object.keys(st.jugadores)
+      .map(i => st.jugadores[i])
+      .filter(
+        p =>
+          p.equipoId &&
+          p.equipoId !== st.clubId &&
+          !p.juvenil &&
+          (!f.liga || st.ligas[f.liga].equipos.indexOf(p.equipoId) >= 0) &&
+          (!f.equipo || p.equipoId === f.equipo) &&
+          (!f.pos || p.pos === f.pos) &&
+          (!f.minOvr || p.ovr >= f.minOvr) &&
+          (!q || p.nombre.toLowerCase().indexOf(q) >= 0)
+      )
+      .sort((a, b) => b.ovr - a.ovr);
   }
   function expiran(st, clubId) {
-    return st.equipos[clubId].plantilla.map(i => st.jugadores[i]).filter(p => p.contrato.hasta <= yearOf(st) + 1).sort((a, b) => b.ovr - a.ovr);
+    return st.equipos[clubId].plantilla
+      .map(i => st.jugadores[i])
+      .filter(p => p.contrato.hasta <= yearOf(st) + 1)
+      .sort((a, b) => b.ovr - a.ovr);
   }
 
   // ----- IA diaria -----
-  const minRoster = (st, id) => ligaDe(st, id) === 'NBA' ? 13 : 11;
+  const minRoster = (st, id) => (ligaDe(st, id) === 'NBA' ? 13 : 11);
   function mejorLibre(st, eqId, minOvr) {
     const sorted = libres(st);
     for (const p of sorted) {
@@ -232,30 +322,41 @@
   }
   function iaDia(st) {
     const mes = parseInt(st.fecha.slice(5, 7), 10);
-    const ids = Object.keys(st.equipos).filter(i => i !== st.clubId || (st.modo === 'carrera' || st.modo === 'entrenador'));
+    const ids = Object.keys(st.equipos).filter(i => i !== st.clubId || st.modo === 'carrera' || st.modo === 'entrenador');
     ids.forEach(id => {
       const eq = st.equipos[id];
       while (eq.plantilla.length > MAXP) {
-        const peor = eq.plantilla.map(i => st.jugadores[i]).filter(x => !x.esYo).sort((a, b) => a.ovr - b.ovr)[0];
+        const peor = eq.plantilla
+          .map(i => st.jugadores[i])
+          .filter(x => !x.esYo)
+          .sort((a, b) => a.ovr - b.ovr)[0];
         sacar(st, peor);
       }
       if (eq.plantilla.length < minRoster(st, id)) {
         let c = mejorLibre(st, id, 0);
-        if (!c) { const p = nuevoLibre(st, GM.rng.int(48, 60), GM.rng.int(21, 32)); c = { p, ask: Math.max(MINSAL[ligaDe(st, id)], 100000) }; }
+        if (!c) {
+          const p = nuevoLibre(st, GM.rng.int(48, 60), GM.rng.int(21, 32));
+          c = { p, ask: Math.max(MINSAL[ligaDe(st, id)], 100000) };
+        }
         ficha(st, c.p, id, c.ask, GM.rng.int(1, 2));
       }
     });
     // Tu club con menos de 8 jugadores no puede jugar: la directiva firma agentes libres baratos hasta llegar a 8
     const tuyo = st.equipos[st.clubId];
-    if (tuyo && ids.indexOf(st.clubId) < 0) while (tuyo.plantilla.length < 8) {
-      let c = mejorLibre(st, st.clubId, 0);
-      if (!c) { const p = nuevoLibre(st, GM.rng.int(48, 58), GM.rng.int(21, 32)); c = { p, ask: Math.max(MINSAL[ligaDe(st, st.clubId)], 100000) }; }
-      ficha(st, c.p, st.clubId, c.ask, 1);
-      GM.noticia(st, 'Con la plantilla bajo mínimos, la directiva firma a ' + c.p.nombre + ' por un año.');
-    }
+    if (tuyo && ids.indexOf(st.clubId) < 0)
+      while (tuyo.plantilla.length < 8) {
+        let c = mejorLibre(st, st.clubId, 0);
+        if (!c) {
+          const p = nuevoLibre(st, GM.rng.int(48, 58), GM.rng.int(21, 32));
+          c = { p, ask: Math.max(MINSAL[ligaDe(st, st.clubId)], 100000) };
+        }
+        ficha(st, c.p, st.clubId, c.ask, 1);
+        GM.noticia(st, 'Con la plantilla bajo mínimos, la directiva firma a ' + c.p.nombre + ' por un año.');
+      }
     if (mes >= 7 && mes <= 9) {
       for (let k = 0; k < 6; k++) {
-        const id = GM.rng.pick(ids), eq = st.equipos[id];
+        const id = GM.rng.pick(ids),
+          eq = st.equipos[id];
         if (eq.plantilla.length >= 14) continue;
         const nueve = eq.plantilla.map(i => st.jugadores[i].ovr).sort((a, b) => b - a)[8] || 50;
         const c = mejorLibre(st, id, nueve + 1);
@@ -264,35 +365,97 @@
     }
     if (st.mercado.libres.length < 25) for (let i = 0; i < 10; i++) nuevoLibre(st, GM.rng.int(46, 62), GM.rng.int(21, 34));
   }
-  GM.bus.on('dia:avanzado', function () { const st = GM.state; if (st && st.mercado && st.mercado.libres) iaDia(st); });
+  GM.bus.on('dia:avanzado', function () {
+    const st = GM.state;
+    if (st && st.mercado && st.mercado.libres) iaDia(st);
+  });
 
   // ----- Draft NBA -----
   function claseDraft(st) {
-    const y = yearOf(st) + 1, pros = [];
+    const y = yearOf(st) + 1,
+      pros = [];
     const paises = ['US', 'US', 'US', 'US', 'US', 'FR', 'ES', 'RS', 'GR', 'LT', 'DE', 'IT', 'TR', 'IL', 'GEN'];
-    for (let i = 0; i < 72; i++) { // 72 candidatos para 60 puestos: quien no tiene nivel se queda sin elegir
-      const h = U.hash('dr' + y + i), pos = POS[h % 5], pa = paises[h % paises.length];
+    for (let i = 0; i < 72; i++) {
+      // 72 candidatos para 60 puestos: quien no tiene nivel se queda sin elegir
+      const h = U.hash('dr' + y + i),
+        pos = POS[h % 5],
+        pa = paises[h % paises.length];
       const q = 1 - i / 72;
       // Los primeros puestos pueden traer una promesa generacional (techo de 96 o 97); los demás, como mucho 94
       // Pocos llegan arriba: los cuatro primeros pueden traer 66-70 de media y 90-95 de techo, los de mitad de lista 60 y 70-76, los últimos 52 y 56-60
-      const gen = i < 2 && h % 4 === 0, ovr = Math.round(52 + q * 17 + (h % 5) - 2 + (gen ? 2 : 0)), pot = Math.round(Math.min(gen ? 97 : 93, ovr + 2 + Math.pow(q, 6) * 20 + q * 3 + (h >>> 3) % 4 + (gen ? 5 : 0)));
-      const p = GM.mkJugador('dr' + y, i + 1, GM.nombreAleatorio(pa, h), pos, 19 + (h >>> 5) % 4, GM.alturaPos(pos, h), pa === 'GEN' ? 'PL' : pa, GM.pasaporte(pa === 'GEN' ? 'PL' : pa), ovr, pot, ['T', 'P', 'D', 'R', 'E'][(h >>> 7) % 5], 0, 0);
-      p.ficticio = true; pros.push(p);
+      const gen = i < 2 && h % 4 === 0,
+        ovr = Math.round(52 + q * 17 + (h % 5) - 2 + (gen ? 2 : 0)),
+        pot = Math.round(Math.min(gen ? 97 : 93, ovr + 2 + Math.pow(q, 6) * 20 + q * 3 + ((h >>> 3) % 4) + (gen ? 5 : 0)));
+      const p = GM.mkJugador(
+        'dr' + y,
+        i + 1,
+        GM.nombreAleatorio(pa, h),
+        pos,
+        19 + ((h >>> 5) % 4),
+        GM.alturaPos(pos, h),
+        pa === 'GEN' ? 'PL' : pa,
+        GM.pasaporte(pa === 'GEN' ? 'PL' : pa),
+        ovr,
+        pot,
+        ['T', 'P', 'D', 'R', 'E'][(h >>> 7) % 5],
+        0,
+        0
+      );
+      p.ficticio = true;
+      pros.push(p);
     }
     return pros;
   }
   // Lotería del draft de la NBA (probabilidades del sistema de 2019): los 14 peores se sortean los cuatro primeros puestos; el resto, por balance
   const PROB_LOTERIA = [14, 14, 14, 12.5, 10.5, 9, 7.5, 6, 4.5, 3, 2, 1.5, 1, 0.5];
   function loteria(st, peorAMejor) {
-    if (peorAMejor.length < 14) return { orden: peorAMejor, equipos: [] }; const L = peorAMejor.slice(0, 14), libres = L.map((id, i) => ({ id, i, w: PROB_LOTERIA[i] })), top = [];
-    for (let k = 0; k < 4; k++) { const t = libres.reduce((s, x) => s + x.w, 0); let r = GM.rng.next() * t, j = 0; for (; j < libres.length - 1; j++) { r -= libres[j].w; if (r <= 0) break; } top.push(libres[j]); libres.splice(j, 1); }
-    const orden = top.map(x => x.id).concat(libres.map(x => x.id), peorAMejor.slice(14)), equipos = L.map((id, i) => ({ id, antes: i + 1, despues: orden.indexOf(id) + 1, prob: PROB_LOTERIA[i] }));
+    if (peorAMejor.length < 14) return { orden: peorAMejor, equipos: [] };
+    const L = peorAMejor.slice(0, 14),
+      libres = L.map((id, i) => ({ id, i, w: PROB_LOTERIA[i] })),
+      top = [];
+    for (let k = 0; k < 4; k++) {
+      const t = libres.reduce((s, x) => s + x.w, 0);
+      let r = GM.rng.next() * t,
+        j = 0;
+      for (; j < libres.length - 1; j++) {
+        r -= libres[j].w;
+        if (r <= 0) break;
+      }
+      top.push(libres[j]);
+      libres.splice(j, 1);
+    }
+    const orden = top
+        .map(x => x.id)
+        .concat(
+          libres.map(x => x.id),
+          peorAMejor.slice(14)
+        ),
+      equipos = L.map((id, i) => ({ id, antes: i + 1, despues: orden.indexOf(id) + 1, prob: PROB_LOTERIA[i] }));
     return { orden, equipos };
   }
   function draft(st) {
     if (!st.ligas.NBA) return null;
-    const y = yearOf(st) + 1, lot = loteria(st, GM.mods.competiciones.clasificacion(st, 'NBA').map(r => r.equipoId).reverse()), equipos = lot.orden; st.mercado.loteria = { temporada: st.temporada, equipos: lot.equipos };
-    if (lot.equipos.length) { const g = lot.equipos.filter(e => e.despues <= 4).sort((a, b) => a.despues - b.despues), s = g.find(e => e.despues < e.antes - 2); GM.noticia && GM.noticia(st, '🎰 Lotería del draft: ' + g.map(e => st.equipos[e.id].nombre + ' (' + e.despues + 'º)').join(', ') + (s ? '. ' + st.equipos[s.id].nombre + ' sube del puesto ' + s.antes + ' al ' + s.despues + '.' : '.')); }
+    const y = yearOf(st) + 1,
+      lot = loteria(
+        st,
+        GM.mods.competiciones
+          .clasificacion(st, 'NBA')
+          .map(r => r.equipoId)
+          .reverse()
+      ),
+      equipos = lot.orden;
+    st.mercado.loteria = { temporada: st.temporada, equipos: lot.equipos };
+    if (lot.equipos.length) {
+      const g = lot.equipos.filter(e => e.despues <= 4).sort((a, b) => a.despues - b.despues),
+        s = g.find(e => e.despues < e.antes - 2);
+      GM.noticia &&
+        GM.noticia(
+          st,
+          '🎰 Lotería del draft: ' +
+            g.map(e => st.equipos[e.id].nombre + ' (' + e.despues + 'º)').join(', ') +
+            (s ? '. ' + st.equipos[s.id].nombre + ' sube del puesto ' + s.antes + ' al ' + s.despues + '.' : '.')
+        );
+    }
     const pros = claseDraft(st);
     const yo = GM.mods.carrera && GM.mods.carrera.preDraft ? GM.mods.carrera.preDraft(st) : null;
     if (yo) pros.push(yo);
@@ -300,13 +463,15 @@
     for (let ronda = 0; ronda < 2; ronda++) {
       equipos.forEach((eqId, k) => {
         const n = ronda * 30 + k + 1;
-        const val = x => x.pot * 0.6 + x.ovr * 0.4 + (x.ojeo || 0) + (x.deseado === eqId ? 4 : 0) + (U.hash(x.id + eqId) % 5);   // deseado: el equipo con el que dijiste que querías jugar
-        pros.sort((a, b) => val(b) - val(a));   // ojeo: informe de los ojeadores sobre tu jugador (carrera.js)
+        const val = x => x.pot * 0.6 + x.ovr * 0.4 + (x.ojeo || 0) + (x.deseado === eqId ? 4 : 0) + (U.hash(x.id + eqId) % 5); // deseado: el equipo con el que dijiste que querías jugar
+        pros.sort((a, b) => val(b) - val(a)); // ojeo: informe de los ojeadores sobre tu jugador (carrera.js)
         const p = pros.shift();
-        p.equipoId = eqId; p.libre = false;
-        p.contrato = { salario: Math.round(ronda === 0 ? 12e6 * Math.pow(0.9505, k) : 2.0e6), hasta: y + 3 };   // escala de novatos: nº 1 ~12 M€, nº 15 ~6, nº 30 ~2,8
+        p.equipoId = eqId;
+        p.libre = false;
+        p.contrato = { salario: Math.round(ronda === 0 ? 12e6 * Math.pow(0.9505, k) : 2.0e6), hasta: y + 3 }; // escala de novatos: nº 1 ~12 M€, nº 15 ~6, nº 30 ~2,8
         if (!p.esYo) p.id = 'dr' + y + '-' + String(n).padStart(2, '0');
-        st.jugadores[p.id] = p; st.equipos[eqId].plantilla.push(p.id);
+        st.jugadores[p.id] = p;
+        st.equipos[eqId].plantilla.push(p.id);
         picks.push({ n, equipoId: eqId, jugadorId: p.id });
       });
     }
@@ -317,7 +482,8 @@
     return picks;
   }
   GM.bus.on('temporada:fin', function () {
-    const st = GM.state; if (!st || !st.mercado || !st.mercado.libres) return;
+    const st = GM.state;
+    if (!st || !st.mercado || !st.mercado.libres) return;
     if (GM.mods.carrera && GM.mods.carrera.preCierre) GM.mods.carrera.preCierre(st);
     draft(st);
     // contratos que caducan
@@ -332,32 +498,79 @@
         } else sacar(st, p);
       });
     });
-    const n = (st.modo === 'carrera' || st.modo === 'entrenador') ? 0 : expiran(st, st.clubId).length;
+    const n = st.modo === 'carrera' || st.modo === 'entrenador' ? 0 : expiran(st, st.clubId).length;
     if (n) GM.noticia(st, 'Tienes ' + n + ' jugadores con el contrato a punto de vencer. Renueva antes de empezar la nueva temporada.');
     // limpiar agentes libres sobrantes
     const ls = libres(st);
-    ls.slice(110).forEach(p => { delete st.jugadores[p.id]; });
-    st.mercado.libres = ls.slice(0, 110).map(p => p.id);
+    const enPlantilla = new Set();
+    Object.keys(st.equipos).forEach(id => st.equipos[id].plantilla.forEach(i => enPlantilla.add(i))); // un libre que consta en una plantilla no se borra (dejaría una referencia rota)
+    ls.slice(110).forEach(p => {
+      if (!enPlantilla.has(p.id)) delete st.jugadores[p.id];
+    });
+    st.mercado.libres = ls
+      .slice(0, 110)
+      .concat(ls.slice(110).filter(p => enPlantilla.has(p.id)))
+      .map(p => p.id)
+      .filter(i => !enPlantilla.has(i));
   });
 
   // Se llama al empezar la nueva temporada: se marchan los del club que no se hayan renovado.
   function cerrarContratos(st) {
     if (GM.mods.negociacion) GM.mods.negociacion.aplicarOpciones(st);
-    if ((st.modo === 'carrera' || st.modo === 'entrenador')) {
+    if (st.modo === 'carrera' || st.modo === 'entrenador') {
       if (st.modo === 'entrenador' && GM.mods.entrenador) GM.mods.entrenador.cerrar(st);
-      expiran(st, st.clubId).filter(p => !p.esYo).forEach(p => { if (GM.rng.chance(p.ovr >= 62 ? 0.8 : 0.4)) p.contrato = { salario: salarioPedido(st, p.id, st.clubId), hasta: yearOf(st) + 1 + GM.rng.int(1, 3) }; else sacar(st, p); });
+      expiran(st, st.clubId)
+        .filter(p => !p.esYo)
+        .forEach(p => {
+          if (GM.rng.chance(p.ovr >= 62 ? 0.8 : 0.4)) p.contrato = { salario: salarioPedido(st, p.id, st.clubId), hasta: yearOf(st) + 1 + GM.rng.int(1, 3) };
+          else sacar(st, p);
+        });
       if (GM.mods.carrera && GM.mods.carrera.cerrar) GM.mods.carrera.cerrar(st);
       return;
     }
-    expiran(st, st.clubId).forEach(p => { GM.noticia(st, p.nombre + ' termina contrato y abandona el club.'); sacar(st, p); });
+    expiran(st, st.clubId).forEach(p => {
+      GM.noticia(st, p.nombre + ' termina contrato y abandona el club.');
+      sacar(st, p);
+    });
   }
   function nuevaPartida(st) {
     st.mercado = { libres: [], seq: 0, ultimoDraft: null };
     for (let i = 0; i < 45; i++) nuevoLibre(st, GM.rng.int(48, 72) - (i > 30 ? 6 : 0), GM.rng.int(23, 36));
   }
   function selfTest() {
-    const a = { ovr: 90, pot: 90, edad: 27 }, b = { ovr: 70, pot: 70, edad: 27 };
+    const a = { ovr: 90, pot: 90, edad: 27 },
+      b = { ovr: 70, pot: 70, edad: 27 };
     return valorJugador(a) > valorJugador(b) * 4 && valorJugador(b) > 1e6 && valorJugador({ ovr: 70, pot: 70, edad: 36 }) < valorJugador(b);
   }
-  GM.register('mercado', { loteria, PROB_LOTERIA, firmar, claseDraft, sacar, valorJugador, salarioPedido, topeSalarial, evaluarOferta, ofertar, renovar, liberar, precioMinimo, comprar, ofertasVenta, vender, traspasar, draft, expiran, libres, buscar, cerrarContratos, nuevaPartida, selfTest, ligaDe, MAXP, mover, motivoNoAnadir, valorIA });
+  GM.register('mercado', {
+    loteria,
+    PROB_LOTERIA,
+    firmar,
+    claseDraft,
+    sacar,
+    valorJugador,
+    salarioPedido,
+    topeSalarial,
+    evaluarOferta,
+    ofertar,
+    renovar,
+    liberar,
+    precioMinimo,
+    comprar,
+    ofertasVenta,
+    vender,
+    traspasar,
+    draft,
+    expiran,
+    libres,
+    buscar,
+    cerrarContratos,
+    nuevaPartida,
+    selfTest,
+    ligaDe,
+    MAXP,
+    mover,
+    motivoNoAnadir,
+    valorIA
+  });
 })();

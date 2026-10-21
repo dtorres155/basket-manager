@@ -1,12 +1,76 @@
 // Comportamiento de los vecinos (punto 27) en la ciudad real: roles, grupos, animaciones en uso a distintas horas y con lluvia. Uso: node tools/vecinos_prueba.js [club]   (requiere `npm run serve`)
-const { chromium } = require('playwright'); const sleep = ms => new Promise(r => setTimeout(r, ms));
+const { chromium } = require('playwright');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 const club = process.argv[2] || 'joventut-badalona';
 (async () => {
-  const b = await chromium.launch({ channel: 'msedge' }), p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); await p.goto('http://localhost:8080/'); await sleep(800);
-  await p.evaluate(c => { GM.newGame(c, undefined, { modo: 'carrera', personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'Marc', apellido: 'Soler' }), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } }); GM.ui.start(document.getElementById('app')); GM.sede.abrir(GM.state, 'calle'); }, club); await sleep(16000);
-  const resumen = () => p.evaluate(() => { const S = GM.sede._estado(), g = S.gente.filter(x => x.idV), roles = {}, anims = {}; let visibles = 0, grupos = 0, siguiendo = 0, conNombre = 0; g.forEach(x => { roles[x.rolEsp || 'vecino'] = (roles[x.rolEsp || 'vecino'] || 0) + 1; anims[x.actual] = (anims[x.actual] || 0) + 1; if (!x.oculto) visibles++; if (x.miembros) grupos++; if (x.sigue) siguiendo++; if (x.nombre) conNombre++; }); return { hora: S.hora, vecinos: g.length, visibles, roles, grupos, siguiendo, conNombre, anims }; });
+  const b = await chromium.launch({ channel: 'msedge' }),
+    p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(),
+    errs = [];
+  p.on('pageerror', e => errs.push(e.message));
+  p.on('console', m => {
+    if (m.type() === 'error') errs.push(m.text());
+  });
+  await p.goto('http://localhost:8080/');
+  await sleep(800);
+  await p.evaluate(c => {
+    GM.newGame(c, undefined, {
+      modo: 'carrera',
+      personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'Marc', apellido: 'Soler' }),
+      carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 }
+    });
+    GM.ui.start(document.getElementById('app'));
+    GM.sede.abrir(GM.state, 'calle');
+  }, club);
+  await sleep(16000);
+  const resumen = () =>
+    p.evaluate(() => {
+      const S = GM.sede._estado(),
+        g = S.gente.filter(x => x.idV),
+        roles = {},
+        anims = {};
+      let visibles = 0,
+        grupos = 0,
+        siguiendo = 0,
+        conNombre = 0;
+      g.forEach(x => {
+        roles[x.rolEsp || 'vecino'] = (roles[x.rolEsp || 'vecino'] || 0) + 1;
+        anims[x.actual] = (anims[x.actual] || 0) + 1;
+        if (!x.oculto) visibles++;
+        if (x.miembros) grupos++;
+        if (x.sigue) siguiendo++;
+        if (x.nombre) conNombre++;
+      });
+      return { hora: S.hora, vecinos: g.length, visibles, roles, grupos, siguiendo, conNombre, anims };
+    });
   console.log('9:00', JSON.stringify(await resumen()));
-  for (const [hora, lluvia] of [[11, false], [14.5, false], [19, true], [22.8, false]]) { await p.evaluate(([h, ll]) => { const S = GM.sede._estado(); S.hora = h; if (ll) S.clima = Object.assign({}, S.clima, { tipo: 'lluvia' }); }, [hora, lluvia]); await sleep(14000); console.log(hora + (lluvia ? ' lluvia' : ''), JSON.stringify(await resumen())); }
-  const dialogo = await p.evaluate(() => { const S = GM.sede._estado(), n = S.gente.find(x => x.idV && !x.oculto); if (!n) return 'sin vecino'; const d = GM.dialogo.crear(S.st, n, S), a = d.nodo('inicio'), q = d.nodo(a.opciones[0].id), r = d.nodo(q.opciones[0].id); return [n.nombre, n.rol, a.texto, q.texto, r.texto].join(' | '); });
-  console.log('diálogo:', dialogo); console.log('errores:', errs.length ? errs.slice(0, 6) : 'ninguno'); await b.close();
+  for (const [hora, lluvia] of [
+    [11, false],
+    [14.5, false],
+    [19, true],
+    [22.8, false]
+  ]) {
+    await p.evaluate(
+      ([h, ll]) => {
+        const S = GM.sede._estado();
+        S.hora = h;
+        if (ll) S.clima = Object.assign({}, S.clima, { tipo: 'lluvia' });
+      },
+      [hora, lluvia]
+    );
+    await sleep(14000);
+    console.log(hora + (lluvia ? ' lluvia' : ''), JSON.stringify(await resumen()));
+  }
+  const dialogo = await p.evaluate(() => {
+    const S = GM.sede._estado(),
+      n = S.gente.find(x => x.idV && !x.oculto);
+    if (!n) return 'sin vecino';
+    const d = GM.dialogo.crear(S.st, n, S),
+      a = d.nodo('inicio'),
+      q = d.nodo(a.opciones[0].id),
+      r = d.nodo(q.opciones[0].id);
+    return [n.nombre, n.rol, a.texto, q.texto, r.texto].join(' | ');
+  });
+  console.log('diálogo:', dialogo);
+  console.log('errores:', errs.length ? errs.slice(0, 6) : 'ninguno');
+  await b.close();
 })();

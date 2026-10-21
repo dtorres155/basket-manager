@@ -3,17 +3,266 @@
 (function () {
   const { addTab, U, chip, h, refrescar, seccion, toast, ui, barra } = GM.ui._;
   function tab(el, st) {
-    const K = GM.coleccionables, p = K.progreso(st), F = ui.fColec = ui.fColec || { tipo: '', rareza: '', tengo: '', q: '', n: 60 }, c = K.col(st);
-    const fila = (t, x) => h('div', null, h('div', { class: 'fila' }, h('span', null, t), h('b', null, x.tengo + ' de ' + x.hay)), barra(x.hay ? x.tengo / x.hay * 100 : 0, 100, ''));
-    el.append(seccion('Tu colección: ' + p.total + ' de ' + p.hay, h('div', { class: 'tarjeta' }, fila('Camisetas de rivales', p.camiseta), fila('Cromos de jugadores', p.cromo), fila('Balones firmados', p.balon), h('p', { class: 'muted' }, 'Repetidas: ' + p.repetidas + '. Las piezas más raras se ven en la vitrina de tu casa y en el museo del club.'))));
-    el.append(seccion('Sobres de cromos', h('div', { class: 'tarjeta' }, h('p', null, 'Tienes ' + c.sobres + ' sobres sin abrir (' + c.abiertos + ' abiertos). Cada sobre trae cinco cromos y cuesta ' + Math.round(K.PRECIO_SOBRE * 1000) + ' €. También los venden en el quiosco.'),
-      h('div', { class: 'par' }, h('button', { class: 'btn peq', onclick: () => { const r = K.comprarSobre(st); toast(r.ok ? 'Compras un sobre' : r.motivo); refrescar(); } }, 'Comprar un sobre'), h('button', { class: 'btn peq', onclick: () => { const r = K.comprarSobre(st, 5); toast(r.ok ? 'Compras cinco sobres' : r.motivo); refrescar(); } }, 'Comprar cinco'), h('button', { class: 'btn peq' + (c.sobres ? '' : ' btn-sec'), disabled: !c.sobres, onclick: () => { const r = K.abrirSobre(st); if (r.ok) { GM.ui.modal(h('div', null, h('h3', null, 'Tu sobre'), h('div', { class: 'lista' }, r.sacados.map(x => h('div', { class: 'item' }, h('div', { class: 'ct' }, h('b', { style: { color: K.COLOR[x.rareza] } }, x.nombre), h('span', { class: 'muted' }, K.NOM[x.rareza] + (x.nuevo ? ', ¡nueva!' : ', repetida'))))))), [{ t: 'Guardar', cls: 'btn-sec' }]); } else toast(r.motivo); refrescar(); } }, 'Abrir un sobre'), h('button', { class: 'btn peq btn-sec', onclick: () => { const r = K.cambiarRepes(st); toast(r.ok ? 'Cambias repetidas por ' + r.sobres + ' sobre' + (r.sobres > 1 ? 's' : '') : r.motivo); refrescar(); } }, 'Cambiar repetidas')))));
-    const of = K.ofertas(st); el.append(seccion('Intercambio con vecinos', h('div', { class: 'tarjeta' }, h('p', { class: 'muted' }, 'Cada semana tres vecinos coleccionistas te proponen un cambio. Se hace en persona: también en el quiosco de la ciudad.'), of.length ? of.map(o => h('div', { class: 'fila' }, h('span', null, o.vecino + ' ' + o.de + ' quiere ' + o.quiere.nombre.toLowerCase() + ' y te da ' + o.da.nombre.toLowerCase() + ' (' + K.NOM[o.da.rareza].toLowerCase() + ')'), h('button', { class: 'btn peq', disabled: o.hecho, onclick: () => { const r = K.intercambiar(st, o.k); toast(r.ok ? r.texto : r.motivo); refrescar(); } }, o.hecho ? 'Hecho' : 'Cambiar'))) : h('p', { class: 'muted' }, 'Esta semana nadie tiene nada que ofrecerte.'))));
-    const sel = (v, ops, fn) => h('select', { class: 'sel', onchange: e => { fn(e.target.value); F.n = 60; refrescar(); } }, ops.map(([k, t]) => h('option', { value: k, selected: v === k }, t)));
-    el.append(h('div', { class: 'par' }, sel(F.tipo, [['', 'Todo'], ['camiseta', 'Camisetas'], ['cromo', 'Cromos'], ['balon', 'Balones']], v => { F.tipo = v; }), sel(F.rareza, [['', 'Toda rareza']].concat(K.RAREZAS.map(r => [r, K.NOM[r]])), v => { F.rareza = v; }), sel(F.tengo, [['', 'Tenga o no'], ['si', 'Las que tengo'], ['no', 'Las que me faltan']], v => { F.tengo = v; })));
-    el.append(h('input', { class: 'sel', placeholder: 'Buscar por nombre', value: F.q, oninput: e => { F.q = e.target.value; clearTimeout(F.t); F.t = setTimeout(() => { F.n = 60; refrescar(); }, 300); } }));
-    const orden = { legendaria: 0, epica: 1, rara: 2, comun: 3 }, q = F.q.toLowerCase().trim(); let L = K.catalogo(st).filter(x => (!F.tipo || x.tipo === F.tipo) && (!F.rareza || x.rareza === F.rareza) && (!F.tengo || (F.tengo === 'si') === K.tiene(st, x.id)) && (!q || x.nombre.toLowerCase().indexOf(q) >= 0)); L = L.sort((a, b) => (K.tiene(st, b.id) ? 1 : 0) - (K.tiene(st, a.id) ? 1 : 0) || orden[a.rareza] - orden[b.rareza] || a.nombre.localeCompare(b.nombre, 'es'));
-    el.append(seccion('Catálogo (' + L.length + ')', h('div', { class: 'lista' }, L.slice(0, F.n).map(x => { const n = K.copias(st, x.id); return h('div', { class: 'item', style: { opacity: n ? 1 : 0.6 } }, h('div', { class: 'ct' }, h('b', { style: { color: K.COLOR[x.rareza] } }, x.nombre), h('span', { class: 'muted' }, K.NOM[x.rareza] + ', ' + (n ? 'la tienes' + (n > 1 ? ' (' + n + ' copias)' : '') : x.lugar))), n ? h('b', null, '✓') : null); }), L.length > F.n ? h('button', { class: 'btn peq btn-sec', onclick: () => { F.n += 60; refrescar(); } }, 'Ver más') : null)));
+    const K = GM.coleccionables,
+      p = K.progreso(st),
+      F = (ui.fColec = ui.fColec || { tipo: '', rareza: '', tengo: '', q: '', n: 60 }),
+      c = K.col(st);
+    const fila = (t, x) =>
+      h('div', null, h('div', { class: 'fila' }, h('span', null, t), h('b', null, x.tengo + ' de ' + x.hay)), barra(x.hay ? (x.tengo / x.hay) * 100 : 0, 100, ''));
+    el.append(
+      seccion(
+        'Tu colección: ' + p.total + ' de ' + p.hay,
+        h(
+          'div',
+          { class: 'tarjeta' },
+          fila('Camisetas de rivales', p.camiseta),
+          fila('Cromos de jugadores', p.cromo),
+          fila('Balones firmados', p.balon),
+          h('p', { class: 'muted' }, 'Repetidas: ' + p.repetidas + '. Las piezas más raras se ven en la vitrina de tu casa y en el museo del club.')
+        )
+      )
+    );
+    el.append(
+      seccion(
+        'Sobres de cromos',
+        h(
+          'div',
+          { class: 'tarjeta' },
+          h(
+            'p',
+            null,
+            'Tienes ' +
+              c.sobres +
+              ' sobres sin abrir (' +
+              c.abiertos +
+              ' abiertos). Cada sobre trae cinco cromos y cuesta ' +
+              Math.round(K.PRECIO_SOBRE * 1000) +
+              ' €. También los venden en el quiosco.'
+          ),
+          h(
+            'div',
+            { class: 'par' },
+            h(
+              'button',
+              {
+                class: 'btn peq',
+                onclick: () => {
+                  const r = K.comprarSobre(st);
+                  toast(r.ok ? 'Compras un sobre' : r.motivo);
+                  refrescar();
+                }
+              },
+              'Comprar un sobre'
+            ),
+            h(
+              'button',
+              {
+                class: 'btn peq',
+                onclick: () => {
+                  const r = K.comprarSobre(st, 5);
+                  toast(r.ok ? 'Compras cinco sobres' : r.motivo);
+                  refrescar();
+                }
+              },
+              'Comprar cinco'
+            ),
+            h(
+              'button',
+              {
+                class: 'btn peq' + (c.sobres ? '' : ' btn-sec'),
+                disabled: !c.sobres,
+                onclick: () => {
+                  const r = K.abrirSobre(st);
+                  if (r.ok) {
+                    GM.ui.modal(
+                      h(
+                        'div',
+                        null,
+                        h('h3', null, 'Tu sobre'),
+                        h(
+                          'div',
+                          { class: 'lista' },
+                          r.sacados.map(x =>
+                            h(
+                              'div',
+                              { class: 'item' },
+                              h(
+                                'div',
+                                { class: 'ct' },
+                                h('b', { style: { color: K.COLOR[x.rareza] } }, x.nombre),
+                                h('span', { class: 'muted' }, K.NOM[x.rareza] + (x.nuevo ? ', ¡nueva!' : ', repetida'))
+                              )
+                            )
+                          )
+                        )
+                      ),
+                      [{ t: 'Guardar', cls: 'btn-sec' }]
+                    );
+                  } else toast(r.motivo);
+                  refrescar();
+                }
+              },
+              'Abrir un sobre'
+            ),
+            h(
+              'button',
+              {
+                class: 'btn peq btn-sec',
+                onclick: () => {
+                  const r = K.cambiarRepes(st);
+                  toast(r.ok ? 'Cambias repetidas por ' + r.sobres + ' sobre' + (r.sobres > 1 ? 's' : '') : r.motivo);
+                  refrescar();
+                }
+              },
+              'Cambiar repetidas'
+            )
+          )
+        )
+      )
+    );
+    const of = K.ofertas(st);
+    el.append(
+      seccion(
+        'Intercambio con vecinos',
+        h(
+          'div',
+          { class: 'tarjeta' },
+          h('p', { class: 'muted' }, 'Cada semana tres vecinos coleccionistas te proponen un cambio. Se hace en persona: también en el quiosco de la ciudad.'),
+          of.length
+            ? of.map(o =>
+                h(
+                  'div',
+                  { class: 'fila' },
+                  h(
+                    'span',
+                    null,
+                    o.vecino + ' ' + o.de + ' quiere ' + o.quiere.nombre.toLowerCase() + ' y te da ' + o.da.nombre.toLowerCase() + ' (' + K.NOM[o.da.rareza].toLowerCase() + ')'
+                  ),
+                  h(
+                    'button',
+                    {
+                      class: 'btn peq',
+                      disabled: o.hecho,
+                      onclick: () => {
+                        const r = K.intercambiar(st, o.k);
+                        toast(r.ok ? r.texto : r.motivo);
+                        refrescar();
+                      }
+                    },
+                    o.hecho ? 'Hecho' : 'Cambiar'
+                  )
+                )
+              )
+            : h('p', { class: 'muted' }, 'Esta semana nadie tiene nada que ofrecerte.')
+        )
+      )
+    );
+    const sel = (v, ops, fn) =>
+      h(
+        'select',
+        {
+          class: 'sel',
+          onchange: e => {
+            fn(e.target.value);
+            F.n = 60;
+            refrescar();
+          }
+        },
+        ops.map(([k, t]) => h('option', { value: k, selected: v === k }, t))
+      );
+    el.append(
+      h(
+        'div',
+        { class: 'par' },
+        sel(
+          F.tipo,
+          [
+            ['', 'Todo'],
+            ['camiseta', 'Camisetas'],
+            ['cromo', 'Cromos'],
+            ['balon', 'Balones']
+          ],
+          v => {
+            F.tipo = v;
+          }
+        ),
+        sel(F.rareza, [['', 'Toda rareza']].concat(K.RAREZAS.map(r => [r, K.NOM[r]])), v => {
+          F.rareza = v;
+        }),
+        sel(
+          F.tengo,
+          [
+            ['', 'Tenga o no'],
+            ['si', 'Las que tengo'],
+            ['no', 'Las que me faltan']
+          ],
+          v => {
+            F.tengo = v;
+          }
+        )
+      )
+    );
+    el.append(
+      h('input', {
+        class: 'sel',
+        placeholder: 'Buscar por nombre',
+        value: F.q,
+        oninput: e => {
+          F.q = e.target.value;
+          clearTimeout(F.t);
+          F.t = setTimeout(() => {
+            F.n = 60;
+            refrescar();
+          }, 300);
+        }
+      })
+    );
+    const orden = { legendaria: 0, epica: 1, rara: 2, comun: 3 },
+      q = F.q.toLowerCase().trim();
+    let L = K.catalogo(st).filter(
+      x =>
+        (!F.tipo || x.tipo === F.tipo) &&
+        (!F.rareza || x.rareza === F.rareza) &&
+        (!F.tengo || (F.tengo === 'si') === K.tiene(st, x.id)) &&
+        (!q || x.nombre.toLowerCase().indexOf(q) >= 0)
+    );
+    L = L.sort((a, b) => (K.tiene(st, b.id) ? 1 : 0) - (K.tiene(st, a.id) ? 1 : 0) || orden[a.rareza] - orden[b.rareza] || a.nombre.localeCompare(b.nombre, 'es'));
+    el.append(
+      seccion(
+        'Catálogo (' + L.length + ')',
+        h(
+          'div',
+          { class: 'lista' },
+          L.slice(0, F.n).map(x => {
+            const n = K.copias(st, x.id);
+            return h(
+              'div',
+              { class: 'item', style: { opacity: n ? 1 : 0.6 } },
+              h(
+                'div',
+                { class: 'ct' },
+                h('b', { style: { color: K.COLOR[x.rareza] } }, x.nombre),
+                h('span', { class: 'muted' }, K.NOM[x.rareza] + ', ' + (n ? 'la tienes' + (n > 1 ? ' (' + n + ' copias)' : '') : x.lugar))
+              ),
+              n ? h('b', null, '✓') : null
+            );
+          }),
+          L.length > F.n
+            ? h(
+                'button',
+                {
+                  class: 'btn peq btn-sec',
+                  onclick: () => {
+                    F.n += 60;
+                    refrescar();
+                  }
+                },
+                'Ver más'
+              )
+            : null
+        )
+      )
+    );
   }
   addTab('ciudad', 'coleccion', 'Colección', tab, st => st.modo === 'carrera' && !!st.carrera && !!GM.coleccionables);
 })();

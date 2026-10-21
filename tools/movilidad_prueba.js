@@ -1,21 +1,153 @@
 // Movilidad (puntos 38 a 41) en la ciudad real: tráfico por horas, tranvía, planificador, patinete de alquiler, compra y conducción de un coche. Uso: node tools/movilidad_prueba.js [club]   (requiere `npm run serve`)
-const { chromium } = require('playwright'); const path = require('path'), fs = require('fs'); const sleep = ms => new Promise(r => setTimeout(r, ms));
-const club = process.argv[2] || 'joventut-badalona', DIR = path.join(__dirname, '..', 'capturas', 'movilidad'); fs.mkdirSync(DIR, { recursive: true });
+const { chromium } = require('playwright');
+const path = require('path'),
+  fs = require('fs');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const club = process.argv[2] || 'joventut-badalona',
+  DIR = path.join(__dirname, '..', 'capturas', 'movilidad');
+fs.mkdirSync(DIR, { recursive: true });
 (async () => {
-  const b = await chromium.launch({ channel: 'msedge' }), p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); await p.goto('http://localhost:8080/'); await sleep(800);
-  await p.evaluate(c => { GM.newGame(c, undefined, { modo: 'carrera', personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } }); GM.state.carrera.dinero = 60; GM.state.fecha = '2026-10-14'; GM.ui.start(document.getElementById('app')); GM.sede.abrir(GM.state, 'calle'); }, club); await sleep(16000);
-  const trafico = h => p.evaluate(async h => { const S = GM.sede._estado(); S.hora = h; await new Promise(r => setTimeout(r, 1500)); const t = {}; let vis = 0; S.coches.forEach(c => { if (c.k !== undefined && c.obj.visible) vis++; t[c.tipo || (c.bus ? 'bus' : c.bici ? 'bici' : 'coche')] = (t[c.tipo || (c.bus ? 'bus' : c.bici ? 'bici' : 'coche')] || 0) + 1; }); return { h, visibles: vis, de: S.coches.filter(c => c.k !== undefined).length, tipos: t, tram: !!S.tram, flota: (S.flota || []).length, radares: (S.radares || []).length, concesionario: S.zonas.some(z => z.sala.id === 'concesionario') }; }, h);
-  console.log('hora punta', JSON.stringify(await trafico(8.5))); console.log('noche', JSON.stringify(await trafico(3)));
+  const b = await chromium.launch({ channel: 'msedge' }),
+    p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(),
+    errs = [];
+  p.on('pageerror', e => errs.push(e.message));
+  p.on('console', m => {
+    if (m.type() === 'error') errs.push(m.text());
+  });
+  await p.goto('http://localhost:8080/');
+  await sleep(800);
+  await p.evaluate(c => {
+    GM.newGame(c, undefined, {
+      modo: 'carrera',
+      personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }),
+      carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 }
+    });
+    GM.state.carrera.dinero = 60;
+    GM.state.fecha = '2026-10-14';
+    GM.ui.start(document.getElementById('app'));
+    GM.sede.abrir(GM.state, 'calle');
+  }, club);
+  await sleep(16000);
+  const trafico = h =>
+    p.evaluate(async h => {
+      const S = GM.sede._estado();
+      S.hora = h;
+      await new Promise(r => setTimeout(r, 1500));
+      const t = {};
+      let vis = 0;
+      S.coches.forEach(c => {
+        if (c.k !== undefined && c.obj.visible) vis++;
+        t[c.tipo || (c.bus ? 'bus' : c.bici ? 'bici' : 'coche')] = (t[c.tipo || (c.bus ? 'bus' : c.bici ? 'bici' : 'coche')] || 0) + 1;
+      });
+      return {
+        h,
+        visibles: vis,
+        de: S.coches.filter(c => c.k !== undefined).length,
+        tipos: t,
+        tram: !!S.tram,
+        flota: (S.flota || []).length,
+        radares: (S.radares || []).length,
+        concesionario: S.zonas.some(z => z.sala.id === 'concesionario')
+      };
+    }, h);
+  console.log('hora punta', JSON.stringify(await trafico(8.5)));
+  console.log('noche', JSON.stringify(await trafico(3)));
   // planificador al sitio más lejano
-  console.log(JSON.stringify(await p.evaluate(() => { const S = GM.sede._estado(), z = S.zonas.filter(z => !/micro|concesionario|metro|bici_/.test(z.sala.id)).sort((a, b) => Math.hypot(b.obj.position.x - S.yo.obj.position.x, b.obj.position.z - S.yo.obj.position.z) - Math.hypot(a.obj.position.x - S.yo.obj.position.x, a.obj.position.z - S.yo.obj.position.z))[0], o = GM.movilidad.opciones(S, GM.state, [z.obj.position.x, z.obj.position.z]); return { destino: z.sala.nombre, opciones: o.map(x => x.nombre + ' ' + GM.movilidad.fmtMin(x.min) + ' ' + x.coste.toFixed(2) + (x.ok ? '' : ' (no)')) }; })));
+  console.log(
+    JSON.stringify(
+      await p.evaluate(() => {
+        const S = GM.sede._estado(),
+          z = S.zonas
+            .filter(z => !/micro|concesionario|metro|bici_/.test(z.sala.id))
+            .sort(
+              (a, b) =>
+                Math.hypot(b.obj.position.x - S.yo.obj.position.x, b.obj.position.z - S.yo.obj.position.z) -
+                Math.hypot(a.obj.position.x - S.yo.obj.position.x, a.obj.position.z - S.yo.obj.position.z)
+            )[0],
+          o = GM.movilidad.opciones(S, GM.state, [z.obj.position.x, z.obj.position.z]);
+        return { destino: z.sala.nombre, opciones: o.map(x => x.nombre + ' ' + GM.movilidad.fmtMin(x.min) + ' ' + x.coste.toFixed(2) + (x.ok ? '' : ' (no)')) };
+      })
+    )
+  );
   // patinete de alquiler
-  const pat = await p.evaluate(async () => { const S = GM.sede._estado(), st = GM.state, f = S.flota[0]; if (!f) return 'sin flota'; S.yo.obj.position.set(f.x, 0, f.z + 2.2); const a = f.sala.acciones(st).find(x => x.id === 'pat'), r = a.fn(); const d0 = st.carrera.dinero; S.yo.camino = [[f.x + 30, f.z + 2.2]]; await new Promise(r => setTimeout(r, 6000)); const rec = Math.hypot(S.yo.obj.position.x - f.x, S.yo.obj.position.z - f.z - 2.2); S.yo.obj.position.set(f.x, 0, f.z + 2.2); S.yo.camino = null; const t = GM.movilidad.terminar(S, st, f); return { alquila: r.texto.slice(0, 40), recorrido: Math.round(rec), termina: t.texto, gasto: +((d0 - st.carrera.dinero) * 1000).toFixed(2), pat: f.pat }; });
+  const pat = await p.evaluate(async () => {
+    const S = GM.sede._estado(),
+      st = GM.state,
+      f = S.flota[0];
+    if (!f) return 'sin flota';
+    S.yo.obj.position.set(f.x, 0, f.z + 2.2);
+    const a = f.sala.acciones(st).find(x => x.id === 'pat'),
+      r = a.fn();
+    const d0 = st.carrera.dinero;
+    S.yo.camino = [[f.x + 30, f.z + 2.2]];
+    await new Promise(r => setTimeout(r, 6000));
+    const rec = Math.hypot(S.yo.obj.position.x - f.x, S.yo.obj.position.z - f.z - 2.2);
+    S.yo.obj.position.set(f.x, 0, f.z + 2.2);
+    S.yo.camino = null;
+    const t = GM.movilidad.terminar(S, st, f);
+    return { alquila: r.texto.slice(0, 40), recorrido: Math.round(rec), termina: t.texto, gasto: +((d0 - st.carrera.dinero) * 1000).toFixed(2), pat: f.pat };
+  });
   console.log('patinete', JSON.stringify(pat));
   // comprar coche y conducir
-  const co = await p.evaluate(async () => { const S = GM.sede._estado(), st = GM.state, z = S.zonas.find(z => z.sala.id === 'concesionario'); if (!z) return 'sin concesionario'; const a = z.sala.acciones(st).find(x => x.id === 'c_compacto'), r = a.fn(); const z2 = S.zonas.find(z => z.sala.id === 'micoche'); if (!z2) return { comprado: r.texto, sinZona: true }; const c = z2.sala.acciones(st).find(x => x.id === 'cond').fn(); const C = S.cond; S.cond.teclas.w = true; await new Promise(r => setTimeout(r, 3500)); const v = Math.round(Math.abs(S.cond.v) * 3.6), d = Math.round(Math.hypot(S.cond.x - st.sede.movilidad.coche.pos[st.clubId].x, S.cond.z - st.sede.movilidad.coche.pos[st.clubId].z)); S.cond.teclas.w = false; S.cond.teclas.a = true; await new Promise(r => setTimeout(r, 1200)); S.cond.teclas.a = false; const gas = Math.round(st.sede.movilidad.coche.gas); window.__antes = [S.cond.x, S.cond.z]; return { comprado: r.texto.slice(0, 50), conduce: c.texto, kmh: v, recorrido: d, gas, lim: S.cond.lim }; });
-  console.log('coche', JSON.stringify(co)); await sleep(500); await p.screenshot({ path: path.join(DIR, 'conduccion.png') });
-  console.log(JSON.stringify(await p.evaluate(async () => { const S = GM.sede._estado(), st = GM.state; if (!S.cond) return 'no conduce'; GM.movilidad.bajar(S, st); return { conduciendo: S.conduciendo, jugadorVisible: S.yo.obj.visible, multas: st.sede.movilidad.multas.length, hora: +S.hora.toFixed(3), dinero: +(st.carrera.dinero * 1000).toFixed(0) }; })));
+  const co = await p.evaluate(async () => {
+    const S = GM.sede._estado(),
+      st = GM.state,
+      z = S.zonas.find(z => z.sala.id === 'concesionario');
+    if (!z) return 'sin concesionario';
+    const a = z.sala.acciones(st).find(x => x.id === 'c_compacto'),
+      r = a.fn();
+    const z2 = S.zonas.find(z => z.sala.id === 'micoche');
+    if (!z2) return { comprado: r.texto, sinZona: true };
+    const c = z2.sala
+      .acciones(st)
+      .find(x => x.id === 'cond')
+      .fn();
+    const C = S.cond;
+    S.cond.teclas.w = true;
+    await new Promise(r => setTimeout(r, 3500));
+    const v = Math.round(Math.abs(S.cond.v) * 3.6),
+      d = Math.round(Math.hypot(S.cond.x - st.sede.movilidad.coche.pos[st.clubId].x, S.cond.z - st.sede.movilidad.coche.pos[st.clubId].z));
+    S.cond.teclas.w = false;
+    S.cond.teclas.a = true;
+    await new Promise(r => setTimeout(r, 1200));
+    S.cond.teclas.a = false;
+    const gas = Math.round(st.sede.movilidad.coche.gas);
+    window.__antes = [S.cond.x, S.cond.z];
+    return { comprado: r.texto.slice(0, 50), conduce: c.texto, kmh: v, recorrido: d, gas, lim: S.cond.lim };
+  });
+  console.log('coche', JSON.stringify(co));
+  await sleep(500);
+  await p.screenshot({ path: path.join(DIR, 'conduccion.png') });
+  console.log(
+    JSON.stringify(
+      await p.evaluate(async () => {
+        const S = GM.sede._estado(),
+          st = GM.state;
+        if (!S.cond) return 'no conduce';
+        GM.movilidad.bajar(S, st);
+        return {
+          conduciendo: S.conduciendo,
+          jugadorVisible: S.yo.obj.visible,
+          multas: st.sede.movilidad.multas.length,
+          hora: +S.hora.toFixed(3),
+          dinero: +(st.carrera.dinero * 1000).toFixed(0)
+        };
+      })
+    )
+  );
   await p.screenshot({ path: path.join(DIR, 'aparcado.png') });
-  await p.evaluate(() => { GM.sede._estado().hora = 8.5; const S = GM.sede._estado(); if (S.tram) { const T = S.tram, y = T.obj.position; S.foco.set(y.x, 0, y.z); S.yo.obj.position.set(y.x + 9, 0, y.z); } }); await sleep(2500); await p.screenshot({ path: path.join(DIR, 'tranvia_trafico.png') });
-  console.log('errores:', errs.length ? errs.slice(0, 5) : 'ninguno'); await b.close();
+  await p.evaluate(() => {
+    GM.sede._estado().hora = 8.5;
+    const S = GM.sede._estado();
+    if (S.tram) {
+      const T = S.tram,
+        y = T.obj.position;
+      S.foco.set(y.x, 0, y.z);
+      S.yo.obj.position.set(y.x + 9, 0, y.z);
+    }
+  });
+  await sleep(2500);
+  await p.screenshot({ path: path.join(DIR, 'tranvia_trafico.png') });
+  console.log('errores:', errs.length ? errs.slice(0, 5) : 'ninguno');
+  await b.close();
 })();

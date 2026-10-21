@@ -8,78 +8,487 @@
 //   node tools/ingesta.js informe                        escribe docs/OBJETOS.md (recuento por origen, categoría y licencia, y créditos)
 // Resultado: vendor/modelos/objetos/<id>.glb (solo si el modelo se usa: `incluido`), catálogo en vendor/modelos/objetos/catalogo.json (pequeño, va a git) y originales descargados en recursos/objetos/ (fuera de git).
 // Las texturas se bajan a 512 px para que cada objeto pese unos cientos de KB. Los modelos no incluidos se pueden usar con `node tools/ingesta.js incluir <id>`.
-const fs = require('fs'), path = require('path'), { spawnSync } = require('child_process');
-const RAIZ = path.join(__dirname, '..'), OUT = path.join(RAIZ, 'vendor', 'modelos', 'objetos'), ORIG = path.join(RAIZ, 'recursos', 'objetos'), CAT = path.join(OUT, 'catalogo.json');
-const GT = path.join(RAIZ, 'recursos', 'herramientas', 'node_modules', '.bin', 'gltf-transform' + (process.platform === 'win32' ? '.cmd' : '')), sh = process.platform === 'win32';
-fs.mkdirSync(OUT, { recursive: true }); fs.mkdirSync(ORIG, { recursive: true });
-const cargar = () => (fs.existsSync(CAT) ? JSON.parse(fs.readFileSync(CAT, 'utf8')) : { version: 1, objetos: [] }), guardar = c => fs.writeFileSync(CAT, JSON.stringify(c));
-const CAT_ES = { furniture: 'mueble', seating: 'asiento', lighting: 'iluminación', appliances: 'electrodoméstico', electronics: 'electrónica', decorative: 'decoración', plants: 'planta', 'potted plants': 'planta', containers: 'contenedor', props: 'objeto', tools: 'herramienta', industrial: 'industrial', food: 'comida', books: 'libros', dishes: 'vajilla', shelves: 'estantería', office: 'oficina', instrument: 'instrumento', vases: 'jarrón', table: 'mesa', bed: 'cama', 'wall decoration': 'decoración de pared', flowers: 'flores' };
-const INTERIOR = ['furniture', 'seating', 'lighting', 'appliances', 'electronics', 'decorative', 'plants', 'potted plants', 'food', 'books', 'dishes', 'shelves', 'office', 'vases', 'table', 'bed', 'wall decoration', 'flowers', 'instrument'];
-const arg = k => { const a = process.argv.find(x => x.startsWith('--' + k + '=')); return a ? a.slice(k.length + 3) : null; }, flag = k => process.argv.includes('--' + k);
+const fs = require('fs'),
+  path = require('path'),
+  { spawnSync } = require('child_process');
+const RAIZ = path.join(__dirname, '..'),
+  OUT = path.join(RAIZ, 'vendor', 'modelos', 'objetos'),
+  ORIG = path.join(RAIZ, 'recursos', 'objetos'),
+  CAT = path.join(OUT, 'catalogo.json');
+const GT = path.join(RAIZ, 'recursos', 'herramientas', 'node_modules', '.bin', 'gltf-transform' + (process.platform === 'win32' ? '.cmd' : '')),
+  sh = process.platform === 'win32';
+fs.mkdirSync(OUT, { recursive: true });
+fs.mkdirSync(ORIG, { recursive: true });
+const cargar = () => (fs.existsSync(CAT) ? JSON.parse(fs.readFileSync(CAT, 'utf8')) : { version: 1, objetos: [] }),
+  guardar = c => fs.writeFileSync(CAT, JSON.stringify(c));
+const CAT_ES = {
+  furniture: 'mueble',
+  seating: 'asiento',
+  lighting: 'iluminación',
+  appliances: 'electrodoméstico',
+  electronics: 'electrónica',
+  decorative: 'decoración',
+  plants: 'planta',
+  'potted plants': 'planta',
+  containers: 'contenedor',
+  props: 'objeto',
+  tools: 'herramienta',
+  industrial: 'industrial',
+  food: 'comida',
+  books: 'libros',
+  dishes: 'vajilla',
+  shelves: 'estantería',
+  office: 'oficina',
+  instrument: 'instrumento',
+  vases: 'jarrón',
+  table: 'mesa',
+  bed: 'cama',
+  'wall decoration': 'decoración de pared',
+  flowers: 'flores'
+};
+const INTERIOR = [
+  'furniture',
+  'seating',
+  'lighting',
+  'appliances',
+  'electronics',
+  'decorative',
+  'plants',
+  'potted plants',
+  'food',
+  'books',
+  'dishes',
+  'shelves',
+  'office',
+  'vases',
+  'table',
+  'bed',
+  'wall decoration',
+  'flowers',
+  'instrument'
+];
+const arg = k => {
+    const a = process.argv.find(x => x.startsWith('--' + k + '='));
+    return a ? a.slice(k.length + 3) : null;
+  },
+  flag = k => process.argv.includes('--' + k);
 const dormir = ms => new Promise(r => setTimeout(r, ms));
-async function bajar(url, dest) { for (let i = 0; i < 4; i++) { try { const r = await fetch(url, { signal: AbortSignal.timeout(90000) }); if (r.ok) { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, Buffer.from(await r.arrayBuffer())); return true; } } catch (e) { /* reintenta */ } await dormir(1500); } return false; }
-function gt(...a) { const r = spawnSync(GT, a, { shell: sh, encoding: 'utf8' }); return { ok: r.status === 0, err: (r.stderr || '') + (r.stdout || '') }; }
+async function bajar(url, dest) {
+  for (let i = 0; i < 4; i++) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(90000) });
+      if (r.ok) {
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.writeFileSync(dest, Buffer.from(await r.arrayBuffer()));
+        return true;
+      }
+    } catch (e) {
+      /* reintenta */
+    }
+    await dormir(1500);
+  }
+  return false;
+}
+function gt(...a) {
+  const r = spawnSync(GT, a, { shell: sh, encoding: 'utf8' });
+  return { ok: r.status === 0, err: (r.stderr || '') + (r.stdout || '') };
+}
 // Medidas, triángulos y mallas de un glTF o glb (sin cargar texturas)
 function info(f) {
-  let j; if (f.endsWith('.glb')) { const b = fs.readFileSync(f), n = b.readUInt32LE(12); j = JSON.parse(b.slice(20, 20 + n).toString()); } else j = JSON.parse(fs.readFileSync(f, 'utf8'));
-  let tris = 0, mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9]; (j.meshes || []).forEach(m => m.primitives.forEach(p => { const a = j.accessors[p.attributes.POSITION]; tris += (p.indices !== undefined ? j.accessors[p.indices].count : a.count) / 3; if (a.min) for (let k = 0; k < 3; k++) { mn[k] = Math.min(mn[k], a.min[k]); mx[k] = Math.max(mx[k], a.max[k]); } }));
+  let j;
+  if (f.endsWith('.glb')) {
+    const b = fs.readFileSync(f),
+      n = b.readUInt32LE(12);
+    j = JSON.parse(b.slice(20, 20 + n).toString());
+  } else j = JSON.parse(fs.readFileSync(f, 'utf8'));
+  let tris = 0,
+    mn = [1e9, 1e9, 1e9],
+    mx = [-1e9, -1e9, -1e9];
+  (j.meshes || []).forEach(m =>
+    m.primitives.forEach(p => {
+      const a = j.accessors[p.attributes.POSITION];
+      tris += (p.indices !== undefined ? j.accessors[p.indices].count : a.count) / 3;
+      if (a.min)
+        for (let k = 0; k < 3; k++) {
+          mn[k] = Math.min(mn[k], a.min[k]);
+          mx[k] = Math.max(mx[k], a.max[k]);
+        }
+    })
+  );
   return { tris: Math.round(tris), tam: mx[0] > -1e8 ? [0, 1, 2].map(k => +(mx[k] - mn[k]).toFixed(3)) : [0, 0, 0] };
 }
 // Centra el pivote en la base (x y z al centro, y = 0) y, si se pide, escala a una altura en metros
 async function pivote(entrada, salida, alto) {
-  const { NodeIO } = require(path.join(RAIZ, 'recursos', 'herramientas', 'node_modules', '@gltf-transform', 'core')), { getBounds } = require(path.join(RAIZ, 'recursos', 'herramientas', 'node_modules', '@gltf-transform', 'functions'));
-  const io = new NodeIO(), doc = await io.read(entrada), esc = doc.getRoot().listScenes()[0], b = getBounds(esc), k = alto && b.max[1] - b.min[1] > 1e-4 ? alto / (b.max[1] - b.min[1]) : 1;
-  const raiz = doc.createNode('pivote').setTranslation([-(b.min[0] + b.max[0]) / 2 * k, -b.min[1] * k, -(b.min[2] + b.max[2]) / 2 * k]).setScale([k, k, k]); esc.listChildren().forEach(n => { esc.removeChild(n); raiz.addChild(n); }); esc.addChild(raiz); await io.write(salida, doc);
+  const { NodeIO } = require(path.join(RAIZ, 'recursos', 'herramientas', 'node_modules', '@gltf-transform', 'core')),
+    { getBounds } = require(path.join(RAIZ, 'recursos', 'herramientas', 'node_modules', '@gltf-transform', 'functions'));
+  const io = new NodeIO(),
+    doc = await io.read(entrada),
+    esc = doc.getRoot().listScenes()[0],
+    b = getBounds(esc),
+    k = alto && b.max[1] - b.min[1] > 1e-4 ? alto / (b.max[1] - b.min[1]) : 1;
+  const raiz = doc
+    .createNode('pivote')
+    .setTranslation([(-(b.min[0] + b.max[0]) / 2) * k, -b.min[1] * k, (-(b.min[2] + b.max[2]) / 2) * k])
+    .setScale([k, k, k]);
+  esc.listChildren().forEach(n => {
+    esc.removeChild(n);
+    raiz.addChild(n);
+  });
+  esc.addChild(raiz);
+  await io.write(salida, doc);
 }
 async function procesar(src, id, meta, opc) {
-  const tmp = path.join(ORIG, '_t_' + id), w = path.join(tmp, 'w.gltf'), s = path.join(tmp, 's.gltf'), glb = path.join(tmp, 'p.glb'), dest = path.join(opc.incluir === false ? path.join(ORIG, 'listos') : OUT, id + '.glb'); fs.mkdirSync(tmp, { recursive: true }); fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const n0 = info(src).tris, maxT = opc.tris || 4000, ratio = Math.max(0.04, Math.min(1, maxT / Math.max(1, n0)));
-  let r = gt('weld', src, w); if (!r.ok) throw new Error('weld: ' + r.err.slice(0, 120));
-  r = ratio < 1 ? gt('simplify', w, s, '--ratio', String(ratio), '--error', '0.05') : { ok: fs.copyFileSync(w, s) === undefined }; if (!r.ok) throw new Error('simplify: ' + r.err.slice(0, 120));
+  const tmp = path.join(ORIG, '_t_' + id),
+    w = path.join(tmp, 'w.gltf'),
+    s = path.join(tmp, 's.gltf'),
+    glb = path.join(tmp, 'p.glb'),
+    dest = path.join(opc.incluir === false ? path.join(ORIG, 'listos') : OUT, id + '.glb');
+  fs.mkdirSync(tmp, { recursive: true });
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  const n0 = info(src).tris,
+    maxT = opc.tris || 4000,
+    ratio = Math.max(0.04, Math.min(1, maxT / Math.max(1, n0)));
+  let r = gt('weld', src, w);
+  if (!r.ok) throw new Error('weld: ' + r.err.slice(0, 120));
+  r = ratio < 1 ? gt('simplify', w, s, '--ratio', String(ratio), '--error', '0.05') : { ok: fs.copyFileSync(w, s) === undefined };
+  if (!r.ok) throw new Error('simplify: ' + r.err.slice(0, 120));
   r = gt('resize', s, s, '--width', '512', '--height', '512'); /* si falla se dejan las texturas como están */
-  await pivote(s, glb, opc.alto); fs.copyFileSync(glb, dest); fs.rmSync(tmp, { recursive: true, force: true }); const i = info(dest); return Object.assign({ id, archivo: opc.incluir === false ? null : 'objetos/' + id + '.glb', tris: i.tris, tam: i.tam, bytes: fs.statSync(dest).size, incluido: opc.incluir !== false }, meta);
+  await pivote(s, glb, opc.alto);
+  fs.copyFileSync(glb, dest);
+  fs.rmSync(tmp, { recursive: true, force: true });
+  const i = info(dest);
+  return Object.assign(
+    { id, archivo: opc.incluir === false ? null : 'objetos/' + id + '.glb', tris: i.tris, tam: i.tam, bytes: fs.statSync(dest).size, incluido: opc.incluir !== false },
+    meta
+  );
 }
 async function polyhaven(ids, opc) {
-  const cat = cargar(), ya = new Set(cat.objetos.map(o => o.id)), lista = await (await fetch('https://api.polyhaven.com/assets?t=models', { headers: { 'User-Agent': 'basket-manager-personal/1.0' } })).json();
-  if (!ids.length) { const c = arg('categoria'), n = +(arg('n') || 40); ids = Object.keys(lista).filter(i => !ya.has(i) && !(lista[i].categories || []).some(x => /^collection/.test(x))).filter(i => c ? lista[i].categories.includes(c) : (flag('interior') ? lista[i].categories.some(x => INTERIOR.includes(x)) && !lista[i].categories.some(x => /nature|trees|rocks|ground cover|ships|weapons|firearms|buildings|structures|creature|rigged/.test(x)) : false)).slice(0, n); }
-  console.log(ids.length + ' modelos de Poly Haven'); let hechos = 0, fallos = 0;
+  const cat = cargar(),
+    ya = new Set(cat.objetos.map(o => o.id)),
+    lista = await (await fetch('https://api.polyhaven.com/assets?t=models', { headers: { 'User-Agent': 'basket-manager-personal/1.0' } })).json();
+  if (!ids.length) {
+    const c = arg('categoria'),
+      n = +(arg('n') || 40);
+    ids = Object.keys(lista)
+      .filter(i => !ya.has(i) && !(lista[i].categories || []).some(x => /^collection/.test(x)))
+      .filter(i =>
+        c
+          ? lista[i].categories.includes(c)
+          : flag('interior')
+            ? lista[i].categories.some(x => INTERIOR.includes(x)) &&
+              !lista[i].categories.some(x => /nature|trees|rocks|ground cover|ships|weapons|firearms|buildings|structures|creature|rigged/.test(x))
+            : false
+      )
+      .slice(0, n);
+  }
+  console.log(ids.length + ' modelos de Poly Haven');
+  let hechos = 0,
+    fallos = 0;
   const trabajo = async id => {
-    if (ya.has(id) && !flag('rehacer')) return; const m = lista[id]; if (!m) { console.log('no existe', id); fallos++; return; }
-    try { const f = await (await fetch('https://api.polyhaven.com/files/' + id)).json(), g = f.gltf && f.gltf['1k'] && f.gltf['1k'].gltf; if (!g) throw new Error('sin gltf de 1k');
-      const dir = path.join(ORIG, id); fs.mkdirSync(dir, { recursive: true }); let total = g.size || 0; Object.values(g.include || {}).forEach(x => { total += x.size || 0; }); if (total > 40e6) throw new Error('pesa ' + Math.round(total / 1e6) + ' MB');
+    if (ya.has(id) && !flag('rehacer')) return;
+    const m = lista[id];
+    if (!m) {
+      console.log('no existe', id);
+      fallos++;
+      return;
+    }
+    try {
+      const f = await (await fetch('https://api.polyhaven.com/files/' + id)).json(),
+        g = f.gltf && f.gltf['1k'] && f.gltf['1k'].gltf;
+      if (!g) throw new Error('sin gltf de 1k');
+      const dir = path.join(ORIG, id);
+      fs.mkdirSync(dir, { recursive: true });
+      let total = g.size || 0;
+      Object.values(g.include || {}).forEach(x => {
+        total += x.size || 0;
+      });
+      if (total > 40e6) throw new Error('pesa ' + Math.round(total / 1e6) + ' MB');
       if (!(await bajar(g.url, path.join(dir, id + '.gltf')))) throw new Error('descarga');
       for (const [rel, x] of Object.entries(g.include || {})) if (!(await bajar(x.url, path.join(dir, rel)))) throw new Error('descarga de ' + rel);
-      const autores = Object.keys(m.authors || {}).join(', ') || 'Poly Haven', cats = m.categories || [], p = await procesar(path.join(dir, id + '.gltf'), id, { nombre: m.name, categoria: CAT_ES[cats.find(c => CAT_ES[c])] || 'objeto', etiquetas: (m.tags || []).slice(0, 8), origen: 'polyhaven', licencia: 'CC0 1.0', autor: autores, url: 'https://polyhaven.com/a/' + id }, opc);
-      const c2 = cargar(); c2.objetos = c2.objetos.filter(o => o.id !== id).concat([p]); guardar(c2); hechos++; console.log('  ' + id.padEnd(30), p.tris + ' triángulos, ' + p.tam.join(' x ') + ' m, ' + Math.round(p.bytes / 1024) + ' KB');
-    } catch (e) { fallos++; console.log('  FALLA', id, String(e.message || e).slice(0, 100)); }
+      const autores = Object.keys(m.authors || {}).join(', ') || 'Poly Haven',
+        cats = m.categories || [],
+        p = await procesar(
+          path.join(dir, id + '.gltf'),
+          id,
+          {
+            nombre: m.name,
+            categoria: CAT_ES[cats.find(c => CAT_ES[c])] || 'objeto',
+            etiquetas: (m.tags || []).slice(0, 8),
+            origen: 'polyhaven',
+            licencia: 'CC0 1.0',
+            autor: autores,
+            url: 'https://polyhaven.com/a/' + id
+          },
+          opc
+        );
+      const c2 = cargar();
+      c2.objetos = c2.objetos.filter(o => o.id !== id).concat([p]);
+      guardar(c2);
+      hechos++;
+      console.log('  ' + id.padEnd(30), p.tris + ' triángulos, ' + p.tam.join(' x ') + ' m, ' + Math.round(p.bytes / 1024) + ' KB');
+    } catch (e) {
+      fallos++;
+      console.log('  FALLA', id, String(e.message || e).slice(0, 100));
+    }
   };
-  const N = 3; let k = 0; await Promise.all(Array.from({ length: N }, async () => { while (k < ids.length) { const id = ids[k++]; await trabajo(id); } })); console.log(hechos + ' añadidos, ' + fallos + ' fallos');
+  const N = 3;
+  let k = 0;
+  await Promise.all(
+    Array.from({ length: N }, async () => {
+      while (k < ids.length) {
+        const id = ids[k++];
+        await trabajo(id);
+      }
+    })
+  );
+  console.log(hechos + ' añadidos, ' + fallos + ' fallos');
 }
 async function archivo(ruta) {
-  const id = arg('id') || path.basename(ruta).replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9_]+/g, '_'); if (!arg('licencia') || !arg('autor')) { console.log('Hace falta --licencia y --autor (la licencia debe permitir usarlo y redistribuirlo).'); process.exit(1); }
-  const p = await procesar(path.resolve(ruta), id, { nombre: arg('nombre') || id, categoria: arg('categoria') || 'objeto', etiquetas: (arg('etiquetas') || '').split(',').filter(Boolean), origen: arg('origen') || 'otro', licencia: arg('licencia'), autor: arg('autor'), url: arg('url') || '' }, { alto: arg('alto') ? +arg('alto') : 0, tris: +(arg('tris') || 4000) });
-  const c = cargar(); c.objetos = c.objetos.filter(o => o.id !== id).concat([p]); guardar(c); console.log('añadido', id, p.tris + ' triángulos, ' + p.tam.join(' x ') + ' m');
+  const id =
+    arg('id') ||
+    path
+      .basename(ruta)
+      .replace(/\.[^.]+$/, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_');
+  if (!arg('licencia') || !arg('autor')) {
+    console.log('Hace falta --licencia y --autor (la licencia debe permitir usarlo y redistribuirlo).');
+    process.exit(1);
+  }
+  const p = await procesar(
+    path.resolve(ruta),
+    id,
+    {
+      nombre: arg('nombre') || id,
+      categoria: arg('categoria') || 'objeto',
+      etiquetas: (arg('etiquetas') || '').split(',').filter(Boolean),
+      origen: arg('origen') || 'otro',
+      licencia: arg('licencia'),
+      autor: arg('autor'),
+      url: arg('url') || ''
+    },
+    { alto: arg('alto') ? +arg('alto') : 0, tris: +(arg('tris') || 4000) }
+  );
+  const c = cargar();
+  c.objetos = c.objetos.filter(o => o.id !== id).concat([p]);
+  guardar(c);
+  console.log('añadido', id, p.tris + ' triángulos, ' + p.tam.join(' x ') + ' m');
 }
 // Kenney y Quaternius: ya vienen optimizados; solo se indexan (los de vendor/modelos están en el juego; los de recursos/ quedan como disponibles)
 function reindexar() {
-  const c = cargar(), ya = new Set(c.objetos.map(o => o.id)); let nuevos = 0; const nom = s => s.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/[-_]+/g, ' ').toLowerCase();
-  const cat = n => /bed|sofa|couch|chair|stool|bench|lounge|table|desk|cabinet|bookcase|shelf|rug|coat|side/i.test(n) ? (/chair|stool|bench|lounge|sofa|couch/i.test(n) ? 'asiento' : 'mueble') : /lamp|light/i.test(n) ? 'iluminación' : /kitchen|toaster|washer|dryer|fridge|microwave|stove|blender|coffee/i.test(n) ? 'electrodoméstico' : /computer|laptop|television|radio|speaker/i.test(n) ? 'electrónica' : /plant|flower|vase|pot/i.test(n) ? 'planta' : /bath|toilet|shower|sink/i.test(n) ? 'baño' : /wall|door|window|floor|roof|column|stairs|balcony|fence|corner/i.test(n) ? 'edificio' : 'objeto';
-  const grupos = [[path.join(RAIZ, 'vendor', 'modelos', 'muebles'), 'kenney-furniture', 'Kenney Furniture Kit', true, 'muebles/'], [path.join(RAIZ, 'recursos', 'kenney_furniture-kit'), 'kenney-furniture', 'Kenney Furniture Kit', false, null], [path.join(RAIZ, 'recursos', 'kenney_building-kit'), 'kenney-building', 'Kenney Building Kit', false, null], [path.join(RAIZ, 'vendor', 'modelos', 'edificio'), 'kenney-building', 'Kenney Building Kit', true, 'edificio/'], [path.join(RAIZ, 'recursos', 'kenney_mini-characters', 'Models', 'GLB format'), 'kenney-mini', 'Kenney Mini Characters', false, null], [path.join(RAIZ, 'recursos', 'kenney_food-kit'), 'kenney-food', 'Kenney Food Kit', false, null], [path.join(RAIZ, 'recursos', 'kenney_survival-kit'), 'kenney-survival', 'Kenney Survival Kit', false, null]];
-  const recorre = d => { const o = []; if (!fs.existsSync(d)) return o; fs.readdirSync(d, { withFileTypes: true }).forEach(e => { const f = path.join(d, e.name); if (e.isDirectory()) { if (!/Textures|Preview|OBJ|FBX/i.test(e.name)) o.push(...recorre(f)); } else if (/\.glb$/i.test(e.name)) o.push(f); }); return o; };
-  grupos.forEach(([dir, origen, autorNom, incluido, pref]) => recorre(dir).forEach(f => { const base = path.basename(f, '.glb'), id = origen.split('-')[1].slice(0, 3) + '_' + base.replace(/[^A-Za-z0-9]+/g, '_').toLowerCase(); if (ya.has(id)) return; ya.add(id); let i = { tris: 0, tam: [0, 0, 0] }; try { i = info(f); } catch (e) { /* sin medidas */ } c.objetos.push({ id, nombre: nom(base), categoria: cat(base), etiquetas: [], origen, licencia: 'CC0 1.0', autor: 'Kenney (kenney.nl)', url: 'https://kenney.nl', archivo: incluido ? 'modelos/' + pref + path.basename(f) : null, tris: i.tris, tam: i.tam, incluido }); nuevos++; }));
+  const c = cargar(),
+    ya = new Set(c.objetos.map(o => o.id));
+  let nuevos = 0;
+  const nom = s =>
+    s
+      .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
+      .replace(/[-_]+/g, ' ')
+      .toLowerCase();
+  const cat = n =>
+    /bed|sofa|couch|chair|stool|bench|lounge|table|desk|cabinet|bookcase|shelf|rug|coat|side/i.test(n)
+      ? /chair|stool|bench|lounge|sofa|couch/i.test(n)
+        ? 'asiento'
+        : 'mueble'
+      : /lamp|light/i.test(n)
+        ? 'iluminación'
+        : /kitchen|toaster|washer|dryer|fridge|microwave|stove|blender|coffee/i.test(n)
+          ? 'electrodoméstico'
+          : /computer|laptop|television|radio|speaker/i.test(n)
+            ? 'electrónica'
+            : /plant|flower|vase|pot/i.test(n)
+              ? 'planta'
+              : /bath|toilet|shower|sink/i.test(n)
+                ? 'baño'
+                : /wall|door|window|floor|roof|column|stairs|balcony|fence|corner/i.test(n)
+                  ? 'edificio'
+                  : 'objeto';
+  const grupos = [
+    [path.join(RAIZ, 'vendor', 'modelos', 'muebles'), 'kenney-furniture', 'Kenney Furniture Kit', true, 'muebles/'],
+    [path.join(RAIZ, 'recursos', 'kenney_furniture-kit'), 'kenney-furniture', 'Kenney Furniture Kit', false, null],
+    [path.join(RAIZ, 'recursos', 'kenney_building-kit'), 'kenney-building', 'Kenney Building Kit', false, null],
+    [path.join(RAIZ, 'vendor', 'modelos', 'edificio'), 'kenney-building', 'Kenney Building Kit', true, 'edificio/'],
+    [path.join(RAIZ, 'recursos', 'kenney_mini-characters', 'Models', 'GLB format'), 'kenney-mini', 'Kenney Mini Characters', false, null],
+    [path.join(RAIZ, 'recursos', 'kenney_food-kit'), 'kenney-food', 'Kenney Food Kit', false, null],
+    [path.join(RAIZ, 'recursos', 'kenney_survival-kit'), 'kenney-survival', 'Kenney Survival Kit', false, null]
+  ];
+  const recorre = d => {
+    const o = [];
+    if (!fs.existsSync(d)) return o;
+    fs.readdirSync(d, { withFileTypes: true }).forEach(e => {
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) {
+        if (!/Textures|Preview|OBJ|FBX/i.test(e.name)) o.push(...recorre(f));
+      } else if (/\.glb$/i.test(e.name)) o.push(f);
+    });
+    return o;
+  };
+  grupos.forEach(([dir, origen, autorNom, incluido, pref]) =>
+    recorre(dir).forEach(f => {
+      const base = path.basename(f, '.glb'),
+        id = origen.split('-')[1].slice(0, 3) + '_' + base.replace(/[^A-Za-z0-9]+/g, '_').toLowerCase();
+      if (ya.has(id)) return;
+      ya.add(id);
+      let i = { tris: 0, tam: [0, 0, 0] };
+      try {
+        i = info(f);
+      } catch (e) {
+        /* sin medidas */
+      }
+      c.objetos.push({
+        id,
+        nombre: nom(base),
+        categoria: cat(base),
+        etiquetas: [],
+        origen,
+        licencia: 'CC0 1.0',
+        autor: 'Kenney (kenney.nl)',
+        url: 'https://kenney.nl',
+        archivo: incluido ? 'modelos/' + pref + path.basename(f) : null,
+        tris: i.tris,
+        tam: i.tam,
+        incluido
+      });
+      nuevos++;
+    })
+  );
   // Quaternius: los 14 personajes vestidos
-  const pers = path.join(RAIZ, 'vendor', 'modelos', 'personas'); if (fs.existsSync(pers)) fs.readdirSync(pers).filter(f => /^[hm]-.*\.glb$/.test(f)).forEach(f => { const id = 'qua_' + f.replace('.glb', '').replace(/-/g, '_'); if (ya.has(id)) return; ya.add(id); c.objetos.push({ id, nombre: 'persona ' + f.replace('.glb', ''), categoria: 'persona', etiquetas: ['personaje'], origen: 'quaternius', licencia: 'CC0 1.0', autor: 'Quaternius (quaternius.com)', url: 'https://quaternius.com', archivo: 'modelos/personas/' + f, tris: 0, tam: [0, 1.8, 0], incluido: true }); nuevos++; });
+  const pers = path.join(RAIZ, 'vendor', 'modelos', 'personas');
+  if (fs.existsSync(pers))
+    fs.readdirSync(pers)
+      .filter(f => /^[hm]-.*\.glb$/.test(f))
+      .forEach(f => {
+        const id = 'qua_' + f.replace('.glb', '').replace(/-/g, '_');
+        if (ya.has(id)) return;
+        ya.add(id);
+        c.objetos.push({
+          id,
+          nombre: 'persona ' + f.replace('.glb', ''),
+          categoria: 'persona',
+          etiquetas: ['personaje'],
+          origen: 'quaternius',
+          licencia: 'CC0 1.0',
+          autor: 'Quaternius (quaternius.com)',
+          url: 'https://quaternius.com',
+          archivo: 'modelos/personas/' + f,
+          tris: 0,
+          tam: [0, 1.8, 0],
+          incluido: true
+        });
+        nuevos++;
+      });
   // Poly Haven que ya están en el juego como modelos realistas
-  const reales = path.join(RAIZ, 'vendor', 'modelos', 'reales'); if (fs.existsSync(reales)) fs.readdirSync(reales, { withFileTypes: true }).filter(e => e.isDirectory() && !['arboles', 'textures'].includes(e.name)).forEach(e => { const id = e.name; if (ya.has(id)) return; ya.add(id); const g = fs.readdirSync(path.join(reales, id)).find(f => f.endsWith('.gltf')); if (!g) return; let i = { tris: 0, tam: [0, 0, 0] }; try { i = info(path.join(reales, id, g)); } catch (x) { /* sin medidas */ } c.objetos.push({ id, nombre: id.replace(/_/g, ' ').toLowerCase(), categoria: 'objeto', etiquetas: [], origen: 'polyhaven', licencia: 'CC0 1.0', autor: 'Poly Haven (polyhaven.com)', url: 'https://polyhaven.com/a/' + id, archivo: 'modelos/reales/' + id + '/' + g, tris: i.tris, tam: i.tam, incluido: true }); nuevos++; });
-  guardar(c); console.log(nuevos + ' objetos indexados, ' + c.objetos.length + ' en el catálogo');
+  const reales = path.join(RAIZ, 'vendor', 'modelos', 'reales');
+  if (fs.existsSync(reales))
+    fs.readdirSync(reales, { withFileTypes: true })
+      .filter(e => e.isDirectory() && !['arboles', 'textures'].includes(e.name))
+      .forEach(e => {
+        const id = e.name;
+        if (ya.has(id)) return;
+        ya.add(id);
+        const g = fs.readdirSync(path.join(reales, id)).find(f => f.endsWith('.gltf'));
+        if (!g) return;
+        let i = { tris: 0, tam: [0, 0, 0] };
+        try {
+          i = info(path.join(reales, id, g));
+        } catch (x) {
+          /* sin medidas */
+        }
+        c.objetos.push({
+          id,
+          nombre: id.replace(/_/g, ' ').toLowerCase(),
+          categoria: 'objeto',
+          etiquetas: [],
+          origen: 'polyhaven',
+          licencia: 'CC0 1.0',
+          autor: 'Poly Haven (polyhaven.com)',
+          url: 'https://polyhaven.com/a/' + id,
+          archivo: 'modelos/reales/' + id + '/' + g,
+          tris: i.tris,
+          tam: i.tam,
+          incluido: true
+        });
+        nuevos++;
+      });
+  guardar(c);
+  console.log(nuevos + ' objetos indexados, ' + c.objetos.length + ' en el catálogo');
 }
 function informe() {
-  const c = cargar(), O = c.objetos, cuenta = f => { const r = {}; O.forEach(o => { r[f(o)] = (r[f(o)] || 0) + 1; }); return Object.entries(r).sort((a, b) => b[1] - a[1]); }, tabla = (t, l) => '| ' + t + ' | Objetos |\n|---|---|\n' + l.map(([k, v]) => '| ' + k + ' | ' + v + ' |').join('\n') + '\n';
-  const autores = {}; O.forEach(o => { const k = o.origen + '|' + o.licencia + '|' + o.autor; autores[k] = (autores[k] || 0) + 1; });
-  const md = '# Biblioteca de objetos\n\nGenerado con `node tools/ingesta.js informe`. ' + O.length + ' objetos en `vendor/modelos/objetos/catalogo.json`; ' + O.filter(o => o.incluido).length + ' están incluidos en el juego y el resto se pueden activar con `node tools/ingesta.js incluir <id>` (los de Poly Haven se descargan con `polyhaven <id>`).\n\n## Cómo añadir un modelo\n\n- Poly Haven (CC0): `node tools/ingesta.js polyhaven <id>`; por categoría: `polyhaven --categoria=furniture --n=40`; todo lo de interior: `polyhaven --interior`.\n- Otro sitio: `node tools/ingesta.js archivo modelo.glb --id=x --nombre="..." --categoria=mueble --licencia=CC0 --autor="..." --alto=0.8 --url=...` (solo licencias que permitan redistribuir; las CC-BY necesitan el autor).\n- Cada modelo se simplifica (máximo 4.000 triángulos por defecto), se bajan las texturas a 512 px, el pivote queda en el centro de la base y se registra su licencia aquí.\n\n## Recuento\n\n' + tabla('Origen', cuenta(o => o.origen)) + '\n' + tabla('Categoría', cuenta(o => o.categoria)) + '\n' + tabla('Licencia', cuenta(o => o.licencia)) + '\n## Créditos\n\n| Origen | Licencia | Autor | Objetos |\n|---|---|---|---|\n' + Object.entries(autores).map(([k, v]) => '| ' + k.split('|').join(' | ') + ' | ' + v + ' |').join('\n') + '\n';
-  fs.writeFileSync(path.join(RAIZ, 'docs', 'OBJETOS.md'), md); console.log(md.split('\n').slice(0, 3).join(' ').slice(0, 200));
+  const c = cargar(),
+    O = c.objetos,
+    cuenta = f => {
+      const r = {};
+      O.forEach(o => {
+        r[f(o)] = (r[f(o)] || 0) + 1;
+      });
+      return Object.entries(r).sort((a, b) => b[1] - a[1]);
+    },
+    tabla = (t, l) => '| ' + t + ' | Objetos |\n|---|---|\n' + l.map(([k, v]) => '| ' + k + ' | ' + v + ' |').join('\n') + '\n';
+  const autores = {};
+  O.forEach(o => {
+    const k = o.origen + '|' + o.licencia + '|' + o.autor;
+    autores[k] = (autores[k] || 0) + 1;
+  });
+  const md =
+    '# Biblioteca de objetos\n\nGenerado con `node tools/ingesta.js informe`. ' +
+    O.length +
+    ' objetos en `vendor/modelos/objetos/catalogo.json`; ' +
+    O.filter(o => o.incluido).length +
+    ' están incluidos en el juego y el resto se pueden activar con `node tools/ingesta.js incluir <id>` (los de Poly Haven se descargan con `polyhaven <id>`).\n\n## Cómo añadir un modelo\n\n- Poly Haven (CC0): `node tools/ingesta.js polyhaven <id>`; por categoría: `polyhaven --categoria=furniture --n=40`; todo lo de interior: `polyhaven --interior`.\n- Otro sitio: `node tools/ingesta.js archivo modelo.glb --id=x --nombre="..." --categoria=mueble --licencia=CC0 --autor="..." --alto=0.8 --url=...` (solo licencias que permitan redistribuir; las CC-BY necesitan el autor).\n- Cada modelo se simplifica (máximo 4.000 triángulos por defecto), se bajan las texturas a 512 px, el pivote queda en el centro de la base y se registra su licencia aquí.\n\n## Recuento\n\n' +
+    tabla(
+      'Origen',
+      cuenta(o => o.origen)
+    ) +
+    '\n' +
+    tabla(
+      'Categoría',
+      cuenta(o => o.categoria)
+    ) +
+    '\n' +
+    tabla(
+      'Licencia',
+      cuenta(o => o.licencia)
+    ) +
+    '\n## Créditos\n\n| Origen | Licencia | Autor | Objetos |\n|---|---|---|---|\n' +
+    Object.entries(autores)
+      .map(([k, v]) => '| ' + k.split('|').join(' | ') + ' | ' + v + ' |')
+      .join('\n') +
+    '\n';
+  fs.writeFileSync(path.join(RAIZ, 'docs', 'OBJETOS.md'), md);
+  console.log(md.split('\n').slice(0, 3).join(' ').slice(0, 200));
 }
 (async () => {
-  const [cmd, ...r] = process.argv.slice(2); if (cmd === 'polyhaven') { const ids = r.filter(x => !x.startsWith('--')); await polyhaven(ids, { tris: +(arg('tris') || 4000), incluir: ids.length ? !flag('sinincluir') : false }); } else if (cmd === 'archivo') await archivo(r.find(x => !x.startsWith('--'))); else if (cmd === 'reindexar') reindexar(); else if (cmd === 'informe') informe();
-  else if (cmd === 'incluir') { const c = cargar(), pesado = flag('pesado'); r.filter(x => !x.startsWith('--')).forEach(id => { if (pesado) { const o = c.objetos.find(x => x.id === id), f = path.join(ORIG, 'listos', id + '.glb'), d = path.join(RAIZ, 'recursos', 'pesados', 'modelos', 'objetos'); if (o && fs.existsSync(f)) { fs.mkdirSync(d, { recursive: true }); fs.copyFileSync(f, path.join(d, id + '.glb')); o.pesado = true; o.archivo = 'objetos/' + id + '.glb'; } return; } const o = c.objetos.find(x => x.id === id), f = path.join(ORIG, 'listos', id + '.glb'); if (o && fs.existsSync(f)) { fs.copyFileSync(f, path.join(OUT, id + '.glb')); o.incluido = true; o.archivo = 'objetos/' + id + '.glb'; } }); guardar(c); console.log((pesado ? 'incluidos solo en escritorio: ' : 'incluidos: ') + r.filter(x => !x.startsWith('--')).join(', ')); } else console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 11).join('\n'));
+  const [cmd, ...r] = process.argv.slice(2);
+  if (cmd === 'polyhaven') {
+    const ids = r.filter(x => !x.startsWith('--'));
+    await polyhaven(ids, { tris: +(arg('tris') || 4000), incluir: ids.length ? !flag('sinincluir') : false });
+  } else if (cmd === 'archivo') await archivo(r.find(x => !x.startsWith('--')));
+  else if (cmd === 'reindexar') reindexar();
+  else if (cmd === 'informe') informe();
+  else if (cmd === 'incluir') {
+    const c = cargar(),
+      pesado = flag('pesado');
+    r.filter(x => !x.startsWith('--')).forEach(id => {
+      if (pesado) {
+        const o = c.objetos.find(x => x.id === id),
+          f = path.join(ORIG, 'listos', id + '.glb'),
+          d = path.join(RAIZ, 'recursos', 'pesados', 'modelos', 'objetos');
+        if (o && fs.existsSync(f)) {
+          fs.mkdirSync(d, { recursive: true });
+          fs.copyFileSync(f, path.join(d, id + '.glb'));
+          o.pesado = true;
+          o.archivo = 'objetos/' + id + '.glb';
+        }
+        return;
+      }
+      const o = c.objetos.find(x => x.id === id),
+        f = path.join(ORIG, 'listos', id + '.glb');
+      if (o && fs.existsSync(f)) {
+        fs.copyFileSync(f, path.join(OUT, id + '.glb'));
+        o.incluido = true;
+        o.archivo = 'objetos/' + id + '.glb';
+      }
+    });
+    guardar(c);
+    console.log((pesado ? 'incluidos solo en escritorio: ' : 'incluidos: ') + r.filter(x => !x.startsWith('--')).join(', '));
+  } else console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 11).join('\n'));
 })();

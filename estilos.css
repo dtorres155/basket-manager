@@ -662,11 +662,11 @@ body{background:var(--bg)}
 /* Interfaz dentro del mundo 3D (punto 72) */
 .hm { position: absolute; inset: 0; pointer-events: none; z-index: 4; font-size: 13px; }
 .hm button { pointer-events: auto; }
-.hm-brujula { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); width: min(300px, 56vw); height: 30px; border-radius: 15px; background: rgba(12, 18, 24, 0.62); color: #eef2f4; overflow: hidden; backdrop-filter: blur(4px); }
+.hm-brujula { position: absolute; top: var(--hm-top, 64px); left: 50%; transform: translateX(-50%); width: min(300px, 56vw); height: 30px; border-radius: 15px; background: rgba(12, 18, 24, 0.62); color: #eef2f4; overflow: hidden; backdrop-filter: blur(4px); }
 .hm-brj-tira { position: absolute; inset: 0; }
 .hm-brj-tira i { position: absolute; top: 6px; font-style: normal; font-weight: 700; font-size: 12px; transform: translateX(-50%); opacity: 0.85; }
 .hm-brj-g { position: absolute; left: 50%; bottom: 1px; transform: translateX(-50%); font-size: 10px; background: var(--club, #e8590c); color: var(--club-ink, #fff); padding: 0 6px; border-radius: 6px; }
-.hm-reloj { position: absolute; top: 64px; right: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding: 6px 8px; border-radius: 10px; background: rgba(12, 18, 24, 0.62); color: #eef2f4; backdrop-filter: blur(4px); }
+.hm-reloj { position: absolute; top: var(--hm-top, 64px); right: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding: 6px 8px; border-radius: 10px; background: rgba(12, 18, 24, 0.62); color: #eef2f4; backdrop-filter: blur(4px); }
 .hm-hora { font: 400 20px var(--fl, monospace); letter-spacing: 0.04em; }
 .hm-vel { display: flex; gap: 3px; }
 .hm-v { min-width: 30px; height: 24px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.3); background: transparent; color: #eef2f4; font-size: 11px; cursor: pointer; }
@@ -686,7 +686,7 @@ body{background:var(--bg)}
 .hm-noti.bien { border-left-color: #4cc38a; }
 .hm-noti.mal { border-left-color: #ef6a58; }
 .hm-noti.sale { opacity: 0; transform: translateX(-12px); }
-.hm-nec { position: absolute; left: 10px; top: 64px; display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border-radius: 10px; background: rgba(12, 18, 24, 0.55); color: #eef2f4; width: 128px; }
+.hm-nec { position: absolute; left: 10px; top: var(--hm-top, 64px); display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border-radius: 10px; background: rgba(12, 18, 24, 0.55); color: #eef2f4; width: 128px; }
 .hm-nec:empty { display: none; }
 .hm-n { display: flex; flex-direction: column; font-size: 11px; }
 .hm-n .barra { height: 6px; }
@@ -696,7 +696,7 @@ body{background:var(--bg)}
 .hm-radial button { pointer-events: auto; position: absolute; left: 0; top: 0; cursor: pointer; }
 .hm-r-centro { transform: translate(-50%, -50%); width: 78px; height: 78px; border-radius: 50%; background: rgba(12, 18, 24, 0.88); color: #eef2f4; border: 2px solid var(--club, #e8590c); font-size: 11px; padding: 4px; }
 .hm-r-item { width: 86px; min-height: 52px; margin: -26px 0 0 -43px; border-radius: 14px; background: var(--club, #e8590c); color: var(--club-ink, #fff); border: 0; font-size: 11px; padding: 4px 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); animation: dzEntra var(--t-medio, 200ms) var(--curva, ease); }
-@media (max-width: 480px) { .hm-brujula { top: 108px; } .hm-nec { top: 108px; width: 100px; } .hm-reloj { top: 108px; } }
+@media (max-width: 480px) { .hm-nec { width: 100px; } }
 
 /* Etiquetas del mapa 3D de Ciudad (punto 73) */
 .em-capa { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }

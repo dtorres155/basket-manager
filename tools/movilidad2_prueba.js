@@ -1,17 +1,139 @@
 // Movilidad, segunda parte (38b a 41b): viaje con cámara, metro y bus, reserva de patinete, garaje de casa, daños, bomberos y cesión de paso. Uso: node tools/movilidad2_prueba.js [club]   (requiere `npm run serve`)
-const { chromium } = require('playwright'); const path = require('path'), fs = require('fs'); const sleep = ms => new Promise(r => setTimeout(r, ms));
-const club = process.argv[2] || 'joventut-badalona', DIR = path.join(__dirname, '..', 'capturas', 'movilidad'); fs.mkdirSync(DIR, { recursive: true });
+const { chromium } = require('playwright');
+const path = require('path'),
+  fs = require('fs');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const club = process.argv[2] || 'joventut-badalona',
+  DIR = path.join(__dirname, '..', 'capturas', 'movilidad');
+fs.mkdirSync(DIR, { recursive: true });
 (async () => {
-  const b = await chromium.launch({ channel: 'msedge' }), p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(), errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); await p.goto('http://localhost:8080/'); await sleep(800);
-  await p.evaluate(c => { GM.newGame(c, undefined, { modo: 'carrera', personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } }); GM.state.carrera.dinero = 80; GM.state.fecha = '2026-10-14'; GM.ui.start(document.getElementById('app')); GM.sede.abrir(GM.state, 'calle'); }, club); await sleep(16000);
-  console.log('opciones a la zona más lejana:', JSON.stringify(await p.evaluate(() => { const S = GM.sede._estado(), z = S.zonas.filter(z => !/micro|concesionario|metro|bici_|garaje/.test(z.sala.id)).sort((a, b) => Math.hypot(b.obj.position.x - S.yo.obj.position.x, b.obj.position.z - S.yo.obj.position.z) - Math.hypot(a.obj.position.x - S.yo.obj.position.x, a.obj.position.z - S.yo.obj.position.z))[0]; S.hora = 10; return GM.movilidad.opciones(S, GM.state, [z.obj.position.x, z.obj.position.z]).map(o => o.id + ' ' + GM.movilidad.fmtMin(o.min)); })));
-  const via = await p.evaluate(async () => { const S = GM.sede._estado(), st = GM.state, z = S.zonas.filter(z => !/micro|concesionario|metro|bici_|garaje/.test(z.sala.id)).sort((a, b) => Math.hypot(b.obj.position.x - S.yo.obj.position.x, b.obj.position.z - S.yo.obj.position.z) - Math.hypot(a.obj.position.x - S.yo.obj.position.x, a.obj.position.z - S.yo.obj.position.z))[0], o = GM.movilidad.opciones(S, st, [z.obj.position.x, z.obj.position.z]).find(x => x.id === 'taxi'), h0 = S.hora; let llegada = null; GM.movilidad.iniciarViaje(S, st, o, z, { saltar: () => { llegada = true; S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z + 1.2); } }); const medio = await new Promise(r => setTimeout(() => r({ viajando: S.viajando, pos: [S.yo.obj.position.x | 0, S.yo.obj.position.z | 0], visible: S.yo.obj.visible, hora: +S.hora.toFixed(3) }), 1800)); await new Promise(r => setTimeout(r, 9500)); return { medio, h0: +h0.toFixed(3), fin: { viajando: S.viajando, llegada, hora: +S.hora.toFixed(3), visible: S.yo.obj.visible }, min: +o.min.toFixed(1) }; });
+  const b = await chromium.launch({ channel: 'msedge' }),
+    p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage(),
+    errs = [];
+  p.on('pageerror', e => errs.push(e.message));
+  p.on('console', m => {
+    if (m.type() === 'error') errs.push(m.text());
+  });
+  await p.goto('http://localhost:8080/');
+  await sleep(800);
+  await p.evaluate(c => {
+    GM.newGame(c, undefined, {
+      modo: 'carrera',
+      personaje: Object.assign(GM.mods.personaje.crear(), { nombre: 'M', apellido: 'S' }),
+      carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 }
+    });
+    GM.state.carrera.dinero = 80;
+    GM.state.fecha = '2026-10-14';
+    GM.ui.start(document.getElementById('app'));
+    GM.sede.abrir(GM.state, 'calle');
+  }, club);
+  await sleep(16000);
+  console.log(
+    'opciones a la zona más lejana:',
+    JSON.stringify(
+      await p.evaluate(() => {
+        const S = GM.sede._estado(),
+          z = S.zonas
+            .filter(z => !/micro|concesionario|metro|bici_|garaje/.test(z.sala.id))
+            .sort(
+              (a, b) =>
+                Math.hypot(b.obj.position.x - S.yo.obj.position.x, b.obj.position.z - S.yo.obj.position.z) -
+                Math.hypot(a.obj.position.x - S.yo.obj.position.x, a.obj.position.z - S.yo.obj.position.z)
+            )[0];
+        S.hora = 10;
+        return GM.movilidad.opciones(S, GM.state, [z.obj.position.x, z.obj.position.z]).map(o => o.id + ' ' + GM.movilidad.fmtMin(o.min));
+      })
+    )
+  );
+  const via = await p.evaluate(async () => {
+    const S = GM.sede._estado(),
+      st = GM.state,
+      z = S.zonas
+        .filter(z => !/micro|concesionario|metro|bici_|garaje/.test(z.sala.id))
+        .sort(
+          (a, b) =>
+            Math.hypot(b.obj.position.x - S.yo.obj.position.x, b.obj.position.z - S.yo.obj.position.z) -
+            Math.hypot(a.obj.position.x - S.yo.obj.position.x, a.obj.position.z - S.yo.obj.position.z)
+        )[0],
+      o = GM.movilidad.opciones(S, st, [z.obj.position.x, z.obj.position.z]).find(x => x.id === 'taxi'),
+      h0 = S.hora;
+    let llegada = null;
+    GM.movilidad.iniciarViaje(S, st, o, z, {
+      saltar: () => {
+        llegada = true;
+        S.yo.obj.position.set(z.obj.position.x, 0, z.obj.position.z + 1.2);
+      }
+    });
+    const medio = await new Promise(r =>
+      setTimeout(() => r({ viajando: S.viajando, pos: [S.yo.obj.position.x | 0, S.yo.obj.position.z | 0], visible: S.yo.obj.visible, hora: +S.hora.toFixed(3) }), 1800)
+    );
+    await new Promise(r => setTimeout(r, 9500));
+    return { medio, h0: +h0.toFixed(3), fin: { viajando: S.viajando, llegada, hora: +S.hora.toFixed(3), visible: S.yo.obj.visible }, min: +o.min.toFixed(1) };
+  });
   console.log('viaje con cámara:', JSON.stringify(via));
-  console.log('reserva y garaje:', JSON.stringify(await p.evaluate(async () => { const S = GM.sede._estado(), st = GM.state, f = S.flota[0], antes = f.pat, r = GM.movilidad.reservar(S, st, 'patinete', f); const durante = f.pat; const al = f.sala.acciones(st).find(a => a.id === 'pat'); S.yo.obj.position.set(f.x, 0, f.z + 2); const al2 = GM.movilidad.alquilar(S, st, f, 'patinete'); const despues = f.pat, res = st.sede.movilidad.reserva; GM.movilidad.terminar(S, st, f);
-    const z = S.zonas.find(z => z.sala.id === 'concesionario'); z.sala.acciones(st).find(x => x.id === 'c_compacto').fn(); const co = st.sede.movilidad.coche, g = S.garajeZona; let garaje = 'sin casa'; if (g) { co.pos[st.clubId] = { x: g.obj.position.x + 5, z: g.obj.position.z + 3, ry: 0 }; GM.movilidad.reponerCoche(S, st); const guardar = g.sala.acciones(st).find(a => a.id === 'guardar'); const ok1 = guardar.disponible; guardar.fn(); const fuera = !S.cocheObj; const sacar = g.sala.acciones(st).find(a => a.id === 'sacar'); sacar.fn(); garaje = { guardable: ok1, tras_guardar_sin_coche: fuera, tras_sacar_con_coche: !!S.cocheObj }; }
-    co.dano = 40; const rep = S.zonas.find(z => z.sala.id === 'micoche'); const accRep = rep.sala.acciones(st).find(a => a.id === 'rep2'); return { reservado: r.texto.slice(0, 30), antes, durante, despues, reservaLimpia: res === null, garaje, dano: co.dano, reparar: accRep.t }; })));
-  const bom = await p.evaluate(async () => { const S = GM.sede._estado(); for (let i = 0; i < 90 && !S.coches.some(c => c.tipo === "bomberos"); i++) { S.tAmb = 0.001; await new Promise(r => setTimeout(r, 150)); } return { bomberos: S.coches.some(c => c.tipo === 'bomberos'), cedieron: S.coches.filter(c => c.cede).length, aparcando: S.coches.filter(c => c.paraAleatorio && c.tParada > 0).length }; });
+  console.log(
+    'reserva y garaje:',
+    JSON.stringify(
+      await p.evaluate(async () => {
+        const S = GM.sede._estado(),
+          st = GM.state,
+          f = S.flota[0],
+          antes = f.pat,
+          r = GM.movilidad.reservar(S, st, 'patinete', f);
+        const durante = f.pat;
+        const al = f.sala.acciones(st).find(a => a.id === 'pat');
+        S.yo.obj.position.set(f.x, 0, f.z + 2);
+        const al2 = GM.movilidad.alquilar(S, st, f, 'patinete');
+        const despues = f.pat,
+          res = st.sede.movilidad.reserva;
+        GM.movilidad.terminar(S, st, f);
+        const z = S.zonas.find(z => z.sala.id === 'concesionario');
+        z.sala
+          .acciones(st)
+          .find(x => x.id === 'c_compacto')
+          .fn();
+        const co = st.sede.movilidad.coche,
+          g = S.garajeZona;
+        let garaje = 'sin casa';
+        if (g) {
+          co.pos[st.clubId] = { x: g.obj.position.x + 5, z: g.obj.position.z + 3, ry: 0 };
+          GM.movilidad.reponerCoche(S, st);
+          const guardar = g.sala.acciones(st).find(a => a.id === 'guardar');
+          const ok1 = guardar.disponible;
+          guardar.fn();
+          const fuera = !S.cocheObj;
+          const sacar = g.sala.acciones(st).find(a => a.id === 'sacar');
+          sacar.fn();
+          garaje = { guardable: ok1, tras_guardar_sin_coche: fuera, tras_sacar_con_coche: !!S.cocheObj };
+        }
+        co.dano = 40;
+        const rep = S.zonas.find(z => z.sala.id === 'micoche');
+        const accRep = rep.sala.acciones(st).find(a => a.id === 'rep2');
+        return { reservado: r.texto.slice(0, 30), antes, durante, despues, reservaLimpia: res === null, garaje, dano: co.dano, reparar: accRep.t };
+      })
+    )
+  );
+  const bom = await p.evaluate(async () => {
+    const S = GM.sede._estado();
+    for (let i = 0; i < 90 && !S.coches.some(c => c.tipo === 'bomberos'); i++) {
+      S.tAmb = 0.001;
+      await new Promise(r => setTimeout(r, 150));
+    }
+    return {
+      bomberos: S.coches.some(c => c.tipo === 'bomberos'),
+      cedieron: S.coches.filter(c => c.cede).length,
+      aparcando: S.coches.filter(c => c.paraAleatorio && c.tParada > 0).length
+    };
+  });
   console.log('tráfico:', JSON.stringify(bom));
-  console.log('app del móvil:', await p.evaluate(() => { const d = document.createElement('div'); GM.movilidad.app(d, GM.state, () => { }); return d.innerText.replace(/\n+/g, ' | ').slice(0, 260); }));
-  console.log('errores:', errs.length ? errs.slice(0, 5) : 'ninguno'); await b.close();
+  console.log(
+    'app del móvil:',
+    await p.evaluate(() => {
+      const d = document.createElement('div');
+      GM.movilidad.app(d, GM.state, () => {});
+      return d.innerText.replace(/\n+/g, ' | ').slice(0, 260);
+    })
+  );
+  console.log('errores:', errs.length ? errs.slice(0, 5) : 'ninguno');
+  await b.close();
 })();

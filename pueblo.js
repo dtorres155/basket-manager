@@ -4,36 +4,244 @@
    Acciones: visitar, fiesta en tu honor, clínic con los niños e inversiones. Los edificios dan renta, cariño y reputación cada mes.
    Expone: estado, nivel, edificios, invertir, visitar, fiesta, clinic, mount, unmount, selfTest. Escribe state.carrera.pueblo. */
 (function () {
-  const U = GM.util, C = st => st.carrera;
-  const NIVELES = ['Aldea', 'Pueblo', 'Villa', 'Ciudad pequeña', 'Ciudad del baloncesto'], UMBRAL = [0, 16, 38, 68, 105];
-  const NOMBRES = { ES: ['Vilanova de Sau', 'Torrelles del Monte', 'Castellar Alto', 'Sant Martí del Vall', 'Alcudia de la Sierra', 'Pozoblanco Nuevo', 'Fuente Clara'], US: ['Maple Creek', 'Rivers Bend', 'Cedar Falls', 'Oak Ridge'], FR: ['Saint-Aubin', 'Villeneuve', 'Les Arcs'], RS: ['Zlatibor', 'Novi Slatina'], GR: ['Nea Kallithea', 'Agios Pavlos'], IT: ['Borgo Alto', 'San Lorenzo'], LT: ['Kaunas Sodai'], DE: ['Neustadt', 'Burgdorf'], TR: ['Yeni Köy'] };
+  const U = GM.util,
+    C = st => st.carrera;
+  const NIVELES = ['Aldea', 'Pueblo', 'Villa', 'Ciudad pequeña', 'Ciudad del baloncesto'],
+    UMBRAL = [0, 16, 38, 68, 105];
+  const NOMBRES = {
+    ES: ['Vilanova de Sau', 'Torrelles del Monte', 'Castellar Alto', 'Sant Martí del Vall', 'Alcudia de la Sierra', 'Pozoblanco Nuevo', 'Fuente Clara'],
+    US: ['Maple Creek', 'Rivers Bend', 'Cedar Falls', 'Oak Ridge'],
+    FR: ['Saint-Aubin', 'Villeneuve', 'Les Arcs'],
+    RS: ['Zlatibor', 'Novi Slatina'],
+    GR: ['Nea Kallithea', 'Agios Pavlos'],
+    IT: ['Borgo Alto', 'San Lorenzo'],
+    LT: ['Kaunas Sodai'],
+    DE: ['Neustadt', 'Burgdorf'],
+    TR: ['Yeni Köy']
+  };
   const EDI = {
-    canasta: { n: 'Canasta de la plaza', req: 1, coste: 6, max: 3, niv: ['Canasta y suelo de cemento', 'Cancha pública con vallas', 'Cancha cubierta con gradas'], ef: { cariño: 0.4, fama: 0.02 }, uso: ['Echar un uno contra uno con los chavales', { moral: 2, cariño: 1.5 }] },
-    bar: { n: 'Bar de la peña', req: 1, coste: 60, max: 2, niv: ['Bar con pantalla', 'Sede de la peña con museo'], ef: { cariño: 0.5, moral: 0.2 }, uso: ['Tomar algo con la peña', { moral: 2.5, cariño: 1 }] },
-    escuela: { n: 'Escuela de baloncesto', req: 2, coste: 350, max: 3, niv: ['Escuela con un entrenador', 'Escuela con dos pistas', 'Academia de referencia regional'], ef: { cariño: 0.4, fama: 0.05 }, uso: ['Dar una clase a los pequeños', { cariño: 2, fama: 0.2 }] },
-    mural: { n: 'Mural y estatua', req: 2, coste: 40, max: 3, niv: ['Mural en la plaza', 'Mural y placa conmemorativa', 'Estatua de bronce'], ef: { fama: 0.12, cariño: 0.3 }, uso: ['Pasear por tu mural', { moral: 1.5, fama: 0.1 }] },
-    ambulatorio: { n: 'Ambulatorio', req: 3, coste: 2500, max: 2, niv: ['Centro de salud', 'Hospital comarcal con tu nombre'], ef: { cariño: 0.6, fama: 0.08, moral: 0.2 }, uso: ['Visitar a los pacientes', { cariño: 2, fama: 0.2 }] },
-    polideportivo: { n: 'Polideportivo municipal', req: 3, coste: 5000, max: 3, niv: ['Polideportivo básico', 'Polideportivo con piscina', 'Complejo deportivo con ciudad deportiva'], ef: { cariño: 0.5, fama: 0.1, dinero: 12 }, uso: ['Entrenar en el polideportivo', { xp: 0.06, moral: 1.5 }] },
-    tienda: { n: 'Tienda de deportes', req: 3, coste: 450, max: 2, niv: ['Tienda con tu camiseta', 'Tienda oficial con tu marca'], ef: { dinero: 3, fama: 0.05 }, uso: ['Firmar camisetas en la tienda', { fama: 0.3, cariño: 1 }] },
-    hotel: { n: 'Hotel y turismo', req: 4, coste: 7000, max: 2, niv: ['Hotel rural', 'Gran hotel con balcón al pabellón'], ef: { dinero: 28, fama: 0.1 }, uso: ['Recibir a invitados del hotel', { fama: 0.4, moral: 1 }] },
-    pabellon: { n: 'Pabellón con tu nombre', req: 4, coste: 14000, max: 2, niv: ['Pabellón municipal', 'Pabellón de 4.000 localidades'], ef: { cariño: 0.8, fama: 0.2 }, uso: ['Jugar un partido benéfico', { moral: 3, fama: 0.5, cariño: 3 }] },
-    cine: { n: 'Cine', req: 3, coste: 900, max: 2, niv: ['Cine de pueblo con una sala', 'Multicines con tres salas'], ef: { cariño: 0.5, dinero: 6, fama: 0.05 }, uso: ['Ir al cine con los amigos', { moral: 3, cariño: 1, amigos: 3 }] },
-    industrial: { n: 'Polígono industrial', req: 4, coste: 3500, max: 3, niv: ['Naves y talleres a las afueras', 'Polígono con fábrica de balones', 'Parque empresarial con tu marca'], ef: { cariño: 0.7, dinero: 20, fama: 0.1 }, uso: ['Visitar la fábrica y saludar a los operarios', { fama: 0.3, cariño: 2 }] },
+    canasta: {
+      n: 'Canasta de la plaza',
+      req: 1,
+      coste: 6,
+      max: 3,
+      niv: ['Canasta y suelo de cemento', 'Cancha pública con vallas', 'Cancha cubierta con gradas'],
+      ef: { cariño: 0.4, fama: 0.02 },
+      uso: ['Echar un uno contra uno con los chavales', { moral: 2, cariño: 1.5 }]
+    },
+    bar: {
+      n: 'Bar de la peña',
+      req: 1,
+      coste: 60,
+      max: 2,
+      niv: ['Bar con pantalla', 'Sede de la peña con museo'],
+      ef: { cariño: 0.5, moral: 0.2 },
+      uso: ['Tomar algo con la peña', { moral: 2.5, cariño: 1 }]
+    },
+    escuela: {
+      n: 'Escuela de baloncesto',
+      req: 2,
+      coste: 350,
+      max: 3,
+      niv: ['Escuela con un entrenador', 'Escuela con dos pistas', 'Academia de referencia regional'],
+      ef: { cariño: 0.4, fama: 0.05 },
+      uso: ['Dar una clase a los pequeños', { cariño: 2, fama: 0.2 }]
+    },
+    mural: {
+      n: 'Mural y estatua',
+      req: 2,
+      coste: 40,
+      max: 3,
+      niv: ['Mural en la plaza', 'Mural y placa conmemorativa', 'Estatua de bronce'],
+      ef: { fama: 0.12, cariño: 0.3 },
+      uso: ['Pasear por tu mural', { moral: 1.5, fama: 0.1 }]
+    },
+    ambulatorio: {
+      n: 'Ambulatorio',
+      req: 3,
+      coste: 2500,
+      max: 2,
+      niv: ['Centro de salud', 'Hospital comarcal con tu nombre'],
+      ef: { cariño: 0.6, fama: 0.08, moral: 0.2 },
+      uso: ['Visitar a los pacientes', { cariño: 2, fama: 0.2 }]
+    },
+    polideportivo: {
+      n: 'Polideportivo municipal',
+      req: 3,
+      coste: 5000,
+      max: 3,
+      niv: ['Polideportivo básico', 'Polideportivo con piscina', 'Complejo deportivo con ciudad deportiva'],
+      ef: { cariño: 0.5, fama: 0.1, dinero: 12 },
+      uso: ['Entrenar en el polideportivo', { xp: 0.06, moral: 1.5 }]
+    },
+    tienda: {
+      n: 'Tienda de deportes',
+      req: 3,
+      coste: 450,
+      max: 2,
+      niv: ['Tienda con tu camiseta', 'Tienda oficial con tu marca'],
+      ef: { dinero: 3, fama: 0.05 },
+      uso: ['Firmar camisetas en la tienda', { fama: 0.3, cariño: 1 }]
+    },
+    hotel: {
+      n: 'Hotel y turismo',
+      req: 4,
+      coste: 7000,
+      max: 2,
+      niv: ['Hotel rural', 'Gran hotel con balcón al pabellón'],
+      ef: { dinero: 28, fama: 0.1 },
+      uso: ['Recibir a invitados del hotel', { fama: 0.4, moral: 1 }]
+    },
+    pabellon: {
+      n: 'Pabellón con tu nombre',
+      req: 4,
+      coste: 14000,
+      max: 2,
+      niv: ['Pabellón municipal', 'Pabellón de 4.000 localidades'],
+      ef: { cariño: 0.8, fama: 0.2 },
+      uso: ['Jugar un partido benéfico', { moral: 3, fama: 0.5, cariño: 3 }]
+    },
+    cine: {
+      n: 'Cine',
+      req: 3,
+      coste: 900,
+      max: 2,
+      niv: ['Cine de pueblo con una sala', 'Multicines con tres salas'],
+      ef: { cariño: 0.5, dinero: 6, fama: 0.05 },
+      uso: ['Ir al cine con los amigos', { moral: 3, cariño: 1, amigos: 3 }]
+    },
+    industrial: {
+      n: 'Polígono industrial',
+      req: 4,
+      coste: 3500,
+      max: 3,
+      niv: ['Naves y talleres a las afueras', 'Polígono con fábrica de balones', 'Parque empresarial con tu marca'],
+      ef: { cariño: 0.7, dinero: 20, fama: 0.1 },
+      uso: ['Visitar la fábrica y saludar a los operarios', { fama: 0.3, cariño: 2 }]
+    },
     // Negocios que llevan otras personas del pueblo: tú pones el dinero y ellos lo gestionan (te dan una parte cada mes)
-    panaderia: { n: 'Panadería', req: 2, coste: 180, max: 2, gestor: 'vecino', niv: ['Panadería del pueblo', 'Panadería con obrador y cafetería'], ef: { cariño: 0.6, dinero: 1.2 }, uso: ['Tomar el pan recién hecho', { moral: 2, cariño: 1.5 }] },
-    taller: { n: 'Taller mecánico', req: 2, coste: 220, max: 2, gestor: 'amigo', niv: ['Taller de barrio', 'Taller con concesionario'], ef: { cariño: 0.3, dinero: 2 }, uso: ['Pasarte por el taller', { moral: 2, cariño: 1, amigos: 3 }] },
-    restaurantep: { n: 'Restaurante', req: 3, coste: 400, max: 2, gestor: 'amigo', niv: ['Restaurante de cocina de siempre', 'Restaurante con estrella'], ef: { cariño: 0.4, dinero: 4, fama: 0.04 }, uso: ['Comer en el restaurante de tu amigo', { moral: 3, cariño: 1, amigos: 4 }] },
+    panaderia: {
+      n: 'Panadería',
+      req: 2,
+      coste: 180,
+      max: 2,
+      gestor: 'vecino',
+      niv: ['Panadería del pueblo', 'Panadería con obrador y cafetería'],
+      ef: { cariño: 0.6, dinero: 1.2 },
+      uso: ['Tomar el pan recién hecho', { moral: 2, cariño: 1.5 }]
+    },
+    taller: {
+      n: 'Taller mecánico',
+      req: 2,
+      coste: 220,
+      max: 2,
+      gestor: 'amigo',
+      niv: ['Taller de barrio', 'Taller con concesionario'],
+      ef: { cariño: 0.3, dinero: 2 },
+      uso: ['Pasarte por el taller', { moral: 2, cariño: 1, amigos: 3 }]
+    },
+    restaurantep: {
+      n: 'Restaurante',
+      req: 3,
+      coste: 400,
+      max: 2,
+      gestor: 'amigo',
+      niv: ['Restaurante de cocina de siempre', 'Restaurante con estrella'],
+      ef: { cariño: 0.4, dinero: 4, fama: 0.04 },
+      uso: ['Comer en el restaurante de tu amigo', { moral: 3, cariño: 1, amigos: 4 }]
+    },
     // Servicios públicos: no dan dinero, sí cariño del pueblo y calidad de vida
-    plaza: { n: 'Plaza mayor', cat: 'publico', req: 1, coste: 150, max: 2, niv: ['Plaza empedrada con bancos', 'Plaza con fuente y arcos iluminados'], ef: { cariño: 0.5 }, uso: ['Pasear por la plaza y saludar', { moral: 1.5, cariño: 1 }] },
-    parque: { n: 'Parque', cat: 'publico', req: 1, coste: 120, max: 2, niv: ['Parque con columpios', 'Parque con estanque y pista de patinaje'], ef: { cariño: 0.4, moral: 0.2 }, uso: ['Jugar con los niños en el parque', { moral: 2, cariño: 1 }] },
-    alumbrado: { n: 'Alumbrado y calles', cat: 'publico', req: 2, coste: 320, max: 2, niv: ['Farolas nuevas en el casco antiguo', 'Calles adoquinadas e iluminadas'], ef: { cariño: 0.4 }, uso: ['Pasear de noche por el casco antiguo', { moral: 1.5 }] },
-    biblioteca: { n: 'Biblioteca', cat: 'publico', req: 2, coste: 480, max: 2, niv: ['Biblioteca municipal', 'Biblioteca con aula de estudio'], ef: { cariño: 0.4, fama: 0.03 }, uso: ['Leer cuentos a los niños', { cariño: 1.5, moral: 1 }] },
-    centrodia: { n: 'Centro de día', cat: 'publico', req: 3, coste: 900, max: 2, niv: ['Centro de día para mayores', 'Residencia con jardín'], ef: { cariño: 0.6 }, uso: ['Jugar a las cartas con los abuelos', { moral: 2, cariño: 2 }] },
-    carretera: { n: 'Carretera y autobús', cat: 'publico', req: 3, coste: 3000, max: 2, niv: ['Carretera arreglada hasta la ciudad', 'Línea de autobús diaria'], ef: { cariño: 0.3, dinero: 5 }, uso: ['Inaugurar la parada del autobús', { fama: 0.1, cariño: 1 }] },
+    plaza: {
+      n: 'Plaza mayor',
+      cat: 'publico',
+      req: 1,
+      coste: 150,
+      max: 2,
+      niv: ['Plaza empedrada con bancos', 'Plaza con fuente y arcos iluminados'],
+      ef: { cariño: 0.5 },
+      uso: ['Pasear por la plaza y saludar', { moral: 1.5, cariño: 1 }]
+    },
+    parque: {
+      n: 'Parque',
+      cat: 'publico',
+      req: 1,
+      coste: 120,
+      max: 2,
+      niv: ['Parque con columpios', 'Parque con estanque y pista de patinaje'],
+      ef: { cariño: 0.4, moral: 0.2 },
+      uso: ['Jugar con los niños en el parque', { moral: 2, cariño: 1 }]
+    },
+    alumbrado: {
+      n: 'Alumbrado y calles',
+      cat: 'publico',
+      req: 2,
+      coste: 320,
+      max: 2,
+      niv: ['Farolas nuevas en el casco antiguo', 'Calles adoquinadas e iluminadas'],
+      ef: { cariño: 0.4 },
+      uso: ['Pasear de noche por el casco antiguo', { moral: 1.5 }]
+    },
+    biblioteca: {
+      n: 'Biblioteca',
+      cat: 'publico',
+      req: 2,
+      coste: 480,
+      max: 2,
+      niv: ['Biblioteca municipal', 'Biblioteca con aula de estudio'],
+      ef: { cariño: 0.4, fama: 0.03 },
+      uso: ['Leer cuentos a los niños', { cariño: 1.5, moral: 1 }]
+    },
+    centrodia: {
+      n: 'Centro de día',
+      cat: 'publico',
+      req: 3,
+      coste: 900,
+      max: 2,
+      niv: ['Centro de día para mayores', 'Residencia con jardín'],
+      ef: { cariño: 0.6 },
+      uso: ['Jugar a las cartas con los abuelos', { moral: 2, cariño: 2 }]
+    },
+    carretera: {
+      n: 'Carretera y autobús',
+      cat: 'publico',
+      req: 3,
+      coste: 3000,
+      max: 2,
+      niv: ['Carretera arreglada hasta la ciudad', 'Línea de autobús diaria'],
+      ef: { cariño: 0.3, dinero: 5 },
+      uso: ['Inaugurar la parada del autobús', { fama: 0.1, cariño: 1 }]
+    },
     // Casas de los tuyos
-    casapadres: { n: 'Casa de tus padres', cat: 'casa', req: 1, coste: 120, max: 3, niv: ['Reformas en casa de tus padres', 'Casa nueva para tus padres', 'Casa con jardín y huerto'], ef: { moral: 0.4 }, uso: ['Comer en casa de tus padres', { moral: 4 }] },
-    micasa: { n: 'Tu casa en el pueblo', cat: 'casa', req: 1, coste: 300, max: 2, niv: ['Casa de piedra reformada', 'Casa con piscina y canasta en el patio'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Pasar unos días en tu casa del pueblo', { moral: 3 }] },
-    casaamigos: { n: 'Casa de tus amigos de siempre', cat: 'casa', req: 2, coste: 160, max: 2, niv: ['Ayudas a un amigo a arreglar su piso', 'Casa para tu grupo de amigos'], ef: { moral: 0.3, cariño: 0.2 }, uso: ['Cenar con los amigos de siempre', { moral: 3, amigos: 6 }] }
+    casapadres: {
+      n: 'Casa de tus padres',
+      cat: 'casa',
+      req: 1,
+      coste: 120,
+      max: 3,
+      niv: ['Reformas en casa de tus padres', 'Casa nueva para tus padres', 'Casa con jardín y huerto'],
+      ef: { moral: 0.4 },
+      uso: ['Comer en casa de tus padres', { moral: 4 }]
+    },
+    micasa: {
+      n: 'Tu casa en el pueblo',
+      cat: 'casa',
+      req: 1,
+      coste: 300,
+      max: 2,
+      niv: ['Casa de piedra reformada', 'Casa con piscina y canasta en el patio'],
+      ef: { moral: 0.3, cariño: 0.2 },
+      uso: ['Pasar unos días en tu casa del pueblo', { moral: 3 }]
+    },
+    casaamigos: {
+      n: 'Casa de tus amigos de siempre',
+      cat: 'casa',
+      req: 2,
+      coste: 160,
+      max: 2,
+      niv: ['Ayudas a un amigo a arreglar su piso', 'Casa para tu grupo de amigos'],
+      ef: { moral: 0.3, cariño: 0.2 },
+      uso: ['Cenar con los amigos de siempre', { moral: 3, amigos: 6 }]
+    }
   };
   // Obras: lo que inviertes no se estrena al momento. Dura de 2 semanas a 5 meses según el coste; se ve por fases en el pueblo.
   const diasObra = coste => U.clamp(Math.round(14 + 5 * Math.sqrt(coste)), 14, 150);
@@ -42,35 +250,116 @@
   const P = st => C(st).pueblo;
   function nuevaPartida(st) {
     if (st.modo !== 'carrera' || !st.carrera) return;
-    const nac = st.jugadores.yo.nac, lista = NOMBRES[nac] || NOMBRES.ES, h = U.hash(st.jugadores.yo.nombre + 'pueblo');
+    const nac = st.jugadores.yo.nac,
+      lista = NOMBRES[nac] || NOMBRES.ES,
+      h = U.hash(st.jugadores.yo.nombre + 'pueblo');
     st.carrera.pueblo = { nombre: lista[h % lista.length], nac, aportado: 0, cariño: 40, edificios: [{ tipo: 'canasta', nivel: 1 }], hitos: [], cd: {}, nivel: 1, energia: 0 };
   }
-  function puntos(st) { const c = C(st), p = P(st); return GM.mods.carrera.gradoFama(c).idx * 10 + p.aportado / 18 + p.cariño * 0.18 + (p.gest ? p.gest.bono : 0); }
-  function nivel(st) { const pt = puntos(st); let n = 0; UMBRAL.forEach((u, i) => { if (pt >= u) n = i; }); return n + 1; }
+  function puntos(st) {
+    const c = C(st),
+      p = P(st);
+    return GM.mods.carrera.gradoFama(c).idx * 10 + p.aportado / 18 + p.cariño * 0.18 + (p.gest ? p.gest.bono : 0);
+  }
+  function nivel(st) {
+    const pt = puntos(st);
+    let n = 0;
+    UMBRAL.forEach((u, i) => {
+      if (pt >= u) n = i;
+    });
+    return n + 1;
+  }
   function estado(st) {
-    if (!act(st)) return null; const p = P(st), n = nivel(st), pt = puntos(st), sig = UMBRAL[n] !== undefined ? UMBRAL[n] : null;
-    return { nombre: p.nombre, nivel: n, etiqueta: NIVELES[n - 1], poblacion: p.gest ? p.gest.pob : Math.round(300 * Math.pow(2.3, n - 1) + p.cariño * 8), cariño: p.cariño, aportado: p.aportado, pts: pt, sig, frac: sig ? U.clamp((pt - UMBRAL[n - 1]) / (sig - UMBRAL[n - 1]), 0, 1) : 1 };
+    if (!act(st)) return null;
+    const p = P(st),
+      n = nivel(st),
+      pt = puntos(st),
+      sig = UMBRAL[n] !== undefined ? UMBRAL[n] : null;
+    return {
+      nombre: p.nombre,
+      nivel: n,
+      etiqueta: NIVELES[n - 1],
+      poblacion: p.gest ? p.gest.pob : Math.round(300 * Math.pow(2.3, n - 1) + p.cariño * 8),
+      cariño: p.cariño,
+      aportado: p.aportado,
+      pts: pt,
+      sig,
+      frac: sig ? U.clamp((pt - UMBRAL[n - 1]) / (sig - UMBRAL[n - 1]), 0, 1) : 1
+    };
   }
   // Quién lleva un negocio: un vecino del pueblo o un amigo de siempre (de tu agenda, si lo tienes)
   const VECINOS = ['Mari Carmen', 'Paco', 'Luisa', 'Manolo', 'Pepa', 'Andrés', 'Rosa', 'Tomás', 'Conchi', 'Julián'];
   function gestorNuevo(st, tipo, e) {
-    const p = P(st), c = C(st), h = U.hash(p.nombre + tipo) >>> 0;
-    if (e.gestor === 'amigo') { const am = c.social && c.social.contactos ? c.social.contactos.filter(k => k.tipo === 'amigo') : []; if (am.length) { const k = am[h % am.length]; return { nombre: k.nombre, rol: 'tu amigo', amigoId: k.id }; } return { nombre: VECINOS[h % VECINOS.length] + ' (amigo de la infancia)', rol: 'tu amigo' }; }
+    const p = P(st),
+      c = C(st),
+      h = U.hash(p.nombre + tipo) >>> 0;
+    if (e.gestor === 'amigo') {
+      const am = c.social && c.social.contactos ? c.social.contactos.filter(k => k.tipo === 'amigo') : [];
+      if (am.length) {
+        const k = am[h % am.length];
+        return { nombre: k.nombre, rol: 'tu amigo', amigoId: k.id };
+      }
+      return { nombre: VECINOS[h % VECINOS.length] + ' (amigo de la infancia)', rol: 'tu amigo' };
+    }
     return { nombre: VECINOS[h % VECINOS.length], rol: 'vecino del pueblo' };
   }
   function edificios(st) {
-    const p = P(st), n = nivel(st);
+    const p = P(st),
+      n = nivel(st);
     return Object.keys(EDI).map(k => {
-      const e = EDI[k], b = p.edificios.find(x => x.tipo === k), nv = b ? b.nivel : 0, coste = Math.round(e.coste * Math.pow(nv + 1, 1.6));
-      const ob = (p.obras || []).find(o => o.tipo === k), obra = ob ? { dest: ob.dest, inicio: ob.inicio, fin: ob.fin, progreso: U.clamp(U.diffDays(ob.inicio, st.fecha) / Math.max(1, U.diffDays(ob.inicio, ob.fin)), 0, 1), proximo: e.niv[ob.dest - 1] } : null;
-      let motivo = null; if (obra) motivo = 'En obras hasta el ' + U.fechaLarga(obra.fin); else if (n < e.req) motivo = 'Requiere que el pueblo sea ' + NIVELES[e.req - 1].toLowerCase(); else if (nv >= e.max) motivo = 'Nivel máximo'; else if (GM.mods.hogar.dinero(st) < coste) motivo = 'Te faltan ' + Math.round(coste - GM.mods.hogar.dinero(st)) + ' mil €';
-      return { tipo: k, nombre: e.n, niveles: e.niv.slice(), ef: e.ef, req: e.req, gestor: (p.gestores || {})[k] || null, gestorTipo: e.gestor || null, cat: e.cat || 'negocio', obra, dias: diasObra(coste), nivel: nv, max: e.max, actual: nv ? e.niv[nv - 1] : null, proximo: nv < e.max ? e.niv[nv] : null, coste, req: e.req, motivo, uso: nv ? e.uso[0] : null };
+      const e = EDI[k],
+        b = p.edificios.find(x => x.tipo === k),
+        nv = b ? b.nivel : 0,
+        coste = Math.round(e.coste * Math.pow(nv + 1, 1.6));
+      const ob = (p.obras || []).find(o => o.tipo === k),
+        obra = ob
+          ? {
+              dest: ob.dest,
+              inicio: ob.inicio,
+              fin: ob.fin,
+              progreso: U.clamp(U.diffDays(ob.inicio, st.fecha) / Math.max(1, U.diffDays(ob.inicio, ob.fin)), 0, 1),
+              proximo: e.niv[ob.dest - 1]
+            }
+          : null;
+      let motivo = null;
+      if (obra) motivo = 'En obras hasta el ' + U.fechaLarga(obra.fin);
+      else if (n < e.req) motivo = 'Requiere que el pueblo sea ' + NIVELES[e.req - 1].toLowerCase();
+      else if (nv >= e.max) motivo = 'Nivel máximo';
+      else if (GM.mods.hogar.dinero(st) < coste) motivo = 'Te faltan ' + Math.round(coste - GM.mods.hogar.dinero(st)) + ' mil €';
+      return {
+        tipo: k,
+        nombre: e.n,
+        niveles: e.niv.slice(),
+        ef: e.ef,
+        req: e.req,
+        gestor: (p.gestores || {})[k] || null,
+        gestorTipo: e.gestor || null,
+        cat: e.cat || 'negocio',
+        obra,
+        dias: diasObra(coste),
+        nivel: nv,
+        max: e.max,
+        actual: nv ? e.niv[nv - 1] : null,
+        proximo: nv < e.max ? e.niv[nv] : null,
+        coste,
+        motivo,
+        uso: nv ? e.uso[0] : null
+      };
     });
   }
+  // abre el pueblo en 3D para ir andando al edificio (el panel de Mi pueblo)
+  function irAndando(st) {
+    if (GM.sede) GM.sede.abrir(st, 'pueblo');
+  }
   function invertir(st, tipo) {
-    const e = edificios(st).find(x => x.tipo === tipo); if (!e) return { ok: false, motivo: 'Edificio desconocido.' }; if (e.motivo) return { ok: false, motivo: e.motivo };
-    const c = C(st), p = P(st); c.dinero -= e.coste; p.aportado += e.coste;
-    const fin = U.addDays(st.fecha, e.dias); obras(st).push({ tipo, dest: e.nivel + 1, inicio: st.fecha, fin });
+    const e = edificios(st).find(x => x.tipo === tipo);
+    if (!e) return { ok: false, motivo: 'Edificio desconocido.' };
+    if (e.motivo) return { ok: false, motivo: e.motivo };
+    const c = C(st),
+      p = P(st);
+    c.dinero -= e.coste;
+    p.aportado += e.coste;
+    const fin = U.addDays(st.fecha, e.dias);
+    obras(st).push({ tipo, dest: e.nivel + 1, inicio: st.fecha, fin });
     p.cariño = U.clamp(p.cariño + 1, 0, 100);
     p.hitos.unshift({ fecha: st.fecha, texto: 'Empiezan las obras: ' + e.proximo.toLowerCase() + '.' });
     GM.noticia(st, 'Empiezan las obras en ' + p.nombre + ': ' + e.proximo.toLowerCase() + ' (' + e.dias + ' días).');
@@ -78,176 +367,716 @@
   }
   // Inauguración: al acabar la obra sube el nivel del edificio y el pueblo lo celebra
   function terminarObras(st) {
-    const c = C(st), p = P(st), lista = obras(st), hechas = lista.filter(o => o.fin <= st.fecha); if (!hechas.length) return;
+    const c = C(st),
+      p = P(st),
+      lista = obras(st),
+      hechas = lista.filter(o => o.fin <= st.fecha);
+    if (!hechas.length) return;
     const antes = nivel(st);
     hechas.forEach(o => {
-      const e = EDI[o.tipo], b = p.edificios.find(x => x.tipo === o.tipo); if (b) b.nivel = Math.max(b.nivel, o.dest); else p.edificios.push({ tipo: o.tipo, nivel: o.dest });
-      p.cariño = U.clamp(p.cariño + (e.cat === 'publico' ? 5 : 3), 0, 100); c.fama = c.fama + 0.4;
-      if (o.tipo === 'casaamigos' && c.social) c.social.contactos.filter(k => k.tipo === 'amigo').forEach(k => { k.rel = U.clamp(k.rel + 10, 0, 100); });
-      if (o.tipo === 'casapadres' && c.social) c.social.contactos.filter(k => k.tipo === 'familia').forEach(k => { k.rel = U.clamp(k.rel + 10, 0, 100); });
-      if (e.gestor) { p.gestores = p.gestores || {}; if (!p.gestores[o.tipo]) p.gestores[o.tipo] = gestorNuevo(st, o.tipo, e); }
+      const e = EDI[o.tipo],
+        b = p.edificios.find(x => x.tipo === o.tipo);
+      if (b) b.nivel = Math.max(b.nivel, o.dest);
+      else p.edificios.push({ tipo: o.tipo, nivel: o.dest });
+      p.cariño = U.clamp(p.cariño + (e.cat === 'publico' ? 5 : 3), 0, 100);
+      c.fama = c.fama + 0.4;
+      if (o.tipo === 'casaamigos' && c.social)
+        c.social.contactos
+          .filter(k => k.tipo === 'amigo')
+          .forEach(k => {
+            k.rel = U.clamp(k.rel + 10, 0, 100);
+          });
+      if (o.tipo === 'casapadres' && c.social)
+        c.social.contactos
+          .filter(k => k.tipo === 'familia')
+          .forEach(k => {
+            k.rel = U.clamp(k.rel + 10, 0, 100);
+          });
+      if (e.gestor) {
+        p.gestores = p.gestores || {};
+        if (!p.gestores[o.tipo]) p.gestores[o.tipo] = gestorNuevo(st, o.tipo, e);
+      }
       const nom = e.niv[o.dest - 1];
-      p.hitos.unshift({ fecha: st.fecha, texto: 'Se inaugura: ' + nom.toLowerCase() + (e.gestor && p.gestores && p.gestores[o.tipo] ? ' (lo lleva ' + p.gestores[o.tipo].nombre + ').' : '.') }); c.hitos.unshift({ fecha: st.fecha, texto: 'En ' + p.nombre + ' se inaugura: ' + nom.toLowerCase() + '.' });
+      p.hitos.unshift({
+        fecha: st.fecha,
+        texto: 'Se inaugura: ' + nom.toLowerCase() + (e.gestor && p.gestores && p.gestores[o.tipo] ? ' (lo lleva ' + p.gestores[o.tipo].nombre + ').' : '.')
+      });
+      c.hitos.unshift({ fecha: st.fecha, texto: 'En ' + p.nombre + ' se inaugura: ' + nom.toLowerCase() + '.' });
       GM.noticia(st, p.nombre + ' inaugura ' + nom.toLowerCase() + ' gracias a ' + st.jugadores.yo.nombre + '.');
     });
     p.obras = lista.filter(o => o.fin > st.fecha);
-    const ahora = nivel(st); if (ahora > antes) { p.hitos.unshift({ fecha: st.fecha, texto: p.nombre + ' pasa a ser ' + NIVELES[ahora - 1].toLowerCase() + '.' }); GM.noticia(st, p.nombre + ' crece: ahora es ' + NIVELES[ahora - 1].toLowerCase() + '.'); }
+    const ahora = nivel(st);
+    if (ahora > antes) {
+      p.hitos.unshift({ fecha: st.fecha, texto: p.nombre + ' pasa a ser ' + NIVELES[ahora - 1].toLowerCase() + '.' });
+      GM.noticia(st, p.nombre + ' crece: ahora es ' + NIVELES[ahora - 1].toLowerCase() + '.');
+    }
   }
-  function gasta(st, k) { const c = C(st); if (c.dinero < k) return false; c.dinero -= k; return true; }
-  function cd(st, id, dias) { const p = P(st); if (p.cd[id] && U.diffDays(p.cd[id], st.fecha) < dias) return dias - U.diffDays(p.cd[id], st.fecha); return 0; }
+  function gasta(st, k) {
+    const c = C(st);
+    if (c.dinero < k) return false;
+    c.dinero -= k;
+    return true;
+  }
+  function cd(st, id, dias) {
+    const p = P(st);
+    if (p.cd[id] && U.diffDays(p.cd[id], st.fecha) < dias) return dias - U.diffDays(p.cd[id], st.fecha);
+    return 0;
+  }
   function accion(st, id, dias, coste, fn) {
-    const r = cd(st, id, dias); if (r) return { ok: false, motivo: 'Disponible de nuevo en ' + r + ' días.' };
+    const r = cd(st, id, dias);
+    if (r) return { ok: false, motivo: 'Disponible de nuevo en ' + r + ' días.' };
     if (coste && !gasta(st, coste)) return { ok: false, motivo: 'Te faltan ahorros: ' + coste + ' mil €.' };
-    P(st).cd[id] = st.fecha; return fn();
+    P(st).cd[id] = st.fecha;
+    return fn();
   }
   function visitar(st) {
-    return accion(st, 'visita', 14, 0.8, () => { const c = C(st), p = P(st); c.moral = U.clamp(c.moral + 5, 0, 100); p.cariño = U.clamp(p.cariño + 3, 0, 100); if (GM.mods.social && c.social) c.social.contactos.filter(k => k.tipo === 'familia' || k.tipo === 'amigo').forEach(k => { k.rel = U.clamp(k.rel + 7, 0, 100); }); return { ok: true, efectos: ['ánimo +5', 'tu familia y tus amigos te echaban de menos'] }; });
+    return accion(st, 'visita', 14, 0.8, () => {
+      const c = C(st),
+        p = P(st);
+      c.moral = U.clamp(c.moral + 5, 0, 100);
+      p.cariño = U.clamp(p.cariño + 3, 0, 100);
+      if (GM.mods.social && c.social)
+        c.social.contactos
+          .filter(k => k.tipo === 'familia' || k.tipo === 'amigo')
+          .forEach(k => {
+            k.rel = U.clamp(k.rel + 7, 0, 100);
+          });
+      return { ok: true, efectos: ['ánimo +5', 'tu familia y tus amigos te echaban de menos'] };
+    });
   }
-  function fiesta(st) { return accion(st, 'fiesta', 45, Math.round(15 * Math.pow(nivel(st), 1.4)), () => { const c = C(st), p = P(st); p.cariño = U.clamp(p.cariño + 9, 0, 100); c.fama = c.fama + 0.6; c.moral = U.clamp(c.moral + 3, 0, 100); p.aportado += 15; return { ok: true, efectos: ['cariño del pueblo +9', 'reputación +'] }; }); }
-  function clinic(st) { return accion(st, 'clinic', 21, 2 * nivel(st), () => { const c = C(st), p = P(st); p.cariño = U.clamp(p.cariño + 4, 0, 100); c.fama = c.fama + 0.25; c.moral = U.clamp(c.moral + 2, 0, 100); return { ok: true, efectos: ['cariño +4', 'los niños te adoran'] }; }); }
+  function fiesta(st) {
+    return accion(st, 'fiesta', 45, Math.round(15 * Math.pow(nivel(st), 1.4)), () => {
+      const c = C(st),
+        p = P(st);
+      p.cariño = U.clamp(p.cariño + 9, 0, 100);
+      c.fama = c.fama + 0.6;
+      c.moral = U.clamp(c.moral + 3, 0, 100);
+      p.aportado += 15;
+      return { ok: true, efectos: ['cariño del pueblo +9', 'reputación +'] };
+    });
+  }
+  function clinic(st) {
+    return accion(st, 'clinic', 21, 2 * nivel(st), () => {
+      const c = C(st),
+        p = P(st);
+      p.cariño = U.clamp(p.cariño + 4, 0, 100);
+      c.fama = c.fama + 0.25;
+      c.moral = U.clamp(c.moral + 2, 0, 100);
+      return { ok: true, efectos: ['cariño +4', 'los niños te adoran'] };
+    });
+  }
   function usar(st, tipo) {
-    const e = edificios(st).find(x => x.tipo === tipo); if (!e || !e.nivel) return { ok: false, motivo: 'Aún no está construido.' };
-    const u = EDI[tipo].uso[1], c = C(st), p = P(st);
-    return accion(st, 'uso-' + tipo, 10, 0, () => { if (u.moral) c.moral = U.clamp(c.moral + u.moral, 0, 100); if (u.cariño) p.cariño = U.clamp(p.cariño + u.cariño, 0, 100); if (u.fama) c.fama = c.fama + u.fama; if (u.xp) st.jugadores.yo.xp = (st.jugadores.yo.xp || 0) + u.xp; if (u.amigos && c.social) c.social.contactos.filter(k => k.tipo === 'amigo').forEach(k => { k.rel = U.clamp(k.rel + u.amigos, 0, 100); }); return { ok: true, texto: EDI[tipo].uso[0], efectos: Object.keys(u).map(k => ({ moral: 'ánimo', cariño: 'cariño', fama: 'reputación', xp: 'progresión' }[k])) }; });
+    const e = edificios(st).find(x => x.tipo === tipo);
+    if (!e || !e.nivel) return { ok: false, motivo: 'Aún no está construido.' };
+    const u = EDI[tipo].uso[1],
+      c = C(st),
+      p = P(st);
+    return accion(st, 'uso-' + tipo, 10, 0, () => {
+      if (u.moral) c.moral = U.clamp(c.moral + u.moral, 0, 100);
+      if (u.cariño) p.cariño = U.clamp(p.cariño + u.cariño, 0, 100);
+      if (u.fama) c.fama = c.fama + u.fama;
+      if (u.xp) st.jugadores.yo.xp = (st.jugadores.yo.xp || 0) + u.xp;
+      if (u.amigos && c.social)
+        c.social.contactos
+          .filter(k => k.tipo === 'amigo')
+          .forEach(k => {
+            k.rel = U.clamp(k.rel + u.amigos, 0, 100);
+          });
+      return { ok: true, texto: EDI[tipo].uso[0], efectos: Object.keys(u).map(k => ({ moral: 'ánimo', cariño: 'cariño', fama: 'reputación', xp: 'progresión' })[k]) };
+    });
   }
   GM.bus.on('dia:avanzado', function () {
-    const st = GM.state; if (!st || !act(st)) return;
+    const st = GM.state;
+    if (!st || !act(st)) return;
     terminarObras(st);
     if (st.fecha.slice(8) !== '15') return;
-    const c = C(st), p = P(st); if (c.fase === 'retirado' && false) return;
-    Object.keys(p.gestores || {}).forEach(k => { const g = p.gestores[k]; if (g.amigoId && c.social) { const ct = c.social.contactos.find(q => q.id === g.amigoId); if (ct) ct.rel = U.clamp(ct.rel + 0.8, 0, 100); } });
-    p.edificios.forEach(b => { if (!EDI[b.tipo]) return; const e = EDI[b.tipo].ef; if (e.dinero) c.dinero += e.dinero * b.nivel; if (e.fama) c.fama = c.fama + e.fama * b.nivel; if (e.moral) c.moral = U.clamp(c.moral + e.moral * b.nivel, 0, 100); if (e.cariño) p.cariño = U.clamp(p.cariño + e.cariño * b.nivel * 0.3, 0, 100); });
+    const c = C(st),
+      p = P(st);
+    if (c.fase === 'retirado' && false) return;
+    Object.keys(p.gestores || {}).forEach(k => {
+      const g = p.gestores[k];
+      if (g.amigoId && c.social) {
+        const ct = c.social.contactos.find(q => q.id === g.amigoId);
+        if (ct) ct.rel = U.clamp(ct.rel + 0.8, 0, 100);
+      }
+    });
+    p.edificios.forEach(b => {
+      if (!EDI[b.tipo]) return;
+      const e = EDI[b.tipo].ef;
+      if (e.dinero) c.dinero += e.dinero * b.nivel;
+      if (e.fama) c.fama = c.fama + e.fama * b.nivel;
+      if (e.moral) c.moral = U.clamp(c.moral + e.moral * b.nivel, 0, 100);
+      if (e.cariño) p.cariño = U.clamp(p.cariño + e.cariño * b.nivel * 0.3, 0, 100);
+    });
     p.cariño = U.clamp(p.cariño + (30 - p.cariño) * 0.04, 0, 100);
-    const n = nivel(st); if (n > p.nivel) { p.nivel = n; p.hitos.unshift({ fecha: st.fecha, texto: p.nombre + ' crece y pasa a ser ' + NIVELES[n - 1].toLowerCase() + '.' }); GM.noticia(st, p.nombre + ' crece: ahora es ' + NIVELES[n - 1].toLowerCase() + '.'); }
+    const n = nivel(st);
+    if (n > p.nivel) {
+      p.nivel = n;
+      p.hitos.unshift({ fecha: st.fecha, texto: p.nombre + ' crece y pasa a ser ' + NIVELES[n - 1].toLowerCase() + '.' });
+      GM.noticia(st, p.nombre + ' crece: ahora es ' + NIVELES[n - 1].toLowerCase() + '.');
+    }
   });
 
   // ---------- 3D ----------
   let V = null;
   const col = h => GM.kit.color(h);
   function casa(g, x, z, rot, niv, h0) {
-    const K = GM.kit, pal = [0xe8d8b8, 0xd9c2a0, 0xf0e6d2, 0xc9b79c, 0xe6cfa8], techo = [0xa4432e, 0x8a3a28, 0x6b4a3a], H = U.hash('h' + x + z + h0) >>> 0;
-    const gr = new THREE.Group(); gr.position.set(x, 0, z); gr.rotation.y = rot;
-    if (niv <= 2) { gr.add(K.caja(1.4, 0.8 + (H % 3) * 0.1, 1.2, pal[H % 5], 0, 0, 0)); const r = K.cono(1.1, 0.6, techo[H % 3], 0, 0.8, 0, 4); r.rotation.y = Math.PI / 4; r.scale.set(1, 1, 0.9); gr.add(r); gr.add(K.caja(0.25, 0.4, 0.04, 0x6b4a2b, 0, 0, 0.62)); }
-    else if (niv === 3) { gr.add(K.caja(1.5, 1.4, 1.3, pal[H % 5], 0, 0, 0)); gr.add(K.caja(1.6, 0.1, 1.4, techo[H % 3], 0, 1.4, 0)); gr.add(K.caja(0.3, 0.3, 0.04, 0x9fcde4, -0.4, 0.8, 0.67)); gr.add(K.caja(0.3, 0.3, 0.04, 0x9fcde4, 0.4, 0.8, 0.67)); }
-    else { const alto = 2 + (H % 4) * 0.8; gr.add(K.caja(1.8, alto, 1.6, [0xdad4c6, 0xc9ced6, 0xe9e6dc][H % 3], 0, 0, 0)); for (let f = 0; f < Math.floor(alto / 0.7); f++) { gr.add(K.caja(1.5, 0.28, 0.04, 0x9fcde4, 0, 0.35 + f * 0.7, 0.82)); } gr.add(K.caja(1.9, 0.12, 1.7, 0x555, 0, alto, 0)); }
+    const K = GM.kit,
+      pal = [0xe8d8b8, 0xd9c2a0, 0xf0e6d2, 0xc9b79c, 0xe6cfa8],
+      techo = [0xa4432e, 0x8a3a28, 0x6b4a3a],
+      H = U.hash('h' + x + z + h0) >>> 0;
+    const gr = new THREE.Group();
+    gr.position.set(x, 0, z);
+    gr.rotation.y = rot;
+    if (niv <= 2) {
+      gr.add(K.caja(1.4, 0.8 + (H % 3) * 0.1, 1.2, pal[H % 5], 0, 0, 0));
+      const r = K.cono(1.1, 0.6, techo[H % 3], 0, 0.8, 0, 4);
+      r.rotation.y = Math.PI / 4;
+      r.scale.set(1, 1, 0.9);
+      gr.add(r);
+      gr.add(K.caja(0.25, 0.4, 0.04, 0x6b4a2b, 0, 0, 0.62));
+    } else if (niv === 3) {
+      gr.add(K.caja(1.5, 1.4, 1.3, pal[H % 5], 0, 0, 0));
+      gr.add(K.caja(1.6, 0.1, 1.4, techo[H % 3], 0, 1.4, 0));
+      gr.add(K.caja(0.3, 0.3, 0.04, 0x9fcde4, -0.4, 0.8, 0.67));
+      gr.add(K.caja(0.3, 0.3, 0.04, 0x9fcde4, 0.4, 0.8, 0.67));
+    } else {
+      const alto = 2 + (H % 4) * 0.8;
+      gr.add(K.caja(1.8, alto, 1.6, [0xdad4c6, 0xc9ced6, 0xe9e6dc][H % 3], 0, 0, 0));
+      for (let f = 0; f < Math.floor(alto / 0.7); f++) {
+        gr.add(K.caja(1.5, 0.28, 0.04, 0x9fcde4, 0, 0.35 + f * 0.7, 0.82));
+      }
+      gr.add(K.caja(1.9, 0.12, 1.7, 0x555, 0, alto, 0));
+    }
     return gr;
   }
   function edificio(tipo, nv, S) {
-    const g = new THREE.Group(), K = GM.kit, B = (w, h, d, c, x, y, z) => g.add(K.caja(w, h, d, c, x, y, z));
+    const g = new THREE.Group(),
+      K = GM.kit,
+      B = (w, h, d, c, x, y, z) => g.add(K.caja(w, h, d, c, x, y, z));
     switch (tipo) {
-      case 'canasta': B(2.4, 0.04, 2.4, nv > 1 ? 0xc98d4f : 0x9a9a9a, 0, 0, 0); g.add(K.cilindro(0.04, 1.6, 0x555, 1.0, 0, 0, 6)); B(0.6, 0.4, 0.04, 0xffffff, 1.0, 1.4, 0); if (nv > 1) for (let i = 0; i < 5; i++) B(0.04, 0.8, 0.04, 0x555, -1.2, 0, -1.0 + i * 0.5); if (nv > 2) { B(2.6, 0.1, 2.6, 0x6c7a86, 0, 1.9, 0); [[-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2], [1.2, 1.2]].forEach(q => B(0.08, 1.9, 0.08, 0x555, q[0], 0, q[1])); } break;
-      case 'bar': B(1.8, 0.9, 1.4, 0xd9c2a0, 0, 0, 0); B(1.9, 0.12, 1.5, nv > 1 ? S.c1 : 0x8a3a28, 0, 0.9, 0); B(1.0, 0.3, 0.04, S.c1, 0, 0.55, 0.72); B(0.6, 0.28, 0.04, 0x1a3a5c, -0.5, 0.3, 0.72); if (nv > 1) { B(0.04, 0.5, 0.04, 0xdfe3e8, 0.8, 0.9, 0.6); B(0.35, 0.2, 0.02, S.c2, 0.97, 1.2, 0.6); } break;
-      case 'escuela': B(2.6, 1.0, 1.5, 0xf0c64a, 0, 0, 0); B(2.7, 0.1, 1.6, 0xb5543c, 0, 1.0, 0); B(1.8, 0.04, 1.2, 0xc98d4f, 0, 0, 1.6); if (nv > 1) B(1.8, 0.04, 1.2, 0xc98d4f, 2.0, 0, 1.6); if (nv > 2) { B(1.2, 1.4, 1.0, 0xf5f0e2, -1.8, 0, 0); B(1.3, 0.1, 1.1, S.c1, -1.8, 1.4, 0); } break;
-      case 'mural': B(2.6, 1.3, 0.2, 0xe9e0cc, 0, 0, 0); B(2.2, 0.9, 0.04, S.c1, 0, 0.2, 0.12); B(0.8, 0.5, 0.05, S.c2, -0.5, 0.4, 0.14); B(0.5, 0.5, 0.05, 0xe8b923, 0.6, 0.4, 0.14); if (nv > 2) { B(0.9, 0.5, 0.9, 0xcfc7b4, 2.0, 0, 0); B(0.35, 0.9, 0.3, 0x8a6a3a, 2.0, 0.5, 0); g.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), K.mat(0x8a6a3a))).position.set(2.0, 1.55, 0); } break;
-      case 'ambulatorio': B(2.4, 1.1 + nv * 0.4, 1.6, 0xf4f6f8, 0, 0, 0); B(0.6, 0.15, 0.04, 0xd62d2d, 0, 1.1 + nv * 0.4 - 0.3, 0.82); B(0.15, 0.6, 0.04, 0xd62d2d, 0, 0.8 + nv * 0.4 - 0.2, 0.82); if (nv > 1) { B(1.2, 1.9, 1.2, 0xe9edf1, 1.9, 0, 0); g.add(K.cilindro(0.5, 0.05, 0x3a4450, 1.9, 1.9, 0, 12)); } break;
-      case 'polideportivo': B(3.2, 1.5, 2.2, 0xdfe3e8, 0, 0, 0); const rf = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 3.3, 12, 1, false, 0, Math.PI), K.mat(S.c1)); rf.rotation.z = Math.PI / 2; rf.position.set(0, 1.5, 0); g.add(rf); if (nv > 1) { B(1.8, 0.1, 1.2, 0x59b4e6, 2.8, 0, 0); B(1.9, 0.06, 1.3, 0xf0f0ee, 2.8, 0, 0); } if (nv > 2) { B(1.6, 1.8, 1.4, 0xf0f0ee, -2.6, 0, 0); B(1.7, 0.1, 1.5, S.c2, -2.6, 1.8, 0); } break;
-      case 'tienda': B(1.8, 0.9, 1.2, 0xf2e6d0, 0, 0, 0); for (let i = 0; i < 6; i++) B(0.31, 0.08, 0.5, i % 2 ? S.c2 : S.c1, -0.78 + i * 0.31, 0.78, 0.8); B(1.2, 0.35, 0.04, 0xb3dcf2, 0, 0.2, 0.62); if (nv > 1) { B(1.8, 0.7, 1.2, 0xf2e6d0, 0, 0.9, 0); B(1.2, 0.3, 0.04, S.c1, 0, 1.2, 0.62); } break;
-      case 'hotel': B(2.4, 2.0 + nv * 0.8, 1.6, 0xe9e0cc, 0, 0, 0); for (let f = 0; f < 3 + nv * 2; f++) B(2.0, 0.22, 0.04, 0x9fcde4, 0, 0.4 + f * 0.5, 0.82); B(2.5, 0.12, 1.7, 0x8a3a28, 0, 2.0 + nv * 0.8, 0); B(1.0, 0.5, 0.5, S.c1, 0, 0, 1.0); break;
-      case 'pabellon': B(3.4, 1.3, 2.6, 0xb9c4c9, 0, 0, 0); const r2 = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 3.5, 14, 1, false, 0, Math.PI), K.mat(S.c1)); r2.rotation.z = Math.PI / 2; r2.position.set(0, 1.3, 0); g.add(r2); for (let i = 0; i < 6; i++) B(0.45, 1.3, 0.05, i % 2 ? S.c2 : S.c1, -1.4 + i * 0.56, 0, 1.32); if (nv > 1) { B(4.4, 1.6, 3.2, 0xb9c4c9, 0, 0, 0); r2.scale.set(1, 1.3, 1.2); } break;
+      case 'canasta':
+        B(2.4, 0.04, 2.4, nv > 1 ? 0xc98d4f : 0x9a9a9a, 0, 0, 0);
+        g.add(K.cilindro(0.04, 1.6, 0x555, 1.0, 0, 0, 6));
+        B(0.6, 0.4, 0.04, 0xffffff, 1.0, 1.4, 0);
+        if (nv > 1) for (let i = 0; i < 5; i++) B(0.04, 0.8, 0.04, 0x555, -1.2, 0, -1.0 + i * 0.5);
+        if (nv > 2) {
+          B(2.6, 0.1, 2.6, 0x6c7a86, 0, 1.9, 0);
+          [
+            [-1.2, -1.2],
+            [1.2, -1.2],
+            [-1.2, 1.2],
+            [1.2, 1.2]
+          ].forEach(q => B(0.08, 1.9, 0.08, 0x555, q[0], 0, q[1]));
+        }
+        break;
+      case 'bar':
+        B(1.8, 0.9, 1.4, 0xd9c2a0, 0, 0, 0);
+        B(1.9, 0.12, 1.5, nv > 1 ? S.c1 : 0x8a3a28, 0, 0.9, 0);
+        B(1.0, 0.3, 0.04, S.c1, 0, 0.55, 0.72);
+        B(0.6, 0.28, 0.04, 0x1a3a5c, -0.5, 0.3, 0.72);
+        if (nv > 1) {
+          B(0.04, 0.5, 0.04, 0xdfe3e8, 0.8, 0.9, 0.6);
+          B(0.35, 0.2, 0.02, S.c2, 0.97, 1.2, 0.6);
+        }
+        break;
+      case 'escuela':
+        B(2.6, 1.0, 1.5, 0xf0c64a, 0, 0, 0);
+        B(2.7, 0.1, 1.6, 0xb5543c, 0, 1.0, 0);
+        B(1.8, 0.04, 1.2, 0xc98d4f, 0, 0, 1.6);
+        if (nv > 1) B(1.8, 0.04, 1.2, 0xc98d4f, 2.0, 0, 1.6);
+        if (nv > 2) {
+          B(1.2, 1.4, 1.0, 0xf5f0e2, -1.8, 0, 0);
+          B(1.3, 0.1, 1.1, S.c1, -1.8, 1.4, 0);
+        }
+        break;
+      case 'mural':
+        B(2.6, 1.3, 0.2, 0xe9e0cc, 0, 0, 0);
+        B(2.2, 0.9, 0.04, S.c1, 0, 0.2, 0.12);
+        B(0.8, 0.5, 0.05, S.c2, -0.5, 0.4, 0.14);
+        B(0.5, 0.5, 0.05, 0xe8b923, 0.6, 0.4, 0.14);
+        if (nv > 2) {
+          B(0.9, 0.5, 0.9, 0xcfc7b4, 2.0, 0, 0);
+          B(0.35, 0.9, 0.3, 0x8a6a3a, 2.0, 0.5, 0);
+          g.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), K.mat(0x8a6a3a))).position.set(2.0, 1.55, 0);
+        }
+        break;
+      case 'ambulatorio':
+        B(2.4, 1.1 + nv * 0.4, 1.6, 0xf4f6f8, 0, 0, 0);
+        B(0.6, 0.15, 0.04, 0xd62d2d, 0, 1.1 + nv * 0.4 - 0.3, 0.82);
+        B(0.15, 0.6, 0.04, 0xd62d2d, 0, 0.8 + nv * 0.4 - 0.2, 0.82);
+        if (nv > 1) {
+          B(1.2, 1.9, 1.2, 0xe9edf1, 1.9, 0, 0);
+          g.add(K.cilindro(0.5, 0.05, 0x3a4450, 1.9, 1.9, 0, 12));
+        }
+        break;
+      case 'polideportivo':
+        B(3.2, 1.5, 2.2, 0xdfe3e8, 0, 0, 0);
+        const rf = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 3.3, 12, 1, false, 0, Math.PI), K.mat(S.c1));
+        rf.rotation.z = Math.PI / 2;
+        rf.position.set(0, 1.5, 0);
+        g.add(rf);
+        if (nv > 1) {
+          B(1.8, 0.1, 1.2, 0x59b4e6, 2.8, 0, 0);
+          B(1.9, 0.06, 1.3, 0xf0f0ee, 2.8, 0, 0);
+        }
+        if (nv > 2) {
+          B(1.6, 1.8, 1.4, 0xf0f0ee, -2.6, 0, 0);
+          B(1.7, 0.1, 1.5, S.c2, -2.6, 1.8, 0);
+        }
+        break;
+      case 'tienda':
+        B(1.8, 0.9, 1.2, 0xf2e6d0, 0, 0, 0);
+        for (let i = 0; i < 6; i++) B(0.31, 0.08, 0.5, i % 2 ? S.c2 : S.c1, -0.78 + i * 0.31, 0.78, 0.8);
+        B(1.2, 0.35, 0.04, 0xb3dcf2, 0, 0.2, 0.62);
+        if (nv > 1) {
+          B(1.8, 0.7, 1.2, 0xf2e6d0, 0, 0.9, 0);
+          B(1.2, 0.3, 0.04, S.c1, 0, 1.2, 0.62);
+        }
+        break;
+      case 'hotel':
+        B(2.4, 2.0 + nv * 0.8, 1.6, 0xe9e0cc, 0, 0, 0);
+        for (let f = 0; f < 3 + nv * 2; f++) B(2.0, 0.22, 0.04, 0x9fcde4, 0, 0.4 + f * 0.5, 0.82);
+        B(2.5, 0.12, 1.7, 0x8a3a28, 0, 2.0 + nv * 0.8, 0);
+        B(1.0, 0.5, 0.5, S.c1, 0, 0, 1.0);
+        break;
+      case 'pabellon':
+        B(3.4, 1.3, 2.6, 0xb9c4c9, 0, 0, 0);
+        const r2 = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 3.5, 14, 1, false, 0, Math.PI), K.mat(S.c1));
+        r2.rotation.z = Math.PI / 2;
+        r2.position.set(0, 1.3, 0);
+        g.add(r2);
+        for (let i = 0; i < 6; i++) B(0.45, 1.3, 0.05, i % 2 ? S.c2 : S.c1, -1.4 + i * 0.56, 0, 1.32);
+        if (nv > 1) {
+          B(4.4, 1.6, 3.2, 0xb9c4c9, 0, 0, 0);
+          r2.scale.set(1, 1.3, 1.2);
+        }
+        break;
     }
     return g;
   }
   function escena(st) {
-    const K = GM.kit, v = V.vista, W = V.mundo, e = estado(st), p = P(st), pj = st.personaje, eq = st.equipos[st.clubId], CP = GM.campus; v.limpiar(W);
-    const S = { c1: col(eq.colores[0] === '#000000' ? '#333333' : eq.colores[0]), c2: col(eq.colores[1] || '#ffffff'), h1: eq.colores[0] === '#000000' ? '#333333' : eq.colores[0], h2: eq.colores[1] || '#ffffff' }, n = e.nivel;
-    if (GM.puebloMundo && GM.sede && GM.sede.motor) { // un solo mundo: el pueblo que se pasea (pueblo_mundo.js), visto desde arriba
+    const K = GM.kit,
+      v = V.vista,
+      W = V.mundo,
+      e = estado(st),
+      p = P(st),
+      pj = st.personaje,
+      eq = st.equipos[st.clubId],
+      CP = GM.campus;
+    v.limpiar(W);
+    const S = {
+        c1: col(eq.colores[0] === '#000000' ? '#333333' : eq.colores[0]),
+        c2: col(eq.colores[1] || '#ffffff'),
+        h1: eq.colores[0] === '#000000' ? '#333333' : eq.colores[0],
+        h2: eq.colores[1] || '#ffffff'
+      },
+      n = e.nivel;
+    if (GM.puebloMundo && GM.sede && GM.sede.motor) {
+      // un solo mundo: el pueblo que se pasea (pueblo_mundo.js), visto desde arriba
       const Sx = { mundo: W, scene: v.scene, camera: v.camera, puebloAnim: [] };
       try {
         GM.puebloMundo.construir(Sx, GM.sede.motor(), st);
-        W.traverse(o => { if (o.userData && (o.userData.sala || o.userData.etiqueta)) o.visible = false; });
+        W.traverse(o => {
+          if (o.userData && (o.userData.sala || o.userData.etiqueta)) o.visible = false;
+        });
         if (CP.config.calidad === 'alta') K.sombrear(W);
-        v.anim = Sx.puebloAnim.length && CP.config.calidad === 'alta' ? (t => Sx.puebloAnim.forEach(f => f(t))) : null;
-        V.lotes = Sx.lotes; V.info = { mundo: true }; v.target.set(0, -2, 8); v.place(); return;
-      } catch (e) { console.warn('pueblo paseable en el menú', e); v.limpiar(W); }
+        v.anim = Sx.puebloAnim.length && CP.config.calidad === 'alta' ? t => Sx.puebloAnim.forEach(f => f(t)) : null;
+        V.lotes = Sx.lotes;
+        V.info = { mundo: true };
+        v.target.set(0, -2, 8);
+        v.place();
+        return;
+      } catch (e) {
+        console.warn('pueblo paseable en el menú', e);
+        v.limpiar(W);
+      }
     }
-    if (GM.pueblo3d) { // pueblo de colina amurallado con estilo regional (pueblo3d.js); la escena de abajo queda como alternativa
-      V.info = GM.pueblo3d.construir(v, W, st, { nivel: n, estilo: GM.pueblo3d.estiloDe(p.nombre, p.nac), S, nombre: p.nombre, cariño: p.cariño, edificios: edificios(st), edificio, jugador: { apellido: (pj && pj.apellido) || st.jugadores.yo.nombre.split(' ').pop(), dorsal: 2 + (U.hash(pj ? pj.nombre + pj.apellido : 'yo') % 30) } });
-      K.fusionar(W); if (CP.config.calidad === 'alta') K.sombrear(W);
-      const an = []; W.traverse(o => { if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim); }); v.anim = an.length ? (t => an.forEach(f => f(t))) : null;
-      v.place(); return;
+    if (GM.pueblo3d) {
+      // pueblo de colina amurallado con estilo regional (pueblo3d.js); la escena de abajo queda como alternativa
+      V.info = GM.pueblo3d.construir(v, W, st, {
+        nivel: n,
+        estilo: GM.pueblo3d.estiloDe(p.nombre, p.nac),
+        S,
+        nombre: p.nombre,
+        cariño: p.cariño,
+        edificios: edificios(st),
+        edificio,
+        jugador: { apellido: (pj && pj.apellido) || st.jugadores.yo.nombre.split(' ').pop(), dorsal: 2 + (U.hash(pj ? pj.nombre + pj.apellido : 'yo') % 30) }
+      });
+      K.fusionar(W);
+      if (CP.config.calidad === 'alta') K.sombrear(W);
+      const an = [];
+      W.traverse(o => {
+        if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim);
+      });
+      v.anim = an.length ? t => an.forEach(f => f(t)) : null;
+      v.place();
+      return;
     }
     W.add(K.caja(90, 0.3, 90, 0x7fb069, 0, -0.34, 0));
     // colinas y río
-    for (let i = 0; i < 6; i++) { const m = K.cono(9 + i * 1.5, 3 + (i % 3), [0x6fae5a, 0x5e9c4c, 0x7fb069][i % 3], -30 + i * 12, -0.3, -28 - (i % 2) * 6, 7); W.add(m); }
+    for (let i = 0; i < 6; i++) {
+      const m = K.cono(9 + i * 1.5, 3 + (i % 3), [0x6fae5a, 0x5e9c4c, 0x7fb069][i % 3], -30 + i * 12, -0.3, -28 - (i % 2) * 6, 7);
+      W.add(m);
+    }
     for (let i = 0; i < 22; i++) W.add(K.caja(2.4, 0.05, 2.6, 0x59b4e6, -26 + i * 2.4, -0.01, 15 + Math.sin(i * 0.5) * 3, 0.9));
     // plaza
-    W.add(K.cilindro(6, 0.08, 0xdcd3bd, 0, 0, 0, 24)); W.add(K.cilindro(0.9, 0.35, 0xcfc7b4, 0, 0.08, 0, 14)); W.add(K.cilindro(0.7, 0.05, 0x59b4e6, 0, 0.42, 0, 14)); W.add(K.cilindro(0.08, 0.9, 0xdfe3e8, 0, 0.1, 0, 6));
-    for (let i = 0; i < 4; i++) { const a = i * 1.57 + 0.4; W.add(K.caja(1.0, 0.18, 0.3, 0x8a5a33, Math.cos(a) * 3.4, 0.1, Math.sin(a) * 3.4)); }
+    W.add(K.cilindro(6, 0.08, 0xdcd3bd, 0, 0, 0, 24));
+    W.add(K.cilindro(0.9, 0.35, 0xcfc7b4, 0, 0.08, 0, 14));
+    W.add(K.cilindro(0.7, 0.05, 0x59b4e6, 0, 0.42, 0, 14));
+    W.add(K.cilindro(0.08, 0.9, 0xdfe3e8, 0, 0.1, 0, 6));
+    for (let i = 0; i < 4; i++) {
+      const a = i * 1.57 + 0.4;
+      W.add(K.caja(1.0, 0.18, 0.3, 0x8a5a33, Math.cos(a) * 3.4, 0.1, Math.sin(a) * 3.4));
+    }
     // calles curvas
-    const calles = [[-34, 8], [-34, -6], [-5, -34]]; let nCasas = 0;
+    const calles = [
+      [-34, 8],
+      [-34, -6],
+      [-5, -34]
+    ];
+    let nCasas = 0;
     const total = 6 + n * 9;
-    [0, 1, 2].forEach(s => { const fase = s * 1.9; for (let t = 0; t <= 60; t++) { const x = -34 + t * 1.15, z = (s === 0 ? 9 : s === 1 ? -9 : 0) + Math.sin(t * 0.18 + fase) * (4 + s); if (s === 2) { const zz = -34 + t * 1.15, xx = Math.sin(t * 0.2 + 1) * 6 - 4; W.add(K.caja(1.9, 0.04, 1.3, 0x5b6169, xx, -0.02, zz)); continue; } W.add(K.caja(1.4, 0.04, 1.9, 0x5b6169, x, -0.02, z)); } });
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(8.5, 0.55, 4, 40), K.mat(0x5b6169)); ring.rotation.x = Math.PI / 2; ring.position.y = 0; ring.scale.z = 0.02; W.add(ring);
+    [0, 1, 2].forEach(s => {
+      const fase = s * 1.9;
+      for (let t = 0; t <= 60; t++) {
+        const x = -34 + t * 1.15,
+          z = (s === 0 ? 9 : s === 1 ? -9 : 0) + Math.sin(t * 0.18 + fase) * (4 + s);
+        if (s === 2) {
+          const zz = -34 + t * 1.15,
+            xx = Math.sin(t * 0.2 + 1) * 6 - 4;
+          W.add(K.caja(1.9, 0.04, 1.3, 0x5b6169, xx, -0.02, zz));
+          continue;
+        }
+        W.add(K.caja(1.4, 0.04, 1.9, 0x5b6169, x, -0.02, z));
+      }
+    });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(8.5, 0.55, 4, 40), K.mat(0x5b6169));
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 0;
+    ring.scale.z = 0.02;
+    W.add(ring);
     for (let i = 0; nCasas < total && i < 400; i++) {
-      const s = i % 3, t = Math.floor(i / 3) * 1.15 * 2.6 + 3, lado = (Math.floor(i / 3)) % 2 ? 1 : -1; let x, z, rot;
-      if (s < 2) { x = -32 + (t % 62); const base = s === 0 ? 9 : -9, fase = s * 1.9; z = base + Math.sin((x + 34) / 1.15 * 0.18 + fase) * (4 + s) + lado * 3.2; rot = lado > 0 ? Math.PI : 0; } else { const zz = -32 + (t % 62), xx = Math.sin((zz + 34) / 1.15 * 0.2 + 1) * 6 - 4; x = xx + lado * 3.2; z = zz; rot = lado > 0 ? -Math.PI / 2 : Math.PI / 2; }
-      if (Math.hypot(x, z) < 10.5 || Math.abs(z - (15 + Math.sin((x + 26) / 2.4 * 0.5) * 3)) < 3) continue;
-      const cg = casa(W, x, z, rot, n, i); W.add(cg); nCasas++;
-      if (U.hash(x + ',' + z) % 100 < p.cariño * 0.7 && n >= 2) { const f = K.caja(0.5, 0.25, 0.02, i % 2 ? S.c1 : S.c2, x, 1.2 + (n >= 4 ? 1.6 : 0), z); W.add(f); }
+      const s = i % 3,
+        t = Math.floor(i / 3) * 1.15 * 2.6 + 3,
+        lado = Math.floor(i / 3) % 2 ? 1 : -1;
+      let x, z, rot;
+      if (s < 2) {
+        x = -32 + (t % 62);
+        const base = s === 0 ? 9 : -9,
+          fase = s * 1.9;
+        z = base + Math.sin(((x + 34) / 1.15) * 0.18 + fase) * (4 + s) + lado * 3.2;
+        rot = lado > 0 ? Math.PI : 0;
+      } else {
+        const zz = -32 + (t % 62),
+          xx = Math.sin(((zz + 34) / 1.15) * 0.2 + 1) * 6 - 4;
+        x = xx + lado * 3.2;
+        z = zz;
+        rot = lado > 0 ? -Math.PI / 2 : Math.PI / 2;
+      }
+      if (Math.hypot(x, z) < 10.5 || Math.abs(z - (15 + Math.sin(((x + 26) / 2.4) * 0.5) * 3)) < 3) continue;
+      const cg = casa(W, x, z, rot, n, i);
+      W.add(cg);
+      nCasas++;
+      if (U.hash(x + ',' + z) % 100 < p.cariño * 0.7 && n >= 2) {
+        const f = K.caja(0.5, 0.25, 0.02, i % 2 ? S.c1 : S.c2, x, 1.2 + (n >= 4 ? 1.6 : 0), z);
+        W.add(f);
+      }
     }
     // infraestructuras en anillo
-    const ed = edificios(st).filter(x => x.nivel); V.edificios = [];
-    ed.forEach((b, i) => { const a = (i / 10) * 6.283 + 0.5, r = 9.6, g = edificio(b.tipo, b.nivel, S); g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); g.rotation.y = -a + Math.PI / 2 + Math.PI; g.userData = { tipo: b.tipo }; W.add(g); V.edificios.push(g); });
+    const ed = edificios(st).filter(x => x.nivel);
+    V.edificios = [];
+    ed.forEach((b, i) => {
+      const a = (i / 10) * 6.283 + 0.5,
+        r = 9.6,
+        g = edificio(b.tipo, b.nivel, S);
+      g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+      g.rotation.y = -a + Math.PI / 2 + Math.PI;
+      g.userData = { tipo: b.tipo };
+      W.add(g);
+      V.edificios.push(g);
+    });
     // solares de lo que aún no existe
-    edificios(st).filter(x => !x.nivel).forEach((b, i) => { const k = ed.length + i, a = (k / 10) * 6.283 + 0.5, r = 9.6; if (k >= 10) return; const g = new THREE.Group(); g.add(K.caja(2.2, 0.04, 2.0, 0xb9cdae, 0, 0, 0)); g.add(K.cilindro(0.03, 0.9, 0xdfe3e8, 0, 0, 0, 5)); g.add(K.caja(0.7, 0.35, 0.04, b.motivo && /Requiere/.test(b.motivo) ? 0x7a828c : S.c1, 0, 0.6, 0)); g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); g.rotation.y = -a + Math.PI / 2 + Math.PI; g.userData = { tipo: b.tipo }; W.add(g); V.edificios.push(g); });
+    edificios(st)
+      .filter(x => !x.nivel)
+      .forEach((b, i) => {
+        const k = ed.length + i,
+          a = (k / 10) * 6.283 + 0.5,
+          r = 9.6;
+        if (k >= 10) return;
+        const g = new THREE.Group();
+        g.add(K.caja(2.2, 0.04, 2.0, 0xb9cdae, 0, 0, 0));
+        g.add(K.cilindro(0.03, 0.9, 0xdfe3e8, 0, 0, 0, 5));
+        g.add(K.caja(0.7, 0.35, 0.04, b.motivo && /Requiere/.test(b.motivo) ? 0x7a828c : S.c1, 0, 0.6, 0));
+        g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+        g.rotation.y = -a + Math.PI / 2 + Math.PI;
+        g.userData = { tipo: b.tipo };
+        W.add(g);
+        V.edificios.push(g);
+      });
     // gente, banderas y rótulo
     const gente = 6 + n * 6;
-    for (let i = 0; i < gente; i++) { const q = new THREE.Group(), h = U.hash('p' + i) >>> 0, hincha = h % 100 < p.cariño; q.add(K.caja(0.2, 0.4, 0.14, hincha ? (h % 2 ? S.c1 : S.c2) : [0x7a8791, 0x3c5a7a, 0x8a6a4a][h % 3], 0, 0.3, 0)); q.add(K.cilindro(0.08, 0.14, 0xe0b48f, 0, 0.7, 0, 6)); q.userData.anim = t => { const a = t * 0.12 * (i % 2 ? 1 : -1) + i; q.position.set(Math.cos(a) * (5 + (i % 3) * 0.6), 0.1, Math.sin(a) * (5 + (i % 3) * 0.6)); }; W.add(q); }
-    for (let i = 0; i < 3 + Math.round(p.cariño / 20); i++) { const a = i * 1.1, f = new THREE.Group(); f.add(K.cilindro(0.03, 1.8, 0xdfe3e8, 0, 0, 0, 5)); const t = K.caja(0.5, 0.3, 0.02, i % 2 ? S.c1 : S.c2, 0.28, 1.5, 0); f.add(t); f.position.set(Math.cos(a) * 5.6, 0, Math.sin(a) * 5.6); f.userData.anim = tt => { t.rotation.y = Math.sin(tt * 3 + i) * 0.3; }; W.add(f); }
+    for (let i = 0; i < gente; i++) {
+      const q = new THREE.Group(),
+        h = U.hash('p' + i) >>> 0,
+        hincha = h % 100 < p.cariño;
+      q.add(K.caja(0.2, 0.4, 0.14, hincha ? (h % 2 ? S.c1 : S.c2) : [0x7a8791, 0x3c5a7a, 0x8a6a4a][h % 3], 0, 0.3, 0));
+      q.add(K.cilindro(0.08, 0.14, 0xe0b48f, 0, 0.7, 0, 6));
+      q.userData.anim = t => {
+        const a = t * 0.12 * (i % 2 ? 1 : -1) + i;
+        q.position.set(Math.cos(a) * (5 + (i % 3) * 0.6), 0.1, Math.sin(a) * (5 + (i % 3) * 0.6));
+      };
+      W.add(q);
+    }
+    for (let i = 0; i < 3 + Math.round(p.cariño / 20); i++) {
+      const a = i * 1.1,
+        f = new THREE.Group();
+      f.add(K.cilindro(0.03, 1.8, 0xdfe3e8, 0, 0, 0, 5));
+      const t = K.caja(0.5, 0.3, 0.02, i % 2 ? S.c1 : S.c2, 0.28, 1.5, 0);
+      f.add(t);
+      f.position.set(Math.cos(a) * 5.6, 0, Math.sin(a) * 5.6);
+      f.userData.anim = tt => {
+        t.rotation.y = Math.sin(tt * 3 + i) * 0.3;
+      };
+      W.add(f);
+    }
     CP.rotulo(W, p.nombre.toUpperCase().slice(0, 18), 5.0, 0.7, S.c1, 0xffffff, 0, 2.6, -11).rotation.y = 0;
     K.fusionar(W);
     if (CP.config.calidad === 'alta') K.sombrear(W);
-    const an = []; W.traverse(o => { if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim); }); v.anim = an.length ? (t => an.forEach(f => f(t))) : null;
-    CP.ambiente(v, 'dia'); v.place();
+    const an = [];
+    W.traverse(o => {
+      if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim);
+    });
+    v.anim = an.length ? t => an.forEach(f => f(t)) : null;
+    CP.ambiente(v, 'dia');
+    v.place();
   }
   function panel(st) {
-    const h = GM.h, Pn = V.panel, I = (n, t) => (GM.iconos ? GM.iconos.el(n, t) : null), e = estado(st), f = fmtK; Pn.innerHTML = '';
+    const h = GM.h,
+      Pn = V.panel,
+      I = (n, t) => (GM.iconos ? GM.iconos.el(n, t) : null),
+      e = estado(st),
+      f = fmtK;
+    Pn.innerHTML = '';
     const msg = h('div', { class: 'aviso', style: { display: 'none' } });
-    const resp = r => { if (!r.ok) { msg.style.display = 'block'; msg.textContent = r.motivo; } else { if (GM.ui && GM.ui.toast) GM.ui.toast(r.texto ? r.texto + (r.efectos && r.efectos.length ? ': ' + r.efectos.join(', ') : '') : r.efectos ? r.efectos.join(', ') : 'Hecho'); V.refrescar(); if (GM.ui && GM.ui.cabecera) GM.ui.cabecera(); } };
-    const w = h('div', { class: 'pb' }); Pn.append(w);
-    w.append(h('div', { class: 'pb-resumen' }, h('span', { class: 'pb-dinero' }, I('moneda', 16), f(GM.mods.hogar.dinero(st))), h('h3', null, e.nombre), h('p', null, e.etiqueta + ', ' + e.poblacion.toLocaleString('es-ES') + ' habitantes'),
-      h('div', { class: 'fila' }, h('span', null, 'Cariño del pueblo'), h('b', null, Math.round(e.cariño) + ' / 100')), h('div', { class: 'barra' }, h('i', { style: { width: e.cariño + '%' } })),
-      h('div', { class: 'fila' }, h('span', null, e.sig ? 'Crecimiento hacia ' + NIVELES[e.nivel].toLowerCase() : 'Nivel máximo'), h('b', null, Math.round(e.frac * 100) + ' %')), h('div', { class: 'barra' }, h('i', { style: { width: e.frac * 100 + '%' } }))));
+    const resp = r => {
+      if (!r.ok) {
+        msg.style.display = 'block';
+        msg.textContent = r.motivo;
+      } else {
+        if (GM.ui && GM.ui.toast) GM.ui.toast(r.texto ? r.texto + (r.efectos && r.efectos.length ? ': ' + r.efectos.join(', ') : '') : r.efectos ? r.efectos.join(', ') : 'Hecho');
+        V.refrescar();
+        if (GM.ui && GM.ui.cabecera) GM.ui.cabecera();
+      }
+    };
+    const w = h('div', { class: 'pb' });
+    Pn.append(w);
+    w.append(
+      h(
+        'div',
+        { class: 'pb-resumen' },
+        h('span', { class: 'pb-dinero' }, I('moneda', 16), f(GM.mods.hogar.dinero(st))),
+        h('h3', null, e.nombre),
+        h('p', null, e.etiqueta + ', ' + e.poblacion.toLocaleString('es-ES') + ' habitantes'),
+        h('div', { class: 'fila' }, h('span', null, 'Cariño del pueblo'), h('b', null, Math.round(e.cariño) + ' / 100')),
+        h('div', { class: 'barra' }, h('i', { style: { width: e.cariño + '%' } })),
+        h('div', { class: 'fila' }, h('span', null, e.sig ? 'Crecimiento hacia ' + NIVELES[e.nivel].toLowerCase() : 'Nivel máximo'), h('b', null, Math.round(e.frac * 100) + ' %')),
+        h('div', { class: 'barra' }, h('i', { style: { width: e.frac * 100 + '%' } }))
+      )
+    );
     const nv = nivel(st);
-    w.append(h('div', { class: 'pb-rapidas' }, [['casa', 'Visitar al pueblo', '0,8 mil €', () => visitar(st)], ['plaza', 'Fiesta en tu honor', f(Math.round(15 * Math.pow(nv, 1.4))), () => fiesta(st)], ['balon', 'Clínic con niños', f(2 * nv), () => clinic(st)]].map(a => h('button', { class: 'pb-rapida', onclick: () => resp(a[3]()) }, I(a[0], 24), a[1], h('small', null, a[2])))));
+    w.append(
+      h(
+        'div',
+        { class: 'pb-rapidas' },
+        [
+          ['casa', 'Visitar al pueblo', '0,8 mil €', () => visitar(st)],
+          ['plaza', 'Fiesta en tu honor', f(Math.round(15 * Math.pow(nv, 1.4))), () => fiesta(st)],
+          ['balon', 'Clínic con niños', f(2 * nv), () => clinic(st)]
+        ].map(a => h('button', { class: 'pb-rapida', onclick: () => resp(a[3]()) }, I(a[0], 24), a[1], h('small', null, a[2])))
+      )
+    );
     if (GM.sede && GM.puebloMundo) w.append(h('button', { class: 'pb-cta', onclick: () => GM.sede.abrir(st, 'pueblo') }, I('mapa', 18), 'Pasear por el pueblo'));
     // Edificio seleccionado: su ficha completa (la misma que ves dentro del pueblo)
     if (V.sel && GM.iconos && GM.puebloMundo && GM.puebloMundo.fichaLote) {
       const fl = GM.puebloMundo.fichaLote(st, V.sel);
-      if (fl) { const caja = h('div', { class: 'pb-sel' }); w.append(caja); GM.iconos.ficha(caja, fl, r => { if (r.ok) { if (GM.ui && GM.ui.toast) GM.ui.toast(r.texto || 'Hecho'); V.refrescar(); if (GM.ui && GM.ui.cabecera) GM.ui.cabecera(); } else resp(r); });
-        caja.append(h('div', { class: 'pb-rapidas', style: { gridTemplateColumns: '1fr 1fr', marginTop: '8px' } }, GM.sede ? h('button', { class: 'pb-rapida', onclick: () => irAndando(st, V.sel) }, I('puerta', 22), 'Ir andando') : null, h('button', { class: 'pb-rapida', onclick: () => { V.sel = null; panel(st); } }, I('flecha', 22), 'Ver todos'))); }
+      if (fl) {
+        const caja = h('div', { class: 'pb-sel' });
+        w.append(caja);
+        GM.iconos.ficha(caja, fl, r => {
+          if (r.ok) {
+            if (GM.ui && GM.ui.toast) GM.ui.toast(r.texto || 'Hecho');
+            V.refrescar();
+            if (GM.ui && GM.ui.cabecera) GM.ui.cabecera();
+          } else resp(r);
+        });
+        caja.append(
+          h(
+            'div',
+            { class: 'pb-rapidas', style: { gridTemplateColumns: '1fr 1fr', marginTop: '8px' } },
+            GM.sede ? h('button', { class: 'pb-rapida', onclick: () => irAndando(st, V.sel) }, I('puerta', 22), 'Ir andando') : null,
+            h(
+              'button',
+              {
+                class: 'pb-rapida',
+                onclick: () => {
+                  V.sel = null;
+                  panel(st);
+                }
+              },
+              I('flecha', 22),
+              'Ver todos'
+            )
+          )
+        );
+      }
     }
     // Todos los edificios por categorías, como tarjetas con su nivel y su estado
-    [['negocio', 'Deporte y negocios'], ['publico', 'Servicios públicos'], ['casa', 'Casas de los tuyos']].forEach(([cat, tit]) => {
-      const l = edificios(st).filter(b => b.cat === cat); if (!l.length) return;
-      w.append(h('div', { class: 'pb-tit' }, tit), h('div', { class: 'pb-rejilla' }, l.map(b => {
-        const pips = h('div', { class: 'pips' }); for (let i = 0; i < b.max; i++) pips.append(h('i', { class: i < b.nivel ? 'on' : '' }));
-        return h('button', { class: 'pb-edi' + (V.sel === b.tipo ? ' sel' : '') + (!b.nivel && !b.obra && b.motivo && /Requiere/.test(b.motivo) ? ' bloq' : ''), onclick: () => { V.sel = b.tipo; panel(st); if (V.vista && V.vista.foco) V.vista.foco(b.tipo); } },
-          h('div', { class: 'cab' }, h('div', { class: 'ic' }, I(b.tipo, 18)), h('b', null, b.nombre)),
-          h('small', null, b.obra ? 'En obras, ' + Math.round(b.obra.progreso * 100) + ' %' : b.nivel ? b.actual : (b.motivo || 'Solar disponible')),
-          h('div', { class: 'pie' }, pips, b.obra ? h('span', { class: 'pb-chip' }, I('obra', 12), b.obra.proximo ? 'Obra' : '') : b.nivel ? h('span', { class: 'pb-chip ok' }, 'Nivel ' + b.nivel) : h('span', { class: 'pb-chip' }, f(b.coste))));
-      })));
+    [
+      ['negocio', 'Deporte y negocios'],
+      ['publico', 'Servicios públicos'],
+      ['casa', 'Casas de los tuyos']
+    ].forEach(([cat, tit]) => {
+      const l = edificios(st).filter(b => b.cat === cat);
+      if (!l.length) return;
+      w.append(
+        h('div', { class: 'pb-tit' }, tit),
+        h(
+          'div',
+          { class: 'pb-rejilla' },
+          l.map(b => {
+            const pips = h('div', { class: 'pips' });
+            for (let i = 0; i < b.max; i++) pips.append(h('i', { class: i < b.nivel ? 'on' : '' }));
+            return h(
+              'button',
+              {
+                class: 'pb-edi' + (V.sel === b.tipo ? ' sel' : '') + (!b.nivel && !b.obra && b.motivo && /Requiere/.test(b.motivo) ? ' bloq' : ''),
+                onclick: () => {
+                  V.sel = b.tipo;
+                  panel(st);
+                  if (V.vista && V.vista.foco) V.vista.foco(b.tipo);
+                }
+              },
+              h('div', { class: 'cab' }, h('div', { class: 'ic' }, I(b.tipo, 18)), h('b', null, b.nombre)),
+              h('small', null, b.obra ? 'En obras, ' + Math.round(b.obra.progreso * 100) + ' %' : b.nivel ? b.actual : b.motivo || 'Solar disponible'),
+              h(
+                'div',
+                { class: 'pie' },
+                pips,
+                b.obra
+                  ? h('span', { class: 'pb-chip' }, I('obra', 12), b.obra.proximo ? 'Obra' : '')
+                  : b.nivel
+                    ? h('span', { class: 'pb-chip ok' }, 'Nivel ' + b.nivel)
+                    : h('span', { class: 'pb-chip' }, f(b.coste))
+              )
+            );
+          })
+        )
+      );
     });
-    const hi = P(st).hitos.slice(0, 5); if (hi.length) { w.append(h('div', { class: 'pb-tit' }, 'Historia del pueblo'), h('div', { class: 'lista' }, hi.map(x => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(x.fecha)), h('span', { class: 'ct' }, x.texto))))); }
+    const hi = P(st).hitos.slice(0, 5);
+    if (hi.length) {
+      w.append(
+        h('div', { class: 'pb-tit' }, 'Historia del pueblo'),
+        h(
+          'div',
+          { class: 'lista' },
+          hi.map(x => h('div', { class: 'item' }, h('span', { class: 'muted f' }, U.fecha(x.fecha)), h('span', { class: 'ct' }, x.texto)))
+        )
+      );
+    }
     w.append(msg);
   }
   function mount(el, st) {
-    unmount(); const h = GM.h, raiz = h('div', { class: 'c3d' }), vistaEl = h('div', { class: 'vista3d' }), panelEl = h('div', { class: 'panel3d' });
-    raiz.append(vistaEl, panelEl); el.appendChild(raiz); V = { raiz, panel: panelEl, vista: null, mundo: null, st };
+    unmount();
+    const h = GM.h,
+      raiz = h('div', { class: 'c3d' }),
+      vistaEl = h('div', { class: 'vista3d' }),
+      panelEl = h('div', { class: 'panel3d' });
+    raiz.append(vistaEl, panelEl);
+    el.appendChild(raiz);
+    V = { raiz, panel: panelEl, vista: null, mundo: null, st };
     if (GM.kit && GM.kit.disponible()) {
       const mundo = !!(GM.puebloMundo && GM.sede && GM.sede.motor);
-      try { V.vista = GM.kit.crear(vistaEl, { radio: mundo ? 120 : GM.pueblo3d ? 56 : 40, theta: 0.55, phi: mundo ? 0.9 : GM.pueblo3d ? 1.05 : 0.95, min: 8, max: mundo ? 240 : 95, fondo: 0xb9d9ee, sombras: GM.campus && GM.campus.config.calidad === 'alta' }); V.mundo = new THREE.Group(); V.vista.scene.add(V.mundo); V.vista.target.set(0, 0, 2); V.vista.place();
-        V.vista.onTap = (cx, cy) => { const hits = V.vista.pick(cx, cy, V.mundo.children); for (const it of hits) { let o = it.object; while (o && !(o.userData && o.userData.tipo)) o = o.parent; if (o) { const b = edificios(st).find(x => x.tipo === o.userData.tipo); if (b) { V.sel = b.tipo; panel(st); if (V.lotes && V.lotes[b.tipo]) { const L = V.lotes[b.tipo], vv = V.vista; vv.target.set(L.x, 0, L.z); vv.radio = Math.min(vv.radio, 45); vv.place(); } } return; } } };
-      } catch (e) { V.vista = null; }
+      try {
+        V.vista = GM.kit.crear(vistaEl, {
+          radio: mundo ? 120 : GM.pueblo3d ? 56 : 40,
+          theta: 0.55,
+          phi: mundo ? 0.9 : GM.pueblo3d ? 1.05 : 0.95,
+          min: 8,
+          max: mundo ? 240 : 95,
+          fondo: 0xb9d9ee,
+          sombras: GM.campus && GM.campus.config.calidad === 'alta'
+        });
+        V.mundo = new THREE.Group();
+        V.vista.scene.add(V.mundo);
+        V.vista.target.set(0, 0, 2);
+        V.vista.place();
+        V.vista.onTap = (cx, cy) => {
+          const hits = V.vista.pick(cx, cy, V.mundo.children);
+          for (const it of hits) {
+            let o = it.object;
+            while (o && !(o.userData && o.userData.tipo)) o = o.parent;
+            if (o) {
+              const b = edificios(st).find(x => x.tipo === o.userData.tipo);
+              if (b) {
+                V.sel = b.tipo;
+                panel(st);
+                if (V.lotes && V.lotes[b.tipo]) {
+                  const L = V.lotes[b.tipo],
+                    vv = V.vista;
+                  vv.target.set(L.x, 0, L.z);
+                  vv.radio = Math.min(vv.radio, 45);
+                  vv.place();
+                }
+              }
+              return;
+            }
+          }
+        };
+      } catch (e) {
+        V.vista = null;
+      }
     }
     if (!V.vista) vistaEl.append(h('div', { class: 'vacio' }, 'La vista 3D no está disponible en este dispositivo o sin conexión. Gestiona tu pueblo desde la lista.'));
     // La escena solo se reconstruye si cambia algo que se ve (nivel, estilo, nombre, edificios o el cariño de 10 en 10):
     // las acciones del panel que no lo cambian ya no rehacen el pueblo entero (tardaba más de 1 s en móvil).
-    const clave = () => { const p = P(st), e = estado(st); return [e.nivel, p.nombre, p.nac, Math.round(p.cariño / 10), edificios(st).map(b => b.tipo + b.nivel).join(',')].join('|'); };
-    V.refrescar = () => { if (V.vista) { const k = clave(); if (k !== V.clave) { V.clave = k; escena(st); } } panel(st); }; V.refrescar(); return true;
+    const clave = () => {
+      const p = P(st),
+        e = estado(st);
+      return [
+        e.nivel,
+        p.nombre,
+        p.nac,
+        Math.round(p.cariño / 10),
+        edificios(st)
+          .map(b => b.tipo + b.nivel)
+          .join(',')
+      ].join('|');
+    };
+    V.refrescar = () => {
+      if (V.vista) {
+        const k = clave();
+        if (k !== V.clave) {
+          V.clave = k;
+          escena(st);
+        }
+      }
+      panel(st);
+    };
+    V.refrescar();
+    return true;
   }
-  function unmount() { if (!V) return; if (V.vista) V.vista.dispose(); if (V.raiz && V.raiz.parentNode) V.raiz.parentNode.removeChild(V.raiz); V = null; }
-  function selfTest() { return Object.keys(EDI).every(k => EDI[k].niv.length === EDI[k].max) && UMBRAL.length === NIVELES.length; }
+  function unmount() {
+    if (!V) return;
+    if (V.vista) V.vista.dispose();
+    if (V.raiz && V.raiz.parentNode) V.raiz.parentNode.removeChild(V.raiz);
+    V = null;
+  }
+  function selfTest() {
+    return Object.keys(EDI).every(k => EDI[k].niv.length === EDI[k].max) && UMBRAL.length === NIVELES.length;
+  }
   const fmtK = k => (k >= 1000 ? (Math.round(k / 100) / 10).toString().replace('.', ',') + ' M€' : Math.round(k * 10) / 10 + ' mil €').replace(/^(\d+),0 M€/, '$1 M€');
   GM.register('pueblo', { fmtK, terminarObras, diasObra, estado, nivel, edificios, invertir, visitar, fiesta, clinic, usar, mount, unmount, nuevaPartida, selfTest, EDI, NIVELES });
 })();

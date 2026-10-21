@@ -17,5 +17,22 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 
-const THREE = Object.assign({}, T, { mergeGeometries, mergeVertices, GLTFLoader, RoundedBoxGeometry, Sky, clonarEsqueleto, EffectComposer, RenderPass, OutputPass, UnrealBloomPass, GTAOPass, RoomEnvironment, RGBELoader, ShaderPass, BokehPass, KTX2Loader });
+const THREE = Object.assign({}, T, {
+  mergeGeometries,
+  mergeVertices,
+  GLTFLoader,
+  RoundedBoxGeometry,
+  Sky,
+  clonarEsqueleto,
+  EffectComposer,
+  RenderPass,
+  OutputPass,
+  UnrealBloomPass,
+  GTAOPass,
+  RoomEnvironment,
+  RGBELoader,
+  ShaderPass,
+  BokehPass,
+  KTX2Loader
+});
 globalThis.THREE = THREE;

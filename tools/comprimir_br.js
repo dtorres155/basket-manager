@@ -1,5 +1,27 @@
 // Precomprime con Brotli (calidad 11) los archivos de dist/ que se comprimen bien (html, js, css, json, wasm, gltf, hdr, svg) y deja un .br junto a cada uno, para alojarlo en un servidor propio
 // (nginx con brotli_static, Cloudflare...). GitHub Pages no sirve .br (usa gzip) y la app de escritorio lee los archivos del disco: ahí no hace falta. Uso: node tools/comprimir_br.js [dist]
-const fs = require('fs'), path = require('path'), zlib = require('zlib'); const raiz = path.resolve(process.argv[2] || path.join(__dirname, '..', 'dist'));
-let antes = 0, despues = 0, n = 0; (function rec(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const f = path.join(d, e.name); if (e.isDirectory()) rec(f); else if (/\.(html|js|css|json|wasm|gltf|hdr|svg|webmanifest)$/.test(e.name) && !/\.br$/.test(e.name)) { const b = fs.readFileSync(f); if (b.length < 1024) continue; const c = zlib.brotliCompressSync(b, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: b.length } }); if (c.length < b.length * 0.95) { fs.writeFileSync(f + '.br', c); antes += b.length; despues += c.length; n++; } } } })(raiz);
+const fs = require('fs'),
+  path = require('path'),
+  zlib = require('zlib');
+const raiz = path.resolve(process.argv[2] || path.join(__dirname, '..', 'dist'));
+let antes = 0,
+  despues = 0,
+  n = 0;
+(function rec(d) {
+  for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const f = path.join(d, e.name);
+    if (e.isDirectory()) rec(f);
+    else if (/\.(html|js|css|json|wasm|gltf|hdr|svg|webmanifest)$/.test(e.name) && !/\.br$/.test(e.name)) {
+      const b = fs.readFileSync(f);
+      if (b.length < 1024) continue;
+      const c = zlib.brotliCompressSync(b, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: b.length } });
+      if (c.length < b.length * 0.95) {
+        fs.writeFileSync(f + '.br', c);
+        antes += b.length;
+        despues += c.length;
+        n++;
+      }
+    }
+  }
+})(raiz);
 console.log(n, 'archivos:', (antes / 1048576).toFixed(1), 'MB ->', (despues / 1048576).toFixed(1), 'MB con Brotli');
