@@ -3,7 +3,84 @@
 (function () {
   GM.sedePersonaje = function (ctx) {
     let _mSombra = null;
+    // Personas realistas de Mixamo (solo ordenador, calidad alta): modelos y clips en modelos/personas/mixamo/ (recursos/pesados, ver tools/mixamo_instalar.js).
+    // Sin esa carpeta (web y móvil) todo sigue con las personas de Quaternius. lista.json: { h: [ids], m: [ids], n: [ids] }.
+    const MX_CLIPS = { idle: 'idle', walk: 'walking', sprint: 'running', sit: 'sitting_idle', talk: 'talking', dribble: 'dribble' };
+    const MX_ANIM = {
+      idle: 'idle',
+      walk: 'walk',
+      sprint: 'sprint',
+      sit: 'sit',
+      'interact-right': 'talk',
+      'interact-left': 'talk',
+      'emote-yes': 'talk',
+      'emote-no': 'idle',
+      crouch: 'idle',
+      dribble: 'dribble'
+    };
+    const MX_HUESOS = {
+      Head: 'Head',
+      Neck: 'Neck',
+      Hips: 'Hips',
+      Spine: 'Spine',
+      UpperArmL: 'LeftArm',
+      UpperArmR: 'RightArm',
+      UpperLegL: 'LeftUpLeg',
+      UpperLegR: 'RightUpLeg',
+      Foot: 'LeftFoot'
+    };
+    let _lista = null;
+    function listaMixamo() {
+      if (!_lista)
+        _lista = fetch('modelos/personas/mixamo/lista.json')
+          .then(r => (r.ok ? r.json() : null))
+          .catch(() => null);
+      return _lista;
+    }
+    async function personajeMixamo(o) {
+      if (!GM.campus || GM.campus.config.calidad !== 'alta' || o.escudo || o.hincha || o.rolV || o.sinMixamo || o.edad === 'mayor' || typeof fetch !== 'function') return null;
+      const L = await listaMixamo();
+      if (!L) return null;
+      const pool = o.proporcion === 'nino' ? L.n : /^m-/.test(o.modelo || '') || o.sexo === 'm' ? L.m : L.h;
+      if (!pool || !pool.length) return null;
+      const id = pool[GM.util.hash(String(o.semilla !== undefined ? o.semilla : [o.modelo, o.altura, o.piel, o.pelo].join('|'))) % pool.length];
+      const { cargar, textura } = ctx,
+        nombres = Object.keys(MX_CLIPS);
+      const [g, ...an] = await Promise.all([cargar('modelos/personas/mixamo/' + id + '.glb'), ...nombres.map(n => cargar('modelos/personas/mixamo/anim/' + MX_CLIPS[n] + '.glb'))]);
+      const obj = THREE.clonarEsqueleto(g.scene);
+      if (!g.altoBase) g.altoBase = new THREE.Box3().setFromObject(g.scene).getSize(new THREE.Vector3()).y;
+      obj.scale.setScalar((o.altura || 178) / 100 / g.altoBase);
+      obj.traverse(n => {
+        if (n.isMesh) {
+          n.castShadow = true;
+          n.frustumCulled = false;
+        }
+      });
+      const mixer = new THREE.AnimationMixer(obj),
+        clips = {};
+      nombres.forEach((n, i) => {
+        if (an[i].animations[0]) clips[n] = mixer.clipAction(an[i].animations[0]);
+      });
+      const acc = {};
+      Object.keys(MX_ANIM).forEach(k => {
+        if (clips[MX_ANIM[k]]) acc[k] = clips[MX_ANIM[k]];
+      });
+      const B = {};
+      obj.traverse(n => {
+        if (n.isBone) B[n.name] = n;
+      });
+      Object.keys(MX_HUESOS).forEach(k => {
+        if (B['mixamorig' + MX_HUESOS[k]]) B[k] = B['mixamorig' + MX_HUESOS[k]];
+      });
+      return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa: null, ropa: o.ropa, edad: o.edad, sexo: o.sexo, rolV: o.rolV, modelo: o.modelo, mixamo: id };
+    }
     async function personaje(o) {
+      try {
+        const m = await personajeMixamo(o);
+        if (m) return m;
+      } catch (e) {
+        if (typeof console !== 'undefined') console.error('personaje Mixamo: ' + e.message + ' ' + String(e.stack).split('\n').slice(1, 4).join(' | '));
+      }
       const { cargar, ANIM, textura, complementos } = ctx;
       const [g, an] = await Promise.all([cargar('modelos/personas/' + o.modelo + '.glb'), cargar('modelos/personas/animaciones.glb')]);
       const obj = THREE.clonarEsqueleto(g.scene);

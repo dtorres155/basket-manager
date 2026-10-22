@@ -1082,10 +1082,10 @@
 
   // ---------- Personajes que caminan ----------
   function anim(p, nombre) {
-    if (p.bici && p.huesos && (nombre === 'walk' || nombre === 'sprint' || nombre === 'idle')) nombre = 'bici';
-    if (p.patinete && (nombre === 'walk' || nombre === 'sprint')) nombre = 'patinete';
+    if (p.bici && p.huesos && !p.mixamo && (nombre === 'walk' || nombre === 'sprint' || nombre === 'idle')) nombre = 'bici';
+    if (p.patinete && !p.mixamo && (nombre === 'walk' || nombre === 'sprint')) nombre = 'patinete';
     if (p.actual === nombre) return;
-    if (nombre === 'sit') {
+    if (nombre === 'sit' && !p.mixamo) {
       // Postura sentada fija: primer fotograma de estar de pie, se doblan las piernas una vez y el mezclador se detiene
       p.mixer.stopAllAction();
       const a = p.acc.idle;

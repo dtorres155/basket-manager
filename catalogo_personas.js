@@ -89,8 +89,10 @@
     }
     if (edad === 'adulto' && r() < 0.1) o.pelo = pick(r, ['#8a8a8a', '#cfcfcf']);
     // ropa: del club si es hincha; si no, paleta de la estación
-    if (c.hincha && c.club && c.club.colores) o.ropa = [c.club.colores[0], c.club.colores[1] || '#222'];
-    else if (c.rol === 'trabajador') o.ropa = ['#2f5d8a', '#2b2b2b'];
+    if (c.hincha && c.club && c.club.colores) {
+      o.ropa = [c.club.colores[0], c.club.colores[1] || '#222'];
+      o.hincha = true;
+    } else if (c.rol === 'trabajador') o.ropa = ['#2f5d8a', '#2b2b2b'];
     else if (c.rol === 'policia') {
       o.ropa = ['#1f3550', '#16202f'];
       o.modelo = sexo === 'h' ? 'h-suit' : 'm-suit';
