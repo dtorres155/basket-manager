@@ -6,6 +6,13 @@
   const { h, modal, toast, cerrarModales } = GM.ui._;
   const NOVEDADES = [
     {
+      v: '0.9.130',
+      fecha: '2026-10',
+      t: [
+        'Personas realistas (Mixamo) en la calle, con andar, hablar, sentarse y botar: solo en ordenador y calidad alta; jugadores, hinchas y mayores siguen con las personas de siempre.'
+      ]
+    },
+    {
       v: '0.9.128',
       fecha: '2026-10',
       t: [
