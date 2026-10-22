@@ -40,6 +40,58 @@
       return {};
     }
   }
+  // Compresión en un Worker (autoguardado): la partida (2,7 MB de JSON) tarda ~0,7 s en comprimirse y así no se nota. Sin Worker (pruebas en Node, navegadores antiguos) se comprime en el momento.
+  let worker = null,
+    secuencia = 0;
+  const pendientes = {};
+  function compresor() {
+    if (worker !== null) return worker;
+    worker = false;
+    try {
+      if (typeof Worker === 'undefined' || typeof Blob === 'undefined' || typeof window === 'undefined' || !window.__LZ_SRC) return worker;
+      const cuerpo = window.__LZ_SRC + ";self.onmessage=function(e){self.postMessage({id:e.data.id,txt:'LZ1:'+LZString.compressToUTF16(e.data.plano)});};";
+      worker = new Worker(URL.createObjectURL(new Blob([cuerpo], { type: 'text/javascript' })));
+      worker.onmessage = e => {
+        const f = pendientes[e.data.id];
+        delete pendientes[e.data.id];
+        if (f) f(e.data.txt);
+      };
+      worker.onerror = () => {
+        worker = false;
+      };
+    } catch (e) {
+      worker = false;
+    }
+    return worker;
+  }
+  // Autoguardado sin bloquear la interfaz: serializa ahora y comprime y escribe cuando el Worker responde (si hay una respuesta más nueva, la vieja se descarta)
+  function guardarAuto(slot) {
+    const st = GM.state,
+      w = compresor();
+    if (!st) return { ok: false, motivo: 'No hay partida en curso.' };
+    if (!w) return guardar(slot);
+    const id = ++secuencia,
+      meta = { club: st.equipos[st.clubId].nombre, fecha: st.fecha, temporada: st.temporada };
+    pendientes[id] = txt => {
+      if (id === secuencia) volcar(slot, txt, meta);
+    };
+    w.postMessage({ id, plano: JSON.stringify(st) });
+    return { ok: true, persistente: persist, asincrono: true };
+  }
+  function volcar(slot, txt, meta) {
+    const a = alm();
+    if (txt.length > MAXB) return { ok: false, motivo: 'La partida pesa demasiado (' + (txt.length / 1e6).toFixed(1) + ' MB). Exporta una copia como texto.' };
+    try {
+      a.setItem(PFX + slot, txt);
+      const m = metas(a);
+      m[slot] = Object.assign({ t: Date.now(), mb: +(txt.length / 1e6).toFixed(2) }, meta);
+      a.setItem(META, JSON.stringify(m));
+    } catch (e) {
+      return { ok: false, motivo: 'No hay espacio en el navegador. Borra una ranura o exporta la partida.' };
+    }
+    if (slot === 0 && GM.bus) GM.bus.emit('guardado:auto', { slot }); // copias.js: copia en IndexedDB y en la carpeta elegida
+    return { ok: true, persistente: persist };
+  }
   function guardar(slot) {
     const st = GM.state;
     if (!st) return { ok: false, motivo: 'No hay partida en curso.' };
@@ -214,11 +266,11 @@
     if ((st.ultimoAuto === undefined || GM.util.diffDays(st.ultimoAuto, st.fecha) >= 7) && Date.now() - ultimoGuardadoMs >= 20000) {
       st.ultimoAuto = st.fecha;
       ultimoGuardadoMs = Date.now();
-      guardar(0);
+      guardarAuto(0);
     }
   });
   GM.bus.on('temporada:fin', function () {
-    if (GM.state) guardar(0);
+    if (GM.state) guardarAuto(0);
   });
   // En el móvil la app puede cerrarse en cualquier momento: se guarda al pasar a segundo plano
   if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
@@ -259,6 +311,7 @@
     return ok1 && ok2;
   }
   GM.register('guardado', {
+    guardarAuto,
     guardar,
     cargar,
     listar,

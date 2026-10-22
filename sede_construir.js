@@ -241,6 +241,7 @@
       });
       decorar(W, club, G, segs, st);
       GM.kit.fusionar(W);
+      GM.kit.congelar(W);
       // Puntos de interacción de las salas: anillo luminoso y rótulo
       S.zonas = P.salas.map(sa => zona(W, sa, sa.interaccion[0], sa.interaccion[1], club));
       S.zonas.push(

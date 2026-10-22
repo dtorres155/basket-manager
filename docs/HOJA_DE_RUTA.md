@@ -452,3 +452,7 @@ Cada punto lleva: **Qué**, **Por qué**, **Cómo**, **Hecho cuando** y **Tamañ
 ## Estado tras la tanda 35
 - 80 audio: música dinámica por escena, mezcla y voces opcionales (`musica.js`); 81 misiones de inicio y ayuda contextual (`misiones.js`); 82 ajustes completos, informe de errores y novedades (`ui_ajustes.js`, `registro.js`); 83 `npm run calidad` con veredicto PUBLICABLE o NO PUBLICABLE (`tools/calidad.js`).
 - Pendiente: la música es sintética y sencilla (con tu visto bueno se podrían añadir pistas reales CC0, ver `docs/RECURSOS.md`); las voces usan la síntesis del navegador; la «nube» es una carpeta de sincronización (OneDrive, Dropbox…), no un servicio propio; las partidas reales para `npm run calidad` hay que dejarlas en `tools/partidas_antiguas/`.
+
+## Estado tras la tanda 37
+- Hecho: autoguardado en segundo plano (15 ms en vez de 700 ms), arranque más rápido (DOMContentLoaded de ~830 a ~420 ms), mundo 3D con la mitad de nodos recorridos por fotograma, dist un 30 % más pequeño, tarjeta «Qué ha pasado», aviso de contratos que vencen y estrellas que no desaparecen.
+- Pendiente: más recortes del estado de la partida (calendario ya jugado, atributos en listas), medir fps reales en tu ordenador con calidad alta y bajar lo que pese, y revisar con más semillas el reparto de talento (`tools/equilibrio.js`).

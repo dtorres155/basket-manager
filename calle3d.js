@@ -791,6 +791,7 @@
     S.scene.background = new THREE.Color(0xa9c6dc);
     S.scene.fog = new THREE.Fog(0xa9c6dc, 55, 140);
     GM.kit.fusionar(W);
+    GM.kit.congelar(W);
     return W;
   }
 

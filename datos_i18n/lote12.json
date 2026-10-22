@@ -1,0 +1,14 @@
+{
+"Qué ha pasado": ["Què ha passat", "What's happened"],
+"Entendido": ["Entès", "Got it"],
+"Contratos que vencen": ["Contractes que venen", "Contracts expiring"],
+"Ver contratos": ["Veure contractes", "View contracts"],
+" mensaje sin leer en el móvil": [" missatge sense llegir al mòbil", " unread message on the phone"],
+" mensajes sin leer en el móvil": [" missatges sense llegir al mòbil", " unread messages on the phone"],
+" jugador acaba": [" jugador acaba", " player is out of contract"],
+" jugadores acaban": [" jugadors acaben", " players are out of contract"],
+" contrato esta temporada. ": [" contracte aquesta temporada. ", " at the end of this season. "],
+". Si no los renuevas antes del verano, se van y la plantilla se queda corta.": [". Si no els renoves abans de l'estiu, marxen i la plantilla es queda curta.", ". If you don't renew them before summer, they leave and the squad is left short."],
+"Victoria": ["Victòria", "Win"],
+"Derrota": ["Derrota", "Defeat"]
+}

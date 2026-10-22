@@ -28,7 +28,8 @@ L([
   'carrera',
   'muestras',
   'musica',
-  'misiones'
+  'misiones',
+  'avisos_inicio'
 ]);
 let fallos = 0;
 const ok = (n, c) => {
@@ -40,6 +41,7 @@ const ok = (n, c) => {
 ok('selfTest musica', GM.musica.selfTest());
 ok('selfTest muestras', GM.muestras.selfTest());
 ok('selfTest misiones', GM.misiones.selfTest());
+ok('selfTest avisos de inicio', GM.avisosInicio.selfTest());
 ok('selfTest registro', GM.registro.selfTest());
 ok('los ajustes de mezcla tienen cinco niveles', Object.keys(GM.musica.mezcla()).length === 5 && GM.musica.nivel('general') > 0);
 GM.musica.setNivel('musica', 0.3);

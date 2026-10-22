@@ -860,6 +860,39 @@
   // Convención: un nodo con userData (anim, lugar, slot, tipo...) es un «ancla»: no se fusiona con nada externo
   // y su contenido se fusiona dentro de él, así siguen funcionando las animaciones y la selección por toque
   // (que sube por los padres buscando userData). Llamar después de construir el mundo y antes del primer render.
+  // Congela las matrices de lo que no se mueve: three recalcula cada fotograma la matriz de todos los nodos (en la ciudad real, ~11.000), y lo que no lleva userData (o solo lleva marcas de
+  // geometría: detalle, real, chunk, lod) es estático por convención (si se animara, fusionar lo habría dejado quieto de todos modos). Los subárboles con userData dinámico (personas, coches, animaciones) y sus huesos no se tocan.
+  kit.congelar = function (root) {
+    const ESTATICAS = { name: 1, detalle: 1, real: 1, chunk: 1, lod: 1 },
+      noop = () => {};
+    let n = 0;
+    const dinamico = o => (o.userData && Object.keys(o.userData).some(k => !ESTATICAS[k])) || o.isBone || o.isSkinnedMesh || o.isLight || o.isCamera;
+    root.updateMatrixWorld(true);
+    // devuelve true si el subárbol de o es todo estático; los subárboles estáticos completos dejan de recorrerse cada fotograma (su matriz mundial ya está calculada)
+    function rec(o) {
+      let todoEstatico = true;
+      o.children.forEach(c => {
+        if (dinamico(c)) {
+          todoEstatico = false;
+          return;
+        }
+        if (c.matrixAutoUpdate) {
+          c.matrixAutoUpdate = false;
+          n++;
+        }
+        if (!rec(c)) todoEstatico = false;
+        else if (c.children.length) c.updateMatrixWorld = noop;
+      });
+      return todoEstatico;
+    }
+    rec(root);
+    // la raíz y sus ancestros también: si no, el «forzar» de la escena haría recalcular igualmente todas las matrices mundiales de lo congelado
+    for (let r = root; r; r = r.parent) {
+      r.updateMatrix();
+      r.matrixAutoUpdate = false;
+    }
+    return n;
+  };
   kit.fusionar = function (root) {
     const T = THREE;
     let antes = 0,

@@ -167,6 +167,7 @@ const mods = [
   'ui_coleccion',
   'ui_tutorial',
   'misiones',
+  'avisos_inicio',
   'ui_ajustes'
 ];
 const DIST = path.join(__dirname, 'dist'),
@@ -235,11 +236,15 @@ const registroSW = `
 
 const css = fs.readFileSync('estilos.css', 'utf8');
 // lz-string (MIT, Pieroxy) va delante de los módulos: comprime la partida guardada (guardado.js)
-const js =
+const jsFuente =
   '/* ===== lz-string ===== */\n' +
   fs.readFileSync(path.join(VENDOR, 'lz-string.min.js'), 'utf8') +
-  '\n' +
+  '\n;window.__LZ_SRC=' +
+  JSON.stringify(fs.readFileSync(path.join(VENDOR, 'lz-string.min.js'), 'utf8')) +
+  ';\n' +
   mods.map(m => '/* ===== ' + m + ' ===== */\n' + fs.readFileSync(m + '.js', 'utf8')).join('\n');
+// Solo se quitan espacios y comentarios (los nombres se conservan para poder depurar con F12); SIN_MINIFICAR=1 deja el código tal cual
+const js = process.env.SIN_MINIFICAR ? jsFuente : require('esbuild').transformSync(jsFuente, { minifyWhitespace: true, target: 'es2022', loader: 'js' }).code;
 const html = `<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, interactive-widget=resizes-content">

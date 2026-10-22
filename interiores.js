@@ -819,6 +819,7 @@
     S.zonas = zonas.map(([sl, x, z]) => M.zona(W, sl, x, z, club));
     S.spawnInterior = { x: 0, z: z1 - 1.2, ry: Math.PI };
     GM.kit.fusionar(W);
+    GM.kit.congelar(W);
     return W;
   }
   const MODELOS = ['h-casual_2', 'm-casual', 'h-beach', 'm-formal', 'h-casual_hoodie', 'm-punk', 'h-farmer', 'm-suit', 'h-suit', 'h-adventurer'];

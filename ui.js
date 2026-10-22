@@ -598,11 +598,15 @@
     if (f) return;
     f = h('div', { id: 'portada', 'aria-hidden': 'true' }, h('div', { class: 'portada-velo' }));
     document.body.prepend(f);
-    try {
-      if (GM.portada3d) GM.portada3d.montar(f, ['#e8590c']);
-    } catch (e) {
-      if (typeof console !== 'undefined') console.warn('Fondo 3D no disponible: ' + e.message);
-    } // el fondo es decorativo: nunca debe romper el menú
+    // el fondo 3D se monta tras pintar el menú (cargar el modelo y compilar los shaders retrasaba el primer pintado); es decorativo: nunca debe romper el menú
+    setTimeout(() => {
+      if (document.getElementById('portada') !== f) return;
+      try {
+        if (GM.portada3d) GM.portada3d.montar(f, ['#e8590c']);
+      } catch (e) {
+        if (typeof console !== 'undefined') console.warn('Fondo 3D no disponible: ' + e.message);
+      }
+    }, 80);
   }
   function menu() {
     if (GM.musica) GM.musica.escena('menu');

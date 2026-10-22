@@ -1388,6 +1388,7 @@
         const g = geo(A.P, A.I, A.N, A.U, A.C),
           m = new THREE.Mesh(g, mat);
         m.userData = { real: 'edif', chunk: k };
+        m.matrixAutoUpdate = false;
         m.castShadow = false;
         m.receiveShadow = alta;
         W.add(m);
@@ -1538,6 +1539,8 @@
     fase(S, 'detalle, zonas y mobiliario');
     GM.kit.fusionar(W);
     fase(S, 'fusionar');
+    S.congelados = GM.kit.congelar(W);
+    fase(S, 'congelar');
     return W;
   }
   // ---------- Frente de cada edificio: qué lado da a la calle y dónde se pone la puerta ----------

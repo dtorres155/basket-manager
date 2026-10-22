@@ -170,7 +170,7 @@
     d += GM.rng.next() * 1.4 - 0.7;
     // El techo se frena arriba (por encima de 86 cada punto cuesta) y nunca está más lejos de la media de lo que la edad permite:
     // 20 puntos a los 19 años, 17 a los 20, 14 a los 21, 11 a los 22, 8 a los 23 y 5 a los 24
-    if (p.pot > 86) d -= (p.pot - 86) * 0.35;
+    if (p.pot > 88) d -= (p.pot - 88) * 0.3;
     const tope = p.ovr + Math.round((25 - p.edad) * 3) + 2;
     p.pot = U.clamp(p.pot + Math.round(U.clamp(d, -4, 4)), p.ovr, Math.min(99, tope));
   }
@@ -187,6 +187,9 @@
       else if (p.edad <= 31) d = GM.rng.int(-2, 0);
       else d = GM.rng.int(-4, -1);
       // Los jóvenes crecen según su margen: un 68 con 94 de techo puede ser estrella a los 22-23
+      // Las estrellas no se hunden de golpe (medido con tools/equilibrio.js: sin esto los 85+ de todo el juego pasaban de 36 a 18 en seis temporadas)
+      if (!p.esYo && p.ovr >= 80 && p.edad <= 32 && d < -1) d = -1;
+      if (!p.esYo && p.ovr >= 86 && p.edad <= 29 && d < 0 && GM.rng.next() < 0.6) d = 0;
       if (!p.esYo && p.edad <= 26 && p.pot - p.ovr > 4) d = Math.max(d, Math.round((p.pot - p.ovr) * (p.edad <= 21 ? 0.3 : p.edad <= 24 ? 0.24 : 0.18) + GM.rng.int(-1, 1)));
       // Tu jugador: lo que sube depende de cómo has llevado la temporada (carrera.js, progresoAnual)
       if (p.esYo && GM.mods.carrera && GM.mods.carrera.progresoAnual) d = GM.mods.carrera.progresoAnual(st, p);
@@ -227,7 +230,9 @@
       banca = ovrs[9] || ovrs[ovrs.length - 1] || 55;
     const ovr = U.clamp(Math.round(banca - 3 + ((h >>> 5) % 7) - 3 - (22 - edad) / 2), 42, 72),
       gap = Math.round((25 - edad) * 3 * (0.15 + (((h >>> 9) % 100) / 100) * 0.5));
-    const pot = U.clamp(ovr + gap + ((h >>> 11) % 100 > 96 ? 6 : 0), ovr, 90),
+    // un 4 % de los relevos son jóvenes con un techo de estrella (si no, el talento de élite se agota con los años)
+    const prodigio = (h >>> 13) % 100 < 4,
+      pot = prodigio ? 88 + ((h >>> 15) % 9) : U.clamp(ovr + gap + ((h >>> 11) % 100 > 96 ? 6 : 0), ovr, 90),
       nac = pa === 'GEN' ? 'PL' : pa;
     const p = GM.mkJugador(
       'rv',

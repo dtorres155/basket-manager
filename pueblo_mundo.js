@@ -2458,6 +2458,7 @@
     S.nCasas = nCasas;
     S.nCasasFuera = nFuera;
     GM.kit.fusionar(W);
+    GM.kit.congelar(W);
     return W;
   }
   // Acciones de cada parcela: construir o mejorar (obra con su duración), ver el avance y usar el edificio
