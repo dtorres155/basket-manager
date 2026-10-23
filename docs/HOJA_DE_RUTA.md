@@ -1,3 +1,5 @@
+> Cerrada. La hoja vigente es `docs/HOJA_DE_RUTA_2.md` (desde el punto 85).
+
 # Hoja de ruta de Basket Manager 26/27
 
 Lista única y numerada desde el 1, en el **orden en que conviene hacerla**. Reúne todo lo que había pendiente (listas anteriores, partes a medias) y lo nuevo que se ha pedido:

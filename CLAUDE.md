@@ -148,6 +148,7 @@ En el espacio de trabajo original aparecieron módulos que **no fueron escritos 
 ## Documentación
 - `docs/ARQUITECTURA.md`: módulos (extracto de sus cabeceras), forma del estado, eventos.
 - `docs/DISENO.md`: dirección visual y decisiones de interfaz.
+- `docs/HOJA_DE_RUTA_2.md`: **hoja de ruta vigente** (desde el punto 85): diagnóstico, qué quitar o rehacer y fases A a H. Profundidad antes que amplitud: nada de sistemas nuevos hasta cerrar las fases A a E.
 - `docs/PENDIENTE.md`: lista priorizada de trabajo, límites conocidos y deuda técnica.
 - `docs/HISTORIAL_PETICIONES.md`: lo que ha pedido el usuario, en orden.
 - `docs/PROMPT_INICIAL.md`: primer mensaje sugerido para empezar.

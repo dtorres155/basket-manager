@@ -275,5 +275,8 @@
 - 89. La nueva `partidos.js` (presión, esquemas y rebote) conviene recalibrarla con `node tools/calibrar.js` cada vez que se toque.
 - 90. Migración 5 a 6 probada con `t_aserciones`; falta una prueba que cargue una partida antigua real y recorra una temporada completa.
 
+## HOJA DE RUTA 2 (desde el 85, 24 oct 2026)
+La lista vigente es **`docs/HOJA_DE_RUTA_2.md`**: diagnóstico, revisión de lo mal hecho o sin valor y los puntos 85 a 128 en fases A a H. Los pendientes de arriba que siguen vigentes están dentro con «antes N».
+
 ## HOJA DE RUTA NUEVA (desde el 1)
 Desde el 12 oct 2026 la lista numerada vigente es **`docs/HOJA_DE_RUTA.md`** (84 puntos en 11 fases, con pautas, orden de arranque y qué no hacer). Sustituye a la numeración antigua (27 a 90); cada punto antiguo indica en la hoja su equivalencia («antes N»).
