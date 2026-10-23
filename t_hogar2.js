@@ -32,6 +32,7 @@ L([
   'three_kit',
   'finanzas',
   'ciudad',
+  'calidad',
   'campus',
   'contratos',
   'ciudad3d',
@@ -45,7 +46,6 @@ L([
   'sponsor',
   'pueblo',
   'hogar',
-  'hogar3d',
   'copas',
   'continental',
   'rivalidades',
@@ -75,22 +75,14 @@ for (const tipo of Object.keys(H.TIPOS).filter(k => k !== 'residencia'))
       }
     }
     try {
-      GM.mods.hogar3d.mount(el, st);
       total++;
-      for (const vista of ['Fuera', 'Edificio']) {
-        $('.panel3d .tab', vista).click();
-      }
       const habs = H.habitaciones(tipo, v);
       for (const hb of habs) {
-        $('.panel3d .tab', hb.nombre).click();
         const cat = H.catalogo(st, hb.id, 'f-0-0').filter(i => i.disponible && i.tam === 1)[0];
         if (cat) H.colocar(st, hb.id, 'f-0-0', cat.id);
         const cat2 = H.catalogo(st, hb.id, 'f-0-' + (hb.cols - 2)).filter(i => i.disponible && i.tam === 2)[0];
         if (cat2) H.colocar(st, hb.id, 'f-0-' + (hb.cols - 2), cat2.id);
       }
-      GM.mods.hogar3d.mount(el, st);
-      $('.panel3d .tab', 'Habitaciones');
-      GM.mods.hogar3d.unmount();
       console.log('ok', v.nombre.padEnd(26), habs.map(r => r.id + ' ' + r.cols + 'x' + r.rows).join(', '));
     } catch (e) {
       fallos++;

@@ -1,7 +1,12 @@
 # Pautas para probar el juego (tú solo, por sesiones)
 
-Cada sesión dura 30 a 45 minutos y tiene un objetivo. Apunta lo que notes en `docs/NOTAS_PRUEBA.md` (fecha, sesión, qué pasó, qué esperabas). Si algo falla o se ve mal: Menú, Ajustes, Datos, «Descargar el informe» y pásamelo con una frase.
-Antes de cada sesión: `npm run build`, abre el juego (`npm run serve` o la versión de escritorio) y empieza con una partida nueva salvo que la sesión diga otra cosa.
+## Cómo probar desde la versión 0.9.132 (fase A de la hoja de ruta 2)
+- Usa la **app de escritorio** (se actualiza sola) y tu partida de **modo carrera**.
+- Cuando algo te chirríe (se ve mal, no se entiende, va a tirones, falta algo), pulsa **F8**: se hace una captura, escribes o dictas (Win + H) una frase y, si quieres, pones una nota del 1 al 5. Se guarda solo en `DocumentosBasketManager
+otas`, donde lo leo yo. No hace falta copiar nada.
+- Una vez por versión, si quieres: Menú, Ajustes, **Pruebas**, «Medir ahora» (minuto y medio sin tocar nada). El informe va a `DocumentosBasketManagerendimiento`.
+- Una sola vez: Ajustes, Pruebas, **«¿Qué usas?»**: marca las pestañas que te gustan, las que te dan igual y las que quieres quitar.
+- Las sesiones de abajo son ideas de qué mirar; no hace falta seguirlas al pie de la letra. Ya no hace falta apuntar en `docs/NOTAS_PRUEBA.md`.
 
 ## Sesión 1, primeros 10 minutos (gestor, un club cualquiera)
 Objetivo: ¿se entiende qué hacer sin ayuda?

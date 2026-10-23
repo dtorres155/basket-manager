@@ -29,7 +29,6 @@ L([
   'sponsor',
   'pueblo',
   'hogar',
-  'hogar3d',
   'fans',
   'legado',
   'directiva_ia'

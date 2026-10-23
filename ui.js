@@ -536,14 +536,17 @@
   function addTab(pantalla, id, titulo, render, visible) {
     (extras[pantalla] = extras[pantalla] || []).push({ id, titulo, render, visible });
   }
-  function tabsExtra(pantalla, st) {
-    return (extras[pantalla] || []).filter(e => !e.visible || e.visible(st)).map(e => [e.id, e.titulo]);
+  // ocultas: 'pantalla:id' que el usuario quitó en «¿Qué usas?» (pruebas_juego.js); todas = true las incluye (para el propio «¿Qué usas?»)
+  const ocultas = new Set();
+  function tabsExtra(pantalla, st, todas) {
+    return (extras[pantalla] || []).filter(e => (!e.visible || e.visible(st)) && (todas || !ocultas.has(pantalla + ':' + e.id))).map(e => [e.id, e.titulo]);
   }
   function tabExtra(pantalla, id) {
     return (extras[pantalla] || []).find(e => e.id === id) || null;
   }
   GM.ui.addTab = addTab;
   GM.ui.tabsExtra = tabsExtra;
+  GM.ui.ocultas = ocultas;
   GM.ui.tabExtra = tabExtra;
 
   // ---------- Arranque y menú ----------
@@ -1337,7 +1340,6 @@
     if (m.ciudadDeportiva && m.ciudadDeportiva.unmount) m.ciudadDeportiva.unmount();
     if (m.estadio && m.estadio.unmount) m.estadio.unmount();
     if (m.ciudad3d && m.ciudad3d.unmount) m.ciudad3d.unmount();
-    if (m.hogar3d && m.hogar3d.unmount) m.hogar3d.unmount();
     if (m.pueblo && m.pueblo.unmount) m.pueblo.unmount();
   }
   function navegar(id) {

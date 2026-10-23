@@ -35,6 +35,7 @@ L([
   'three_kit',
   'finanzas',
   'ciudad',
+  'calidad',
   'campus',
   'partidos',
   'competiciones',

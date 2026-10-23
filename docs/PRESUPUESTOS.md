@@ -1,5 +1,15 @@
 # Presupuestos de rendimiento y perfiles de calidad
 
+## Objetivo en tu equipo (desde el 24 oct 2026, punto 90 de la hoja de ruta 2)
+El juez es la medida dentro del juego (Ajustes, Pruebas, «Medir ahora»; `GM.pruebas.medir`, `pruebas_juego.js`), hecha en tu Intel Iris Xe con calidad «alta», nivel alto, en la ventana de la app. Mide dos tiempos: cuándo **se ve** la escena y cuándo va **fluida** (30 fotogramas seguidos de menos de 100 ms), y los fps durante 8 s girando la cámara.
+
+| Escena | fps | Fluida en |
+|---|---|---|
+| Calle y pueblo (exteriores) | 50 o más | 4 s o menos |
+| Pabellón, sede, casa, tiendas (interiores) | 57 o más (60 con sincronía vertical) | 4 s o menos |
+
+Punto de partida (24 oct 2026, medido con `node tools/fase_a_ui.js` en este equipo, 1600x900): calle 13 s hasta verse y 28 s hasta ir fluida (primera escena, incluye leer texturas y cielos), unos 22 a 40 fps con la resolución rebajada al 60 %; pabellón 36 fps; sede 48 fps; pueblo 54 fps. **Hoy es un objetivo, no un bloqueo:** `npm run calidad` lo mide y lo muestra, y pasará a bloquear la publicación al cerrar la fase F.
+
 Medidos con `node tools/banco.js` (llamadas y triángulos tras construir la escena; la prueba falla si se superan) y `tools/real_fps.js` (fps con la CPU x4).
 
 | Perfil | Dónde | fps objetivo | Llamadas | Triángulos | Memoria | Descarga web |

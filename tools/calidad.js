@@ -26,7 +26,8 @@ const PASOS = rapido
       ['Regresión visual', ['tools/regresion_visual.js'], 300],
       ['Tanda 33: diseño, mundo y accesibilidad', ['tools/tanda33_ui.js'], 600],
       ['Tanda 35: ajustes, misiones y sonido', ['tools/tanda35_ui.js'], 600],
-      ['Tanda 37: resumen del día, contratos y autoguardado', ['tools/tanda37_ui.js'], 300]
+      ['Tanda 37: resumen del día, contratos y autoguardado', ['tools/tanda37_ui.js'], 300],
+      ['Fase A: pruebas dentro del juego y medida de rendimiento', ['tools/fase_a_ui.js'], 600]
     ];
 const vivo = () =>
   new Promise(r => {

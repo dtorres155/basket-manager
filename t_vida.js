@@ -18,6 +18,7 @@ L([
   'three_kit',
   'finanzas',
   'ciudad',
+  'calidad',
   'campus',
   'contratos',
   'ciudad3d',
@@ -41,7 +42,6 @@ L([
   'sponsor',
   'pueblo',
   'hogar',
-  'hogar3d',
   'fans'
 ]);
 GM.rng.seed(3);

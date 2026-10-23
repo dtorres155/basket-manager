@@ -32,6 +32,7 @@ L([
   'three_kit',
   'finanzas',
   'ciudad',
+  'calidad',
   'campus',
   'contratos',
   'ciudad3d',
@@ -45,7 +46,6 @@ L([
   'sponsor',
   'pueblo',
   'hogar',
-  'hogar3d',
   'copas',
   'continental',
   'rivalidades',
@@ -56,7 +56,7 @@ GM.kit.disponible = () => true;
 const H = GM.mods.hogar,
   el = document.getElementById('app'),
   $ = (s, t) => [...el.querySelectorAll(s)].find(b => b.textContent.includes(t));
-console.log('selfTests hogar', H.selfTest(), 'hogar3d', GM.mods.hogar3d.selfTest());
+console.log('selfTests hogar', H.selfTest());
 const casos = [
   ['gestor', 'joventut-badalona'],
   ['presidente', 'real-madrid'],
@@ -100,11 +100,6 @@ for (const [modo, club] of casos) {
       .map(t => t.id)
       .join(',')
   );
-  GM.mods.hogar3d.mount(el, st);
-  for (const v of ['Fuera', 'Edificio', 'Habitaciones']) {
-    const b = $('.panel3d .tab', v);
-    if (b) b.click();
-  }
   const habs = H.habitaciones(casa.tipo);
   console.log(' habitaciones:', habs.map(h => h.id).join(','));
   // colocar muebles disponibles y bloqueados
@@ -120,13 +115,10 @@ for (const [modo, club] of casos) {
       if (r.ok) puestos++;
     });
   console.log(' catálogo salón/estudio: disponibles', ok, 'bloqueados', bloq, '| colocados', puestos, '| efectos', JSON.stringify(H.efectos(st)));
-  GM.mods.hogar3d.mount(el, st);
-  $('.panel3d .tab', habs[0].nombre) && $('.panel3d .tab', habs[0].nombre).click();
   if (modo !== 'carrera-europa') {
     const r = H.mudarse(st, 1, 'mansion', 'compra');
     console.log(' mudarse a mansión:', JSON.stringify(r));
   }
-  GM.mods.hogar3d.unmount();
 }
 // carrera: pasa de nivel
 const st = GM.newGame('unicaja', 3, {

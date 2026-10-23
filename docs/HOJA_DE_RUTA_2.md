@@ -133,11 +133,11 @@ Sustituye como guía a `docs/HOJA_DE_RUTA.md` (puntos 1 a 84, cerrados) y a la l
 
 Fuera de la app no tienes que hacer nada más.
 
-## 6. Decisiones que necesito (con mi recomendación)
-1. **Modo principal:** ¿cuál juegas de verdad (gestor, presidente, entrenador o carrera)? Recomiendo centrar la profundidad en uno y mantener los demás tal cual.
-2. **Móvil:** ¿lo sigues usando? Si no, la calidad normal deja de recibir mejoras y solo se vigila que no se rompa.
-3. **Ciudades:** Badalona y tu pueblo como referencia, y después las demás por reglas (recomendado).
-4. **Idiomas:** congelar el inglés. ¿Catalán sí o no?
+## 6. Decisiones (respondidas el 24 oct 2026)
+1. **Modo principal: carrera.** La profundidad (fase H, interfaz de la fase G, galería y medidas) se centra en el modo carrera; los demás modos se mantienen sin ampliarlos.
+2. **Móvil: no se usa.** La calidad normal solo se mantiene para que no se rompa; todo el trabajo visual es para calidad alta en ordenador.
+3. **Ciudades:** Badalona y tu pueblo como referencia; después las demás por reglas.
+4. **Idiomas:** inglés y catalán congelados (se quedan como están, sin ampliarlos).
 
 ## 7. Orden y tamaño
 - Tanda 38: fase A.
@@ -149,3 +149,13 @@ Fuera de la app no tienes que hacer nada más.
 - La fase F va dentro de cada tanda; la H, cuando haya notas tuyas.
 
 Versión de escritorio al cerrar cada fase (salvo arreglos urgentes), con la página de la galería de referencia y la medida de rendimiento.
+
+## Estado tras la fase A (24 oct 2026, versión 0.9.132)
+- **85 hecho:** `node tools/galeria.js [etiqueta]` saca 24 vistas fijas (modo carrera, calidad alta, con sol y la hora parada) de la calle de Badalona (a pie, de juego y desde arriba; día, tarde y noche), el pabellón por fuera y por dentro, la tienda, la sede, la casa y el pueblo, con las llamadas de dibujo y los triángulos de cada una, y una página que pone cada vista junto a la de la galería anterior (`galeria/<etiqueta>/index.html`, fuera de git). Galerías guardadas: `0_antes_fase_A` y `1_fase_A`.
+- **86 y 87 hechos:** Ajustes, Pruebas (`pruebas_juego.js`, `GM.pruebas`): «Medir ahora» recorre la calle, el pabellón, la sede y el pueblo y mide cuándo se ve cada escena, cuándo va fluida y sus fps; F8 en cualquier pantalla guarda captura, frase, nota y contexto. La app de escritorio lo guarda en `DocumentosBasketManager` con un puente seguro (`escritorio/preload.js` y `ipcMain` en `main.js`; solo cuatro carpetas, sin salir de ellas). Pruebas: `node tools/fase_a_ui.js` (navegador) y `node tools/escritorio_puente.js` (app real).
+- **88 hecho:** «¿Qué usas?» lista las 12 pestañas añadidas del modo carrera con «Me gusta, Me da igual, Quitar»; las de «Quitar» se ocultan (`GM.ui.ocultas`) y la elección se guarda en `usos/usos_carrera.json`.
+- **89 en parte:** fuera `hogar3d.js` (la casa antigua; la pestaña Casa de Ciudad ahora lista tus viviendas con «Entrar» a la casa paseable) y `pueblo3d.js` (la maqueta antigua; sus estilos regionales pasan a `estilos_pueblo.js`): 2.700 líneas menos. La calidad gráfica sale de `campus.js` a `calidad.js` (`GM.calidad`, con `GM.campus.config` como alias). 28 herramientas sin uso archivadas en `tools/archivo`. Quedan para más adelante: partir `sede3d.js` (se hará al rehacer la cámara, punto 103) y retirar las partes antiguas de `ciudad3d.js` y `campus.js`, que siguen siendo la base del mapa de Ciudad y de la ciudad deportiva.
+- **90 hecho:** objetivo en `docs/PRESUPUESTOS.md` (exteriores a 50 fps, interiores a 57, fluida en 4 s) y paso «Fase A» en `npm run calidad` (de momento informa, no bloquea).
+- **Fallos encontrados al mirar de verdad:** el HUD del mundo (brújula, reloj, flechas de objetivos, tarjeta del sitio, necesidades) y la barra de «Mi día» no se actualizaban nunca, y las acciones con muebles (dormir, tele, cocinar…) se cancelaban al empezar desde el ratón: `sede_hud.js` les pasaba un Proxy de la escena y ellos comparan `GM.sede._estado() === S`. Arreglado. Salir del mundo mientras carga ya no da error.
+- **Medida de partida (este equipo, Iris Xe):** calle 12 s hasta verse y 27 s hasta ir fluida, 23 fps; pabellón 41 fps; sede 48; pueblo 52. La calle se queda parada unos 8 s justo después de aparecer: es lo primero de la fase F (punto 117).
+- **Visto para la fase C (punto 103):** con el HUD funcionando se ve demasiada información encima de la imagen (etiquetas que pisan la brújula, el nombre del sitio repetido en etiqueta y tarjeta, avisos) y las necesidades salen sin barras.

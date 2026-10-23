@@ -217,8 +217,9 @@
         joy.addEventListener('pointercancel', soltar);
         S.raiz.append(joy);
       }
-      if (GM.rutina) GM.rutina.hud(S);
-      if (GM.hudMundo) GM.hudMundo.montar(S); // brújula, reloj, objetivos, notificaciones, menú radial y necesidades (punto 72)
+      // a estos módulos se les pasa la escena de verdad (ctx.S()), no el Proxy S: comparan GM.sede._estado() === S para saber si siguen vivos
+      if (GM.rutina) GM.rutina.hud(ctx.S());
+      if (GM.hudMundo) GM.hudMundo.montar(ctx.S()); // brújula, reloj, objetivos, notificaciones, menú radial y necesidades (punto 72)
       if (GM.decorar && GM.decorar.puede(S)) {
         S.btnDecorar = h('button', { class: 'btn casa-btn btn-decorar', onclick: () => GM.decorar.activar(S, motor()) }, 'Decorar');
         S.raiz.append(h('div', { class: 'sede-hud casa-btn-cont' }, S.btnDecorar));
@@ -281,7 +282,7 @@
                   i.object.material &&
                   !i.object.material.transparent
               ) || null;
-          if (GM.interaccion && ((dur && GM.interaccion.toque(S, motor(), dur.point)) || GM.interaccion.toque(S, motor(), p))) return;
+          if (GM.interaccion && ((dur && GM.interaccion.toque(ctx.S(), motor(), dur.point)) || GM.interaccion.toque(ctx.S(), motor(), p))) return;
           if (dur && dur.point.y > 0.25 && dur.distance < ray.ray.origin.distanceTo(p)) {
             const back = new THREE.Vector3(ray.ray.direction.x, 0, ray.ray.direction.z).normalize().multiplyScalar(0.7);
             p.set(dur.point.x - back.x, 0, dur.point.z - back.z);

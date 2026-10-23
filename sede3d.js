@@ -3162,12 +3162,15 @@
           mueble(n).catch(() => {});
         });
     } catch (e) {}
+    const S0 = S;
     (GM.texturas ? GM.texturas.precargar(S.renderer) : Promise.resolve())
       .then(() => {
         fm('texturas');
-        return construir(st);
+        return S === S0 ? construir(st) : null;
       })
       .then(async () => {
+        // si se sale del mundo mientras se construye, se para aquí (S pasa a null en cerrar())
+        if (S !== S0) return;
         fm('construir (total)');
         // Mientras se cargan las personas no se dibuja (la pantalla de carga las tapa) y los shaders de la ciudad se compilan en paralelo: así el primer fotograma no se bloquea compilándolos uno a uno
         S.sinDibujar = true;
@@ -3188,6 +3191,7 @@
         };
         const compCiudad = compilar();
         const yo = await personaje(aspecto(st));
+        if (S !== S0) return;
         {
           const sp =
             S.escena === 'pueblo' && S.spawnPueblo
@@ -3215,14 +3219,18 @@
         if (S.escena !== 'sede') hud(st); // la cabecera usa datos de la escena (nombre del pueblo)
         fm('personaje');
         await poblar(st);
+        if (S !== S0) return;
         fm('poblar');
         await compCiudad;
+        if (S !== S0) return;
         await compilar();
+        if (S !== S0) return;
         S.sinDibujar = false;
         fm('compilar shaders');
         cargando.remove();
       })
       .catch(e => {
+        if (S !== S0) return; // se salió del mundo mientras cargaba: no es un error
         cargando.textContent = 'No se ha podido cargar la sede: ' + e.message;
         console.error(e);
       });

@@ -20,6 +20,7 @@ const mods = [
   'datos_ligas_extra',
   'datos_ligas_ascenso',
   'datos_ligas_ascenso2',
+  'calidad',
   'three_kit',
   'diseno',
   'i18n_datos',
@@ -87,9 +88,8 @@ const mods = [
   'ascensos',
   'gente',
   'gente_historias',
-  'pueblo3d',
+  'estilos_pueblo',
   'hogar',
-  'hogar3d',
   'sede_plano',
   'sede_acciones',
   'nav_worker',
@@ -168,6 +168,7 @@ const mods = [
   'ui_tutorial',
   'misiones',
   'avisos_inicio',
+  'pruebas_juego',
   'ui_ajustes'
 ];
 const DIST = path.join(__dirname, 'dist'),

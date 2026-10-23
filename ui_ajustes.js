@@ -6,6 +6,15 @@
   const { h, modal, toast, cerrarModales } = GM.ui._;
   const NOVEDADES = [
     {
+      v: '0.9.132',
+      fecha: '2026-10',
+      t: [
+        'Pruebas dentro del juego: pulsa F8 en cualquier momento para anotar algo (con captura), «Medir ahora» en Ajustes, Pruebas, y «¿Qué usas?» para quitar las pestañas que no te sirven.',
+        'Arreglado el HUD del mundo: la brújula, el reloj, las flechas a los objetivos, la tarjeta del sitio cercano y las necesidades por fin se actualizan; las acciones con muebles ya no se cancelan al empezar.',
+        'La pestaña Casa de Ciudad abre tus casas en el mundo paseable; fuera la casa y el pueblo antiguos.'
+      ]
+    },
+    {
       v: '0.9.130',
       fecha: '2026-10',
       t: [
@@ -291,6 +300,39 @@
       st ? null : null
     );
   }
+  function pruebas(el) {
+    const P = GM.pruebas;
+    if (!P) {
+      el.append(h('p', { class: 'muted' }, 'Las herramientas de prueba no están disponibles.'));
+      return;
+    }
+    el.append(
+      h(
+        'p',
+        { class: 'muted' },
+        P.escritorio() ? 'Todo se guarda en Documentos, BasketManager, para que se pueda revisar después.' : 'En el navegador, cada informe se descarga como archivo.'
+      ),
+      h('h4', null, 'Anotar algo (F8)'),
+      h('p', { class: 'muted' }, 'En cualquier pantalla o dentro del mundo, pulsa F8: se hace una captura y escribes o dictas (Win + H) qué ves y qué esperabas.'),
+      boton('Anotar ahora', () => {
+        cerrarModales();
+        setTimeout(() => P.anotar(), 200);
+      }),
+      h('h4', null, 'Medir el rendimiento'),
+      h('p', { class: 'muted' }, 'Recorre solo la calle, el pabellón, la sede y el pueblo durante un minuto y medio y guarda los resultados. Necesita una partida abierta.'),
+      boton('Medir ahora', () => {
+        cerrarModales();
+        P.medir();
+      }),
+      h('h4', null, '¿Qué usas?'),
+      h('p', { class: 'muted' }, 'Marca las pestañas que te gustan, las que te dan igual y las que quieres quitar.'),
+      boton('Elegir', () => {
+        cerrarModales();
+        P.usos();
+      }),
+      P.escritorio() ? boton('Abrir la carpeta', () => window.escritorio.abrirCarpeta('')) : null
+    );
+  }
   function novedades(el) {
     marcarNovedades();
     NOVEDADES.forEach(n =>
@@ -310,6 +352,7 @@
     ['controles', 'Controles', controles],
     ['idioma', 'Idioma y accesibilidad', idioma],
     ['datos', 'Datos', datos],
+    ['pruebas', 'Pruebas', pruebas],
     ['novedades', 'Novedades', novedades]
   ];
   function abrir(apartado) {
@@ -360,7 +403,7 @@
   function selfTest() {
     const a = vista();
     marcarNovedades();
-    const ok = !novedadesPendientes() && APARTADOS.length === 6 && NOVEDADES[0].t.length > 0;
+    const ok = !novedadesPendientes() && APARTADOS.length === 7 && NOVEDADES[0].t.length > 0;
     try {
       if (a === null) window.localStorage.removeItem(KEY);
       else window.localStorage.setItem(KEY, a);

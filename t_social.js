@@ -21,8 +21,7 @@ L([
   'social',
   'sponsor',
   'pueblo',
-  'hogar',
-  'hogar3d'
+  'hogar'
 ]);
 console.log('selfTest', GM.mods.social.selfTest());
 GM.rng.seed(11);

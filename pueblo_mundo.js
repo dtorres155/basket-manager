@@ -1,5 +1,5 @@
 /* TU PUEBLO PARA PASEAR (GM.puebloMundo) — modo carrera, con el motor del mundo de sede3d.js (como la calle y la casa)
-   Pueblo antiguo en lo alto de una colina, en el estilo de su región (pueblo3d.ESTILOS): muralla ovalada con torres y dos puertas,
+   Pueblo antiguo en lo alto de una colina, en el estilo de su región (GM.estilosPueblo): muralla ovalada con torres y dos puertas,
    calle mayor que serpentea hasta una plaza irregular con iglesia, ayuntamiento, fuente y estatua, callejuelas y, fuera de la
    muralla, rondas y la carretera donde el pueblo crece (casas y edificios grandes). Alrededor, laderas con olivares, campos y
    cipreses que bajan a un valle con río y puente, masías, una ermita y montañas. Cada parcela (pueblo.js) muestra su estado:
@@ -1599,8 +1599,9 @@
       pj = st.carrera.pueblo,
       eds = Pm.edificios(st),
       ed = t => eds.find(b => b.tipo === t);
-    const clave = GM.pueblo3d ? GM.pueblo3d.estiloDe(pj.nombre, pj.nac) : 'castellano',
-      E = Object.assign({ clave }, GM.pueblo3d ? GM.pueblo3d.ESTILOS[clave] : { muros: ['#d6b47c'], teja: '#b4643d', postigos: ['#5a3b22'], torre: 'campanario' });
+    const EP = GM.estilosPueblo,
+      clave = EP ? EP.estiloDe(pj.nombre, pj.nac) : 'castellano',
+      E = Object.assign({ clave }, EP ? EP.ESTILOS[clave] : { muros: ['#d6b47c'], teja: '#b4643d', postigos: ['#5a3b22'], torre: 'campanario' });
     const G = M.rejilla({ limites: LIM, CELDA: 0.5 }),
       O = ocupacion();
     S.G = G;

@@ -692,28 +692,6 @@
         v.limpiar(W);
       }
     }
-    if (GM.pueblo3d) {
-      // pueblo de colina amurallado con estilo regional (pueblo3d.js); la escena de abajo queda como alternativa
-      V.info = GM.pueblo3d.construir(v, W, st, {
-        nivel: n,
-        estilo: GM.pueblo3d.estiloDe(p.nombre, p.nac),
-        S,
-        nombre: p.nombre,
-        cariño: p.cariño,
-        edificios: edificios(st),
-        edificio,
-        jugador: { apellido: (pj && pj.apellido) || st.jugadores.yo.nombre.split(' ').pop(), dorsal: 2 + (U.hash(pj ? pj.nombre + pj.apellido : 'yo') % 30) }
-      });
-      K.fusionar(W);
-      if (CP.config.calidad === 'alta') K.sombrear(W);
-      const an = [];
-      W.traverse(o => {
-        if (o.userData && typeof o.userData.anim === 'function') an.push(o.userData.anim);
-      });
-      v.anim = an.length ? t => an.forEach(f => f(t)) : null;
-      v.place();
-      return;
-    }
     W.add(K.caja(90, 0.3, 90, 0x7fb069, 0, -0.34, 0));
     // colinas y río
     for (let i = 0; i < 6; i++) {
@@ -1001,9 +979,9 @@
       const mundo = !!(GM.puebloMundo && GM.sede && GM.sede.motor);
       try {
         V.vista = GM.kit.crear(vistaEl, {
-          radio: mundo ? 120 : GM.pueblo3d ? 56 : 40,
+          radio: mundo ? 120 : 40,
           theta: 0.55,
-          phi: mundo ? 0.9 : GM.pueblo3d ? 1.05 : 0.95,
+          phi: mundo ? 0.9 : 0.95,
           min: 8,
           max: mundo ? 240 : 95,
           fondo: 0xb9d9ee,

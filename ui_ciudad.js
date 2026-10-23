@@ -152,9 +152,7 @@
       M().ciudad3d.mount(cont, st);
     } else if (t === 'casa') {
       mascotaCard(el, st);
-      const cont = h('div', { class: 'club3d' });
-      el.append(cont);
-      M().hogar3d.mount(cont, st);
+      casasTab(el, st);
     } else if (t === 'pueblo') {
       const cont = h('div', { class: 'club3d' });
       el.append(cont);
@@ -166,6 +164,32 @@
     else if (GM.ui.tabExtra('ciudad', t)) GM.ui.tabExtra('ciudad', t).render(el, st);
     else if (t === 'social') socialTab(el, st);
     else vidaTab(el, st);
+  }
+  // Tus viviendas: cada una se abre en el mundo paseable (casa3d.js, con su plano, muebles y modo construcción)
+  function casasTab(el, st) {
+    const H = M().hogar,
+      lista = H && H.viviendas ? H.viviendas(st) : [];
+    if (!lista.length) {
+      el.append(aviso('Todavía no tienes vivienda propia.', 'med'));
+      return;
+    }
+    el.append(
+      seccion(
+        lista.length === 1 ? 'Tu casa' : 'Tus casas',
+        h(
+          'div',
+          { class: 'lista' },
+          lista.map(v =>
+            h(
+              'div',
+              { class: 'tarjeta fila', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' } },
+              h('div', null, h('b', null, v.nombre + (v.actual ? ' (vives aquí)' : '')), h('div', { class: 'muted' }, v.barrioNombre || '')),
+              h('button', { class: 'btn', onclick: () => GM.sede.abrir(st, 'casa:' + v.id) }, 'Entrar')
+            )
+          )
+        )
+      )
+    );
   }
   // Mascota (todos los modos): adoptar un perro o un gato que te recibe en casa
   function mascotaCard(el, st) {

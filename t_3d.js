@@ -34,6 +34,7 @@ L([
   'three_kit',
   'finanzas',
   'ciudad',
+  'calidad',
   'campus',
   'contratos',
   'ciudad3d',
@@ -57,7 +58,6 @@ L([
   'sponsor',
   'pueblo',
   'hogar',
-  'hogar3d',
   'fans'
 ]);
 console.log('selfTests', GM.mods.ciudadDeportiva.selfTest(), GM.mods.estadio.selfTest());

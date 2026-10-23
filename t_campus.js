@@ -31,6 +31,7 @@ L([
   'three_kit',
   'finanzas',
   'ciudad',
+  'calidad',
   'campus',
   'contratos',
   'ciudad3d',
@@ -53,8 +54,7 @@ L([
   'social',
   'sponsor',
   'pueblo',
-  'hogar',
-  'hogar3d'
+  'hogar'
 ]);
 console.log('selfTest cd', GM.mods.ciudadDeportiva.selfTest());
 const fakeCtx = new Proxy(

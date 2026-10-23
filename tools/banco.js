@@ -27,7 +27,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text());
   });
   p.on('response', r => {
-    if (r.status() >= 400 && !/\/modelos\/reales\/arboles\//.test(r.url())) errs.push(r.status() + ' ' + r.url());
+    // recursos que solo trae la versión de escritorio (árboles realistas, personas de Mixamo): en la web faltan a propósito
+    if (r.status() >= 400 && !/\/modelos\/(reales\/arboles|personas\/mixamo)\//.test(r.url())) errs.push(r.status() + ' ' + r.url());
   });
   for (const esc of ESC) {
     await p.goto('http://localhost:8080/');
