@@ -2544,8 +2544,8 @@
     mobiliario(S, M, X, G, W, c);
     S.cielo = true;
     S.scene.background = new THREE.Color(0xa9c6dc);
-    // bruma atmosférica (punto 144): con la cámara a ras de suelo se ve la ciudad lejana hasta el anillo, fundiéndose; antes 60-170 m (todo acababa a 100 m)
-    S.scene.fog = new THREE.Fog(0xa9c6dc, 140, 950);
+    // bruma atmosférica (punto 144): a 1 km la ciudad lejana queda a medio difuminar (con forma y sombra); antes 60-170 m (todo acababa a 100 m)
+    S.scene.fog = new THREE.Fog(0xa9c6dc, 200, 1700);
   }
   // ---------- Metro y bicis compartidas ----------
   function transporte(S, M, X, G, W, c, SALAS, zonas, paseo, bar) {

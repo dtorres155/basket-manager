@@ -117,8 +117,8 @@
         s = (s * 1664525 + 1013904223) >>> 0;
         const w = (0.4 + (s / 4294967296) * 1.2) * (Math.PI / 180);
         s = (s * 1664525 + 1013904223) >>> 0;
-        const h = 8 + (s / 4294967296) ** 2 * 32;
-        escal.push([a, a + w, (R * h) / 2000]);
+        const h = 6 + (s / 4294967296) ** 2 * 22;
+        escal.push([a, a + w, (R * h) / 2500]);
         a += w;
       }
     }
@@ -137,14 +137,20 @@
     mS.renderOrder = -1.4;
     g.add(mM, mC, mS);
     S.scene.add(g);
-    S.horizonte = { g, mM, mC, mS };
+    // suelo real de 780 m a 3 km alrededor (el plano del suelo de la ciudad acaba a 800 m): con la bruma de la escena, se funde con el horizonte
+    const suelo = new (T().Mesh)(new (T().RingGeometry)(780, 3000, 64, 1).rotateX(-Math.PI / 2), new (T().MeshStandardMaterial)({ color: 0x7d7a70, roughness: 1 }));
+    suelo.position.y = -0.06;
+    suelo.userData = { horizonte: true };
+    S.scene.add(suelo);
+    S.horizonte = { g, mM, mC, mS, suelo };
     return true;
   }
   function quitar(S) {
     const H = S && S.horizonte;
     if (!H) return;
     if (H.g.parent) H.g.parent.remove(H.g);
-    [H.mM, H.mC, H.mS].forEach(m => {
+    if (H.suelo && H.suelo.parent) H.suelo.parent.remove(H.suelo);
+    [H.mM, H.mC, H.mS].concat(H.suelo ? [H.suelo] : []).forEach(m => {
       m.geometry.dispose();
       m.material.dispose();
     });
@@ -166,17 +172,18 @@
     }
     const bruma = S.scene.fog ? _c.bruma.copy(S.scene.fog.color) : _c.bruma.setHex(0xb2cce2),
       noche = S.noche || 0;
+    // perspectiva aérea: lo más lejano (el suelo junto al horizonte) casi del color de la bruma; la silueta de ciudad y los montes, algo menos
     H.mM.material.color
       .copy(_c.monte)
-      .lerp(bruma, 0.62)
+      .lerp(bruma, 0.6)
       .multiplyScalar(1 - noche * 0.75);
     H.mC.material.color
       .copy(_c.casa)
-      .lerp(bruma, 0.5)
+      .lerp(bruma, 0.72)
       .multiplyScalar(1 - noche * 0.7);
     H.mS.material.color
       .copy(_c.suelo)
-      .lerp(bruma, 0.55)
+      .lerp(bruma, 0.92)
       .multiplyScalar(1 - noche * 0.75);
   }
   GM.horizonte = { montar, actualizar, quitar, _pendiente: pendiente };
