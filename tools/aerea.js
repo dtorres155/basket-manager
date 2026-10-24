@@ -21,18 +21,21 @@ fs.mkdirSync(DIR, { recursive: true });
   }, club);
   await esperarEscena(p, 'calle', 150000);
   await sleep(3000);
-  const vistas = [
-    ['centro_260', [0, 260, 160], [0, 0, 0]],
-    ['norte_200', [0, 200, -120], [0, 0, -320]],
-    ['horizonte_60', [0, 60, 300], [0, 20, -400]]
-  ];
+  // VISTAS='[["nombre",[x,y,z],[x,y,z]]]' para otras vistas; HORA=21 para la noche
+  const vistas = process.env.VISTAS
+    ? JSON.parse(process.env.VISTAS)
+    : [
+        ['centro_260', [0, 260, 160], [0, 0, 0]],
+        ['norte_200', [0, 200, -120], [0, 0, -320]],
+        ['horizonte_60', [0, 60, 300], [0, 20, -400]]
+      ];
   for (const [n, pos, mira] of vistas) {
     await p.evaluate(
-      ([pos, mira]) => {
+      ([pos, mira, hora]) => {
         const S = GM.sede._estado();
         GM.sede._clima('sol');
         S.velTiempo = 0;
-        S.hora = 12;
+        S.hora = hora;
         S.pausa = true;
         if (S.panel) S.panel.style.display = 'none';
         S.camera.far = 3000;
@@ -43,7 +46,7 @@ fs.mkdirSync(DIR, { recursive: true });
         if (S.cieloDomo && GM.cielo) GM.cielo.actualizar(S, 1);
         S.renderer.render(S.scene, S.camera);
       },
-      [pos, mira]
+      [pos, mira, Number(process.env.HORA || 12)]
     );
     await sleep(600);
     await p.screenshot({ path: path.join(DIR, n + '.png') });

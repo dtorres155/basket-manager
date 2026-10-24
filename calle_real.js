@@ -325,6 +325,406 @@
     m.customProgramCacheKey = () => clave + 'recorte2';
     return m;
   }
+  // Pabellón de la ciudad real (punto 100 de la hoja de ruta 2): fachada y cubierta que siguen su planta de OpenStreetMap, en lugar de paredes
+  // de bloque de pisos con una cúpula elíptica encima que no encajaba. Planta redondeada u ovalada: cúpula rebajada ajustada al contorno
+  // (anillos que se encogen hacia el centro) con lucernario; planta casi rectangular: bóveda de cañón sobre el lado largo con testeros de
+  // cristal; si la planta no deja hacer ninguna de las dos, cubierta plana. Fachada: zócalo, cristalera en la planta de calle, banda del club,
+  // paneles de hormigón y una franja de cristal corrida bajo la cornisa, encendidas de noche (S.ventanas). Cornisa del color del club.
+  function pabellonReal(S, W, M, b, club, c1, alta) {
+    const h = b.h,
+      clave = 'real-pab-' + club.id;
+    // contorno remuestreado cada 4 m como máximo y su orientación (sg: 1 si va en sentido antihorario en x-z)
+    let A2 = 0;
+    for (let i = 0; i < b.p.length; i++) {
+      const q = b.p[i],
+        r = b.p[(i + 1) % b.p.length];
+      A2 += q[0] * r[1] - r[0] * q[1];
+    }
+    const sg = A2 >= 0 ? 1 : -1,
+      P = [];
+    for (let i = 0; i < b.p.length; i++) {
+      const a = b.p[i],
+        e = b.p[(i + 1) % b.p.length],
+        l = Math.hypot(e[0] - a[0], e[1] - a[1]);
+      if (l < 0.25) continue;
+      const n = Math.max(1, Math.ceil(l / 4));
+      for (let k = 0; k < n; k++) P.push([a[0] + ((e[0] - a[0]) * k) / n, a[1] + ((e[1] - a[1]) * k) / n]);
+    }
+    if (P.length < 3) return;
+    const nP = P.length;
+    // geometría con triángulos orientados: el lado de delante mira hacia «n» (las caras dobles iluminan según el sentido del triángulo)
+    const malla = () => ({ P: [], U: [], I: [] });
+    const vert = (A, x, y, z, u, v) => {
+      A.P.push(x, y, z);
+      A.U.push(u, v);
+      return A.P.length / 3 - 1;
+    };
+    const tri = (A, i0, i1, i2, nx, ny, nz) => {
+      const p = A.P,
+        ax = p[i1 * 3] - p[i0 * 3],
+        ay = p[i1 * 3 + 1] - p[i0 * 3 + 1],
+        az = p[i1 * 3 + 2] - p[i0 * 3 + 2],
+        bx = p[i2 * 3] - p[i0 * 3],
+        by = p[i2 * 3 + 1] - p[i0 * 3 + 1],
+        bz = p[i2 * 3 + 2] - p[i0 * 3 + 2],
+        d = (ay * bz - az * by) * nx + (az * bx - ax * bz) * ny + (ax * by - ay * bx) * nz;
+      if (d >= 0) A.I.push(i0, i1, i2);
+      else A.I.push(i0, i2, i1);
+    };
+    const quad = (A, i0, i1, i2, i3, nx, ny, nz) => {
+      tri(A, i0, i1, i2, nx, ny, nz);
+      tri(A, i0, i2, i3, nx, ny, nz);
+    };
+    const mallaDe = (A, mat, sombra) => {
+      if (!A.I.length) return null;
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(A.P, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(A.U, 2));
+      g.setIndex(A.I);
+      g.computeVertexNormals();
+      g.computeBoundingSphere();
+      const m = new THREE.Mesh(g, mat);
+      m.castShadow = !!(alta && sombra);
+      m.receiveShadow = !!alta;
+      m.userData = { pabellonReal: true };
+      W.add(m);
+      return m;
+    };
+    // normal hacia fuera del tramo i (con la orientación del contorno)
+    const fuera = i => {
+      const a = P[i],
+        e = P[(i + 1) % nP],
+        l = Math.hypot(e[0] - a[0], e[1] - a[1]) || 1;
+      return [(sg * (e[1] - a[1])) / l, (-sg * (e[0] - a[0])) / l];
+    };
+    // ---------- Fachada (un módulo de 6 m de ancho por toda la altura en la textura) ----------
+    const Y = (n, m) => n - (m / h) * n; // metros desde el suelo a píxeles del lienzo
+    const cristal = (x, n, y0, y1, oscuro) => {
+      const gr = x.createLinearGradient(0, Y(n, y1), 0, Y(n, y0));
+      gr.addColorStop(0, oscuro ? '#3c5363' : '#4d6577');
+      gr.addColorStop(1, oscuro ? '#1f2c36' : '#26343f');
+      x.fillStyle = gr;
+      x.fillRect(0, Y(n, y1), n, Y(n, y0) - Y(n, y1));
+      x.fillStyle = '#1b2026';
+      for (let k = 0; k <= 4; k++) x.fillRect((k * n) / 4 - 3, Y(n, y1), 6, Y(n, y0) - Y(n, y1)); // montantes cada 1,5 m
+      x.fillRect(0, Y(n, y1) - 2, n, 5);
+      x.fillRect(0, Y(n, y0) - 3, n, 5);
+    };
+    const tex = M.textura(clave + '-fachada', 1024, (x, n) => {
+      x.fillStyle = '#f3f3f1'; // paneles: casi blanco, donde se ve el hormigón real (máscara)
+      x.fillRect(0, 0, n, n);
+      x.fillStyle = '#c4c4bf';
+      for (let m = 5.0; m < 13.6; m += 1.43) x.fillRect(0, Y(n, m), n, 2);
+      for (let k = 0; k <= 2; k++) x.fillRect((k * n) / 2 - 1, Y(n, 13.6), 2, Y(n, 5) - Y(n, 13.6));
+      x.fillStyle = '#4a4e53'; // zócalo de piedra oscura
+      x.fillRect(0, Y(n, 0.9), n, n - Y(n, 0.9));
+      cristal(x, n, 0.9, 4.4, false);
+      x.fillStyle = c1; // banda del club sobre la cristalera
+      x.fillRect(0, Y(n, 5.0), n, Y(n, 4.4) - Y(n, 5.0));
+      cristal(x, n, 13.6, 16.1, true);
+      x.fillStyle = '#e2e4e5';
+      x.fillRect(0, 0, n, Y(n, 16.1));
+    });
+    const texLuz = M.textura(clave + '-fachada-luz', 256, (x, n) => {
+      x.fillStyle = '#000';
+      x.fillRect(0, 0, n, n);
+      x.fillStyle = '#ffcf94';
+      x.fillRect(0, Y(n, 4.3), n, Y(n, 1.0) - Y(n, 4.3));
+      x.fillStyle = '#fff0d8';
+      x.fillRect(0, Y(n, 16.0), n, Y(n, 13.7) - Y(n, 16.0));
+      x.fillStyle = '#000';
+      for (let k = 0; k <= 4; k++) x.fillRect((k * n) / 4 - 1, 0, 2, n);
+    });
+    // rugosidad (verde) y metal (azul): el cristal brilla y refleja; los paneles y el zócalo, no
+    const texRM = M.textura(clave + '-fachada-rm', 256, (x, n) => {
+      x.fillStyle = 'rgb(0,220,0)';
+      x.fillRect(0, 0, n, n);
+      x.fillStyle = 'rgb(0,30,150)';
+      x.fillRect(0, Y(n, 4.4), n, Y(n, 0.9) - Y(n, 4.4));
+      x.fillRect(0, Y(n, 16.1), n, Y(n, 13.6) - Y(n, 16.1));
+      x.fillStyle = 'rgb(0,150,0)';
+      x.fillRect(0, Y(n, 0.9), n, n - Y(n, 0.9));
+      x.fillStyle = 'rgb(0,120,70)';
+      x.fillRect(0, Y(n, 5.0), n, Y(n, 4.4) - Y(n, 5.0));
+    });
+    const mFach = new THREE.MeshStandardMaterial({
+      map: tex,
+      emissive: 0xffffff,
+      emissiveMap: texLuz,
+      emissiveIntensity: 0,
+      roughness: 1,
+      metalness: 1,
+      roughnessMap: texRM,
+      metalnessMap: texRM,
+      side: THREE.DoubleSide
+    });
+    if (GM.texturas) GM.texturas.aplicar(mFach, 'Concrete034', { mascara: true, relieve: 0.5, rugMin: 0.6 });
+    recortable(S, mFach);
+    if (S.ventanas) S.ventanas.push(mFach);
+    const F = malla();
+    let u = 0;
+    for (let i = 0; i < nP; i++) {
+      const a = P[i],
+        e = P[(i + 1) % nP],
+        l = Math.hypot(e[0] - a[0], e[1] - a[1]),
+        [nx, nz] = fuera(i),
+        v0 = vert(F, a[0], 0, a[1], u / 6, 0),
+        v1 = vert(F, e[0], 0, e[1], (u + l) / 6, 0),
+        v2 = vert(F, e[0], h, e[1], (u + l) / 6, 1),
+        v3 = vert(F, a[0], h, a[1], u / 6, 1);
+      quad(F, v0, v1, v2, v3, nx, 0, nz);
+      u += l;
+    }
+    const perim = u;
+    mallaDe(F, mFach, true);
+    // ---------- Cornisa del color del club ----------
+    const mCorn = recortable(S, new THREE.MeshStandardMaterial({ color: c1, roughness: 0.45, metalness: 0.25, side: THREE.DoubleSide })),
+      mGris = recortable(S, new THREE.MeshStandardMaterial({ color: 0xb4babf, roughness: 0.5, metalness: 0.4, side: THREE.DoubleSide }));
+    const K = malla(),
+      K2 = malla(),
+      sal = 0.15,
+      yc0 = h - 0.45,
+      yc1 = h + 0.85;
+    // vértice del contorno desplazado hacia fuera (media de las normales de sus dos tramos)
+    const desplazado = (i, d) => {
+      const f0 = fuera((i - 1 + nP) % nP),
+        f1 = fuera(i),
+        mx = f0[0] + f1[0],
+        mz = f0[1] + f1[1],
+        ml = Math.hypot(mx, mz) || 1;
+      return [P[i][0] + (mx / ml) * d, P[i][1] + (mz / ml) * d];
+    };
+    for (let i = 0; i < nP; i++) {
+      const j = (i + 1) % nP,
+        a = desplazado(i, sal),
+        e = desplazado(j, sal),
+        ai = desplazado(i, -0.5),
+        ei = desplazado(j, -0.5),
+        [nx, nz] = fuera(i);
+      quad(K, vert(K, a[0], yc0, a[1], 0, 0), vert(K, e[0], yc0, e[1], 1, 0), vert(K, e[0], yc1, e[1], 1, 1), vert(K, a[0], yc1, a[1], 0, 1), nx, 0, nz);
+      quad(K2, vert(K2, a[0], yc1, a[1], 0, 0), vert(K2, e[0], yc1, e[1], 1, 0), vert(K2, ei[0], yc1, ei[1], 1, 1), vert(K2, ai[0], yc1, ai[1], 0, 1), 0, 1, 0);
+    }
+    mallaDe(K, mCorn, false);
+    mallaDe(K2, mGris, false);
+    // lamas verticales de chapa delante de los paneles, cada 1,5 m de contorno: dan relieve y sombra a la fachada
+    {
+      const partes = [],
+        caja = new THREE.BoxGeometry(0.14, 8.4, 0.55),
+        m4 = new THREE.Matrix4();
+      let rec = 0.75;
+      for (let i = 0; i < nP; i++) {
+        const a = P[i],
+          e = P[(i + 1) % nP],
+          l = Math.hypot(e[0] - a[0], e[1] - a[1]),
+          [nx, nz] = fuera(i);
+        while (rec < l) {
+          const t = rec / l;
+          m4.makeRotationY(Math.atan2(nx, nz)).setPosition(a[0] + (e[0] - a[0]) * t + nx * 0.3, 5.0 + 4.2, a[1] + (e[1] - a[1]) * t + nz * 0.3);
+          partes.push(caja.clone().applyMatrix4(m4));
+          rec += 1.5;
+        }
+        rec -= l;
+      }
+      if (partes.length && THREE.mergeGeometries) {
+        const g = THREE.mergeGeometries(partes),
+          m = new THREE.Mesh(g, mGris);
+        m.castShadow = m.receiveShadow = !!alta;
+        m.userData = { pabellonReal: true };
+        W.add(m);
+      }
+      partes.forEach(g => g.dispose());
+      caja.dispose();
+    }
+    // ---------- Cubierta ----------
+    // tipo según la planta: rectangularidad = área / área del rectángulo orientado mínimo (probando la dirección de cada lado)
+    const area = Math.abs(A2) / 2;
+    let rect = null;
+    for (let i = 0; i < b.p.length; i++) {
+      const a = b.p[i],
+        e = b.p[(i + 1) % b.p.length],
+        l = Math.hypot(e[0] - a[0], e[1] - a[1]);
+      if (l < 2) continue;
+      const ux = (e[0] - a[0]) / l,
+        uz = (e[1] - a[1]) / l;
+      let u0 = 1e9,
+        u1 = -1e9,
+        w0 = 1e9,
+        w1 = -1e9;
+      b.p.forEach(q => {
+        const pu = q[0] * ux + q[1] * uz,
+          pw = -q[0] * uz + q[1] * ux;
+        u0 = Math.min(u0, pu);
+        u1 = Math.max(u1, pu);
+        w0 = Math.min(w0, pw);
+        w1 = Math.max(w1, pw);
+      });
+      const ar = (u1 - u0) * (w1 - w0);
+      if (!rect || ar < rect.ar) rect = { ar, ux, uz, u0, u1, w0, w1 };
+    }
+    const rectangularidad = rect ? area / rect.ar : 0;
+    // material de la cubierta: chapa con costillas (2 por repetición de la textura) y correas suaves
+    const texCub = M.textura('real-cubierta-pab', 512, (x, n) => {
+      x.fillStyle = '#dfe3e6';
+      x.fillRect(0, 0, n, n);
+      for (let k = 0; k < 2; k++) {
+        x.fillStyle = k ? 'rgba(0,0,0,.035)' : 'rgba(255,255,255,.05)';
+        x.fillRect((k * n) / 2, 0, n / 2, n);
+      }
+      x.fillStyle = 'rgba(70,80,90,.35)';
+      for (let k = 0; k < 8; k++) x.fillRect((k * n) / 8, 0, k % 4 === 0 ? 5 : 2, n); // costilla principal y juntas de chapa
+      x.fillStyle = 'rgba(255,255,255,.35)';
+      for (let k = 0; k < 8; k++) x.fillRect((k * n) / 8 + (k % 4 === 0 ? 5 : 2), 0, 1, n);
+      x.fillStyle = 'rgba(70,80,90,.12)';
+      for (let j = 0; j < 4; j++) x.fillRect(0, (j * n) / 4, n, 2);
+    });
+    const mCub = recortable(S, new THREE.MeshStandardMaterial({ map: texCub, color: 0xffffff, metalness: 0.45, roughness: 0.4, side: THREE.DoubleSide }));
+    const mVid = recortable(
+      S,
+      new THREE.MeshStandardMaterial({ color: 0x33434f, roughness: 0.12, metalness: 0.6, emissive: 0xfff0d8, emissiveMap: texLuz, emissiveIntensity: 0, side: THREE.DoubleSide })
+    );
+    const C = malla(),
+      Vd = malla(),
+      costura = [],
+      y0 = h + 0.55;
+    // centro desde el que se ve todo el contorno (si no lo hay, la cúpula no se puede hacer por anillos)
+    const ve = (cx, cz) => P.every((q, i) => sg * ((q[0] - cx) * (P[(i + 1) % nP][1] - cz) - (P[(i + 1) % nP][0] - cx) * (q[1] - cz)) > 0.01);
+    let cx = 0,
+      cz = 0;
+    {
+      let s6 = 0;
+      for (let i = 0; i < b.p.length; i++) {
+        const q = b.p[i],
+          r = b.p[(i + 1) % b.p.length],
+          cr = q[0] * r[1] - r[0] * q[1];
+        cx += (q[0] + r[0]) * cr;
+        cz += (q[1] + r[1]) * cr;
+        s6 += cr;
+      }
+      cx /= 3 * s6 || 1;
+      cz /= 3 * s6 || 1;
+    }
+    const centros = [
+        [cx, cz],
+        [(b.bb[0] + b.bb[2]) / 2, (b.bb[1] + b.bb[3]) / 2],
+        [P.reduce((s, q) => s + q[0], 0) / nP, P.reduce((s, q) => s + q[1], 0) / nP]
+      ],
+      centro = centros.find(c => ve(c[0], c[1]));
+    if (rectangularidad > 0.88 && rect) {
+      // bóveda de cañón: el arco va de un lado largo al otro; las juntas de chapa siguen el arco
+      let { ux, uz, u0, u1, w0, w1 } = rect;
+      if (u1 - u0 < w1 - w0) {
+        [ux, uz] = [-uz, ux];
+        [u0, u1, w0, w1] = [w0, w1, -u1, -u0];
+      }
+      const wm = (w0 + w1) / 2,
+        hw = (w1 - w0) / 2 + 0.3,
+        alto = Math.max(2, Math.min(8, hw * 0.28)),
+        nu = Math.max(2, Math.ceil((u1 - u0) / 6)),
+        nw = 16,
+        pt = (pu, pw) => [pu * ux - pw * uz, pu * uz + pw * ux],
+        yA = t => y0 + alto * (1 - t * t);
+      const fila = [];
+      for (let j = 0; j <= nw; j++) {
+        const t = (j / nw) * 2 - 1;
+        fila.push({ t, w: wm + t * hw, y: yA(t), arco: 0 });
+      }
+      for (let j = 1; j <= nw; j++) fila[j].arco = fila[j - 1].arco + Math.hypot(fila[j].w - fila[j - 1].w, fila[j].y - fila[j - 1].y);
+      const ids = [];
+      for (let i = 0; i <= nu; i++) {
+        const pu = u0 - 0.3 + ((u1 - u0 + 0.6) * i) / nu;
+        ids.push(
+          fila.map(f => {
+            const [x, z] = pt(pu, f.w);
+            return vert(C, x, f.y, z, pu / 4, f.arco / 8);
+          })
+        );
+      }
+      for (let i = 0; i < nu; i++) for (let j = 0; j < nw; j++) quad(C, ids[i][j], ids[i + 1][j], ids[i + 1][j + 1], ids[i][j + 1], 0, 1, 0);
+      // testeros: lunetos de cristal bajo el arco en los dos extremos
+      for (const [pu, sgn] of [
+        [u0 - 0.3, -1],
+        [u1 + 0.3, 1]
+      ]) {
+        const nx = ux * sgn,
+          nz = uz * sgn;
+        for (let j = 0; j < nw; j++) {
+          const f0 = fila[j],
+            f1 = fila[j + 1],
+            [ax, az] = pt(pu, f0.w),
+            [ex, ez] = pt(pu, f1.w);
+          quad(Vd, vert(Vd, ax, h, az, 0.12, 0.9), vert(Vd, ex, h, ez, 0.12, 0.9), vert(Vd, ex, f1.y, ez, 0.12, 0.9), vert(Vd, ax, f0.y, az, 0.12, 0.9), nx, 0, nz);
+        }
+      }
+    } else if (centro) {
+      // cúpula rebajada ajustada al contorno: anillos del contorno encogidos hacia el centro, más altos cuanto más dentro
+      const [ox, oz] = centro,
+        maxR = Math.max(...P.map(q => Math.hypot(q[0] - ox, q[1] - oz))),
+        alto = Math.max(3, Math.min(10, maxR * 0.15)),
+        S_ = [1, 0.95, 0.87, 0.76, 0.63, 0.48, 0.32, 0.17],
+        yS = s => y0 + alto * Math.pow(Math.max(0, 1 - s * s), 0.75),
+        nR = 2 * Math.max(4, Math.round(perim / 16)); // costillas: una cada 8 m en el borde
+      const cum = [0];
+      for (let i = 1; i < nP; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+      const anillos = S_.map((s, k) => P.map((q, i) => vert(C, ox + (q[0] - ox) * s, yS(s), oz + (q[1] - oz) * s, (cum[i] / perim) * nR * 0.5, k * 0.6)));
+      // vértices de cierre (u = nR / 2) para que la textura no se rompa en la costura
+      const cierre = S_.map((s, k) => vert(C, ox + (P[0][0] - ox) * s, yS(s), oz + (P[0][1] - oz) * s, nR * 0.5, k * 0.6));
+      S_.forEach((s, k) => costura.push([anillos[k][0], cierre[k]]));
+      for (let k = 0; k + 1 < S_.length; k++)
+        for (let i = 0; i < nP; i++) {
+          const j = i + 1 < nP ? anillos[k][i + 1] : cierre[k],
+            jn = i + 1 < nP ? anillos[k + 1][i + 1] : cierre[k + 1];
+          quad(C, anillos[k][i], j, jn, anillos[k + 1][i], 0, 1, 0);
+        }
+      // lucernario: anillo de cristal de 1,4 m y tapa del color del club
+      const sL = S_[S_.length - 1],
+        yL = yS(sL),
+        T_ = malla();
+      for (let i = 0; i < nP; i++) {
+        const q = P[i],
+          r = P[(i + 1) % nP],
+          ax = ox + (q[0] - ox) * sL,
+          az = oz + (q[1] - oz) * sL,
+          ex = ox + (r[0] - ox) * sL,
+          ez = oz + (r[1] - oz) * sL,
+          [nx, nz] = fuera(i);
+        quad(
+          Vd,
+          vert(Vd, ax, yL - 0.2, az, 0.12, 0.9),
+          vert(Vd, ex, yL - 0.2, ez, 0.12, 0.9),
+          vert(Vd, ex, yL + 1.4, ez, 0.12, 0.9),
+          vert(Vd, ax, yL + 1.4, az, 0.12, 0.9),
+          nx,
+          0,
+          nz
+        );
+        tri(T_, vert(T_, ax, yL + 1.4, az, 0, 0), vert(T_, ex, yL + 1.4, ez, 0, 0), vert(T_, ox, yL + 2.1, oz, 0, 0), 0, 1, 0);
+      }
+      mallaDe(T_, mGris, false);
+    } else {
+      // cubierta plana (planta muy irregular)
+      const t = THREE.ShapeUtils.triangulateShape(
+          b.p.map(q => new THREE.Vector2(q[0], q[1])),
+          []
+        ),
+        ids = b.p.map(q => vert(C, q[0], h + 0.3, q[1], q[0] / 8, q[1] / 8));
+      t.forEach(k => tri(C, ids[k[0]], ids[k[1]], ids[k[2]], 0, 1, 0));
+    }
+    const mc = mallaDe(C, mCub, true);
+    // la costura de la cúpula tiene vértices repetidos: se igualan sus normales para que no se vea la línea
+    if (mc && costura.length) {
+      const nn = mc.geometry.attributes.normal;
+      costura.forEach(([a, e]) => {
+        const x = nn.getX(a) + nn.getX(e),
+          y = nn.getY(a) + nn.getY(e),
+          z = nn.getZ(a) + nn.getZ(e),
+          l = Math.hypot(x, y, z) || 1;
+        nn.setXYZ(a, x / l, y / l, z / l);
+        nn.setXYZ(e, x / l, y / l, z / l);
+      });
+    }
+    mallaDe(Vd, mVid, false);
+    if (S.ventanas) S.ventanas.push(mVid);
+  }
   function texFachada(M) {
     const base = M.textura('real-fachada', 128, (x, n) => {
       x.fillStyle = '#ffffff';
@@ -1446,54 +1846,7 @@
       bloquearPoli(b.p, 0.35);
       (porChunk[claveChunk(b)] = porChunk[claveChunk(b)] || []).push(b);
     });
-    {
-      const b = roles.pabellon,
-        [x0, z0, x1, z1] = b.bb,
-        hx = (x1 - x0) / 2,
-        hz = (z1 - z0) / 2,
-        alto = Math.min(9, Math.max(hx, hz) * 0.22);
-      const cu = new THREE.Mesh(
-        new THREE.SphereGeometry(1, 48, 14, 0, Math.PI * 2, 0, Math.PI / 2),
-        recortable(
-          S,
-          new THREE.MeshStandardMaterial({
-            map: M.textura('real-cupula', 512, (x, n) => {
-              x.fillStyle = '#d6dadd';
-              x.fillRect(0, 0, n, n);
-              x.strokeStyle = '#9aa1a8';
-              x.lineWidth = 2;
-              for (let i = 0; i <= 24; i++) {
-                x.beginPath();
-                x.moveTo((i * n) / 24, 0);
-                x.lineTo((i * n) / 24, n);
-                x.stroke();
-              }
-              for (let j = 0; j <= 8; j++) {
-                x.beginPath();
-                x.moveTo(0, (j * n) / 8);
-                x.lineTo(n, (j * n) / 8);
-                x.stroke();
-              }
-              x.fillStyle = 'rgba(0,0,0,.06)';
-              for (let i = 0; i < 24; i += 2) x.fillRect((i * n) / 24, 0, n / 24, n);
-            }),
-            color: 0xffffff,
-            metalness: 0.4,
-            roughness: 0.42
-          })
-        )
-      );
-      cu.scale.set(hx * 0.97, alto, hz * 0.97);
-      cu.position.set((x0 + x1) / 2, b.h, (z0 + z1) / 2);
-      cu.castShadow = alta;
-      cu.userData = { cupula: true };
-      W.add(cu);
-      const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 64).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: c1, roughness: 0.6 }));
-      aro.scale.set(hx * 0.97, 1, hz * 0.97);
-      aro.position.set((x0 + x1) / 2, b.h + 0.15, (z0 + z1) / 2);
-      aro.userData = { cupula: true };
-      W.add(aro);
-    }
+    pabellonReal(S, W, M, roles.pabellon, club, c1, alta);
     // Ciudad por trozos: cada celda de 90 m se construye cuando el personaje o la cámara se acercan (a menos de 340 m, la más cercana primero y con un presupuesto de milisegundos por fotograma) y se descarta al alejarse (más de 520 m).
     // Al abrir la escena solo se crean las celdas del centro; el resto va apareciendo en los fotogramas siguientes. Con ciudades más grandes que la actual (punto 31) este es el mecanismo que evita construirlo todo de golpe.
     const vivos = {},
@@ -1506,8 +1859,9 @@
     const construirChunk = k => {
       delete chunks[k];
       (porChunk[k] || []).forEach(b => {
+        if (b === roles.pabellon) return; // el pabellón tiene fachada y cubierta propias (pabellonReal)
         pared(b, b.h, 0);
-        if (b !== roles.pabellon) techo(b, b.h);
+        techo(b, b.h);
       });
       const c = chunks[k],
         lista = (vivos[k] = []);
@@ -2155,7 +2509,7 @@
         fr = frente(b, X);
       const ancho = Math.min(o.ancho || 6, Math.max(2.5, fr.l * 0.85)),
         y = o.y || (b.cl === 2 || b.cl === 12 ? 3.05 : 3.7);
-      cartel(W, M, txt, fondo, letra, p.mx + p.nx * 0.07, y, p.mz + p.nz * 0.07, p.ry, ancho);
+      cartel(W, M, txt, fondo, letra, p.mx + p.nx * (o.sale || 0.07), y, p.mz + p.nz * (o.sale || 0.07), p.ry, ancho);
       puertaVisual(W, p, 1.8, fondo, S);
       zonas[clave] = [p.x, p.z];
       paseo.push([p.x, p.z]);
@@ -2184,7 +2538,7 @@
     // Pabellón: el edificio real con su rótulo grande y las banderas del club
     {
       const b = R.pabellon,
-        p = poner('pabellon', b, club.pabellon.nombre.toUpperCase(), '#14181d', '#ffffff', { ancho: 12, y: 6.2, fuera: 2.2 });
+        p = poner('pabellon', b, club.pabellon.nombre.toUpperCase(), '#14181d', '#ffffff', { ancho: 12, y: 6.2, fuera: 2.2, sale: 0.7 }); // el rótulo, por delante de las lamas de la fachada
       S.ptoPab = [p.x, p.z];
       entrada('interior:pabellon', p);
       S.puertas.pabellon = S.puertas['interior:pabellon'];
