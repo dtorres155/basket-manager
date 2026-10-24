@@ -2425,7 +2425,9 @@
         texNube = new THREE.CanvasTexture(c);
       }
     }
-    const nN = C.tipo === 'lluvia' || C.tipo === 'nieve' ? 22 : C.tipo === 'nubes' ? 16 : 5,
+    // en calidad alta y en exteriores, cielo calculado con nubes de verdad (cielo.js, punto 102); las nubes planas quedan para calidad normal
+    const domo = !!(GM.cielo && (S.escena === 'calle' || S.escena === 'pueblo' || S.escena === 'deportiva') && GM.cielo.montar(S));
+    const nN = domo ? 0 : C.tipo === 'lluvia' || C.tipo === 'nieve' ? 22 : C.tipo === 'nubes' ? 16 : 5,
       gN = new THREE.Group();
     gN.userData = { nubes: true };
     if (texNube)
@@ -2571,6 +2573,7 @@
       a.needsUpdate = true;
       S.nieveObj.position.set(S.foco.x, 0, S.foco.z);
     }
+    if (S.cieloDomo && GM.cielo) GM.cielo.actualizar(S, (S.tCielo = (S.tCielo || 0) + dt));
     if (S.nubesObj) {
       S.nubesObj.position.x += dt * 1.6;
       S.nubesObj.position.z = S.foco.z * 0.6;

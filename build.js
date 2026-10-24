@@ -31,6 +31,7 @@ const mods = [
   'relieve3d',
   'texturas',
   'sol',
+  'cielo',
   'catalogo_personas',
   'urbano',
   'vehiculos',
