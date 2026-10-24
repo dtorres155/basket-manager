@@ -1,6 +1,7 @@
 # Pautas para probar el juego (tú solo, por sesiones)
 
 ## Cómo probar desde la versión 0.9.132 (fase A de la hoja de ruta 2)
+En la 0.9.134 (fase B) mira sobre todo fachadas, aceras, la muralla del pueblo, los suelos de casa y sede y la pista del pabellón: si algo tiene una escala rara o parece puesto al azar, F8.
 - Usa la **app de escritorio** (se actualiza sola) y tu partida de **modo carrera**.
 - Cuando algo te chirríe (se ve mal, no se entiende, va a tirones, falta algo), pulsa **F8**: se hace una captura, escribes o dictas (Win + H) una frase y, si quieres, pones una nota del 1 al 5. Se guarda solo en `DocumentosBasketManager
 otas`, donde lo leo yo. No hace falta copiar nada.

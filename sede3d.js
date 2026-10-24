@@ -199,11 +199,25 @@
       m = new THREE.MeshStandardMaterial({ map: t, color: t ? 0xffffff : 0x999999, roughness: tipo === 'marmol' ? 0.35 : tipo === 'parquet' ? 0.5 : 0.85 });
     const TR = GM.texturas;
     if (!TR) return m;
-    if (tipo === 'madera') return TR.aplicar(m, 'WoodFloor051', { rugosidad: 0.6, rugMin: 0.35 });
-    if (tipo === 'madera_oscura') return TR.aplicar(m, 'WoodFloor051', { tinte: 0x8a6650, rugosidad: 0.55, rugMin: 0.3 });
-    if (tipo === 'marmol') return TR.aplicar(m, 'Marble006', { tinte: 0xd8d8d8, rugosidad: 0.25, rugMin: 0.12 });
+    const elige = (a, b) => (TR.tiene(a) ? a : b);
+    if (tipo === 'moqueta' && TR.tiene('Carpet012')) return TR.aplicar(m, 'Carpet012', { tinte: 0xd8deea, rugosidad: 1, rugMin: 0.85 });
+    if (tipo === 'madera') return TR.aplicar(m, elige('WoodFloor040', 'WoodFloor051'), { rugosidad: 0.6, rugMin: 0.35 });
+    if (tipo === 'madera_oscura')
+      return TR.aplicar(m, elige('WoodFloor064', 'WoodFloor051'), { tinte: TR.tiene('WoodFloor064') ? 0xffffff : 0x8a6650, rugosidad: 0.55, rugMin: 0.3 });
+    if (tipo === 'marmol') return TR.aplicar(m, elige('Marble012', 'Marble006'), { tinte: TR.tiene('Marble012') ? 0xffffff : 0xd8d8d8, rugosidad: 0.25, rugMin: 0.12 });
     if (tipo === 'parquet') return TR.aplicar(m, 'WoodFloor051', { tinte: 0xf0dcc4, relieve: 0.7, rugosidad: 0.45, rugMin: 0.3 }); // la foto real del parqué a su tamaño (antes: tablas dibujadas con otro relieve encima)
     if (tipo === 'hormigon' || tipo === 'baldosa') return TR.aplicar(m, 'Concrete034', { color: false, relieve: 0.5 });
+    return m;
+  }
+  // Material de pista: en calidad alta, parqué real claro (a su tamaño) bajo las líneas y las zonas pintadas; si no, la pista dibujada
+  function pistaMat(club, rugosidad) {
+    const T = GM.texturas,
+      real = !!(T && T.listo() && GM.campus && GM.campus.config.calidad === 'alta' && T.tiene('WoodFloor062'));
+    const t0 = pistaTex(club, real),
+      t = t0 ? t0.clone() : null;
+    if (t) t.needsUpdate = true;
+    const m = new THREE.MeshStandardMaterial(t ? { map: t, roughness: rugosidad || 0.45 } : { color: '#c98d4f', roughness: 0.5 });
+    if (real && t) T.aplicar(m, 'WoodFloor062', { mascara: true, tinte: 0xffeedd, rugosidad: 0.35, rugMin: 0.22, relieve: 0.5 });
     return m;
   }
   function plano(w, d, m, x, z, y, escUV) {
@@ -216,10 +230,14 @@
     me.receiveShadow = true;
     return me;
   }
-  function pistaTex(club) {
-    return textura('pista-' + club.siglas, 1024, (x, n) => {
-      SUELOS.parquet(x, n);
-      x.strokeStyle = '#ffffff';
+  // real = true: fondo blanco puro (ahí se ve el parqué real de pistaMat, por máscara) y líneas en crema muy claro para que no se confundan
+  function pistaTex(club, real) {
+    return textura('pista-' + club.siglas + (real ? '-real' : ''), 1024, (x, n) => {
+      if (real) {
+        x.fillStyle = '#ffffff';
+        x.fillRect(0, 0, n, n);
+      } else SUELOS.parquet(x, n);
+      x.strokeStyle = real ? '#fff6d2' : '#ffffff';
       x.lineWidth = 6;
       const W = n,
         H = n * 0.6,
@@ -238,7 +256,7 @@
       x.arc(W / 2, n / 2, 66, 0, 6.29);
       x.fill();
       x.globalAlpha = 1;
-      x.fillStyle = '#fff';
+      x.fillStyle = real ? '#fff6d2' : '#fff';
       x.font = 'bold 54px sans-serif';
       x.textAlign = 'center';
       x.textBaseline = 'middle';
@@ -3771,7 +3789,8 @@
       aplicarAmbiente();
       return S.clima;
     },
-    pistaTex: c => pistaTex(c),
+    pistaTex: (c, real) => pistaTex(c, real),
+    pistaMat: (c, rug) => pistaMat(c, rug),
     motor: () => motor(),
     aspecto,
     figura,

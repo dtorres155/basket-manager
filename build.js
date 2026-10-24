@@ -350,11 +350,13 @@ const archivos = ['./', 'index.html', 'three.min.js', 'manifest.webmanifest'].co
   FUENTES.map(x => 'fonts/' + x[2]),
   ICONOS.map(f => 'icons/' + f),
   MODELOS,
-  AUDIO,
-  TEXTURAS
-); // las ciudades (osm/), los cielos HDRI, el transcodificador Basis, las texturas KTX2 y los modelos realistas se piden la primera vez y se guardan en la caché (ya no se descargan las 120 ciudades al instalar)
+  AUDIO
+); // las texturas (JPG y KTX2; se piden bajo demanda desde la fase B, son 59 materiales), las ciudades (osm/), los cielos HDRI, el transcodificador Basis y los modelos realistas se piden la primera vez y se guardan en la caché (ya no se descargan las 120 ciudades al instalar)
 const hash = require('crypto').createHash('sha1');
-archivos.filter(f => f !== './').forEach(f => hash.update(fs.readFileSync(path.join(DIST, f))));
+archivos
+  .concat(TEXTURAS)
+  .filter(f => f !== './')
+  .forEach(f => hash.update(fs.readFileSync(path.join(DIST, f)))); // las texturas cuentan para la versión aunque no se precarguen
 const VERSION = hash.digest('hex').slice(0, 10);
 const sw = `// Generado por build.js. No editar a mano.
 const VERSION = 'bm-${VERSION}';

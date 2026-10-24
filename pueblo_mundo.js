@@ -1068,13 +1068,15 @@
     return g0;
   }
   function muralla(W, G, O, E, nivel, club) {
+    const T3c = THREE.Color;
     const piedra = mat(E.clave === 'toscano' ? '#b4724a' : E.clave === 'andaluz' ? '#ece6da' : '#a99377');
-    if (GM.texturas)
-      GM.texturas.aplicar(
-        piedra,
-        E.clave === 'andaluz' ? 'Plaster003' : 'Bricks085',
-        E.clave === 'andaluz' ? { color: false, escala: 2, relieve: 1 } : { color: false, escala: 1.4, relieve: 1.3 }
-      );
+    // muralla de sillares de piedra reales con el tono de la región, o encalada en el estilo andaluz (punto 94)
+    if (GM.texturas) {
+      const T = GM.texturas,
+        tono = new T3c(E.clave === 'toscano' ? '#e8b48e' : E.clave === 'andaluz' ? '#ffffff' : '#efe4d2').getHex();
+      if (E.clave === 'andaluz') T.aplicar(piedra, T.tiene('PaintedPlaster017') ? 'PaintedPlaster017' : 'Plaster003', { tinte: tono, relieve: 1 });
+      else T.aplicar(piedra, T.tiene('Bricks113A') ? 'Bricks113A' : 'Bricks085', { tinte: tono, relieve: 1.2 });
+    }
     const N = 84,
       alto = 5.5 + Math.min(2, nivel * 0.4);
     const puerta = am => Math.abs(am - Math.PI / 2) < 0.07 || Math.abs(am - (3 * Math.PI) / 2) < 0.08;
@@ -1472,7 +1474,8 @@
     }
     {
       const piedra = mat('#9b9285', { roughness: 1 });
-      if (GM.texturas) GM.texturas.aplicar(piedra, 'Bricks085', { color: false, relieve: 1 });
+      // muralla y torres de sillares de piedra reales (punto 94)
+      if (GM.texturas) GM.texturas.aplicar(piedra, GM.texturas.tiene('Bricks113A') ? 'Bricks113A' : 'Bricks085', { tinte: 0xe8e0d0, relieve: 1.1 });
       const N = 260,
         im = new T.InstancedMesh(new T.BoxGeometry(1.2, 0.7, 0.5), piedra, N);
       let k = 0;
@@ -1699,7 +1702,7 @@
       const TR = GM.texturas,
         claro = E.clave === 'andaluz';
       TR.aplicar(mCalle, 'PavingStones070', { tinte: claro ? 0xf2e6d0 : 0xdcc6a2 });
-      if (mLosas.isMaterial) TR.aplicar(mLosas, 'PavingStones070', { tinte: claro ? 0xf0e8d8 : 0xd6cab4 });
+      if (mLosas.isMaterial) TR.aplicar(mLosas, TR.tiene('PavingStones138') ? 'PavingStones138' : 'PavingStones070', { tinte: claro ? 0xf6f0e6 : 0xe6dccb });
       TR.aplicar(mBordillo, 'Concrete034', { tinte: claro ? 0xf0e8d8 : 0xb8aa94, relieve: 0.8 });
       TR.aplicar(mAsf, 'Asphalt010', { tinte: 0xb4b4b4 });
       TR.aplicar(mGrava, 'Ground054', { tinte: 0xf0e2c0, relieve: 0.5 });

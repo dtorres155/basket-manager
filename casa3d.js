@@ -113,10 +113,19 @@
   ];
   // En calidad alta los suelos son materiales reales a su tamaño (punto 92 de la hoja de ruta 2): antes, tablas de 25 cm dibujadas por
   // código. El dibujo queda para calidad normal y para la moqueta (hasta que haya una real).
-  const SUELO_REAL = [['WoodFloor051', 0xfff0dc], ['WoodFloor051', 0x8a6650], ['Tiles074', 0xffffff], ['Marble006', 0xe6e6e6], null, ['WoodFloor051', 0xffe4c4]];
+  // [material preferido, respaldo, tinte del respaldo]: tarima clara, tarima oscura, baldosa hidráulica, mármol, moqueta y parquet de pista
+  const SUELO_REAL = [
+    ['WoodFloor062', 'WoodFloor051', 0xfff0dc],
+    ['WoodFloor064', 'WoodFloor051', 0x8a6650],
+    ['Tiles139', 'Tiles074', 0xffffff],
+    ['Marble014', 'Marble006', 0xe6e6e6],
+    ['Carpet016', null, 0xffffff],
+    ['WoodFloor040', 'WoodFloor051', 0xffe4c4]
+  ];
   function sueloReal(mat, k) {
-    const R = SUELO_REAL[k],
-      T = GM.texturas;
+    const T = GM.texturas,
+      F = SUELO_REAL[k],
+      R = F && T && (T.tiene(F[0]) ? [F[0], 0xffffff] : F[1] ? [F[1], F[2]] : null);
     if (!R || !mat || !T || !T.listo() || !GM.campus || GM.campus.config.calidad !== 'alta') return false;
     mat.userData.texturaReal = null; // se puede cambiar de suelo en las reformas
     T.aplicar(mat, R[0], { tinte: R[1], rugosidad: k === 3 ? 0.25 : 0.55, rugMin: k === 3 ? 0.12 : 0.35 });

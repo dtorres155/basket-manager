@@ -48,14 +48,17 @@
     const k = 'mur' + hex;
     if (REAL[k]) return REAL[k];
     const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.96 });
-    if (GM.texturas) GM.texturas.aplicar(m, 'Plaster003', { color: false, relieve: 1.3 });
+    // revoque pintado real con el color de la casa (punto 94); antes, color liso con relieve de revoque
+    if (GM.texturas) GM.texturas.aplicar(m, GM.texturas.tiene('PaintedPlaster017') ? 'PaintedPlaster017' : 'Plaster003', { tinte: hex, relieve: 1.2 });
     return (REAL[k] = m);
   }
   function piedraMat(hex) {
     const k = 'pie' + hex;
     if (REAL[k]) return REAL[k];
     const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.95 });
-    if (GM.texturas) GM.texturas.aplicar(m, 'Bricks085', { color: false, relieve: 1.5 });
+    // sillares de piedra reales con un toque del tono de la región (antes: relieve de ladrillo sobre color liso)
+    if (GM.texturas)
+      GM.texturas.aplicar(m, GM.texturas.tiene('Bricks113A') ? 'Bricks113A' : 'Bricks085', { tinte: new T.Color(hex).lerp(new T.Color('#ffffff'), 0.55).getHex(), relieve: 1.3 });
     return (REAL[k] = m);
   }
   let EST = 'verano',
@@ -69,7 +72,8 @@
     const k = 'tej' + hex;
     if (REAL[k]) return REAL[k];
     const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.9 });
-    if (GM.texturas) GM.texturas.aplicar(m, 'RoofingTiles013A', { color: false, relieve: 1.6 });
+    // teja árabe real con el tono de la región
+    if (GM.texturas) GM.texturas.aplicar(m, 'RoofingTiles013A', { tinte: new T.Color(hex).lerp(new T.Color('#ffffff'), 0.5).getHex(), relieve: 1.4 });
     return (REAL[k] = m);
   }
   function maderaMat(hex) {

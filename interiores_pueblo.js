@@ -1541,8 +1541,7 @@
     const { W, G, S, x0, x1, z0, z1, c1, c2 } = c,
       cx = 0;
     const pista = (ww, dd, tint) => {
-      const tx = GM.sede.pistaTex && GM.sede.pistaTex(c.club);
-      const mp = tx ? new THREE.MeshStandardMaterial({ map: tx.clone(), roughness: 0.5 }) : mat(tint || '#c98d4f');
+      const mp = GM.sede.pistaMat ? GM.sede.pistaMat(c.club, 0.5) : mat(tint || '#c98d4f');
       const p = new THREE.Mesh(new THREE.PlaneGeometry(ww, dd).rotateX(-Math.PI / 2), mp);
       p.position.set(0, 0.015, 0.4);
       W.add(p);

@@ -171,15 +171,28 @@
   // Reglas de material de fachada (punto 94 de la hoja de ruta 2): por país y estilo de fachada (0 casa, 1 balconera, 2 oficinas y torres,
   // 3 ensanche, 4 bloque, 5 nave). Cada casilla es una lista de preferencia: se usa el primer material que esté cargado.
   // Los de ladrillo, hormigón y chapa llevan su color propio (el edificio no se pinta); los revoques se pintan con la paleta del barrio.
+  // Fase B (punto 94) con los materiales descargados. Casa y balconera pintadas; oficinas y torres de hormigón; ensanche de estuco (de
+  // ladrillo beige en EE. UU.); bloques de ladrillo visto en España y EE. UU., de hormigón en Grecia, Turquía y Alemania; naves de chapa.
   const MED = ['Plaster003'],
+    PINT = ['PaintedPlaster017', 'Plaster003'],
+    CHAPA = ['CorrugatedSteel009', 'Metal055A'],
     REGLAS_FACHADA = {
-      ES: [MED, MED, ['Concrete034'], MED, ['Bricks085', 'Plaster003'], ['Metal055A']],
-      IT: [MED, MED, ['Concrete034'], MED, MED, ['Metal055A']],
-      GR: [MED, MED, ['Concrete034'], MED, MED, ['Metal055A']],
-      TR: [MED, MED, ['Concrete034'], MED, MED, ['Metal055A']],
-      DE: [MED, MED, ['Concrete034'], MED, MED, ['Metal055A']],
-      US: [['Bricks085'], ['Bricks085'], ['Concrete034'], ['Bricks085'], ['Bricks085'], ['Metal055A']]
+      ES: [PINT, MED, ['Concrete046', 'Concrete034'], MED, ['Bricks085'], CHAPA],
+      IT: [PINT, MED, ['Concrete046', 'Concrete034'], MED, MED, CHAPA],
+      GR: [PINT, PINT, ['Concrete045', 'Concrete034'], MED, ['Concrete046', 'Concrete034'], CHAPA],
+      TR: [PINT, PINT, ['Concrete045', 'Concrete034'], MED, ['Concrete046', 'Concrete034'], CHAPA],
+      DE: [MED, MED, ['Concrete046', 'Concrete034'], MED, ['Concrete048', 'Concrete034'], CHAPA],
+      US: [['Bricks085'], ['Bricks085'], ['Concrete046', 'Concrete034'], ['Bricks105', 'Bricks085'], ['Bricks085'], CHAPA]
     };
+  // Cubiertas y suelos por país: azotea de losas en el Mediterráneo y de grava en el norte y EE. UU.; teja árabe en el sur, gris en
+  // Alemania y oscura (tipo pizarra) en EE. UU.; aceras de losa de hormigón en las ciudades y adoquín donde ya lo había
+  const MEDITERRANEO = ['ES', 'IT', 'GR', 'TR'];
+  const cubiertaDe = pais => (MEDITERRANEO.indexOf(pais) >= 0 ? ['PavingStones136', 'Concrete034'] : ['Gravel040', 'Concrete034']);
+  const tejaDe = pais => (pais === 'DE' ? ['RoofingTiles015A', 'RoofingTiles013A'] : pais === 'US' ? ['RoofingTiles003', 'RoofingTiles013A'] : ['RoofingTiles013A']);
+  const primero = lista => {
+    const T = GM.texturas;
+    return (T && T.tiene && lista.find(id => T.tiene(id))) || lista[0];
+  };
   function paredDe(pais, est) {
     const lista = (REGLAS_FACHADA[pais] || REGLAS_FACHADA.ES)[est] || MED,
       T = GM.texturas;
@@ -796,7 +809,13 @@
     // Suelo general (adoquín gris), parques, agua, aceras y calzadas
     const mSuelo = suelo('Concrete034', { color: false, relieve: 0.5 }, 0x77746e, 0),
       mAsf = suelo('Asphalt010', { tinte: 0xb4b4b4 }, 0x4a4c50, 3),
-      mAcera = suelo('PavingStones070', { tinte: 0x97948d }, 0x8c8982, 1);
+      // acera de losas de hormigón (de adoquín pequeño en Grecia y Turquía), punto 94
+      mAcera = suelo(
+        primero(['GR', 'TR'].indexOf(club.pais) >= 0 ? ['PavingStones146', 'PavingStones070'] : ['PavingStones136', 'PavingStones070']),
+        { tinte: 0xd6d2ca },
+        0x8c8982,
+        1
+      );
     mSuelo.polygonOffset = false;
     const base = new THREE.Mesh(
       new THREE.PlaneGeometry(1600, 1600, GM.relieve && GM.relieve.activo() ? 160 : 1, GM.relieve && GM.relieve.activo() ? 160 : 1).rotateX(-Math.PI / 2),
@@ -876,7 +895,10 @@
         if (c.k <= 5) cinta(c.p, w + ACERA * 2, 0, c.k === 5 ? PZ : PA[(U.hash(club.id + (c.nom || 'x') + c.k) >>> 0) % 3]);
         if (c.k !== 5) cinta(c.p, w, 0, c.k >= 4 ? PR2 : PR);
       }); // principales: asfalto oscuro; residenciales y de servicio: asfalto gastado más claro; peatonales: adoquín de granito
-      [mAcera, suelo('Tiles074', { tinte: 0xb9b4aa }, 0xb0aca2, 1), suelo('Concrete034', { tinte: 0xa8a59d }, 0x9a978f, 1)].forEach((m, i) => {
+      // tres aceras posibles por calle: la principal del país, la otra de losa o adoquín, y hormigón (antes una era Tiles074, una baldosa de
+      // mármol de interior en damero: el «tablero de ajedrez» de las aceras)
+      const otraAcera = primero(['GR', 'TR'].indexOf(club.pais) >= 0 ? ['PavingStones136', 'Concrete034'] : ['PavingStones146', 'Concrete034']);
+      [mAcera, suelo(otraAcera, { tinte: 0xd6d2ca }, 0xb0aca2, 1), suelo('Concrete034', { tinte: 0xa8a59d }, 0x9a978f, 1)].forEach((m, i) => {
         const mp = malla(PA[i], m, 'aceras');
         if (mp) W.add(mp);
       });
@@ -1068,13 +1090,13 @@
       })
     );
     const mTecho = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide });
-    if (GM.texturas) GM.texturas.aplicar(mTecho, 'Concrete034', { color: false, relieve: 0.6, rugMin: 0.8 });
+    if (GM.texturas) GM.texturas.aplicar(mTecho, primero(cubiertaDe(club.pais)), { color: false, relieve: 0.6, rugMin: 0.8 });
     recortable(S, mTecho);
     const mMetal = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.35, side: THREE.DoubleSide });
-    if (GM.texturas) GM.texturas.aplicar(mMetal, 'Metal055A', { tinte: 0xd8dde2, rugMin: 0.35 });
+    if (GM.texturas) GM.texturas.aplicar(mMetal, primero(CHAPA), { tinte: 0xd8dde2, rugMin: 0.35 });
     recortable(S, mMetal); // tejados de naves industriales: chapa
     const mTejas = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide });
-    if (GM.texturas) GM.texturas.aplicar(mTejas, 'RoofingTiles013A', { tinte: club.pais === 'DE' || club.pais === 'US' ? 0x8f8a86 : 0xe9b9a0, relieve: 0.9 });
+    if (GM.texturas) GM.texturas.aplicar(mTejas, primero(tejaDe(club.pais)), { tinte: club.pais === 'DE' || club.pais === 'US' ? 0xe2e2e2 : 0xe9b9a0, relieve: 0.9 });
     recortable(S, mTejas);
     S.ventanas.push(...PAREDES.slice(0, 5), mTienda); // de noche se encienden las ventanas de todos los estilos menos las naves
     const chunks = {};

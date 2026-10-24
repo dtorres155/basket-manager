@@ -55,11 +55,13 @@
         W.add(plano(x1 - x0, z1 - z0, sueloMat(s.suelo), (x0 + x1) / 2, (z0 + z1) / 2, 0.001));
       });
       // Pista con las líneas y el escudo del club
-      const tP = pistaTex(club);
-      if (tP) {
-        const m = new THREE.Mesh(new THREE.PlaneGeometry(20, 12).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: tP, roughness: 0.45 }));
-        tP.repeat.set(1, 0.6);
-        tP.offset.set(0, 0.2);
+      if (GM.sede.pistaMat) {
+        const mp = GM.sede.pistaMat(club),
+          m = new THREE.Mesh(new THREE.PlaneGeometry(20, 12).rotateX(-Math.PI / 2), mp);
+        if (mp.map) {
+          mp.map.repeat.set(1, 0.6);
+          mp.map.offset.set(0, 0.2);
+        }
         m.position.set(-9, 0.01, -6);
         m.receiveShadow = true;
         W.add(m);

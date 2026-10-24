@@ -267,14 +267,7 @@
     };
     S.puntosInt = [];
     if (tipo === 'pabellon') {
-      const tP0 = GM.sede.pistaTex && GM.sede.pistaTex(club),
-        tP = tP0 ? tP0.clone() : null;
-      if (tP) tP.needsUpdate = true;
-      const pista = new THREE.Mesh(new THREE.PlaneGeometry(28, 15).rotateX(-Math.PI / 2), tP ? new THREE.MeshStandardMaterial({ map: tP, roughness: 0.45 }) : mat('#c98d4f'));
-      if (tP) {
-        tP.repeat.set(1, 1);
-        tP.offset.set(0, 0);
-      }
+      const pista = new THREE.Mesh(new THREE.PlaneGeometry(28, 15).rotateX(-Math.PI / 2), GM.sede.pistaMat ? GM.sede.pistaMat(club) : mat('#c98d4f'));
       pista.position.set(0, 0.01, -1.5);
       pista.receiveShadow = true;
       W.add(pista);

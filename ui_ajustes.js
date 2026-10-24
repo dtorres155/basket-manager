@@ -6,6 +6,16 @@
   const { h, modal, toast, cerrarModales } = GM.ui._;
   const NOVEDADES = [
     {
+      v: '0.9.134',
+      fecha: '2026-10',
+      t: [
+        'Materiales reales a su tamaño de verdad: 44 nuevos (ladrillo visto, piedra, revoques, hormigón, chapa, tejas, adoquines, parqués, baldosas, moqueta y mármol).',
+        'Las fachadas muestran su material real bajo las ventanas según el país y el tipo de edificio; de noche también se encienden las ventanas del ensanche y los bloques.',
+        'El pueblo, de piedra y revoque reales; la pista del pabellón, de parqué; los suelos de casa y sede, con tablas y baldosas a escala.',
+        'Fuera lo puesto al azar: manchas de tierra y césped, coches torcidos, aceras en damero y cipreses en las aceras; las nubes ya no tapan la vista desde arriba.'
+      ]
+    },
+    {
       v: '0.9.132',
       fecha: '2026-10',
       t: [

@@ -84,6 +84,13 @@ Sustituye como guía a `docs/HOJA_DE_RUTA.md` (puntos 1 a 84, cerrados) y a la l
 - **102. Cielo, luz y clima:** nubes altas de verdad, niebla calibrada, suelo mojado con reflejos cuando llueve, farolas que iluminan el suelo de noche.
 - **103. Cámara:** tercera persona más baja, con zoom libre hasta la altura de los ojos. Los edificios que tapan se desvanecen por fachada en vez del círculo tramado. Etiquetas solo al acercarse y nunca encima de un cartel. Barra superior con 3 botones y el resto en un menú (antes 77).
 - **104. Vida con sentido:** terrazas con gente sentada, comercios que abren y cierran la persiana, coches aparcados, gente que espera en el semáforo, repartidores, perros (antes 67 y 69).
+- **144. La ciudad sigue más allá** (añadido el 24 oct 2026, a petición tuya): fuera de la zona en la que se puede andar no hay escenario y la ciudad parece pequeña y vacía. Que se vea el resto de la ciudad aunque no se pueda pasear por ella:
+  - Anillo lejano en todas las ciudades (hoy solo en unas 60; faltan datos del resto).
+  - Más allá, manzanas generadas con baja resolución según la densidad del barrio, hasta 2 o 3 km.
+  - Siluetas de los edificios altos y los conocidos de cada ciudad, como imágenes planas que siempre miran a la cámara.
+  - Horizonte real: montes y mar a partir del relieve de 15 a 20 km alrededor (en Badalona, la Serralada de Marina y el Mediterráneo).
+  - Una bruma atmosférica que lo funda todo con el cielo.
+  - Al mirar desde arriba o a pie, ninguna vista debe acabar en un borde gris.
 - *Fase hecha cuando* en las 24 vistas no hay nada gris liso, nada repetido a simple vista ni nada puesto sin regla, y tú le das al menos un 4 sobre 5.
 
 ### Fase D. Personas (1 o 2 tandas)
@@ -100,6 +107,35 @@ Sustituye como guía a `docs/HOJA_DE_RUTA.md` (puntos 1 a 84, cerrados) y a la l
 - **113. Habitaciones por plantilla:** salón, cocina, dormitorio, baño y despacho se amueblan por reglas (el sofá frente a la tele, la mesa con sus sillas…), con el desorden cotidiano que ya existe (`interiores_vida.js`).
 - **114. Pabellón por dentro:** graderío con asientos reales, marcador colgado con pantalla, canastas reales, parqué de tablas a escala, banquillos y mesa de anotadores.
 - **115. Tienda, sede y casa con el kit:** estanterías con productos, perchas con camisetas, maniquíes y mostrador; vestuario, despacho y sala de prensa de la sede.
+
+### Fase M. Modelado: la forma de los objetos (añadida el 24 oct 2026, a petición tuya)
+Además de texturas bien hechas, los objetos tienen que tener forma de verdad: hoy muchos son cajas, cilindros y conos. Va en paralelo a las fases C y E (el 96 usa el 131, el 99 usa el 133 y el 115 usa el 130).
+- **129. Norma de modelado** para todo modelo nuevo o rehecho: escala real, pivote en la base, aristas con bisel (nada de cajas de canto vivo), normales suaves, coordenadas de textura en metros para los materiales reales, tres niveles de detalle y un presupuesto de triángulos por tipo, comprobado en `tools/modelos_presupuesto.js`.
+- **130. Fuera las primitivas a la vista:** bancos (hoy cajas amarillas), farolas, papeleras, quioscos, marquesinas, señales, sombrillas (hoy de cartón), mostradores, estanterías y escaleras (hoy bloques negros) pasan a modelos reales (Poly Haven, Kenney, Quaternius) o modelados por código con bisel y detalle.
+- **131. Kit de fachada modelado** (lo usa el 96): balcones con barandilla de barrotes, cornisas con molduras, marcos y alféizares con fondo, persianas enrollables, contraventanas, toldos, rótulos con letras en relieve, bajantes y aparatos de aire acondicionado.
+- **132. Edificios singulares con su volumen:** el Palau Olímpic, y en el pueblo la iglesia, el ayuntamiento y la muralla (contrafuertes, arcos, almenas con grosor), y los monumentos de Badalona.
+- **133. Vegetación modelada:** árboles con tronco y ramas por especie (plátano, palmera, pino, olivo), setos y arbustos que se mueven con el viento.
+- **134. Taller de modelado:** Blender por línea de órdenes (gratuito) para generar, simplificar y empaquetar piezas con niveles de detalle. Necesita tu permiso para instalarlo (unos 400 MB); sin él, se modela por código y con modelos CC0 ya hechos.
+
+### Fase V. Gente, vida y vehículos (añadida el 24 oct 2026, a petición tuya)
+Profundiza lo que ya existe (`vecinos.js`, `dialogo.js`, `gente.js`, `gente_historias.js`, `vida.js`, `movilidad.js`, `vehiculos.js`, `personaje.js`): que la gente tenga sentido y que montar o conducir se vea bien. Va después de la fase D (necesita las personas nuevas) y junto a la M para los vehículos.
+- **135. Vecinos con sentido:** cada persona con nombre tiene oficio, casa, horario y relación contigo; reacciona a tu fama, a cómo va el club, al tiempo y a la hora (saluda, pide una foto, te reprocha la derrota, te ignora). Nada de gente que anda sin destino.
+- **136. Interacciones variadas y con consecuencias:** charlar, pedir o dar indicaciones, firmar un autógrafo, hacerse una foto, invitar a algo, discutir, comprar en un comercio o ayudar; cada una cambia algo (ánimo, fama, relación, dinero) y se recuerda (`st.sede.memoria`).
+- **137. Diálogos de verdad:** cuadros de diálogo con varias respuestas, tono (amable, seco, gracioso), memoria de lo que dijiste y relaciones que suben o bajan (conocido, amigo, rival, pareja), con una ficha de cada relación.
+- **138. Familia con peso:** padres, hermanos, pareja e hijos con visitas, llamadas, comidas, ayudas y conflictos, y efectos claros y visibles en tu ánimo, tu rendimiento y tu dinero; la familia se ve en casa y en la ciudad.
+- **139. Montar y conducir bien:** postura real en la bici (pedales, manillar, inclinación), la moto y el coche (sentado al volante, manos en el volante, subir y bajar con su animación), y una cámara de conducción; hoy son poses hechas por código.
+- **140. Vehículos que no parezcan de juguete:** coches, motos, bicis, autobuses y tranvía con modelos realistas (carrocería con volumen, cristales, ruedas con llanta, faros), en calidad alta, solo escritorio, con niveles de detalle y los colores de cada ciudad. Modelos CC0 si los hay; si no, de Sketchfab con atribución (vale para uso personal) o hechos con el taller del punto 134.
+- **141. Personaje a tu gusto:** cara, peinado, cuerpo, ropa, tatuajes y complementos sobre el modelo realista; armario con la ropa que compras, peluquería en la barbería y la ropa del club que te dan.
+- **142. Vida con más prestaciones:** amigos y quedadas, aficiones (gimnasio, cocina, videojuegos, música), citas y pareja, mascota que se ve y pide atención, y la casa que refleja tu vida (trofeos, fotos, desorden según tu estilo).
+
+- **143. Historias que importan** (amplía `gente_historias.js`, hoy cinco personajes con capítulos sencillos): de 10 a 15 personajes originales, con personalidad propia y un arco largo de varias temporadas, con encargos, decisiones que cambian el final y un progreso que se ve en el mundo y en el juego gracias a ti. Ejemplos:
+  - Pau, el niño del autógrafo, entra en la cantera, sube al primer equipo y acaba siendo tu compañero (hoy solo llega al juvenil y solo en modo gestor).
+  - La camarera que, con tu ayuda, monta su propio bar: aparece en la ciudad, con tu foto en la pared.
+  - El músico callejero que acaba tocando el himno en el pabellón.
+  - El chaval del pueblo que estudia fisioterapia y termina en tu cuerpo médico.
+  - La periodista novata que, gracias a tus exclusivas, llega a la televisión.
+
+  Habrá un panel «Historias» con el punto en que va cada uno, avisos por el móvil cuando pase algo, y sus logros quedarán a la vista: comercios nuevos, carteles, su nombre en la plantilla o en la grada.
 
 ### Fase F. Rendimiento (en paralelo, en cada tanda)
 - **116. Instanciar lo repetido** (farolas, bancos, árboles, ventanas) con `BatchedMesh` y un atlas de texturas de fachada.
@@ -146,6 +182,8 @@ Fuera de la app no tienes que hacer nada más.
 - Tandas 43 y 44: fase D.
 - Tandas 45 y 46: fase E.
 - Tanda 47: fase G.
+- Fase M (modelado, 129 a 134): en paralelo a C y E, empezando por el 130 (lo más visible) y el 131 (que necesita el 96).
+- Fase V (gente, vida y vehículos, 135 a 143): después de la D; el 139 y el 140 van con la M.
 - La fase F va dentro de cada tanda; la H, cuando haya notas tuyas.
 
 Versión de escritorio al cerrar cada fase (salvo arreglos urgentes), con la página de la galería de referencia y la medida de rendimiento.
@@ -159,3 +197,12 @@ Versión de escritorio al cerrar cada fase (salvo arreglos urgentes), con la pá
 - **Fallos encontrados al mirar de verdad:** el HUD del mundo (brújula, reloj, flechas de objetivos, tarjeta del sitio, necesidades) y la barra de «Mi día» no se actualizaban nunca, y las acciones con muebles (dormir, tele, cocinar…) se cancelaban al empezar desde el ratón: `sede_hud.js` les pasaba un Proxy de la escena y ellos comparan `GM.sede._estado() === S`. Arreglado. Salir del mundo mientras carga ya no da error.
 - **Medida de partida (este equipo, Iris Xe):** calle 12 s hasta verse y 27 s hasta ir fluida, 23 fps; pabellón 41 fps; sede 48; pueblo 52. La calle se queda parada unos 8 s justo después de aparecer: es lo primero de la fase F (punto 117).
 - **Visto para la fase C (punto 103):** con el HUD funcionando se ve demasiada información encima de la imagen (etiquetas que pisan la brújula, el nombre del sitio repetido en etiqueta y tarjeta, avisos) y las necesidades salen sin barras.
+
+## Estado tras la fase B (24 oct 2026, versión 0.9.134)
+- **91 hecho:** 44 materiales nuevos de ambientCG (CC0; `tools/materiales_descargar.js`, paquetes en `recursos/ambientcg`, fuera de git): 59 en total. Las JPG de ambientCG venían casi sin comprimir (124 MB); `tools/materiales_comprimir.js` las deja en 26 MB a calidad 85 (relieve a 88 sin submuestreo). Versiones KTX2 para el escritorio. Carga bajo demanda (`GM.texturas.pedir`): al abrir una escena se precargan 29 (BASE) y el resto se pide al usarse; la versión web ya no precarga texturas.
+- **92 hecho:** `MEDIDAS` en texturas.js con la medida real en metros (de ambientCG o contando piezas); las 70 escalas a mano se quitaron. Tres fotos antiguas estaban deformadas y recuperan su proporción. Suelos reales en casa (los seis del editor), sede y pistas (parqué claro bajo las líneas, `GM.sede.pistaMat`).
+- **93 hecho:** los materiales sin piezas se mezclan consigo mismos a otra escala y girados (`uVarT`).
+- **94 hecho:** fachadas con el material real bajo las ventanas pintadas (opción `mascara`: se ve la foto donde la fachada dibujada es blanca) con reglas por país y estilo (`REGLAS_FACHADA`, `cubiertaDe`, `tejaDe` en calle_real.js); ladrillo, hormigón y chapa con su color propio. Pueblo: muralla y torres de sillares, casas de revoque pintado, teja con el tono regional y plaza de losas medievales. Ventanas encendidas de noche también en ensanche y bloques.
+- **95 hecho:** fuera el relleno al azar (manchas de césped, tierra y grava, arbustos y coches torcidos), las aceras de baldosa de mármol en damero, los árboles de especie al azar (ahora por tramos de 60 m y cipreses y pinos solo donde corresponde) y las nubes por debajo de la cámara.
+- **Arreglos de paso:** la tarjeta del sitio cercano escribía «null».
+- **Pendiente para las fases C y E:** las paredes de los interiores siguen lisas; la variedad de fachadas es de seis estilos por ciudad (más variedad necesita el kit del punto 96 y 131); los cielos siguen siendo un color con nubes planas (punto 102).
