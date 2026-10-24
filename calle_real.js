@@ -25,10 +25,13 @@
       .catch(() => null)
       .then(d => (CACHE[id] = d && d.e && d.c && ((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30) ? casasSinteticas(d, id) : sint()));
   }
-  // Zonas poco edificadas (pabellones aislados, con poco más que aparcamiento): se añaden casas sintéticas a ambos lados de las calles, sin pisar edificios, parques, agua, aparcamientos, usos del suelo ni otras calles.
-  // Entran en el mismo formato que los edificios de OpenStreetMap (clase 1 vivienda o 0 bloque), así que reciben fachadas, tejados y papeles como los reales; `d.sint` guarda cuántas hay.
+  // Huecos (punto 97 de la hoja de ruta 2; antes solo en ciudades con menos de 90 edificios): se añaden edificios a ambos lados de las calles
+  // donde el frente está vacío, sin pisar edificios ni sus partes, parques, agua, aparcamientos, pistas, plazas, usos del suelo, vías del tren
+  // ni otras calles. Su altura es la de los edificios reales de alrededor (bloques donde son altos, casas donde son bajos).
+  // Entran en el mismo formato que los edificios de OpenStreetMap (clase 1 vivienda o 0 bloque), así que reciben fachadas, tejados y papeles como los reales; `d.sint` guarda cuántos hay.
   function casasSinteticas(d, id) {
-    if (!d || d.sint || d.e.length >= 90) return d;
+    if (!d || d.sint !== undefined) return d;
+    const pocos = d.e.length < 90;
     const r = rnd(GM.util.hash('casas' + id)),
       RAD = 2900,
       segs = [],
@@ -45,9 +48,39 @@
         if (p.length >= 3) poli.push(p);
       });
     areas(d.p, 1);
-    areas(d.a, 1, a => a[0] === 0);
+    areas(d.a, 1);
     areas(d.k, 1);
+    areas(d.pl, 1);
     areas(d.u, 1, a => a[0] !== 2 && a[0] !== 3 && a[0] !== 4);
+    (d.bp || []).forEach(a => {
+      const p = [];
+      for (let i = 4; i + 1 < a.length; i += 2) p.push([a[i], a[i + 1]]);
+      if (p.length >= 3) poli.push(p);
+    });
+    // vías del tren: como una calle de 6 m a cada lado
+    (d.v || []).forEach(v => {
+      for (let i = 1; i + 3 < v.length; i += 2) segs.push([v[i], v[i + 1], v[i + 2], v[i + 3], -1]);
+    });
+    // altura del barrio: plantas de los edificios reales (los que la tienen) con su posición
+    const reales = d.e
+      .filter(e => e[0] > 0)
+      .map(e => {
+        let x = 0,
+          z = 0,
+          n = 0;
+        for (let i = 5; i + 1 < e.length; i += 2) {
+          x += e[i];
+          z += e[i + 1];
+          n++;
+        }
+        return [x / n, z / n, e[0]];
+      });
+    const plantasCerca = (x, z) => {
+      const l = reales.filter(q => Math.hypot(q[0] - x, q[1] - z) < 1200).map(q => q[2]);
+      if (!l.length) return null;
+      l.sort((a, b) => a - b);
+      return l[l.length >> 1];
+    };
     d.e.forEach(b => {
       const p = [];
       for (let i = 5; i + 1 < b.length; i += 2) p.push([b[i], b[i + 1]]);
@@ -82,38 +115,96 @@
     };
     const nuevos = [];
     let intentos = 0;
-    for (const sg of segs) {
-      const clase = sg[4];
-      if (clase === 0 || clase === 5) continue;
-      const L = Math.hypot(sg[2] - sg[0], sg[3] - sg[1]);
-      if (L < 180) continue;
-      const ux = (sg[2] - sg[0]) / L,
-        uz = (sg[3] - sg[1]) / L;
-      for (let t = 90 + r() * 120; t < L - 90; t += 160 + r() * 90)
+    // Ciudades con edificios: hileras continuas (como una manzana) en los frentes vacíos de calles que ya tienen edificios cerca, a más de
+    // 90 m del pabellón (su plaza y su aparcamiento no se tocan). Las casas sueltas de abajo quedan para los pabellones aislados.
+    const realesCaja = cajas.slice(),
+      cercaReal = (x, z, m) => realesCaja.some(b => x > b[0] - m && x < b[2] + m && z > b[1] - m && z < b[3] + m);
+    if (!pocos)
+      for (const sg of segs) {
+        const clase = sg[4];
+        if (clase === 0 || clase === 5 || clase === -1) continue;
+        const L = Math.hypot(sg[2] - sg[0], sg[3] - sg[1]);
+        if (L < 300) continue;
+        const ux = (sg[2] - sg[0]) / L,
+          uz = (sg[3] - sg[1]) / L;
         for (const lado of [-1, 1]) {
-          if (nuevos.length >= 150 || intentos++ > 4000) break;
-          if (r() < 0.2) continue;
-          const ancho = 100 + r() * 70,
-            fondo = 90 + r() * 40,
-            off = (ANCHO[clase] || 6) * 5 + ACERA * 10 + 12 + fondo / 2;
-          const cx = sg[0] + ux * t - uz * lado * off,
-            cz = sg[1] + uz * t + ux * lado * off;
-          if (Math.hypot(cx, cz) > RAD) continue;
-          if (cajas.some(b => cx > b[0] && cx < b[2] && cz > b[1] && cz < b[3]) || dentro(cx, cz)) continue;
-          if (segs.some(o => dSeg(cx, cz, o) < (ANCHO[o[4]] || 6) * 5 + ACERA * 10 + fondo / 2 + 5)) continue;
-          const bloque = r() < 0.3,
-            hx = ancho / 2,
-            hz = fondo / 2,
-            pts = [
-              [-hx, -hz],
-              [hx, -hz],
-              [hx, hz],
-              [-hx, hz]
-            ].map(q => [Math.round(cx + q[0] * ux - q[1] * uz), Math.round(cz + q[0] * uz + q[1] * ux)]);
-          nuevos.push([bloque ? 3 + Math.floor(r() * 3) : 2 + Math.floor(r() * 2), bloque ? 0 : 1, -1, -1, bloque ? 1 : 2].concat(...pts));
-          cajas.push([cx - ancho / 2 - 70, cz - ancho / 2 - 70, cx + ancho / 2 + 70, cz + ancho / 2 + 70]);
+          const fondo = 120 + r() * 30,
+            off = (ANCHO[clase] || 6) * 5 + ACERA * 10 + 12 + fondo / 2,
+            en = t => [sg[0] + ux * t - uz * lado * off, sg[1] + uz * t + ux * lado * off];
+          const libre = t => {
+            const [cx, cz] = en(t);
+            if (Math.hypot(cx, cz) < 900 || Math.hypot(cx, cz) > RAD) return false;
+            if (cajas.some(b => cx > b[0] && cx < b[2] && cz > b[1] && cz < b[3]) || dentro(cx, cz)) return false;
+            return !segs.some(o => o !== sg && dSeg(cx, cz, o) < (o[4] === -1 ? 60 : (ANCHO[o[4]] || 6) * 5 + ACERA * 10) + fondo / 2 + 5);
+          };
+          let t = 60;
+          while (t < L - 60 && nuevos.length < 160) {
+            if (!libre(t)) {
+              t += 20;
+              continue;
+            }
+            let t1 = t;
+            while (t1 + 20 < L - 60 && libre(t1 + 20)) t1 += 20;
+            const [mx, mz] = en((t + t1) / 2);
+            if (t1 - t >= 80 && cercaReal(mx, mz, 300)) {
+              const pc = plantasCerca(mx, mz),
+                bloque = pc ? pc >= 4 : r() < 0.5;
+              for (let a = t; a < t1 - 60;) {
+                const w = Math.min(t1 - a, 80 + r() * 80),
+                  [cx, cz] = en(a + w / 2),
+                  hx = w / 2,
+                  hz = fondo / 2,
+                  pts = [
+                    [-hx, -hz],
+                    [hx, -hz],
+                    [hx, hz],
+                    [-hx, hz]
+                  ].map(q => [Math.round(cx + q[0] * ux - q[1] * uz), Math.round(cz + q[0] * uz + q[1] * ux)]),
+                  plantas = pc ? Math.max(2, Math.min(12, pc + Math.round((r() - 0.5) * 2))) : bloque ? 3 + Math.floor(r() * 3) : 2 + Math.floor(r() * 2);
+                nuevos.push([plantas, bloque ? 0 : 1, -1, -1, bloque ? 1 : 2].concat(...pts));
+                cajas.push([cx - w / 2 - 10, cz - w / 2 - 10, cx + w / 2 + 10, cz + w / 2 + 10]);
+                a += w;
+              }
+            }
+            t = t1 + 40;
+          }
         }
-    }
+      }
+    if (pocos)
+      for (const sg of segs) {
+        const clase = sg[4];
+        if (clase === 0 || clase === 5 || clase === -1) continue;
+        const L = Math.hypot(sg[2] - sg[0], sg[3] - sg[1]);
+        if (L < 180) continue;
+        const ux = (sg[2] - sg[0]) / L,
+          uz = (sg[3] - sg[1]) / L;
+        for (let t = 90 + r() * 120; t < L - 90; t += 160 + r() * 90)
+          for (const lado of [-1, 1]) {
+            if (nuevos.length >= (pocos ? 150 : 120) || intentos++ > 4000) break;
+            if (r() < 0.2) continue;
+            const ancho = 100 + r() * 70,
+              fondo = 90 + r() * 40,
+              off = (ANCHO[clase] || 6) * 5 + ACERA * 10 + 12 + fondo / 2;
+            const cx = sg[0] + ux * t - uz * lado * off,
+              cz = sg[1] + uz * t + ux * lado * off;
+            if (Math.hypot(cx, cz) > RAD) continue;
+            if (cajas.some(b => cx > b[0] && cx < b[2] && cz > b[1] && cz < b[3]) || dentro(cx, cz)) continue;
+            if (segs.some(o => dSeg(cx, cz, o) < (o[4] === -1 ? 60 : (ANCHO[o[4]] || 6) * 5 + ACERA * 10) + fondo / 2 + 5)) continue;
+            const pc = pocos ? null : plantasCerca(cx, cz),
+              bloque = pc ? pc >= 4 : r() < 0.3,
+              hx = ancho / 2,
+              hz = fondo / 2,
+              pts = [
+                [-hx, -hz],
+                [hx, -hz],
+                [hx, hz],
+                [-hx, hz]
+              ].map(q => [Math.round(cx + q[0] * ux - q[1] * uz), Math.round(cz + q[0] * uz + q[1] * ux)]);
+            const plantas = pc ? Math.max(2, Math.min(12, pc + Math.round((r() - 0.5) * 2))) : bloque ? 3 + Math.floor(r() * 3) : 2 + Math.floor(r() * 2);
+            nuevos.push([plantas, bloque ? 0 : 1, -1, -1, bloque ? 1 : 2].concat(...pts));
+            cajas.push([cx - ancho / 2 - 70, cz - ancho / 2 - 70, cx + ancho / 2 + 70, cz + ancho / 2 + 70]);
+          }
+      }
     d.e = d.e.concat(nuevos);
     d.sint = nuevos.length;
     return d;
