@@ -406,7 +406,7 @@
           if (j < 0 || j >= cl.p.length) continue;
           const d = Math.hypot(cl.p[j][0] - cl.p[i][0], cl.p[j][1] - cl.p[i][1]);
           if (d < 1) continue;
-          n.seg.push({ dx: (cl.p[j][0] - cl.p[i][0]) / d, dz: (cl.p[j][1] - cl.p[i][1]) / d, k: cl.k, w: ANCHO[cl.k], len: d });
+          n.seg.push({ dx: (cl.p[j][0] - cl.p[i][0]) / d, dz: (cl.p[j][1] - cl.p[i][1]) / d, k: cl.k, w: cl.w || ANCHO[cl.k], len: d });
         }
       }
     });
@@ -506,7 +506,16 @@
             x = n.x + s.dx * (d + 1.6) + px * (s.w / 2 + 0.9),
             z = n.z + s.dz * (d + 1.6) + pz * (s.w / 2 + 0.9);
           if (libre(x, z) && !ocupado(x, z)) {
-            semaforos.push({ x, z, fase: (nz + ai) % 2, ry: Math.atan2(-s.dx, -s.dz), ax: -s.dx, az: -s.dz });
+            // paso: centro del paso de cebra de esta calle, dirección de cruce y ancho de la calzada (peatones que esperan, calle_real_vida.js)
+            semaforos.push({
+              x,
+              z,
+              fase: (nz + ai) % 2,
+              ry: Math.atan2(-s.dx, -s.dz),
+              ax: -s.dx,
+              az: -s.dz,
+              paso: { x: n.x + s.dx * d, z: n.z + s.dz * d, px, pz, w: s.w, dx: s.dx, dz: s.dz }
+            });
             ocupa(x, z);
             bloquea(x, z, 0.25);
           }

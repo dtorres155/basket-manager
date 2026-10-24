@@ -617,6 +617,31 @@
       });
     }
     fp('terrazas');
+    // Peatones que esperan en los semáforos (punto 104 de la hoja de ruta 2): en los pasos con semáforo más cercanos al centro, dos o tres
+    // personas esperan en el bordillo mientras los coches de esa calle tienen verde y cruzan cuando se les pone rojo; al otro lado se alejan
+    // por la acera y, al rato, vuelven a esperar en uno de los dos lados. Se mueven aquí (fijo), no con los caminos de la rejilla.
+    S.pasoGente = [];
+    if (S.semaforos && S.semaforos.length) {
+      const pasos = S.semaforos
+          .filter(sm => sm.paso && Math.hypot(sm.x, sm.z) < 220)
+          .sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))
+          .slice(0, alta ? 8 : 4),
+        lista = [];
+      pasos.forEach((sm, i) => {
+        for (let k = 0; k < (i < 3 ? 3 : 2); k++) lista.push([sm, k]);
+      });
+      const ps = await Promise.all(lista.map(() => crear()));
+      ps.forEach((p, j) => {
+        const [sm, k] = lista[j];
+        Object.assign(p, { fijo: true, rol: p.hincha ? 'Aficionado del ' + club.siglas : 'Vecino esperando para cruzar', paso: sm.paso, sm, k });
+        p.obj.userData = { npc: S.gente.length };
+        S.mundo.add(p.obj);
+        S.gente.push(p);
+        pasoEsperar(S, M, p, k % 2 ? 1 : -1, r);
+        S.pasoGente.push(p);
+      });
+    }
+    fp('peatones en los semáforos');
     S.tAmb = 40 + r() * 60;
     S.perfilCoches = true;
     // Multitud lejana en la GPU (multitud_gpu.js): cientos de peatones por las aceras con una sola llamada de dibujo; los cercanos son las personas de verdad
@@ -970,7 +995,71 @@
     c.lane = ANCHO[q.v.v.k] / 4;
     return true;
   }
+  // ---------- Peatones en los pasos con semáforo (punto 104) ----------
+  // estado: 'espera' en el bordillo del lado «lado» (mirando a la calzada), 'cruza' por el paso de cebra, 'aleja' por la acera y 'fuera'
+  // (aparcado lejos, sin dibujarse) hasta volver a esperar
+  function pasoEsperar(S, M, p, lado, r) {
+    const q = p.paso,
+      off = (r() - 0.5) * 2.2,
+      fuera = q.w / 2 + 0.75 + r() * 0.5;
+    p.pl = lado;
+    p.pOff = off;
+    p.pEst = 'espera';
+    p.pT = 0.3 + r() * 1.4; // reacción al ponerse verde
+    p.obj.position.set(q.x + q.px * lado * fuera + q.dx * off, 0, q.z + q.pz * lado * fuera + q.dz * off);
+    p.obj.rotation.y = Math.atan2(-q.px * lado, -q.pz * lado);
+    M.anim(p, 'idle');
+  }
+  function pasoMover(S, M, dt) {
+    const L = S.pasoGente;
+    if (!L || !L.length || S.semFase === undefined) return;
+    const fx = S.foco ? S.foco.x : 0,
+      fz = S.foco ? S.foco.z : 0,
+      r = Math.random;
+    for (const p of L) {
+      const q = p.paso,
+        o = p.obj.position;
+      // los pasos lejanos no se animan: quien espera sigue esperando y quien cruzaba o se alejaba desaparece (nadie se queda parado en la calzada)
+      if (p.pEst !== 'fuera' && Math.hypot(o.x - fx, o.z - fz) > 90) {
+        if (p.pEst !== 'espera') {
+          p.pEst = 'fuera';
+          p.pT = 4 + r() * 10;
+          o.set(9999, 0, 9999);
+          M.anim(p, 'idle');
+        }
+        continue;
+      }
+      const verde = p.sm.fase !== S.semFase; // verde para los peatones: rojo para los coches de esta calle
+      if (p.pEst === 'espera') {
+        if (verde && (p.pT -= dt) <= 0) {
+          p.pEst = 'cruza';
+          p.pDest = [q.x - q.px * p.pl * (q.w / 2 + 1.1) + q.dx * p.pOff, q.z - q.pz * p.pl * (q.w / 2 + 1.1) + q.dz * p.pOff];
+          M.anim(p, 'walk');
+        }
+      } else if (p.pEst === 'cruza' || p.pEst === 'aleja') {
+        const dx = p.pDest[0] - o.x,
+          dz = p.pDest[1] - o.z,
+          d = Math.hypot(dx, dz),
+          v = (p.pEst === 'cruza' && !verde ? 1.9 : 1.35) * dt; // si se pone rojo a mitad, aprieta el paso
+        p.obj.rotation.y = Math.atan2(dx, dz);
+        if (d <= v) {
+          o.set(p.pDest[0], 0, p.pDest[1]);
+          if (p.pEst === 'cruza') {
+            // al otro lado: se aleja por la acera, en sentido contrario al cruce
+            p.pEst = 'aleja';
+            p.pDest = [o.x + q.dx * (9 + r() * 6), o.z + q.dz * (9 + r() * 6)];
+          } else {
+            p.pEst = 'fuera';
+            p.pT = 6 + r() * 16;
+            o.set(9999, 0, 9999);
+            M.anim(p, 'idle');
+          }
+        } else o.set(o.x + (dx / d) * v, 0, o.z + (dz / d) * v);
+      } else if (p.pEst === 'fuera' && (p.pT -= dt) <= 0 && !verde) pasoEsperar(S, M, p, r() < 0.5 ? 1 : -1, r);
+    }
+  }
   function actualizar(S, M, dt) {
+    pasoMover(S, M, dt);
     if (S.tiendas && S.tiendas.length && S.st) {
       S.tTienda = (S.tTienda || 0) - dt;
       if (S.tTienda <= 0) {
