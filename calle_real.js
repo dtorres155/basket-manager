@@ -3144,14 +3144,6 @@
     'dubai-basketball',
     'golden-state-warriors'
   ];
-  const ESPECIES = {
-    ES: [0.6, 0.14, 0.06, 0.2],
-    IT: [0.52, 0.26, 0.16, 0.06],
-    GR: [0.46, 0.2, 0.17, 0.17],
-    TR: [0.52, 0.2, 0.18, 0.1],
-    DE: [0.78, 0.02, 0.2, 0],
-    US: [0.74, 0.02, 0.2, 0.04]
-  }; // [redondo, ciprés, pino, palmera]
   let GEOARB = null;
   const TEXARB = {}; // materiales de las imágenes planas de los árboles lejanos (uno por especie)
   function plantar(W, G, lista, club, alta, rr, forzar) {
@@ -3196,13 +3188,13 @@
       };
     }
     const grupos = { redondo: [], cipres: [], pino: [], palmera: [] },
-      T = ESPECIES[club.pais] || ESPECIES.ES,
-      pal = club.pais === 'US' ? PALMERAS.indexOf(club.id) >= 0 : false;
+      pal = PALMERAS.indexOf(club.id) >= 0;
     // Regla (punto 95): en la calle la especie se decide por tramos de 60 m (una hilera es de una sola especie) y solo entre árbol de
-    // sombra y palmera; cipreses y pinos solo donde se fuerzan (cementerios, bosques y parques de OpenStreetMap)
-    const pPal = pal ? 0.45 : T[3] > 0 ? Math.min(0.25, T[3]) : 0;
+    // sombra y palmera; cipreses y pinos solo donde se fuerzan (cementerios, bosques y parques de OpenStreetMap). Punto 99: las palmeras,
+    // solo en las ciudades de palmeras (y en el paseo marítimo cuando haya costa); los árboles de alineación traen su especie (p[2]).
+    const pPal = pal ? 0.45 : 0;
     lista.forEach(p => {
-      let e = forzar;
+      let e = forzar || (typeof p[2] === 'string' ? p[2] : null);
       if (!e) {
         const h = (U.hash(club.id + 'sp' + Math.floor(p[0] / 60) + ',' + Math.floor(p[1] / 60)) % 1000) / 1000;
         e = h < pPal ? 'palmera' : 'redondo';
@@ -3327,6 +3319,46 @@
       celdasArb.push({ tr, co, bb, x: (cs[0] + 0.5) * 90, z: (cs[1] + 0.5) * 90 });
     });
   }
+  // alcorques: cuadro de tierra con reja de fundición alrededor del tronco (un solo instanciado por llamada). L: [{ x, z, ry }]
+  function mallaAlcorques(W, M, L) {
+    if (L.length && typeof document !== 'undefined') {
+      const tx = M.textura('alcorque', 128, (x, n) => {
+        x.fillStyle = '#4a3a2c';
+        x.fillRect(0, 0, n, n);
+        x.fillStyle = 'rgba(0,0,0,.25)';
+        for (let i = 0; i < 160; i++) x.fillRect(((i * 37) % n) + 0.5, ((i * 71) % n) + 0.5, 3, 3);
+        x.strokeStyle = '#26292c';
+        x.lineWidth = 5;
+        x.strokeRect(3, 3, n - 6, n - 6);
+        x.lineWidth = 3;
+        for (let r = 16; r < n / 2; r += 13) {
+          x.beginPath();
+          x.arc(n / 2, n / 2, r, 0, 6.3);
+          x.stroke();
+        }
+        for (let k = 0; k < 8; k++) {
+          x.beginPath();
+          x.moveTo(n / 2, n / 2);
+          x.lineTo(n / 2 + Math.cos((k / 8) * 6.28) * n, n / 2 + Math.sin((k / 8) * 6.28) * n);
+          x.stroke();
+        }
+        x.fillStyle = '#3b2d22';
+        x.beginPath();
+        x.arc(n / 2, n / 2, 13, 0, 6.3);
+        x.fill();
+      });
+      const ma = new THREE.MeshStandardMaterial({ map: tx, roughness: 0.85, metalness: 0.2, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
+        im = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.3, 1.3).rotateX(-Math.PI / 2), ma, L.length),
+        m4 = new THREE.Matrix4(),
+        qq = new THREE.Quaternion(),
+        up = new THREE.Vector3(0, 1, 0),
+        uno = new THREE.Vector3(1, 1, 1);
+      L.forEach((o, i) => im.setMatrixAt(i, m4.compose(new THREE.Vector3(o.x, 0.01, o.z), qq.setFromAxisAngle(up, o.ry), uno)));
+      im.receiveShadow = true;
+      im.userData = { alcorques: true };
+      W.add(im);
+    }
+  }
   // ---------- Árboles y farolas ----------
   function mobiliario(S, M, X, G, W, c) {
     const rr = rnd(U.hash(c.club.id + 'mob')),
@@ -3337,9 +3369,26 @@
     const zonasP = (S.zonas || []).map(z => [z.obj.position.x, z.obj.position.z]),
       cerca = (x, z) => zonasP.some(q => Math.hypot(q[0] - x, q[1] - z) < 2.2),
       arb = [];
+    // Árboles de alineación (punto 99 de la hoja de ruta 2): por calle y no al azar. Una calle tiene árboles o no (según su nombre) y, si
+    // los tiene, van en hilera a los dos lados cada 8 m, en alcorque junto al bordillo, y lejos de los cruces; las calles peatonales llevan
+    // una sola hilera. La especie es la de toda la calle (plátano o almez: árbol de copa redonda; palmeras solo en las ciudades de palmeras).
+    const S_ALC = (S.alcorques = []),
+      vert = new Map(),
+      kv = (x, z) => Math.round(x / 1.4) + ',' + Math.round(z / 1.4);
     X.C.forEach(cc => {
       if (cc.k < 1 || cc.k > 5) return;
-      const off = ANCHO[cc.k] / 2 + 1.5 + (cc.k === 5 ? 0.5 : 0);
+      cc.p.forEach(q => vert.set(kv(q[0], q[1]), (vert.get(kv(q[0], q[1])) || 0) + 1));
+    });
+    const topeArb = c.alta ? 1500 : 800;
+    X.C.forEach(cc => {
+      if (cc.k < 1 || cc.k > 5 || cc.p.length < 2) return;
+      const nom = cc.nom || Math.round(cc.p[0][0]) + ',' + Math.round(cc.p[0][1]),
+        h = U.hash(c.club.id + 'alin' + nom) % 100;
+      if (h >= (cc.k === 5 ? 50 : cc.k === 1 ? 45 : 72)) return;
+      const w = cc.w || ANCHO[cc.k] || 4,
+        lados = cc.k === 5 ? [0] : [-1, 1],
+        off = cc.k === 5 ? 0 : w / 2 + 0.95,
+        esp = PALMERAS.indexOf(c.club.id) >= 0 && h % 3 === 0 ? 'palmera' : 'redondo';
       let acum = 0;
       for (let i = 0; i + 1 < cc.p.length; i++) {
         const a = cc.p[i],
@@ -3347,16 +3396,24 @@
           l = Math.hypot(b[0] - a[0], b[1] - a[1]);
         if (l < 0.5) continue;
         const ux = (b[0] - a[0]) / l,
-          uz = (b[1] - a[1]) / l;
-        for (let s = 9 - (acum % 9); s < l; s += 9 + rr() * 5) {
-          const lado = rr() < 0.5 ? 1 : -1,
-            x = a[0] + ux * s - uz * off * lado,
-            z = a[1] + uz * s + ux * off * lado;
-          if (arb.length < 900 && libre(x, z) && !cerca(x, z) && rr() < 0.75) arb.push([x, z]);
+          uz = (b[1] - a[1]) / l,
+          cruceA = (vert.get(kv(a[0], a[1])) || 0) > 1,
+          cruceB = (vert.get(kv(b[0], b[1])) || 0) > 1;
+        for (let s = 8 - (acum % 8); s < l; s += 8) {
+          if ((cruceA && s < 9) || (cruceB && s > l - 9)) continue;
+          for (const lado of lados) {
+            const x = a[0] + ux * s - uz * off * lado,
+              z = a[1] + uz * s + ux * off * lado;
+            if (arb.length < topeArb && libre(x, z) && !cerca(x, z)) {
+              arb.push([x, z, esp]);
+              if (cc.k !== 5) S_ALC.push({ x, z, ry: Math.atan2(ux, uz) });
+            }
+          }
         }
         acum += l;
       }
     });
+    mallaAlcorques(W, M, S_ALC);
     X.P.forEach(q => {
       if (q.t === 1 || q.p.length < 3) return;
       let x0 = 1e9,
@@ -3425,6 +3482,6 @@
     cargado: id => id in CACHE,
     construir,
     preparar,
-    _int: { subdividir, plantar, cartel, frente, puntoPuerta, pip, dSeg, ANCHO, ACERA, R, rnd, geo, cinta, rellenar, nuevo, malla, suelo }
+    _int: { subdividir, plantar, mallaAlcorques, cartel, frente, puntoPuerta, pip, dSeg, ANCHO, ACERA, R, rnd, geo, cinta, rellenar, nuevo, malla, suelo }
   });
 })();

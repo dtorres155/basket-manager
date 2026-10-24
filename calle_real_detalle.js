@@ -80,7 +80,7 @@
       for (let i = 0; i + 1 < cl.p.length; i++) {
         const a = cl.p[i],
           b = cl.p[i + 1],
-          s = { a, b, k: cl.k, w: ANCHO[cl.k] };
+          s = { a, b, k: cl.k, w: cl.w || ANCHO[cl.k], cl };
         const i0 = Math.floor(Math.min(a[0], b[0]) / CEL),
           i1 = Math.floor(Math.max(a[0], b[0]) / CEL),
           j0 = Math.floor(Math.min(a[1], b[1]) / CEL),
@@ -411,7 +411,9 @@
       }
     });
     const cebra = { P: [], N: [], I: [] },
+      pasos = [],
       cebraPaso = (x, z, dx, dz, w) => {
+        pasos.push({ x, z, dx, dz, w });
         const px = -dz,
           pz = dx,
           v0 = cebra.P.length / 3;
@@ -597,6 +599,83 @@
         }
       });
     }
+    // Bordillo en 3D (punto 98 de la hoja de ruta 2): una pieza de granito de 14 cm de alto y 28 de ancho con su cara hacia la calzada, a
+    // lo largo del borde de cada calle con acera. Se corta donde entra otra calzada (los cruces) y en los pasos de cebra (vado peatonal).
+    const dentroDeOtra = (x, z, cl) => {
+      const i = Math.floor(x / CEL),
+        j = Math.floor(z / CEL);
+      for (let a = -1; a <= 1; a++)
+        for (let b = -1; b <= 1; b++) {
+          const L = SG.get(kc(i + a, j + b));
+          if (!L) continue;
+          for (const s of L) if (s.cl !== cl && s.k !== 5 && dSeg(x, z, s.a, s.b) < s.w / 2 + 0.2) return true;
+        }
+      return false;
+    };
+    const enPaso = (x, z) =>
+      pasos.some(p => {
+        const rx = x - p.x,
+          rz = z - p.z,
+          a = rx * p.dx + rz * p.dz,
+          t = -rx * p.dz + rz * p.dx;
+        return Math.abs(a) < 1.9 && Math.abs(t) < p.w / 2 + 1.2;
+      });
+    const bordillo = (cl, w, lado, A) => {
+      const p = cl.p,
+        alto = 0.14,
+        ancho = 0.28;
+      // muestras cada metro por el borde de la calzada, con su normal hacia la acera
+      const M = [];
+      for (let i = 0; i + 1 < p.length; i++) {
+        const a = p[i],
+          b = p[i + 1],
+          l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        if (l < 0.3) continue;
+        const ux = (b[0] - a[0]) / l,
+          uz = (b[1] - a[1]) / l,
+          nx = -uz * lado,
+          nz = ux * lado,
+          n = Math.max(1, Math.ceil(l));
+        for (let k = 0; k <= n; k++) {
+          if (k === 0 && M.length) continue;
+          const t = (l * k) / n,
+            x = a[0] + ux * t + nx * (w / 2),
+            z = a[1] + uz * t + nz * (w / 2);
+          M.push({ x, z, nx, nz, clave: k === n, ok: Math.hypot(x, z) < R - 6 && !dentroDeOtra(x, z, cl) && !enPaso(x, z) });
+        }
+      }
+      // tramos seguidos sin corte: una pieza por cada lado recto (las muestras de cada metro solo sirven para saber dónde cortar)
+      const piezas = [];
+      for (let k = 0; k < M.length; k++) {
+        if (!M[k].ok) continue;
+        let f = k;
+        while (f + 1 < M.length && M[f + 1].ok) f++;
+        let ini = k;
+        for (let j = k + 1; j <= f; j++)
+          if (M[j].clave || j === f) {
+            piezas.push([M[ini], M[j]]);
+            ini = j;
+          }
+        k = f;
+      }
+      for (const [m0, m1] of piezas) {
+        // cara a la calzada, cara de arriba y canto del lado de la acera (vértices propios por cara: aristas vivas)
+        const pt = (m, d, y) => [m.x + m.nx * d, y, m.z + m.nz * d];
+        cara(A, pt(m0, 0, -0.02), pt(m1, 0, -0.02), pt(m1, 0, alto), pt(m0, 0, alto), -m0.nx, 0, -m0.nz);
+        cara(A, pt(m0, 0, alto), pt(m1, 0, alto), pt(m1, ancho, alto), pt(m0, ancho, alto), 0, 1, 0);
+        cara(A, pt(m0, ancho, alto), pt(m1, ancho, alto), pt(m1, ancho + 0.05, 0.02), pt(m0, ancho + 0.05, 0.02), m0.nx, 0.3, m0.nz);
+      }
+    };
+    // cuadrilátero con el lado de delante hacia (nx, ny, nz)
+    const cara = (A, a, b, c, d, nx, ny, nz) => {
+      const v = A.P.length / 3,
+        e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]],
+        e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]],
+        k = (e1[1] * e2[2] - e1[2] * e2[1]) * nx + (e1[2] * e2[0] - e1[0] * e2[2]) * ny + (e1[0] * e2[1] - e1[1] * e2[0]) * nz;
+      A.P.push(...a, ...b, ...c, ...d);
+      if (k >= 0) A.I.push(v, v + 1, v + 2, v, v + 2, v + 3);
+      else A.I.push(v, v + 2, v + 1, v, v + 3, v + 2);
+    };
     // bordillos de granito a los dos lados de la calzada, parches y alcantarillas en el asfalto
     const desplazar = (p, d) =>
       p.map((pt, i) => {
@@ -616,9 +695,9 @@
         AL = I.nuevo();
       X.C.forEach(cl => {
         if (cl.k > 4 || cl.p.length < 2) return;
-        const w = ANCHO[cl.k];
-        I.cinta(desplazar(cl.p, w / 2 + 0.14), 0.3, 0, BO);
-        I.cinta(desplazar(cl.p, -(w / 2 + 0.14)), 0.3, 0, BO);
+        const w = cl.w || ANCHO[cl.k];
+        bordillo(cl, w, 1, BO);
+        bordillo(cl, w, -1, BO);
         let acum = 0;
         for (let i = 0; i + 1 < cl.p.length; i++) {
           const a = cl.p[i],
@@ -667,7 +746,6 @@
         return m;
       };
       [
-        [BO, deco(mat(0x9a9a95, { roughness: 0.9 }), 4.4), 'bordillos'],
         [PA, deco(mat(0x303337, { roughness: 1 }), 4), 'parches'],
         [PB, deco(mat(0x3c4045, { roughness: 1 }), 4), 'parches'],
         [AL, deco(mat(0x25282b, { roughness: 0.6, metalness: 0.5 }), 4.2), 'alcantarillas']
@@ -678,6 +756,19 @@
           W.add(me);
         }
       });
+      if (BO.P.length) {
+        const mb = mat(0xb9b7b0, { roughness: 0.85, side: THREE.DoubleSide });
+        if (GM.texturas) GM.texturas.aplicar(mb, 'Concrete034', { tinte: 0xd2d0ca, relieve: 0.4 });
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(BO.P, 3));
+        g.setIndex(BO.I);
+        g.computeVertexNormals();
+        g.computeBoundingSphere();
+        const me = new THREE.Mesh(g, mb);
+        me.receiveShadow = !!alta;
+        me.userData = { real: 'bordillos' };
+        W.add(me);
+      }
     }
 
     // ---------- Mobiliario urbano ----------
@@ -1068,6 +1159,201 @@
       }
     }
     // los coches aparcados añadidos en patios también cuentan
+    // ---------- Explanadas (puntos 97 y 98 de la hoja de ruta 2) ----------
+    // El suelo que no es calle, acera, edificio, parque, agua, plaza, aparcamiento ni uso del suelo, y da a una calle, se pavimenta como una
+    // plaza (antes quedaba el suelo gris liso, como la gran explanada alrededor del pabellón), con árboles en alcorque en retícula, bancos
+    // junto a algunos árboles, papeleras y farolas. Los patios cerrados dentro de las manzanas no se tocan. Rejilla de 1,5 m.
+    {
+      const CE = 1.5,
+        NE = Math.ceil((2 * R) / CE),
+        cov = new Uint8Array(NE * NE),
+        cx = i => -R + (i + 0.5) * CE,
+        ix = x => Math.floor((x + R) / CE);
+      const caja2 = (x0, z0, x1, z1) => [Math.max(0, ix(x0)), Math.max(0, ix(z0)), Math.min(NE - 1, ix(x1)), Math.min(NE - 1, ix(z1))];
+      const marcar = (p, v) => {
+        let x0 = 1e9,
+          z0 = 1e9,
+          x1 = -1e9,
+          z1 = -1e9;
+        p.forEach(q => {
+          x0 = Math.min(x0, q[0]);
+          x1 = Math.max(x1, q[0]);
+          z0 = Math.min(z0, q[1]);
+          z1 = Math.max(z1, q[1]);
+        });
+        const [i0, j0, i1, j1] = caja2(x0, z0, x1, z1);
+        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (!cov[j * NE + i] && pip(cx(i), cx(j), p)) cov[j * NE + i] = v;
+      };
+      const franja = (p, r, v) => {
+        for (let k = 0; k + 1 < p.length; k++) {
+          const a = p[k],
+            b = p[k + 1],
+            [i0, j0, i1, j1] = caja2(Math.min(a[0], b[0]) - r, Math.min(a[1], b[1]) - r, Math.max(a[0], b[0]) + r, Math.max(a[1], b[1]) + r);
+          for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (cov[j * NE + i] !== 2 && dSeg(cx(i), cx(j), a, b) < r) cov[j * NE + i] = v;
+        }
+      };
+      // 2: calle o acera (de ahí se sabe si la explanada da a la calle); 1: edificio; 3: todo lo demás que ya tiene suelo propio
+      X.C.forEach(cl => {
+        const w = cl.w || ANCHO[cl.k] || 4;
+        franja(cl.p, cl.k >= 1 && cl.k <= 5 ? w / 2 + ACERA : w / 2, cl.k === 0 ? 3 : 2);
+      });
+      (X.V || []).forEach(v => franja(v.p, 3, 3));
+      X.A.forEach(a => (a.t === 1 ? franja(a.p, 6, 3) : a.p.length >= 3 && marcar(a.p, 3)));
+      B.forEach(b => marcar(b.p, 1));
+      [X.P, X.U, X.K, X.PL].forEach(L => (L || []).forEach(a => a.p.length >= 3 && marcar(a.p, 3)));
+      // componentes de suelo libre
+      const comp = new Int32Array(NE * NE).fill(-1),
+        pav = new Uint8Array(NE * NE),
+        cola = new Int32Array(NE * NE),
+        VEC = [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1]
+        ];
+      let nComp = 0;
+      for (let j0 = 0; j0 < NE; j0++)
+        for (let i0 = 0; i0 < NE; i0++) {
+          const k0 = j0 * NE + i0;
+          if (cov[k0] || comp[k0] >= 0 || Math.hypot(cx(i0), cx(j0)) > R - 6) continue;
+          let ini = 0,
+            fin = 0,
+            calle = false;
+          cola[fin++] = k0;
+          comp[k0] = nComp;
+          while (ini < fin) {
+            const k = cola[ini++],
+              i = k % NE,
+              j = (k - i) / NE;
+            for (const [di, dj] of VEC) {
+              const a = i + di,
+                b = j + dj;
+              if (a < 0 || b < 0 || a >= NE || b >= NE) continue;
+              const kk = b * NE + a;
+              if (cov[kk] === 2) calle = true;
+              if (cov[kk] || comp[kk] >= 0 || Math.hypot(cx(a), cx(b)) > R - 6) continue;
+              comp[kk] = nComp;
+              cola[fin++] = kk;
+            }
+          }
+          if (calle && fin * CE * CE >= 200) for (let t = 0; t < fin; t++) pav[cola[t]] = 1;
+          nComp++;
+        }
+      // el pavimento entra una celda bajo la acera para que no quede una raya de suelo gris entre los dos
+      for (let j = 1; j < NE - 1; j++)
+        for (let i = 1; i < NE - 1; i++) {
+          const k = j * NE + i;
+          if (cov[k] === 2 && (pav[k - 1] === 1 || pav[k + 1] === 1 || pav[k - NE] === 1 || pav[k + NE] === 1)) pav[k] = 2;
+        }
+      const AE = I.nuevo();
+      for (let j = 0; j < NE; j++) {
+        let i = 0;
+        while (i < NE) {
+          if (!pav[j * NE + i]) {
+            i++;
+            continue;
+          }
+          let f = i;
+          while (f + 1 < NE && pav[j * NE + f + 1]) f++;
+          const x0 = -R + i * CE,
+            x1 = -R + (f + 1) * CE,
+            z0 = -R + j * CE,
+            z1 = z0 + CE,
+            v = AE.P.length / 3;
+          AE.P.push(x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1);
+          AE.N.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
+          AE.I.push(v, v + 2, v + 1, v, v + 3, v + 2);
+          i = f + 1;
+        }
+      }
+      const me = I.malla(AE, I.suelo('PavingStones138', { tinte: 0xd9d4ca }, 0xb4aea4, 0.5), 'explanadas');
+      if (me) {
+        me.receiveShadow = true;
+        W.add(me);
+      }
+      // mobiliario: árboles en retícula de 9 m solo en una franja de 3 a 12 m del borde (el centro de las explanadas grandes queda abierto,
+      // como la plaza de un pabellón), un banco junto a uno de cada tres, papeleras y farolas cada 18 m; nada delante de la entrada del
+      // pabellón ni junto a los sitios a los que se entra. dist: distancia al borde de la explanada en celdas
+      const dist = new Uint16Array(NE * NE).fill(65535);
+      {
+        let ini = 0,
+          fin = 0;
+        for (let k = 0; k < NE * NE; k++)
+          if (pav[k] !== 1) {
+            dist[k] = 0;
+            cola[fin++] = k;
+          }
+        while (ini < fin) {
+          const k = cola[ini++],
+            i = k % NE;
+          for (const kk of [i > 0 ? k - 1 : -1, i < NE - 1 ? k + 1 : -1, k - NE, k + NE])
+            if (kk >= 0 && kk < NE * NE && dist[kk] > dist[k] + 1) {
+              dist[kk] = dist[k] + 1;
+              cola[fin++] = kk;
+            }
+        }
+      }
+      const borde = (x, z) => dist[ix(z) * NE + ix(x)] * CE;
+      const dentro = (x, z, m) => {
+        const i = ix(x),
+          j = ix(z);
+        for (let b = -m; b <= m; b++) for (let a = -m; a <= m; a++) if (i + a < 0 || j + b < 0 || i + a >= NE || j + b >= NE || pav[(j + b) * NE + i + a] !== 1) return false;
+        return true;
+      };
+      const zonasE = (S.zonas || []).map(zz => [zz.obj.position.x, zz.obj.position.z]),
+        lejos = (x, z) => zonasE.every(q => Math.hypot(q[0] - x, q[1] - z) > 7) && !(S.ptoPab && Math.hypot(S.ptoPab[0] - x, S.ptoPab[1] - z) < 16);
+      const arbE = [],
+        alcE = [],
+        bancosE = [],
+        papelerasE = [];
+      let nfE = 0;
+      for (let gj = 0, gz = -R + 4.5; gz < R; gz += 9, gj++)
+        for (let gi = 0, gx = -R + 4.5; gx < R; gx += 9, gi++) {
+          if (!dentro(gx, gz, 2) || !libre(gx, gz) || ocupado(gx, gz) || !lejos(gx, gz) || arbE.length > 450) continue;
+          const h = U.hash(club.id + 'expl' + gi + ',' + gj) % 100,
+            db = borde(gx, gz);
+          if (gi % 2 === 1 && gj % 2 === 1 && GM.urbano && nfE < (alta ? 60 : 30)) {
+            GM.urbano.farola(W, G, S, gx, gz, (h % 4) * 1.5708);
+            nfE++;
+            ocupa(gx, gz);
+            continue;
+          }
+          if (db > 12) continue;
+          arbE.push([gx, gz, 'redondo']);
+          alcE.push({ x: gx, z: gz, ry: 0 });
+          ocupa(gx, gz);
+          if (h < 34 && dentro(gx + 2, gz, 1) && libre(gx + 2, gz)) {
+            const b = { x: gx + 2, z: gz, ry: -Math.PI / 2, c: (PAL ? PAL.banco : ['#5a4630', '#3a3f45', '#6b4a2f'])[h % 3] };
+            bancosE.push(b);
+            bancos.push(b);
+            bloquea(b.x, b.z, 0.8);
+            if (h < 12) {
+              papelerasE.push({ x: gx + 2, z: gz + 1.4, c: (PAL ? PAL.papelera : ['#2f4f3a', '#3a3f45', '#4a4f55'])[h % 3] });
+              bloquea(gx + 2, gz + 1.4, 0.3);
+            }
+          }
+        }
+      if (arbE.length) {
+        I.plantar(W, G, arbE, club, alta, rr);
+        if (I.mallaAlcorques) I.mallaAlcorques(W, M, alcE);
+      }
+      inst(
+        fundir([caja(1.6, 0.06, 0.45, 0, 0.45, 0), caja(1.6, 0.4, 0.05, 0, 0.78, -0.2), caja(0.06, 0.45, 0.4, -0.7, 0.22, 0), caja(0.06, 0.45, 0.4, 0.7, 0.22, 0)]),
+        blanco,
+        bancosE,
+        'bancos de explanada',
+        true
+      );
+      inst(
+        fundir([new THREE.CylinderGeometry(0.22, 0.2, 0.9, 10).translate(0, 0.45, 0), new THREE.CylinderGeometry(0.25, 0.25, 0.06, 10).translate(0, 0.93, 0)]),
+        blanco,
+        papelerasE,
+        'papeleras de explanada',
+        true
+      );
+      S.explanadas = { celdas: AE.P.length / 12, arboles: arbE.length, bancos: bancosE.length, farolas: nfE };
+    }
+
     // ---------- Derrame de luz de los comercios sobre la acera (una malla con todos los rectángulos; solo se ve de noche) ----------
     {
       const P = [],
