@@ -133,7 +133,14 @@
       tanques = [],
       antenas = [],
       chimeneas = [],
+      // alféizares y dinteles en 3D (punto 96): por estilo de fachada, en las ventanas pintadas que no llevan balcón
+      alf = { 0: [], 1: [], 4: [] },
+      CAPA = alta ? 9000 : 2500,
       corn = { P: [], N: [], C: [], I: [] };
+    // posición de las ventanas en la textura de cada estilo (texFachada de calle_real.js): centros en metros dentro del módulo de 3 m y
+    // altura del alféizar en el módulo de planta de 3,1 m
+    const VENT = { 0: { x: [1.5], v: 0.26 }, 1: { x: [1.5], v: 0.2 }, 4: { x: [0.81, 2.19], v: 0.3 } };
+    let nAlf = 0;
     const sorted = B.filter(b => b.h && b !== roles.pabellon).sort((a, b) => a.dc - b.dc),
       CAPB = alta ? 2600 : 1200;
     sorted.forEach(b => {
@@ -190,6 +197,24 @@
           C.N.push(0, 1, 0, 0, 1, 0);
           for (let k = 0; k < 6; k++) C.C.push(clar.r, clar.g, clar.b);
           C.I.push(v, v + 1, v + 2, v, v + 2, v + 3, v + 3, v + 2, v + 5, v + 3, v + 5, v + 4);
+        }
+        // alféizares y dinteles de las ventanas sin balcón en las fachadas que dan a la calle
+        const VE = VENT[b.estilo],
+          conBalcon = (b.cl === 1 || b.cl === 0 || b.cl === 8) && b.lv >= 3 && b.estilo !== 2 && l >= 5;
+        if (cara && VE && l >= 2 && b.dc < 230 && nAlf < CAPA && b.cl !== 7 && b.cl !== 9 && b.cl !== 10) {
+          const plantas = Math.floor((b.h - (shop ? 3.4 : 0)) / 3.1);
+          for (const cxv of VE.x)
+            for (let s = (cxv - (u0 % 3) + 3) % 3; s < l - 0.7; s += 3) {
+              if (s < 0.7) continue;
+              const hs = U.hash(club.id + b.i + 'b' + i + Math.round(s));
+              for (let f = shop ? 0 : 0; f < plantas; f++) {
+                if (conBalcon && b.estilo !== 4 && hs % 5 <= 2 && f >= 1 && !(b.rol && f < 2)) continue; // ahí va el balcón
+                const y = (shop ? 3.4 : 0) + (f + VE.v) * 3.1;
+                if (y > b.h - 1.6 || nAlf >= CAPA) continue;
+                alf[b.estilo].push({ x: a[0] + ux * s, y, z: a[1] + uz * s, ry, c: clar.getHex() });
+                nAlf++;
+              }
+            }
         }
         // balcones: una vez por cada hueco de ventana (cada 3 m) y planta
         if (cara && l >= 5 && (b.cl === 1 || b.cl === 0 || b.cl === 8) && b.lv >= 3 && b.estilo !== 2 && balcones.length < CAPB) {
@@ -248,6 +273,10 @@
         caja(0.05, 0.95, 0.75, 0.82, 0.47, 0.37)
       ]);
     inst(balcon, blanco, balcones, 'balcones');
+    // alféizar (sobresale 18 cm) y dintel; el estilo de bloque, solo alféizar
+    inst(fundir([caja(1.42, 0.07, 0.2, 0, -0.035, 0.1), caja(1.32, 0.1, 0.07, 0, 1.47, 0.035)]), blanco, alf[0], 'alféizares');
+    inst(fundir([caja(1.0, 0.07, 0.2, 0, -0.035, 0.1), caja(0.94, 0.1, 0.07, 0, 2.0, 0.035)]), blanco, alf[1], 'alféizares');
+    inst(fundir([caja(1.34, 0.06, 0.16, 0, -0.03, 0.08)]), blanco, alf[4], 'alféizares');
     inst(reja, blanco, rejas, 'rejas');
     {
       const g = new THREE.BoxGeometry(1, 0.08, 1.3).translate(0, 0, 0.65);
@@ -621,6 +650,21 @@
         }
       return false;
     };
+    // dentro de una plaza de OpenStreetMap (se pavimenta encima de la calzada) no hay bordillo
+    const plazasBB = (X.PL || []).map(a => {
+        let x0 = 1e9,
+          z0 = 1e9,
+          x1 = -1e9,
+          z1 = -1e9;
+        a.p.forEach(q => {
+          x0 = Math.min(x0, q[0]);
+          x1 = Math.max(x1, q[0]);
+          z0 = Math.min(z0, q[1]);
+          z1 = Math.max(z1, q[1]);
+        });
+        return { p: a.p, bb: [x0 - 1, z0 - 1, x1 + 1, z1 + 1] };
+      }),
+      enPlaza = (x, z) => plazasBB.some(q => x > q.bb[0] && x < q.bb[2] && z > q.bb[1] && z < q.bb[3] && pip(x, z, q.p));
     const enPaso = (x, z) =>
       pasos.some(p => {
         const rx = x - p.x,
@@ -650,7 +694,7 @@
           const t = (l * k) / n,
             x = a[0] + ux * t + nx * (w / 2),
             z = a[1] + uz * t + nz * (w / 2);
-          M.push({ x, z, nx, nz, clave: k === n, ok: Math.hypot(x, z) < R - 6 && !dentroDeOtra(x, z, cl) && !enPaso(x, z) });
+          M.push({ x, z, nx, nz, clave: k === n, ok: Math.hypot(x, z) < R - 6 && !dentroDeOtra(x, z, cl) && !enPaso(x, z) && !enPlaza(x, z) });
         }
       }
       // tramos seguidos sin corte: una pieza por cada lado recto (las muestras de cada metro solo sirven para saber dónde cortar)
