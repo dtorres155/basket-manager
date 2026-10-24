@@ -34,6 +34,9 @@ const ESCENAS = [
       dia: [
         ['calle_pie', 'yo', 0.6, 9, 0.32],
         ['calle_juego', 'yo', 0.6, 20, 0.95],
+        // cámara automática del punto 103 (inclinación según el zoom): de cerca y a media distancia
+        ['calle_cerca', 'yo', 0.6, 4.5, null],
+        ['calle_media', 'yo', 2.2, 11, null],
         ['calle_alta', ['zona:pabellon'], 0.5, 70, 1.15],
         ['pabellon_fuera', ['zona:pabellon'], 2.4, 32, 0.3],
         ['plaza_terraza', ['zona:terraza', 'zona:mercado'], 0.9, 14, 0.42],
@@ -84,6 +87,7 @@ const ESCENAS = [
       dia: [
         ['pueblo_pie', 'yo', 0.6, 9, 0.32],
         ['pueblo_juego', 'yo', 0.6, 20, 0.95],
+        ['pueblo_cerca', 'yo', 0.6, 4.5, null],
         ['pueblo_alto', 'yo', 0.5, 70, 1.15]
       ],
       tarde: [['pueblo_pie', 'yo', 0.6, 9, 0.32]],

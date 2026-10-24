@@ -24,6 +24,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     GM.sede.abrir(GM.state, 'calle');
   });
   await sleep(14000);
+  await p.getByRole('button', { name: 'Más', exact: true }).click(); // desde el punto 103, Foto está en el menú «Más»
   await p.getByRole('button', { name: 'Foto', exact: true }).click();
   await sleep(800);
   for (let i = 0; i < 4; i++) await p.locator('.sede-foto button').nth(1).click();

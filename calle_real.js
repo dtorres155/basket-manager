@@ -218,15 +218,20 @@
       sh.uniforms.uRecR = S.rec.r;
       sh.vertexShader = 'varying vec3 vWp;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader =
-        'varying vec3 vWp; uniform vec3 uRecP; uniform vec3 uRecC; uniform float uRecR;\n' +
-        sh.fragmentShader.replace(
-          '#include <clipping_planes_fragment>',
-          '#include <clipping_planes_fragment>\n' +
-            ' { vec3 ab = uRecP - uRecC; float t = clamp(dot(vWp - uRecC, ab) / max(dot(ab, ab), 0.001), 0.0, 1.0); float d = distance(vWp, uRecC + ab * t);\n' +
-            '   if (t < 0.96 && d < uRecR && vWp.y > 0.9) { float k = smoothstep(uRecR * 0.82, uRecR, d); vec2 bp = mod(floor(gl_FragCoord.xy), 4.0); float bayer = (mod(bp.x * 4.0 + bp.y * 7.0, 16.0) + 0.5) / 16.0; if (bayer > k) discard; } }'
-        );
+        'varying vec3 vWp; uniform vec3 uRecP; uniform vec3 uRecC; uniform float uRecR; float recK = 1.0;\n' +
+        sh.fragmentShader
+          .replace(
+            '#include <clipping_planes_fragment>',
+            '#include <clipping_planes_fragment>\n' +
+              ' { vec3 ab = uRecP - uRecC; float t = clamp(dot(vWp - uRecC, ab) / max(dot(ab, ab), 0.001), 0.0, 1.0); float d = distance(vWp, uRecC + ab * t);\n' +
+              '   if (t < 0.96 && d < uRecR && vWp.y > 0.9) recK = smoothstep(uRecR * 0.82, uRecR, d); }'
+          )
+          // (punto 103) antes: trama de puntos (descarte con patrón de Bayer); ahora transparencia por cobertura: borde suave con
+          // antialiasing y un círculo limpio sin él
+          .replace('#include <alphatest_fragment>', 'diffuseColor.a *= recK;\n#include <alphatest_fragment>');
     };
-    m.customProgramCacheKey = () => clave + 'recorte';
+    m.alphaToCoverage = true;
+    m.customProgramCacheKey = () => clave + 'recorte2';
     return m;
   }
   function texFachada(M) {

@@ -187,6 +187,7 @@ input,textarea,select{font-size:16px}
 .sede-top{top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:10px;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(18,22,28,.82);color:#f1f3f5}
 .sede-top .ct{flex:1;min-width:0;display:flex;flex-direction:column}.sede-top .ct b{font:400 18px var(--fd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sede-top .ct span{font-size:12px;opacity:.8}
 .sede-top .btn-sec{color:#f1f3f5;border-color:rgba(241,243,245,.7)}
+.sede-top .ct .sede-dia{opacity:.75;padding:0;border:0;background:none;border-radius:0;font-weight:400;font-size:12px}.sede-mas{position:relative}.sede-mas-panel{position:absolute;right:0;top:calc(100% + 8px);display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:12px;background:rgba(18,22,28,.92);min-width:180px;z-index:5}.sede-mas-panel[hidden]{display:none}.sede-mas-panel .btn{width:100%;text-align:left}
 .sede-aviso,.sede-ficha{left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(520px,calc(100% - 20px));display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(18,22,28,.88);color:#f1f3f5}
 .sede-ficha{bottom:calc(88px + env(safe-area-inset-bottom,0px));border-left:6px solid var(--club)}
 .sede-aviso .ct,.sede-ficha .ct{flex:1;display:flex;flex-direction:column}.sede-aviso .ct span,.sede-ficha .ct span{font-size:13px;opacity:.85}
@@ -639,6 +640,7 @@ body{background:var(--bg)}
 @media (max-width: 480px) { .dz-corto { display: none; } }
 .dz-spark { vertical-align: middle; }
 .dz-medidor { display: flex; flex-direction: column; gap: var(--e1); }
+.dz-medidor .barra { flex: none; } /* en columna, flex:1 anulaba la altura y la barra medía 0 px (necesidades del HUD) */
 .dz-medidor-cab { display: flex; justify-content: space-between; font-size: 13px; }
 .dz-panel { background: var(--bg2); border-radius: var(--r2); margin-bottom: var(--e3); box-shadow: var(--sh1); overflow: hidden; }
 .dz-panel-cab { display: flex; align-items: center; gap: var(--e2); width: 100%; padding: var(--e3) var(--e4); background: none; border: 0; color: var(--tinta); font: inherit; cursor: pointer; text-align: left; }

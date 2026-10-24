@@ -40,6 +40,7 @@ fs.mkdirSync(DIR, { recursive: true });
       },
       [i, v]
     );
+  await clic('Más'); // desde el punto 103, Foto está en el menú «Más»
   await clic('Foto');
   await sleep(600);
   await clic('Ajustes');

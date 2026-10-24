@@ -13,11 +13,14 @@
         }
       }
     ); // la escena activa cambia al abrir otra: se lee en cada acceso
+    // Fuera se puede acercar la cámara hasta la altura de los ojos (punto 103); dentro, no, que quedaría tras las paredes
+    const zoomMin = () => (S.escena === 'calle' || S.escena === 'pueblo' || S.escena === 'deportiva' ? 3.5 : 8);
     function hud(st) {
       const h = GM.h,
         club = st.equipos[st.clubId];
       S.raiz.querySelectorAll('.sede-hud').forEach(n => n.remove());
       const fecha = h('span', null, U.fechaLarga(st.fecha));
+      S.chipHora = h('span', null, '8:00'); // la hora la enseña el reloj del HUD (hud_mundo.js)
       const top = h(
         'div',
         { class: 'sede-hud sede-top' },
@@ -42,67 +45,82 @@
             ? h('span', null, 'Tu pueblo, ' + U.fechaLarga(st.fecha))
             : S.escena === 'calle'
               ? h('span', null, club.ciudad + ', ' + U.fechaLarga(st.fecha))
-              : fecha
+              : fecha,
+          (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto))
         ),
-        (S.chipHora = h(
-          'button',
-          {
-            class: 'sede-hora',
-            title: 'Pasar una hora',
-            onclick: () => {
-              if (S.hora >= 23) return GM.ui.toast('Es tarde: avanza al día siguiente');
-              S.hora = Math.min(23, Math.floor(S.hora) + 1);
-              S.tLuz = 0;
-              GM.ui.toast('Pasa una hora: ' + Math.floor(S.hora) + ':00');
-            }
-          },
-          '8:00'
-        )),
-        (S.chipDia = h('span', { class: 'sede-dia' }, (S.dia || estadoDia(st)).texto)),
+        // Barra con lo justo (punto 103): Mapa, Móvil, «Más» (pasar una hora, foto, calidad, sonido, encargos) y Avanzar un día. La hora
+        // ya la da el reloj del HUD; el estado del día va debajo del título.
         h('button', { class: 'btn btn-sec peq', onclick: () => mapa() }, 'Mapa'),
-        h('button', { class: 'btn btn-sec peq', onclick: () => modoFoto() }, 'Foto'),
-        h(
-          'button',
-          {
-            class: 'btn btn-sec peq',
-            title: 'Calidad gráfica: bajo, medio, alto o ultra (reinicia la escena)',
-            onclick: () => {
-              const N = GM.campus.NIVELES,
-                n = N[(N.indexOf(GM.campus.config.nivel) + 1) % N.length];
-              GM.campus.setNivel(n);
-              const st = S.st,
-                arg = S.escena + (S.escenaArg ? ':' + S.escenaArg : '');
-              cerrar();
-              GM.ui.toast('Calidad ' + n);
-              setTimeout(() => abrir(st, arg), 60);
-            }
-          },
-          'Calidad: ' + ((GM.campus && GM.campus.config.nivel) || 'alto')
-        ),
-        GM.sonido
-          ? h(
-              'button',
-              {
-                class: 'btn btn-sec peq',
-                title: 'Activar o silenciar el sonido',
-                onclick: e => {
-                  const on = GM.sonido.alternar();
-                  e.currentTarget.textContent = on ? 'Sonido' : 'Sin sonido';
-                }
-              },
-              GM.sonido.activo() ? 'Sonido' : 'Sin sonido'
-            )
-          : null,
-        S.escena === 'pueblo' && GM.puebloJuego
-          ? h('button', { class: 'btn btn-sec peq', onclick: () => GM.puebloJuego.panelEncargos() }, 'Encargos (' + GM.puebloJuego.pendientes(st) + ')')
-          : null,
-        st.modo !== 'carrera' && GM.movilApps && GM.ui.movil ? h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil') : null,
         st.modo === 'carrera' && GM.mods.movil && GM.ui.movil
           ? (() => {
               const n = GM.mods.movil.noLeidos(st);
               return h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil' + (n ? ' (' + n + ')' : ''));
             })()
-          : null,
+          : GM.movilApps && GM.ui.movil
+            ? h('button', { class: 'btn btn-sec peq', onclick: () => GM.ui.movil() }, 'Móvil')
+            : null,
+        (() => {
+          const panel = h('div', { class: 'sede-mas-panel', hidden: true }),
+            item = (txt, fn, titulo) =>
+              h(
+                'button',
+                {
+                  class: 'btn btn-sec peq',
+                  title: titulo || '',
+                  onclick: e => {
+                    panel.hidden = true;
+                    fn(e);
+                  }
+                },
+                txt
+              );
+          panel.append(
+            item('Pasar una hora', () => {
+              if (S.hora >= 23) return GM.ui.toast('Es tarde: avanza al día siguiente');
+              S.hora = Math.min(23, Math.floor(S.hora) + 1);
+              S.tLuz = 0;
+              GM.ui.toast('Pasa una hora: ' + Math.floor(S.hora) + ':00');
+            }),
+            item('Foto', () => modoFoto()),
+            item(
+              'Calidad: ' + ((GM.campus && GM.campus.config.nivel) || 'alto'),
+              () => {
+                const N = GM.campus.NIVELES,
+                  n = N[(N.indexOf(GM.campus.config.nivel) + 1) % N.length];
+                GM.campus.setNivel(n);
+                const st2 = S.st,
+                  arg = S.escena + (S.escenaArg ? ':' + S.escenaArg : '');
+                cerrar();
+                GM.ui.toast('Calidad ' + n);
+                setTimeout(() => abrir(st2, arg), 60);
+              },
+              'Calidad gráfica: bajo, medio, alto o ultra (reinicia la escena)'
+            ),
+            GM.sonido
+              ? item(GM.sonido.activo() ? 'Sonido' : 'Sin sonido', e => {
+                  const on = GM.sonido.alternar();
+                  e.currentTarget.textContent = on ? 'Sonido' : 'Sin sonido';
+                })
+              : null,
+            S.escena === 'pueblo' && GM.puebloJuego ? item('Encargos (' + GM.puebloJuego.pendientes(st) + ')', () => GM.puebloJuego.panelEncargos()) : null
+          );
+          return h(
+            'div',
+            { class: 'sede-mas' },
+            h(
+              'button',
+              {
+                class: 'btn btn-sec peq',
+                'aria-haspopup': 'true',
+                onclick: () => {
+                  panel.hidden = !panel.hidden;
+                }
+              },
+              'Más'
+            ),
+            panel
+          );
+        })(),
         h('button', { class: 'btn peq', onclick: () => avanzar(() => GM.ui.jugarUnDia()) }, 'Avanzar un día')
       );
       S.panel = h('div', { class: 'sede-hud sede-sala', style: { display: 'none' } });
@@ -119,8 +137,8 @@
         'div',
         { class: 'sede-hud sede-ayuda', onclick: () => ayuda.remove() },
         tactil
-          ? 'Toca el reloj para pasar una hora. Toca el suelo para caminar (doble toque para correr) o usa el joystick, arrastra para girar la cámara y pellizca para acercar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.'
-          : 'Clic en el reloj para pasar una hora. Toca el suelo para caminar (doble clic para correr) o usa WASD (Mayúsculas para correr). Rueda para acercar, Q y E para girar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.'
+          ? 'Toca el suelo para caminar (doble toque para correr) o usa el joystick, arrastra para girar la cámara y pellizca para acercar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.'
+          : 'Toca el suelo para caminar (doble clic para correr) o usa WASD (Mayúsculas para correr). Rueda para acercar (de cerca, la cámara baja a la altura de los ojos), Q y E para girar. Pisa el círculo de una sala para ver qué puedes hacer y toca a una persona para hablar con ella.'
       );
       setTimeout(() => {
         if (ayuda.isConnected) ayuda.classList.add('fuera');
@@ -155,7 +173,7 @@
               {
                 'aria-label': 'Acercar',
                 onclick: () => {
-                  S.zoom = Math.max(8, S.zoom * 0.8);
+                  S.zoom = Math.max(zoomMin(), S.zoom * 0.8);
                 }
               },
               '+'
@@ -355,7 +373,7 @@
               const L = S.camLibre;
               L.pos.x -= Math.sin(L.yaw) * (d - pinza) * 0.05;
               L.pos.z -= Math.cos(L.yaw) * (d - pinza) * 0.05;
-            } else S.zoom = Math.max(8, Math.min(42, (S.zoom * pinza) / d));
+            } else S.zoom = Math.max(zoomMin(), Math.min(42, (S.zoom * pinza) / d));
           }
           pinza = d;
         }
@@ -390,7 +408,7 @@
             L.pos.z -= Math.cos(L.yaw) * -e.deltaY * 0.02;
             return;
           }
-          S.zoom = Math.max(8, Math.min(42, S.zoom * (1 + e.deltaY * 0.001)));
+          S.zoom = Math.max(zoomMin(), Math.min(42, S.zoom * (1 + e.deltaY * 0.001)));
         },
         { passive: false }
       );

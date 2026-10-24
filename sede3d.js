@@ -1387,6 +1387,7 @@
       S.ocupados = new Set();
       S.flotantes.forEach(f => f.el.remove());
       S.flotantes = [];
+      S.etiquetas = []; // las de la escena anterior se van con ella
       S.coches = null;
       S.entrenador = null;
       if (S.marcaDestino) S.scene.remove(S.marcaDestino);
@@ -1459,7 +1460,40 @@
     s.scale.set(2.6, 0.49, 1);
     s.renderOrder = 10;
     s.userData = { etiqueta: true };
+    if (S) (S.etiquetas = S.etiquetas || []).push(s);
     return s;
+  }
+  // Etiquetas legibles (punto 103): las de los sitios solo a media distancia (de 4,5 a 40 m; dentro de edificios, hasta 25 m), los nombres
+  // de la gente solo de cerca (12 m), siempre del mismo tamaño en pantalla, y nunca la del sitio más cercano (ya sale en la tarjeta del HUD)
+  const _vE = new THREE.Vector3();
+  function cuidarEtiquetas() {
+    if (!S || !S.etiquetas || !S.yo || !S.camera) return;
+    const yo = S.yo.obj.position,
+      cam = S.camera.position,
+      fuera = S.escena === 'calle' || S.escena === 'pueblo' || S.escena === 'deportiva';
+    let cerca = null,
+      dc = 30;
+    (S.zonas || []).forEach(z => {
+      const d = Math.hypot(z.obj.position.x - yo.x, z.obj.position.z - yo.z);
+      if (d < dc) {
+        dc = d;
+        cerca = z.et;
+      }
+    });
+    for (const e of S.etiquetas) {
+      if (!e.parent) continue;
+      if (!e.userData.base) e.userData.base = e.scale.clone();
+      e.getWorldPosition(_vE);
+      const dYo = Math.hypot(_vE.x - yo.x, _vE.z - yo.z),
+        gente = !!e.userData.gente;
+      let vis = gente ? dYo < 12 : fuera ? dYo > 4.5 && dYo < 40 : dYo < 25;
+      if (e === cerca) vis = false;
+      e.visible = vis;
+      if (vis) {
+        const f = Math.max(gente ? 0.22 : 0.45, Math.min(1.6, _vE.distanceTo(cam) / 16));
+        e.scale.copy(e.userData.base).multiplyScalar(f);
+      }
+    }
   }
 
   // ---------- Mapa interactivo ----------
@@ -2944,6 +2978,7 @@
       n.obj.userData = { npc: S.gente.length };
       const et = etiqueta(d.nombre),
         k = 1 / n.obj.scale.x;
+      et.userData.gente = true;
       et.scale.multiplyScalar(0.8 * k);
       et.position.y = 2.25 / n.obj.scale.y;
       n.obj.add(et);
@@ -3452,11 +3487,38 @@
           S._fogFoto = null;
         }
         S.hF = GM.relieve && GM.relieve.activo() ? GM.relieve.altura(S.foco.x, S.foco.z) : 0;
-        const inc = S.inc || 0.95,
-          d = S.zoom;
-        camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * d, Math.sin(inc) * d + (S.hF || 0), S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * d);
-        camera.lookAt(S.foco.x, 0.6 + (S.hF || 0), S.foco.z);
-        camera.far = 200;
+        // Cámara (punto 103 de la hoja de ruta 2): fuera, de lejos es la vista de mapa y al acercarte baja hacia la altura de los ojos y
+        // mira al pecho; si un edificio queda entre tu personaje y la cámara, la cámara se acerca en vez de meterse dentro
+        const ext = S.escena === 'calle' || S.escena === 'pueblo' || S.escena === 'deportiva',
+          kz = ext && !S.inc ? Math.max(0, Math.min(1, (S.zoom - 4) / 20)) : 1,
+          kS = kz * kz * (3 - 2 * kz),
+          inc = S.inc || (ext ? 0.3 + 0.65 * kS : 0.95);
+        // distancia horizontal y altura por separado: si choca con un edificio, se acerca en horizontal pero conserva la altura
+        // (mira por encima del hombro en vez de pegarse a la espalda)
+        const alt = Math.sin(inc) * S.zoom;
+        let hor = Math.cos(inc) * S.zoom;
+        if (ext && !S.inc && S.G && alt < 14) {
+          const dx = Math.sin(S.yaw),
+            dz = Math.cos(S.yaw);
+          let run = 0;
+          for (let t = 0.8; t < hor; t += 0.5) {
+            const [ci, cj] = S.G.celda(S.foco.x + dx * t, S.foco.z + dz * t);
+            run = S.G.libre(ci, cj) ? 0 : run + 1;
+            if (run >= 4) {
+              hor = Math.max(1.2, t - 2.2);
+              break;
+            }
+          }
+        }
+        S.hCam = S.hCam === undefined ? hor : S.hCam + (hor - S.hCam) * Math.min(1, dt * (hor < S.hCam ? 10 : 3));
+        camera.position.set(S.foco.x + Math.sin(S.yaw) * S.hCam, Math.max(alt, S.hCam < Math.cos(inc) * S.zoom - 0.5 ? 2.6 : 0) + (S.hF || 0), S.foco.z + Math.cos(S.yaw) * S.hCam);
+        camera.lookAt(S.foco.x, 0.6 + 0.9 * (1 - kS) + (S.hF || 0), S.foco.z);
+        const far = ext ? 200 + 300 * (1 - kS) : 200;
+        if (Math.abs(camera.far - far) > 5) {
+          camera.far = far;
+          camera.updateProjectionMatrix();
+        }
+        cuidarEtiquetas();
       }
       // el mapa de sombras se refresca un fotograma de cada dos (la sombra es lo más caro del dibujo); en Ultra, cada uno
       if (renderer.shadowMap.enabled) {
@@ -3562,8 +3624,12 @@
     try {
       window.localStorage.setItem('gm1:rendimiento', String(n));
     } catch (e) {}
-    if (avisar && GM.ui && GM.ui.toast) GM.ui.toast('Calidad ajustada para que vaya más fluido');
+    if (avisar && GM.ui && GM.ui.toast && !avisadoAjuste) {
+      avisadoAjuste = true;
+      GM.ui.toast('Calidad ajustada para que vaya más fluido');
+    }
   }
+  let avisadoAjuste = false; // los avisos de ajuste automático salen una vez por sesión (punto 103)
   function rendimiento() {
     if (typeof window !== 'undefined' && window.__sinAdaptar) return; // capturas: no bajar la calidad
     const ahora = performance.now(),
@@ -3659,8 +3725,8 @@
     try {
       window.localStorage.setItem('gm1:escalaRes', String(S.escalaRes));
     } catch (er) {}
-    if (GM.ui && GM.ui.toast && e < 0.99 && !S.avisoRes) {
-      S.avisoRes = true;
+    if (GM.ui && GM.ui.toast && e < 0.99 && !avisadoAjuste) {
+      avisadoAjuste = true; // una vez por sesión, no en cada escena
       GM.ui.toast('Resolución ajustada para que vaya más fluido');
     }
   }
