@@ -111,7 +111,7 @@
     const hormigon = new T.MeshStandardMaterial({ color: 0xd2d5d8, roughness: 0.7 }),
       acero = mat('#b9c0c6', { metalness: 0.6, roughness: 0.3 }),
       vidrio = new T.MeshStandardMaterial({ color: 0x2d3b46, roughness: 0.12, metalness: 0.5 });
-    if (GM.texturas) GM.texturas.aplicar(hormigon, 'Concrete034', { escala: 3, tinte: 0xdcdfe2, relieve: 0.6 });
+    if (GM.texturas) GM.texturas.aplicar(hormigon, 'Concrete034', { tinte: 0xdcdfe2, relieve: 0.6 });
     let rx = 10,
       rz = 7,
       alto = 9,
@@ -384,7 +384,7 @@
       z = -122,
       pie = new T.MeshStandardMaterial({ color: 0xd8cfbc, roughness: 0.85 }),
       lad = mat('#a8584a');
-    if (GM.texturas) GM.texturas.aplicar(pie, 'Plaster003', { color: false, escala: 3, relieve: 1 });
+    if (GM.texturas) GM.texturas.aplicar(pie, 'Plaster003', { color: false, relieve: 1 });
     g.position.set(x, 0, z);
     g.scale.setScalar(1.5);
     W.add(g);

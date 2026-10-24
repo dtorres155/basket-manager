@@ -1170,7 +1170,7 @@
       g,
       (() => {
         const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
-        if (conTextura) GM.texturas.aplicar(m, 'Grass004', { escala: 7, tinte: EST === 'otono' ? 0xf0d9a0 : 0xf2f4e0, relieve: 0.9, rugMin: 0.75, color: EST !== 'invierno' });
+        if (conTextura) GM.texturas.aplicar(m, 'Grass004', { tinte: EST === 'otono' ? 0xf0d9a0 : 0xf2f4e0, relieve: 0.9, rugMin: 0.75, color: EST !== 'invierno' });
         return m;
       })()
     );
@@ -1472,7 +1472,7 @@
     }
     {
       const piedra = mat('#9b9285', { roughness: 1 });
-      if (GM.texturas) GM.texturas.aplicar(piedra, 'Bricks085', { color: false, escala: 1.2, relieve: 1 });
+      if (GM.texturas) GM.texturas.aplicar(piedra, 'Bricks085', { color: false, relieve: 1 });
       const N = 260,
         im = new T.InstancedMesh(new T.BoxGeometry(1.2, 0.7, 0.5), piedra, N);
       let k = 0;
@@ -1698,16 +1698,16 @@
     if (GM.texturas) {
       const TR = GM.texturas,
         claro = E.clave === 'andaluz';
-      TR.aplicar(mCalle, 'PavingStones070', { escala: 2.2, tinte: claro ? 0xf2e6d0 : 0xdcc6a2 });
-      if (mLosas.isMaterial) TR.aplicar(mLosas, 'PavingStones070', { escala: 3.4, tinte: claro ? 0xf0e8d8 : 0xd6cab4 });
-      TR.aplicar(mBordillo, 'Concrete034', { escala: 1.4, tinte: claro ? 0xf0e8d8 : 0xb8aa94, relieve: 0.8 });
-      TR.aplicar(mAsf, 'Asphalt010', { escala: 4, tinte: 0xb4b4b4 });
-      TR.aplicar(mGrava, 'Ground054', { escala: 3, tinte: 0xf0e2c0, relieve: 0.5 });
-      if (mTierra.isMaterial) TR.aplicar(mTierra, 'Ground054', { escala: 6.5, tinte: 0xe9dfc4, relieve: 0.4 });
-      if (mSolar.isMaterial) TR.aplicar(mSolar, 'Grass004', { escala: 3.5, tinte: 0xc8d0a0 });
-      (E.muros || []).forEach(c => TR.aplicar(mat(c), 'Plaster003', { color: false, escala: 1.8, relieve: 1 }));
-      if (E.zocalo) TR.aplicar(mat(E.zocalo), 'Concrete034', { color: false, escala: 1.5 });
-      TR.aplicar(mat(E.teja), 'RoofingTiles013A', { color: false, escala: 1.4, relieve: 1.2 });
+      TR.aplicar(mCalle, 'PavingStones070', { tinte: claro ? 0xf2e6d0 : 0xdcc6a2 });
+      if (mLosas.isMaterial) TR.aplicar(mLosas, 'PavingStones070', { tinte: claro ? 0xf0e8d8 : 0xd6cab4 });
+      TR.aplicar(mBordillo, 'Concrete034', { tinte: claro ? 0xf0e8d8 : 0xb8aa94, relieve: 0.8 });
+      TR.aplicar(mAsf, 'Asphalt010', { tinte: 0xb4b4b4 });
+      TR.aplicar(mGrava, 'Ground054', { tinte: 0xf0e2c0, relieve: 0.5 });
+      if (mTierra.isMaterial) TR.aplicar(mTierra, 'Ground054', { tinte: 0xe9dfc4, relieve: 0.4 });
+      if (mSolar.isMaterial) TR.aplicar(mSolar, 'Grass004', { tinte: 0xc8d0a0 });
+      (E.muros || []).forEach(c => TR.aplicar(mat(c), 'Plaster003', { color: false, relieve: 1 }));
+      if (E.zocalo) TR.aplicar(mat(E.zocalo), 'Concrete034', { color: false });
+      TR.aplicar(mat(E.teja), 'RoofingTiles013A', { color: false, relieve: 1.2 });
     }
     const uvEsc = (g, e) => {
       const uv = g.attributes.uv;
@@ -2353,7 +2353,7 @@
     // Manchas de hierba y matojos en la tierra apisonada del casco (donde no hay calles, plaza ni edificios)
     {
       const mg = new THREE.MeshStandardMaterial({ color: '#7d9a52', roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-      if (GM.texturas) GM.texturas.aplicar(mg, 'Grass004', { escala: 2.6, tinte: 0xe4ecc6, relieve: 0.9 });
+      if (GM.texturas) GM.texturas.aplicar(mg, 'Grass004', { tinte: 0xe4ecc6, relieve: 0.9 });
       const N = 190,
         im = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 14).rotateX(-Math.PI / 2), mg, N),
         m4 = new THREE.Matrix4(),

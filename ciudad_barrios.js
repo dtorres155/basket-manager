@@ -74,7 +74,7 @@
     const asf = new THREE.Mesh(
       new THREE.PlaneGeometry(300, 140).rotateX(-Math.PI / 2),
       GM.texturas
-        ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { escala: 5, tinte: 0xb4b4b4 })
+        ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { tinte: 0xb4b4b4 })
         : new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 })
     );
     H.uvM(asf.geometry, 4, 4);
@@ -82,15 +82,15 @@
     asf.receiveShadow = true;
     W.add(asf);
     const mAcera = GM.texturas
-      ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9, color: 0xaea99f }), 'Concrete034', { color: false, escala: 2.4, relieve: 0.6 })
+      ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9, color: 0xaea99f }), 'Concrete034', { color: false, relieve: 0.6 })
       : new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9 });
     // (los céspedes van pegados al suelo: polygonOffset para que no parpadeen con la acera que cubren)
     {
       const c1 = GM.urbano.deco(mat('#6f9a4a', { roughness: 1 })),
         c2 = GM.urbano.deco(H.mat('#76a050', { roughness: 1 }));
       if (GM.texturas) {
-        GM.texturas.aplicar(c1, 'Grass004', { escala: 3, tinte: 0xb8d0a0 });
-        GM.texturas.aplicar(c2, 'Grass004', { escala: 3, tinte: 0xc0d8a8 });
+        GM.texturas.aplicar(c1, 'Grass004', { tinte: 0xb8d0a0 });
+        GM.texturas.aplicar(c2, 'Grass004', { tinte: 0xc0d8a8 });
       }
     }
     const acera = (x0, z0, x1, z1, g) => {

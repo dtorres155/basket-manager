@@ -379,6 +379,7 @@
         mt.map.needsUpdate = true;
         mt.map.repeat.set((r.x1 - r.x0) / 3, (r.z1 - r.z0) / 3);
       } else mt.color.set(0xb98e63);
+      if (I().sueloReal) I().sueloReal(mt, k);
       const p = new T.Mesh(new T.PlaneGeometry(r.x1 - r.x0 - 0.1, r.z1 - r.z0 - 0.1).rotateX(-Math.PI / 2), mt);
       p.position.set((r.x0 + r.x1) / 2, 0.007, (r.z0 + r.z1) / 2);
       p.receiveShadow = true;

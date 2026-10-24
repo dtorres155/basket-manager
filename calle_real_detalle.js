@@ -908,11 +908,11 @@
     inst(carroceria, blanco, aparcados, 'aparcados', true);
 
     // ---------- Menos vacío: patios, usos del suelo, vallas, vías, árboles reales ----------
-    const verde = I.suelo('Grass004', { escala: 3, tinte: 0xa9c692 }, 0x6f9a4a, 1.8),
-      tierra = I.suelo('Ground054', { escala: 1.1, tinte: 0xb09a80 }, 0x8a7458, 1.8),
-      grava = I.suelo('Ground054', { escala: 1.3, tinte: 0xd9cdb2 }, 0xcdbd9d, 1.8),
-      indus = I.suelo('Concrete034', { color: true, escala: 2.2, tinte: 0x77746e }, 0x6d6a64, 1.8),
-      bosque = I.suelo('Grass004', { escala: 3, tinte: 0x7fa070 }, 0x4f7f3a, 1.8);
+    const verde = I.suelo('Grass004', { tinte: 0xa9c692 }, 0x6f9a4a, 1.8),
+      tierra = I.suelo('Ground054', { tinte: 0xb09a80 }, 0x8a7458, 1.8),
+      grava = I.suelo('Ground054', { tinte: 0xd9cdb2 }, 0xcdbd9d, 1.8),
+      indus = I.suelo('Concrete034', { color: true, tinte: 0x77746e }, 0x6d6a64, 1.8),
+      bosque = I.suelo('Grass004', { tinte: 0x7fa070 }, 0x4f7f3a, 1.8);
     const arbExtra = [],
       arbustos = [],
       AVd = I.nuevo(),
@@ -920,16 +920,6 @@
       AGr = I.nuevo(),
       AIn = I.nuevo(),
       ABo = I.nuevo();
-    const blob = (x, z, r, A) => {
-      const n = 9,
-        p = [];
-      for (let k = 0; k < n; k++) {
-        const a = (k / n) * 6.283,
-          rad = r * (0.72 + rr() * 0.5);
-        p.push([x + Math.cos(a) * rad, z + Math.sin(a) * rad]);
-      }
-      I.rellenar(p, 0, A);
-    };
     X.U.forEach(u => {
       const A = [AVd, ABo, null, null, null, AIn, AGr, AGr, ATi, ATi][u.t];
       if (!A) return;
@@ -956,68 +946,8 @@
         }
       }
     });
-    // patios y solares dentro de las manzanas
-    const celdas = new Map();
-    B.forEach(b => {
-      const k = Math.floor(b.cx / 45) + ',' + Math.floor(b.cz / 45);
-      celdas.set(k, (celdas.get(k) || 0) + 1);
-    });
-    const vn = (x, z) => {
-      const xi = Math.floor(x / 60),
-        zi = Math.floor(z / 60),
-        fx = x / 60 - xi,
-        fz = z / 60 - zi,
-        h = (i, j) => (U.hash(club.id + 'n' + i + ',' + j) % 1000) / 1000,
-        sx = fx * fx * (3 - 2 * fx),
-        sz = fz * fz * (3 - 2 * fz);
-      return (h(xi, zi) * (1 - sx) + h(xi + 1, zi) * sx) * (1 - sz) + (h(xi, zi + 1) * (1 - sx) + h(xi + 1, zi + 1) * sx) * sz;
-    };
-    {
-      const paso = 6.5;
-      let n = 0;
-      const dist = [];
-      for (let z = -R + 10; z < R - 10; z += paso) for (let x = -R + 10; x < R - 10; x += paso) dist.push([x + (rr() - 0.5) * 3, z + (rr() - 0.5) * 3]);
-      dist.sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
-      for (const [x, z] of dist) {
-        if (n > (alta ? 700 : 380)) break;
-        if (Math.hypot(x, z) > R - 12) continue;
-        if (!libre(x, z) || !libre(x + 2.2, z) || !libre(x - 2.2, z) || !libre(x, z + 2.2) || !libre(x, z - 2.2)) continue;
-        const cs = calleCerca(x, z);
-        if (cs.d < ACERA + 3.2 || (cs.seg && cs.seg.k === 5 && cs.d < 14)) continue;
-        if (X.P.some(pk => pk.p.length >= 3 && pip(x, z, pk.p)) || X.A.some(pk => pk.p.length >= 3 && pip(x, z, pk.p))) continue;
-        const vN = vn(x, z),
-          cerca = [
-            [0, 0],
-            [45, 0],
-            [-45, 0],
-            [0, 45],
-            [0, -45]
-          ].reduce((t, [a, b]) => t + (celdas.get(Math.floor((x + a) / 45) + ',' + Math.floor((z + b) / 45)) || 0), 0);
-        if (cerca === 0 && rr() > 0.1) continue;
-        if (cerca <= 2 && rr() > 0.4) continue;
-        if (rr() < 0.18) continue;
-        const denso = cerca >= 7,
-          r0 = rr();
-        if (denso && r0 < 0.55) continue;
-        const tipo = denso ? (r0 < 0.75 ? 2 : r0 < 0.87 ? 1 : 0) : vN > 0.52 ? 0 : vN > 0.34 ? 2 : 1,
-          h = tipo === 0 ? 10 : tipo === 2 ? 75 : 55;
-        if (h < 45) {
-          blob(x, z, 3.4 + rr() * 2.2, AVd);
-          for (let k = 0, m = 1 + ((rr() * 3) | 0); k < m; k++)
-            arbustos.push({ x: x + (rr() - 0.5) * 3, y: 0.35, z: z + (rr() - 0.5) * 3, sx: 0.7 + rr() * 0.7, sy: 0.6 + rr() * 0.5, sz: 0.7 + rr() * 0.7 });
-          if (rr() < 0.3 && arbExtra.length < 900) arbExtra.push([x, z]);
-        } else if (h < 70) {
-          blob(x, z, 3.2 + rr() * 2.2, ATi);
-          if (rr() < 0.4) arbustos.push({ x, y: 0.3, z, sx: 0.6, sy: 0.5, sz: 0.6 });
-        } else if (h < 84) {
-          blob(x, z, 3.4 + rr() * 1.6, AGr);
-          if (rr() < 0.5 && aparcados.length < tope + 560) {
-            aparcados.push({ x, z, ry: rr() * 6.28, c: COLORES_COCHE[Math.abs(Math.round(x + z)) % COLORES_COCHE.length] });
-          }
-        } else continue;
-        n++;
-      }
-    }
+    // (Aquí había un relleno al azar cada 6,5 m: manchas de césped, tierra y grava con arbustos y coches torcidos. Se quitó en el
+    // punto 95 de la hoja de ruta 2; los huecos entre manzanas se rellenarán con reglas en el punto 97.)
     [
       [AVd, verde, 'patios'],
       [ATi, tierra, 'solares'],
@@ -1100,7 +1030,7 @@
         I.cinta(desplazar(v.p, 0.72), 0.1, 0, CA);
         I.cinta(desplazar(v.p, -0.72), 0.1, 0, CA);
       });
-      const m1 = I.malla(BA, I.suelo('Ground054', { escala: 1.2, tinte: 0x9a948a }, 0x8a847a, 2), 'balasto'),
+      const m1 = I.malla(BA, I.suelo('Ground054', { tinte: 0x9a948a }, 0x8a847a, 2), 'balasto'),
         m2 = I.malla(
           CA,
           (() => {
@@ -1127,7 +1057,7 @@
       const me = I.malla(
         AP,
         (() => {
-          const m = I.suelo('Asphalt010', { escala: 5, tinte: 0x9a9a9a }, 0x484a4e, 2.2);
+          const m = I.suelo('Asphalt010', { tinte: 0x9a9a9a }, 0x484a4e, 2.2);
           return m;
         })(),
         'aparcamientos'

@@ -483,7 +483,7 @@
     OCL = [];
     S.oclusores = OCL;
     // Suelo: asfalto, aceras de panot y pasos de peatones elevados
-    suelo(W, 90, 50, GM.urbano.deco(real(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { escala: 5, tinte: 0xb4b4b4 })), 0, -0.12, 0); // (con polygonOffset: el asfalto de los barrios, 5 mm más abajo, no parpadea con él)
+    suelo(W, 90, 50, GM.urbano.deco(real(new THREE.MeshStandardMaterial({ map: T.asfalto, roughness: 0.95 }), 'Asphalt010', { tinte: 0xb4b4b4 })), 0, -0.12, 0); // (con polygonOffset: el asfalto de los barrios, 5 mm más abajo, no parpadea con él)
     if (GM.kit.calcomania) {
       const rS = rnd(77);
       for (let i = 0; i < 46; i++) {
@@ -493,7 +493,7 @@
         GM.kit.calcomania(W, 'suelo', x, -0.115, z, 0, rS);
       }
     }
-    const mAcera = real(new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9, color: 0xaea99f }), 'Concrete034', { color: false, escala: 2.4, relieve: 0.6 });
+    const mAcera = real(new THREE.MeshStandardMaterial({ map: T.acera, roughness: 0.9, color: 0xaea99f }), 'Concrete034', { color: false, relieve: 0.6 });
     const acera = (x0, z0, x1, z1) => {
       const w = x1 - x0,
         d = z1 - z0,
@@ -812,7 +812,7 @@
     });
     const plaza = new THREE.PlaneGeometry(84, 40).rotateX(-Math.PI / 2);
     uvM(plaza, 3, 3);
-    const pm = new THREE.Mesh(plaza, real(new THREE.MeshStandardMaterial({ map: tAdoq, roughness: 0.95 }), 'PavingStones070', { escala: 2.6, tinte: 0xd8d2c8 }));
+    const pm = new THREE.Mesh(plaza, real(new THREE.MeshStandardMaterial({ map: tAdoq, roughness: 0.95 }), 'PavingStones070', { tinte: 0xd8d2c8 }));
     pm.position.set(0, 0.0, 44);
     pm.receiveShadow = true;
     W.add(pm);

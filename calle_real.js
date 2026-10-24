@@ -168,6 +168,24 @@
     m.polygonOffsetUnits = -nivel;
     return m;
   }
+  // Reglas de material de fachada (punto 94 de la hoja de ruta 2): por país y estilo de fachada (0 casa, 1 balconera, 2 oficinas y torres,
+  // 3 ensanche, 4 bloque, 5 nave). Cada casilla es una lista de preferencia: se usa el primer material que esté cargado.
+  // Los de ladrillo, hormigón y chapa llevan su color propio (el edificio no se pinta); los revoques se pintan con la paleta del barrio.
+  const MED = ['Plaster003'],
+    REGLAS_FACHADA = {
+      ES: [MED, MED, ['Concrete034'], MED, ['Bricks085', 'Plaster003'], ['Metal055A']],
+      IT: [MED, MED, ['Concrete034'], MED, MED, ['Metal055A']],
+      GR: [MED, MED, ['Concrete034'], MED, MED, ['Metal055A']],
+      TR: [MED, MED, ['Concrete034'], MED, MED, ['Metal055A']],
+      DE: [MED, MED, ['Concrete034'], MED, MED, ['Metal055A']],
+      US: [['Bricks085'], ['Bricks085'], ['Concrete034'], ['Bricks085'], ['Bricks085'], ['Metal055A']]
+    };
+  function paredDe(pais, est) {
+    const lista = (REGLAS_FACHADA[pais] || REGLAS_FACHADA.ES)[est] || MED,
+      T = GM.texturas;
+    return (T && T.tiene && lista.find(id => T.tiene(id))) || lista[0];
+  }
+  const conColorPropio = id => /^(Bricks|Concrete|Metal|CorrugatedSteel|Facade)/.test(id);
   // Recorte: la pared, el techo y lo que hay entre la cámara y tu personaje se perfora (con borde difuminado) para no perderte detrás de un edificio
   function recortable(S, m) {
     m.userData = m.userData || {};
@@ -776,9 +794,9 @@
     };
     fase(S, 'datos y rejilla');
     // Suelo general (adoquín gris), parques, agua, aceras y calzadas
-    const mSuelo = suelo('Concrete034', { color: false, escala: 2.4, relieve: 0.5 }, 0x77746e, 0),
-      mAsf = suelo('Asphalt010', { escala: 5, tinte: 0xb4b4b4 }, 0x4a4c50, 3),
-      mAcera = suelo('PavingStones070', { escala: 1.4, tinte: 0x97948d }, 0x8c8982, 1);
+    const mSuelo = suelo('Concrete034', { color: false, relieve: 0.5 }, 0x77746e, 0),
+      mAsf = suelo('Asphalt010', { tinte: 0xb4b4b4 }, 0x4a4c50, 3),
+      mAcera = suelo('PavingStones070', { tinte: 0x97948d }, 0x8c8982, 1);
     mSuelo.polygonOffset = false;
     const base = new THREE.Mesh(
       new THREE.PlaneGeometry(1600, 1600, GM.relieve && GM.relieve.activo() ? 160 : 1, GM.relieve && GM.relieve.activo() ? 160 : 1).rotateX(-Math.PI / 2),
@@ -788,8 +806,8 @@
     base.receiveShadow = true;
     base.userData = { real: 'suelo' };
     W.add(base);
-    const verde = suelo('Grass004', { escala: 3, tinte: 0xb8d0a0 }, 0x6f9a4a, 1.6),
-      pista = suelo('Ground054', { escala: 1.2, tinte: 0xb9806a }, 0x9a6a58, 1.6);
+    const verde = suelo('Grass004', { tinte: 0xb8d0a0 }, 0x6f9a4a, 1.6),
+      pista = suelo('Ground054', { tinte: 0xb9806a }, 0x9a6a58, 1.6);
     {
       const AV = nuevo(),
         AP = nuevo(),
@@ -858,16 +876,16 @@
         if (c.k <= 5) cinta(c.p, w + ACERA * 2, 0, c.k === 5 ? PZ : PA[(U.hash(club.id + (c.nom || 'x') + c.k) >>> 0) % 3]);
         if (c.k !== 5) cinta(c.p, w, 0, c.k >= 4 ? PR2 : PR);
       }); // principales: asfalto oscuro; residenciales y de servicio: asfalto gastado más claro; peatonales: adoquín de granito
-      [mAcera, suelo('Tiles074', { escala: 1.2, tinte: 0xb9b4aa }, 0xb0aca2, 1), suelo('Concrete034', { escala: 1.8, tinte: 0xa8a59d }, 0x9a978f, 1)].forEach((m, i) => {
+      [mAcera, suelo('Tiles074', { tinte: 0xb9b4aa }, 0xb0aca2, 1), suelo('Concrete034', { tinte: 0xa8a59d }, 0x9a978f, 1)].forEach((m, i) => {
         const mp = malla(PA[i], m, 'aceras');
         if (mp) W.add(mp);
       });
       const ma = malla(PR, mAsf, 'calzadas');
       if (ma) W.add(ma);
       {
-        const mp2 = malla(PR2, suelo('Asphalt031', { escala: 4.5, tinte: 0x8e8e90 }, 0x55585c, 3), 'calzadas2');
+        const mp2 = malla(PR2, suelo('Asphalt031', { tinte: 0x8e8e90 }, 0x55585c, 3), 'calzadas2');
         if (mp2) W.add(mp2);
-        const mz = malla(PZ, suelo('PavingStones150', { escala: 1.7, tinte: 0xb9b5ad }, 0xb0aca2, 1), 'plazas');
+        const mz = malla(PZ, suelo('PavingStones150', { tinte: 0xb9b5ad }, 0xb0aca2, 1), 'plazas');
         if (mz) W.add(mz);
       }
       // marcas viales: línea discontinua en el eje de las calles de doble sentido
@@ -1028,25 +1046,15 @@
       m.customProgramCacheKey = () => (key0 ? key0.call(m) : '') + '-vv';
       return m;
     };
-    const pared0 = (map, luz, tid) => {
+    // Material real de la pared por estilo (punto 94): se ve en lo que la fachada pintada tiene en blanco (máscara) y la ventana queda encima
+    const pared0 = (map, luz, est) => {
       const m = new THREE.MeshStandardMaterial({ map, vertexColors: true, roughness: 0.9, emissive: 0xffc98a, emissiveMap: luz, emissiveIntensity: 0, side: THREE.DoubleSide });
-      if (GM.texturas && tid) GM.texturas.aplicar(m, tid, { color: false, escala: 2, relieve: 0.5, rugMin: 0.5 });
-      else if (GM.texturas)
-        GM.texturas.aplicar(m, club.pais === 'US' ? 'Bricks085' : 'Plaster003', {
-          color: false,
-          escala: club.pais === 'US' ? 1.6 : 2.2,
-          relieve: club.pais === 'US' ? 0.9 : 0.45,
-          rugMin: 0.75
-        });
+      if (GM.texturas) GM.texturas.aplicar(m, paredDe(club.pais, est), { mascara: true, relieve: 0.9, rugMin: 0.55 });
       return varVentanas(recortable(S, m));
     };
-    const mPared = pared0(tex.base, tex.luz),
-      mPared1 = pared0(tex.base1, tex.luz1),
-      mPared2 = pared0(tex.base2, tex.luz2),
-      mPared3 = pared0(tex.base3, tex.luz3),
-      mPared4 = pared0(tex.base4, tex.luz4, 'Concrete034'),
-      mPared5 = pared0(tex.base5, tex.luz5, 'Metal055A'),
-      PAREDES = [mPared, mPared1, mPared2, mPared3, mPared4, mPared5];
+    const LUCES = [tex.luz, tex.luz1, tex.luz2, tex.luz3, tex.luz4, tex.luz5],
+      PAREDES = [tex.base, tex.base1, tex.base2, tex.base3, tex.base4, tex.base5].map((bs, i) => pared0(bs, LUCES[i], i)),
+      mPared = PAREDES[0];
     const mTienda = recortable(
       S,
       new THREE.MeshStandardMaterial({
@@ -1060,15 +1068,15 @@
       })
     );
     const mTecho = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide });
-    if (GM.texturas) GM.texturas.aplicar(mTecho, 'Concrete034', { color: false, escala: 2, relieve: 0.6, rugMin: 0.8 });
+    if (GM.texturas) GM.texturas.aplicar(mTecho, 'Concrete034', { color: false, relieve: 0.6, rugMin: 0.8 });
     recortable(S, mTecho);
     const mMetal = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.35, side: THREE.DoubleSide });
-    if (GM.texturas) GM.texturas.aplicar(mMetal, 'Metal055A', { escala: 2.4, tinte: 0xd8dde2, rugMin: 0.35 });
+    if (GM.texturas) GM.texturas.aplicar(mMetal, 'Metal055A', { tinte: 0xd8dde2, rugMin: 0.35 });
     recortable(S, mMetal); // tejados de naves industriales: chapa
     const mTejas = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide });
-    if (GM.texturas) GM.texturas.aplicar(mTejas, 'RoofingTiles013A', { escala: 2.6, tinte: club.pais === 'DE' || club.pais === 'US' ? 0x8f8a86 : 0xe9b9a0, relieve: 0.9 });
+    if (GM.texturas) GM.texturas.aplicar(mTejas, 'RoofingTiles013A', { tinte: club.pais === 'DE' || club.pais === 'US' ? 0x8f8a86 : 0xe9b9a0, relieve: 0.9 });
     recortable(S, mTejas);
-    S.ventanas.push(mPared, mPared1, mPared2, mTienda);
+    S.ventanas.push(...PAREDES.slice(0, 5), mTienda); // de noche se encienden las ventanas de todos los estilos menos las naves
     const chunks = {};
     const ch = b => {
       const k = Math.floor(b.cx / 90) + ',' + Math.floor(b.cz / 90);
@@ -1109,6 +1117,8 @@
       return b.cl === 7 ? 13 : b.cl === 10 ? 17 : b.cl === 9 ? Math.min(9, lv * 4) : lv * 3.1 + (b.cl === 2 || b.cl === 12 || b.cl === 11 ? 0.4 : 0.3);
     };
     const color = b => {
+      // ladrillo, hormigón y chapa llevan su color propio: el edificio no se pinta (casi blanco, con un poco de variación)
+      if (b.cl !== 10 && conColorPropio(paredDe(club.pais, estilo(b)))) return col(['#f6f2ec', '#eee8de', '#faf8f4', '#e9e4dc'][U.hash(club.id + 'cp' + b.i) % 4]);
       if (b.color && b.cl !== 10) return col(b.color).offsetHSL(0, 0, (((U.hash(club.id + 'k' + b.i) >>> 8) % 100) / 100 - 0.5) * 0.04);
       if (Math.floor((b.tm || 0) / 10) === 1 && b.cl !== 10) return col(['#9c5a45', '#8f4f3c', '#a8664c', '#7d4636'][U.hash(club.id + 'br' + b.i) % 4]);
       if (b.cl === 10) return col(c1).lerp(col('#e8e8ea'), 0.5);
@@ -2714,12 +2724,14 @@
     const grupos = { redondo: [], cipres: [], pino: [], palmera: [] },
       T = ESPECIES[club.pais] || ESPECIES.ES,
       pal = club.pais === 'US' ? PALMERAS.indexOf(club.id) >= 0 : false;
+    // Regla (punto 95): en la calle la especie se decide por tramos de 60 m (una hilera es de una sola especie) y solo entre árbol de
+    // sombra y palmera; cipreses y pinos solo donde se fuerzan (cementerios, bosques y parques de OpenStreetMap)
+    const pPal = pal ? 0.45 : T[3] > 0 ? Math.min(0.25, T[3]) : 0;
     lista.forEach(p => {
       let e = forzar;
       if (!e) {
-        const h = (U.hash(club.id + 'sp' + Math.round(p[0] * 3) + Math.round(p[1] * 3)) % 1000) / 1000,
-          t = pal ? [0.45, 0.02, 0.08, 0.45] : T;
-        e = h < t[0] ? 'redondo' : h < t[0] + t[1] ? 'cipres' : h < t[0] + t[1] + t[2] ? 'pino' : 'palmera';
+        const h = (U.hash(club.id + 'sp' + Math.floor(p[0] / 60) + ',' + Math.floor(p[1] / 60)) % 1000) / 1000;
+        e = h < pPal ? 'palmera' : 'redondo';
       }
       grupos[e].push(p);
     });

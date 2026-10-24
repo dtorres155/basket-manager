@@ -311,11 +311,9 @@
       if (c && !S.construccion) {
         lugar.style.display = '';
         lugar.innerHTML = '';
-        lugar.append(
-          h('b', null, c.zona.sala.nombre),
-          h('span', { class: 'muted' }, c.d + ' m' + (c.d <= 4 ? ', pulsa E o toca el círculo' : '')),
-          c.zona.sala.accion ? h('span', { class: 'hm-lugar-d' }, c.zona.sala.accion) : null
-        );
+        // (append(null) escribe «null»: solo se añade la descripción si la hay)
+        lugar.append(h('b', null, c.zona.sala.nombre), h('span', { class: 'muted' }, c.d + ' m' + (c.d <= 4 ? ', pulsa E o toca el círculo' : '')));
+        if (c.zona.sala.accion) lugar.append(h('span', { class: 'hm-lugar-d' }, c.zona.sala.accion));
       } else lugar.style.display = 'none';
       // objetivos
       pins.innerHTML = '';

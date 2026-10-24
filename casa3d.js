@@ -111,6 +111,17 @@
     ['Neutra', 0xfff4e6, 0.05],
     ['Fría', 0xd6e6ff, 0.05]
   ];
+  // En calidad alta los suelos son materiales reales a su tamaño (punto 92 de la hoja de ruta 2): antes, tablas de 25 cm dibujadas por
+  // código. El dibujo queda para calidad normal y para la moqueta (hasta que haya una real).
+  const SUELO_REAL = [['WoodFloor051', 0xfff0dc], ['WoodFloor051', 0x8a6650], ['Tiles074', 0xffffff], ['Marble006', 0xe6e6e6], null, ['WoodFloor051', 0xffe4c4]];
+  function sueloReal(mat, k) {
+    const R = SUELO_REAL[k],
+      T = GM.texturas;
+    if (!R || !mat || !T || !T.listo() || !GM.campus || GM.campus.config.calidad !== 'alta') return false;
+    mat.userData.texturaReal = null; // se puede cambiar de suelo en las reformas
+    T.aplicar(mat, R[0], { tinte: R[1], rugosidad: k === 3 ? 0.25 : 0.55, rugMin: k === 3 ? 0.12 : 0.35 });
+    return true;
+  }
   function dibSuelo(k) {
     return (x, n) => {
       if (k === 0 || k === 1 || k === 5) {
@@ -397,6 +408,7 @@
       if (r.id !== 'cocina' && r.id !== 'gimnasio') return;
       const tx = r.id === 'cocina' ? M.textura('suelo-casa-2', 256, dibSuelo(2)) : null,
         mt = new THREE.MeshStandardMaterial(tx ? { map: tx.clone() } : { color: 0x3b4148, roughness: 0.95 });
+      if (tx) sueloReal(mt, 2);
       if (tx) {
         mt.map.needsUpdate = true;
         mt.map.repeat.set((r.x1 - r.x0) / 2, (r.z1 - r.z0) / 2);
@@ -1033,6 +1045,12 @@
       K.suelo.color.set(0xffffff);
     }
     K.suelo.roughness = k === 3 ? 0.25 : k === 4 ? 1 : 0.6;
+    if (!sueloReal(K.suelo, k) && K.suelo.userData.texturaReal) {
+      // de vuelta a un suelo sin material real (moqueta): fuera el sombreador del anterior
+      K.suelo.userData.texturaReal = null;
+      K.suelo.onBeforeCompile = () => {};
+      K.suelo.customProgramCacheKey = () => 'suelo-dibujo';
+    }
     K.suelo.needsUpdate = true;
   }
   function reformas(S, M) {
@@ -1147,6 +1165,7 @@
     colorPared,
     ponerSuelo,
     dibSuelo,
+    sueloReal,
     pintarCatalogo,
     getC: () => C,
     cancelarElegido: S => {

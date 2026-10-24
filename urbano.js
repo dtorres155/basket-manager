@@ -29,16 +29,16 @@
     if (decal) deco(m);
     return (REAL[k] = m);
   }
-  const M_LOSA = () => realMat('losa', 'Asphalt010', { escala: 5, tinte: 0xc9c9c9 }, '#4a4e52');
-  const M_ADOQ = () => realMat('adoq', 'PavingStones070', { escala: 1.4, tinte: 0xa9a7a2 }, '#8d8a84', true);
-  const M_LADR = () => realMat('ladr', 'Bricks085', { escala: 1.3, tinte: 0xd9a58f }, '#a8624a', true);
-  const M_BALD = () => realMat('bald', 'Concrete034', { escala: 1.0, tinte: 0xe0dcd0, relieve: 0.3 }, '#cdc9bd', true);
-  const M_MARM = () => realMat('marm', 'Plaster003', { escala: 2.5, tinte: 0xf4ecdc, relieve: 0.3 }, '#e3dccd', true);
-  const M_TARIMA = () => realMat('tarima', 'WoodFloor051', { escala: 1.5, tinte: 0xd2a67c }, '#a87d55', true);
-  const M_GRAVA = () => realMat('grava', 'Ground054', { escala: 1.3, tinte: 0xe6d8bb }, '#cdbd9d', true);
-  const M_TIERRA = () => realMat('tierra', 'Ground054', { escala: 1.0, tinte: 0x8a6a4c }, '#5a4632', true);
-  const M_CESPED = () => realMat('cesped', 'Grass004', { escala: 3, tinte: 0xb8d0a0 }, '#6f9a4a', true);
-  const M_CONC = () => realMat('conc', 'Concrete034', { escala: 2.2, tinte: 0x9a9a98, relieve: 0.5 }, '#8f8f8c', true);
+  const M_LOSA = () => realMat('losa', 'Asphalt010', { tinte: 0xc9c9c9 }, '#4a4e52');
+  const M_ADOQ = () => realMat('adoq', 'PavingStones070', { tinte: 0xa9a7a2 }, '#8d8a84', true);
+  const M_LADR = () => realMat('ladr', 'Bricks085', { tinte: 0xd9a58f }, '#a8624a', true);
+  const M_BALD = () => realMat('bald', 'Concrete034', { tinte: 0xe0dcd0, relieve: 0.3 }, '#cdc9bd', true);
+  const M_MARM = () => realMat('marm', 'Plaster003', { tinte: 0xf4ecdc, relieve: 0.3 }, '#e3dccd', true);
+  const M_TARIMA = () => realMat('tarima', 'WoodFloor051', { tinte: 0xd2a67c }, '#a87d55', true);
+  const M_GRAVA = () => realMat('grava', 'Ground054', { tinte: 0xe6d8bb }, '#cdbd9d', true);
+  const M_TIERRA = () => realMat('tierra', 'Ground054', { tinte: 0x8a6a4c }, '#5a4632', true);
+  const M_CESPED = () => realMat('cesped', 'Grass004', { tinte: 0xb8d0a0 }, '#6f9a4a', true);
+  const M_CONC = () => realMat('conc', 'Concrete034', { tinte: 0x9a9a98, relieve: 0.5 }, '#8f8f8c', true);
   const GRANITO = '#a6a6a1';
   const SUELOS = { adoq: M_ADOQ, ladr: M_LADR, bald: M_BALD, conc: M_CONC, marm: M_MARM, tarima: M_TARIMA, grava: M_GRAVA, tierra: M_TIERRA, cesped: M_CESPED };
   // Rectángulo [x0,z0,x1,z1] y círculo o anillo de otro pavimento pegados al suelo (y en metros sobre él)

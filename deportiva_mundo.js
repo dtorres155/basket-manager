@@ -44,15 +44,15 @@
       };
     const real = (id, op, resp) => {
       const m = new THREE.MeshStandardMaterial({ color: resp, roughness: 0.9 });
-      if (TR) TR.aplicar(m, id, Object.assign({}, op, { escala: (op.escala || 2) * esc }));
+      if (TR) TR.aplicar(m, id, Object.assign({}, op, { escalaMul: esc }));
       return m;
     };
-    const mHierba = real('Grass004', { escala: 4, tinte: 0xb6cf98 }, '#7fb069'),
-      mHierba2 = real('Grass004', { escala: 3, tinte: 0x9fbf7e }, '#6f9e5a'),
-      mAsfalto = real('Asphalt010', { escala: 5, tinte: 0xa8a8a8 }, '#4a4f55'),
-      mAcera = real('Concrete034', { escala: 2.5, tinte: 0xd8d4cc }, '#cfcac0'),
-      mPlaza = real('PavingStones070', { escala: 2.4, tinte: 0xe0d8c8 }, '#b9b0a0'),
-      mTierra = real('Ground054', { escala: 3, tinte: 0xd0b08a }, '#b0906a');
+    const mHierba = real('Grass004', { tinte: 0xb6cf98 }, '#7fb069'),
+      mHierba2 = real('Grass004', { tinte: 0x9fbf7e }, '#6f9e5a'),
+      mAsfalto = real('Asphalt010', { tinte: 0xa8a8a8 }, '#4a4f55'),
+      mAcera = real('Concrete034', { tinte: 0xd8d4cc }, '#cfcac0'),
+      mPlaza = real('PavingStones070', { tinte: 0xe0d8c8 }, '#b9b0a0'),
+      mTierra = real('Ground054', { tinte: 0xd0b08a }, '#b0906a');
     const out = { arboles: [], paseo: [], pistas: [], pista: null, caseta: null, barrera: null, farolas: null, coches: [], publico: [] };
     const tMalla = lienzo(64, 64, (x, w, h) => {
       x.clearRect(0, 0, w, h);

@@ -151,9 +151,9 @@
       TR = GM.texturas;
     if (TR) {
       if (['pena', 'bar_pueblo', 'casa_padres', 'casa_amigos', 'casa_pueblo'].indexOf(tipo) >= 0)
-        TR.aplicar(mSuelo, 'WoodFloor051', { escala: 2.2, tinte: new THREE.Color(suelo).lerp(new THREE.Color(0xffffff), 0.45).getHex() });
-      else if (tipo === 'ayuntamiento') TR.aplicar(mSuelo, 'Tiles074', { escala: 1.6, rugosidad: 0.3 });
-      else TR.aplicar(mSuelo, 'Concrete034', { color: false, escala: 3, relieve: 0.6 });
+        TR.aplicar(mSuelo, 'WoodFloor051', { tinte: new THREE.Color(suelo).lerp(new THREE.Color(0xffffff), 0.45).getHex() });
+      else if (tipo === 'ayuntamiento') TR.aplicar(mSuelo, 'Tiles074', { rugosidad: 0.3 });
+      else TR.aplicar(mSuelo, 'Concrete034', { color: false, relieve: 0.6 });
     }
     const fl = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), mSuelo);
     fl.receiveShadow = true;
@@ -176,7 +176,7 @@
       (IPm && IPm.MURO[tipo]) ||
       '#efe6d2';
     if (VEC >= 0) muroC = ['#c9d3dc', '#e6d3b3', '#cfe0d0', '#e9cdc4', '#dcd6e6', '#f0e6c8'][VEC];
-    if (TR) TR.aplicar(mat(muroC), 'Plaster003', { color: false, escala: 1.6, relieve: 0.8 });
+    if (TR) TR.aplicar(mat(muroC), 'Plaster003', { color: false, relieve: 0.8 });
     const muro = (xa, za, xb, zb) => {
       const L = Math.hypot(xb - xa, zb - za),
         m = caja(W, xa === xb ? 0.25 : L, alto, xa === xb ? L : 0.25, muroC, (xa + xb) / 2, 0, (za + zb) / 2);

@@ -1085,14 +1085,14 @@
   function pisoMat(c, kind, color, w, d) {
     const TR = GM.texturas,
       tinte = new THREE.Color(color || '#ffffff').lerp(new THREE.Color(0xffffff), 0.35);
-    const real = (id, esc) => {
+    const real = id => {
       const m = new THREE.MeshStandardMaterial({ color: color || '#999', roughness: 0.85 });
-      if (TR) TR.aplicar(m, id, { escala: esc, tinte: tinte.getHex() });
+      if (TR) TR.aplicar(m, id, { tinte: tinte.getHex() });
       return m;
     };
-    if (kind === 'tabla') return real('WoodFloor051', 2.2);
-    if (kind === 'hormigon') return real('Concrete034', 2.2);
-    if (kind === 'cesped') return real('Grass004', 3);
+    if (kind === 'tabla') return real('WoodFloor051');
+    if (kind === 'hormigon') return real('Concrete034');
+    if (kind === 'cesped') return real('Grass004');
     const base = c.M.textura('piso-' + kind, 128, (x, n) => {
       const r = rngS('piso' + kind);
       if (kind === 'moqueta') {

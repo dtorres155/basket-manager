@@ -199,11 +199,11 @@
       m = new THREE.MeshStandardMaterial({ map: t, color: t ? 0xffffff : 0x999999, roughness: tipo === 'marmol' ? 0.35 : tipo === 'parquet' ? 0.5 : 0.85 });
     const TR = GM.texturas;
     if (!TR) return m;
-    if (tipo === 'madera') return TR.aplicar(m, 'WoodFloor051', { escala: 2.2, rugosidad: 0.6, rugMin: 0.35 });
-    if (tipo === 'madera_oscura') return TR.aplicar(m, 'WoodFloor051', { escala: 2.2, tinte: 0x8a6650, rugosidad: 0.55, rugMin: 0.3 });
-    if (tipo === 'marmol') return TR.aplicar(m, 'Marble006', { escala: 3, tinte: 0xd8d8d8, rugosidad: 0.25, rugMin: 0.12 });
-    if (tipo === 'parquet') return TR.aplicar(m, 'WoodFloor051', { color: false, escala: 2.2, relieve: 0.7, rugosidad: 0.45, rugMin: 0.3 });
-    if (tipo === 'hormigon' || tipo === 'baldosa') return TR.aplicar(m, 'Concrete034', { color: false, escala: 2.5, relieve: 0.5 });
+    if (tipo === 'madera') return TR.aplicar(m, 'WoodFloor051', { rugosidad: 0.6, rugMin: 0.35 });
+    if (tipo === 'madera_oscura') return TR.aplicar(m, 'WoodFloor051', { tinte: 0x8a6650, rugosidad: 0.55, rugMin: 0.3 });
+    if (tipo === 'marmol') return TR.aplicar(m, 'Marble006', { tinte: 0xd8d8d8, rugosidad: 0.25, rugMin: 0.12 });
+    if (tipo === 'parquet') return TR.aplicar(m, 'WoodFloor051', { tinte: 0xf0dcc4, relieve: 0.7, rugosidad: 0.45, rugMin: 0.3 }); // la foto real del parqué a su tamaño (antes: tablas dibujadas con otro relieve encima)
+    if (tipo === 'hormigon' || tipo === 'baldosa') return TR.aplicar(m, 'Concrete034', { color: false, relieve: 0.5 });
     return m;
   }
   function plano(w, d, m, x, z, y, escUV) {
@@ -2389,7 +2389,8 @@
           s = new THREE.Sprite(m);
         const a = i * 2.39,
           d = 60 + ((i * 37) % 140);
-        s.position.set(Math.cos(a) * d, 55 + (i % 5) * 8, Math.sin(a) * d);
+        // por encima de la cámara más alta (unos 65 m desde arriba): antes, a 55-87 m, cruzaban la vista aérea como franjas (punto 95)
+        s.position.set(Math.cos(a) * d, 115 + (i % 5) * 10, Math.sin(a) * d);
         s.scale.set(70 + (i % 4) * 20, 30 + (i % 3) * 8, 1);
         gN.add(s);
         for (const [dx, dy, dz, k, op] of [

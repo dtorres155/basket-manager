@@ -94,7 +94,7 @@
       }
       // Muros bajos (vista en corte, como en Big Ambitions): segmentos de 0,5 m sin duplicar, con huecos en las puertas
       const muro = GM.texturas
-          ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ color: 0xf1ede6, roughness: 0.9 }), 'Plaster003', { color: false, escala: 1.6, relieve: 0.8 })
+          ? GM.texturas.aplicar(new THREE.MeshStandardMaterial({ color: 0xf1ede6, roughness: 0.9 }), 'Plaster003', { color: false, relieve: 0.8 })
           : new THREE.MeshStandardMaterial({ color: 0xf1ede6, roughness: 0.9 }),
         remate = new THREE.MeshStandardMaterial({ color: 0x2b3038 }),
         segs = new Map();

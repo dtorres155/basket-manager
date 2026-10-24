@@ -48,14 +48,14 @@
     const k = 'mur' + hex;
     if (REAL[k]) return REAL[k];
     const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.96 });
-    if (GM.texturas) GM.texturas.aplicar(m, 'Plaster003', { color: false, escala: 2.4, relieve: 1.3 });
+    if (GM.texturas) GM.texturas.aplicar(m, 'Plaster003', { color: false, relieve: 1.3 });
     return (REAL[k] = m);
   }
   function piedraMat(hex) {
     const k = 'pie' + hex;
     if (REAL[k]) return REAL[k];
     const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.95 });
-    if (GM.texturas) GM.texturas.aplicar(m, 'Bricks085', { color: false, escala: 1.0, relieve: 1.5 });
+    if (GM.texturas) GM.texturas.aplicar(m, 'Bricks085', { color: false, relieve: 1.5 });
     return (REAL[k] = m);
   }
   let EST = 'verano',
@@ -69,14 +69,14 @@
     const k = 'tej' + hex;
     if (REAL[k]) return REAL[k];
     const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.9 });
-    if (GM.texturas) GM.texturas.aplicar(m, 'RoofingTiles013A', { color: false, escala: 0.8, relieve: 1.6 });
+    if (GM.texturas) GM.texturas.aplicar(m, 'RoofingTiles013A', { color: false, relieve: 1.6 });
     return (REAL[k] = m);
   }
   function maderaMat(hex) {
     const k = 'mad' + hex;
     if (REAL[k]) return REAL[k];
     const m = new T.MeshStandardMaterial({ color: hex, roughness: 0.8 });
-    if (GM.texturas) GM.texturas.aplicar(m, 'WoodFloor051', { color: false, escala: 0.9, relieve: 1 });
+    if (GM.texturas) GM.texturas.aplicar(m, 'WoodFloor051', { color: false, relieve: 1 });
     return (REAL[k] = m);
   }
 
