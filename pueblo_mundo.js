@@ -1594,6 +1594,8 @@
     EST = GM.arboles ? GM.arboles.estacion(st) : 'verano';
     S.estacion = EST;
     if (GM.casasReal && GM.casasReal.setEstacion) GM.casasReal.setEstacion(EST);
+    // montes y sierra lejana alrededor del pueblo (punto 144); sin silueta de ciudad. Solo si es la escena paseable (S.scene)
+    if (GM.horizonte && S.scene && S.camera) GM.horizonte.montar(S, null, st.equipos[st.clubId], { ciudad: false });
     const W = S.mundo,
       club = st.equipos[st.clubId],
       Pm = GM.mods.pueblo,

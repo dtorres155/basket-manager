@@ -32,6 +32,7 @@ const mods = [
   'texturas',
   'sol',
   'cielo',
+  'horizonte',
   'catalogo_personas',
   'urbano',
   'vehiculos',

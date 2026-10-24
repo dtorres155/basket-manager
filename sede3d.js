@@ -3496,32 +3496,32 @@
           kz = ext && !S.inc ? Math.max(0, Math.min(1, (S.zoom - 4) / 20)) : 1,
           kS = kz * kz * (3 - 2 * kz),
           inc = S.inc || (ext ? 0.3 + 0.65 * kS : 0.95);
-        // distancia horizontal y altura por separado: si choca con un edificio, se acerca en horizontal pero conserva la altura
-        // (mira por encima del hombro en vez de pegarse a la espalda)
-        const alt = Math.sin(inc) * S.zoom;
-        let hor = Math.cos(inc) * S.zoom;
-        if (ext && !S.inc && S.G && alt < 14) {
+        // si un edificio queda detrás, la cámara se acerca por la misma línea de visión (como en la mayoría de juegos), hasta 2,6 m
+        let d = S.zoom;
+        if (ext && !S.inc && S.G && Math.sin(inc) * d < 14) {
           const dx = Math.sin(S.yaw),
-            dz = Math.cos(S.yaw);
+            dz = Math.cos(S.yaw),
+            hor = Math.cos(inc) * d;
           let run = 0;
           for (let t = 0.8; t < hor; t += 0.5) {
             const [ci, cj] = S.G.celda(S.foco.x + dx * t, S.foco.z + dz * t);
             run = S.G.libre(ci, cj) ? 0 : run + 1;
             if (run >= 4) {
-              hor = Math.max(1.2, t - 2.2);
+              d = Math.max(2.6, (t - 2.2) / Math.cos(inc));
               break;
             }
           }
         }
-        S.hCam = S.hCam === undefined ? hor : S.hCam + (hor - S.hCam) * Math.min(1, dt * (hor < S.hCam ? 10 : 3));
-        camera.position.set(S.foco.x + Math.sin(S.yaw) * S.hCam, Math.max(alt, S.hCam < Math.cos(inc) * S.zoom - 0.5 ? 2.6 : 0) + (S.hF || 0), S.foco.z + Math.cos(S.yaw) * S.hCam);
+        S.dCam = S.dCam === undefined ? d : S.dCam + (d - S.dCam) * Math.min(1, dt * (d < S.dCam ? 10 : 3));
+        camera.position.set(S.foco.x + Math.sin(S.yaw) * Math.cos(inc) * S.dCam, Math.sin(inc) * S.dCam + (S.hF || 0), S.foco.z + Math.cos(S.yaw) * Math.cos(inc) * S.dCam);
         camera.lookAt(S.foco.x, 0.6 + 0.9 * (1 - kS) + (S.hF || 0), S.foco.z);
-        const far = ext ? 200 + 300 * (1 - kS) : 200;
+        const far = ext ? 200 + 1100 * (1 - kS) : 200; // a ras de suelo se ve hasta 1,3 km (la bruma lo funde)
         if (Math.abs(camera.far - far) > 5) {
           camera.far = far;
           camera.updateProjectionMatrix();
         }
         cuidarEtiquetas();
+        if (S.horizonte && GM.horizonte) GM.horizonte.actualizar(S);
       }
       // el mapa de sombras se refresca un fotograma de cada dos (la sombra es lo más caro del dibujo); en Ultra, cada uno
       if (renderer.shadowMap.enabled) {
