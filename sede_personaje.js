@@ -37,6 +37,153 @@
           .catch(() => null);
       return _lista;
     }
+    // Una malla por persona (punto 105 de la hoja de ruta 2): los modelos de Mixamo traen de 2 a 9 piezas (cuerpo, camisa, pelo…), cada una
+    // con su propia copia recortada del esqueleto (mixamorigHips_1, _2…), que las animaciones no mueven. Se funden una vez por modelo en
+    // la plantilla (g.scene, antes de clonarla): una sola malla atada a los huesos que mueven las animaciones (el primero de cada nombre),
+    // con las texturas en una lámina de 2 x 2 casillas (color y relieve) y el pelo recortado por transparencia y por las dos caras.
+    // De unas 6 llamadas de dibujo por persona (y otras tantas de sombra) a 1. Requiere que la plantilla esté en la pose de unión (lo está).
+    function fundirMixamo(g) {
+      if (g.fundido !== undefined || typeof document === 'undefined' || window.__sinFundir) return g.fundido;
+      g.fundido = false;
+      const esc = g.scene;
+      esc.updateMatrixWorld(true);
+      const piezas = [];
+      esc.traverse(o => {
+        if (o.isSkinnedMesh) piezas.push(o);
+      });
+      if (piezas.length < 2) return false;
+      const base = n => n.replace(/_\d+$/, ''),
+        canon = new Map();
+      esc.traverse(o => {
+        if (o.isBone && o.name === base(o.name) && !canon.has(o.name)) canon.set(o.name, o);
+      });
+      const huesos = [...canon.values()],
+        idx = new Map(huesos.map((b, i) => [b.name, i])),
+        hip = idx.has('mixamorigHips') ? idx.get('mixamorigHips') : 0;
+      // lámina de texturas: una casilla por mapa de color distinto
+      const mapas = [];
+      piezas.forEach(p => {
+        if (p.material.map && mapas.indexOf(p.material.map) < 0) mapas.push(p.material.map);
+      });
+      if (!mapas.length || mapas.length > 4 || !mapas[0].image) return false;
+      const L = mapas.length > 1 ? 2 : 1,
+        W = mapas[0].image.width || 1024,
+        H = mapas[0].image.height || 1024,
+        lienzo = () => {
+          const c = document.createElement('canvas');
+          c.width = W * L;
+          c.height = H * L;
+          return c;
+        },
+        cC = lienzo(),
+        cN = lienzo(),
+        xC = cC.getContext('2d'),
+        xN = cN.getContext('2d');
+      xN.fillStyle = 'rgb(128,128,255)'; // relieve plano donde no hay mapa
+      xN.fillRect(0, 0, cN.width, cN.height);
+      const normales = mapas.map(() => null);
+      piezas.forEach(p => {
+        const k = mapas.indexOf(p.material.map);
+        if (k >= 0 && p.material.normalMap && !normales[k]) normales[k] = p.material.normalMap;
+      });
+      mapas.forEach((m, k) => {
+        const x = (k % L) * W,
+          y = Math.floor(k / L) * H;
+        xC.drawImage(m.image, x, y, W, H);
+        if (normales[k] && normales[k].image) xN.drawImage(normales[k].image, x, y, W, H);
+      });
+      // geometría: posiciones y normales en el espacio de la plantilla, índices de hueso al esqueleto canónico, UV a su casilla
+      const P = [],
+        N = [],
+        U = [],
+        SI = [],
+        SW = [],
+        I = [],
+        inv = new THREE.Matrix4().copy(esc.matrixWorld).invert(),
+        M = new THREE.Matrix4(),
+        NM = new THREE.Matrix3(),
+        v = new THREE.Vector3();
+      piezas.forEach(p => {
+        const geo = p.geometry,
+          pos = geo.attributes.position,
+          nor = geo.attributes.normal,
+          uv = geo.attributes.uv,
+          si = geo.attributes.skinIndex,
+          sw = geo.attributes.skinWeight,
+          k = Math.max(0, mapas.indexOf(p.material.map)),
+          cu = k % L,
+          cv = Math.floor(k / L),
+          mapa = p.skeleton.bones.map(b => (idx.has(base(b.name)) ? idx.get(base(b.name)) : hip)),
+          pelo = p.material.transparent || p.material.alphaTest > 0;
+        M.multiplyMatrices(inv, p.matrixWorld);
+        NM.getNormalMatrix(M);
+        const caras = pelo ? [1, -1] : [1]; // el pelo y las pestañas, por las dos caras (una copia con el giro y la normal al revés)
+        caras.forEach(lado => {
+          const b0 = P.length / 3;
+          for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i).applyMatrix4(M);
+            P.push(v.x, v.y, v.z);
+            if (nor) {
+              v.fromBufferAttribute(nor, i).applyMatrix3(NM).normalize().multiplyScalar(lado);
+              N.push(v.x, v.y, v.z);
+            } else N.push(0, 1, 0);
+            const u0 = uv ? Math.min(0.999, Math.max(0.001, uv.getX(i))) : 0.5,
+              v0 = uv ? Math.min(0.999, Math.max(0.001, uv.getY(i))) : 0.5;
+            U.push((u0 + cu) / L, (v0 + cv) / L);
+            for (let c = 0; c < 4; c++) {
+              SI.push(si ? mapa[si.getComponent(i, c)] || hip : hip);
+              SW.push(sw ? sw.getComponent(i, c) : c === 0 ? 1 : 0);
+            }
+          }
+          const ind = geo.index;
+          const n = ind ? ind.count : pos.count;
+          for (let t = 0; t < n; t += 3) {
+            const a = ind ? ind.getX(t) : t,
+              b = ind ? ind.getX(t + 1) : t + 1,
+              c = ind ? ind.getX(t + 2) : t + 2;
+            if (lado > 0) I.push(b0 + a, b0 + b, b0 + c);
+            else I.push(b0 + a, b0 + c, b0 + b);
+          }
+        });
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
+      geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
+      geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
+      geo.setIndex(I);
+      geo.computeBoundingBox();
+      geo.computeBoundingSphere();
+      const tC = new THREE.CanvasTexture(cC),
+        tN = new THREE.CanvasTexture(cN);
+      tC.flipY = tN.flipY = false; // las UV de glTF empiezan arriba
+      tC.colorSpace = THREE.SRGBColorSpace;
+      tC.anisotropy = tN.anisotropy = 4;
+      const m0 = piezas[0].material,
+        mat = new THREE.MeshStandardMaterial({ map: tC, normalMap: tN, roughness: m0.roughness !== undefined ? m0.roughness : 0.8, metalness: 0, alphaTest: 0.5 });
+      mat.alphaToCoverage = true;
+      const malla = new THREE.SkinnedMesh(geo, mat);
+      malla.name = 'cuerpo';
+      esc.add(malla);
+      esc.updateMatrixWorld(true);
+      malla.bind(new THREE.Skeleton(huesos), malla.matrixWorld);
+      piezas.forEach(p => p.parent && p.parent.remove(p));
+      // las cadenas de huesos copiados ya no las usa nadie: fuera (menos nodos que recorrer cada fotograma)
+      const sobran = [];
+      esc.traverse(o => {
+        if (o.isBone && !canon.has(o.name) && o.parent && !(o.parent.isBone && !canon.has(o.parent.name))) sobran.push(o);
+      });
+      sobran.forEach(o => {
+        let usa = false;
+        o.traverse(q => {
+          if (canon.has(q.name) || q.isMesh) usa = true;
+        });
+        if (!usa) o.parent.remove(o);
+      });
+      g.fundido = { piezas: piezas.length, huesos: huesos.length, mapas: mapas.length, sobran: sobran.length };
+      return g.fundido;
+    }
     async function personajeMixamo(o) {
       if (!GM.campus || GM.campus.config.calidad !== 'alta' || o.escudo || o.hincha || o.rolV || o.sinMixamo || o.edad === 'mayor' || typeof fetch !== 'function') return null;
       const L = await listaMixamo();
@@ -47,6 +194,12 @@
       const { cargar, textura } = ctx,
         nombres = Object.keys(MX_CLIPS);
       const [g, ...an] = await Promise.all([cargar('modelos/personas/mixamo/' + id + '.glb'), ...nombres.map(n => cargar('modelos/personas/mixamo/anim/' + MX_CLIPS[n] + '.glb'))]);
+      try {
+        fundirMixamo(g);
+      } catch (e) {
+        g.fundido = false;
+        if (GM.registro && GM.registro.anotar) GM.registro.anotar('fundir Mixamo ' + id + ': ' + e.message);
+      }
       const obj = THREE.clonarEsqueleto(g.scene);
       if (!g.altoBase) g.altoBase = new THREE.Box3().setFromObject(g.scene).getSize(new THREE.Vector3()).y;
       obj.scale.setScalar((o.altura || 178) / 100 / g.altoBase);
