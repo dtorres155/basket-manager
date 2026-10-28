@@ -1773,12 +1773,13 @@
             if (!fr || fr.d > 14 || fr.l < 3.6) return;
             const [tipo, txt] = cad[(U.hash(club.id + 'cad' + b.i) >>> 0) % cad.length],
               c0 = TIPO[tipo] || ['#2a2f35', '#ffffff'],
-              ancho = Math.min(fr.l - 0.6, 4.6);
+              ancho = Math.min(fr.l - 0.6, 4.6),
+              ry = Math.atan2(fr.nx, fr.nz); // frente() no trae el ángulo: antes se leía un ángulo que no existe y escaparate, persiana y rótulo quedaban en NaN
             if (ancho < 2.4) return;
-            I.cartel(W, M, txt, c0[0], c0[1], fr.mx + fr.nx * 0.06, 3.05, fr.mz + fr.nz * 0.06, fr.ry, ancho);
+            I.cartel(W, M, txt, c0[0], c0[1], fr.mx + fr.nx * 0.06, 3.05, fr.mz + fr.nz * 0.06, ry, ancho);
             b.rotulo = true;
             ng++;
-            escaparate(fr.mx + fr.nx * 0.06, fr.mz + fr.nz * 0.06, fr.ry, ancho, tipo);
+            escaparate(fr.mx + fr.nx * 0.06, fr.mz + fr.nz * 0.06, ry, ancho, tipo);
             if (tipo === 'pharmacy') {
               const cruz = new THREE.Mesh(
                 new THREE.PlaneGeometry(0.7, 0.7),
@@ -1793,7 +1794,7 @@
                 })
               );
               cruz.position.set(fr.mx + fr.nx * 0.5 - fr.nz * (ancho / 2 + 0.5), 3.2, fr.mz + fr.nz * 0.5 + fr.nx * (ancho / 2 + 0.5));
-              cruz.rotation.y = fr.ry;
+              cruz.rotation.y = ry;
               W.add(cruz);
             }
           });
