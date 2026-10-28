@@ -2467,7 +2467,11 @@
   }
   const preparar = st => {
     const v = GM.vehiculos && GM.campus && GM.campus.config.calidad !== 'alta' ? GM.vehiculos.precargar() : null;
-    const c = GM.mods.calleReal ? GM.mods.calleReal.cargar(st.clubId, st) : Promise.resolve(null);
+    const CR = GM.mods.calleReal,
+      // las zonas paseables de la ciudad (punto 149) se cargan con la principal: así se sabe qué taxis poner
+      c = CR
+        ? Promise.all([CR.cargar(st.clubId, st)].concat((CR.zonas ? CR.zonas(st.clubId) : []).map(z => CR.cargar(st.clubId + '~' + z[0], st)))).then(x => x[0])
+        : Promise.resolve(null);
     return v ? Promise.all([c, v]).then(x => x[0]) : c;
   };
   GM.calle = {

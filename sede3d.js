@@ -1396,8 +1396,9 @@
       S.mundo.traverse(o => {
         if (o.geometry) o.geometry.dispose();
       });
-      const deArg = S.escenaArg,
-        [esc, arg] = String(dest).split(':');
+      const deArg = S.escenaArg;
+      let [esc, arg] = String(dest).split(':');
+      if (esc === 'calle' && !arg && de !== 'calle' && S.zonaCalle) arg = S.zonaCalle; // se vuelve a la zona de la ciudad de la que se salió (punto 149)
       dest = esc;
       S.escenaOrigen = de;
       S.escena = esc;

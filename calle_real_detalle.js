@@ -278,6 +278,24 @@
     inst(fundir([caja(1.0, 0.07, 0.2, 0, -0.035, 0.1), caja(0.94, 0.1, 0.07, 0, 2.0, 0.035)]), blanco, alf[1], 'alféizares');
     inst(fundir([caja(1.34, 0.06, 0.16, 0, -0.03, 0.08)]), blanco, alf[4], 'alféizares');
     inst(reja, blanco, rejas, 'rejas');
+    // identidad (punto 148): en Cataluña, una parte de los balcones con la senyera colgada de la barandilla
+    if (GM.identidad && GM.identidad.ficha(club).bandera === 'senyera' && rejas.length) {
+      const tx = M.textura('senyera', 128, (x, n) => {
+          x.fillStyle = '#f6c21b';
+          x.fillRect(0, 0, n, n);
+          x.fillStyle = '#d6291f';
+          for (let k = 0; k < 4; k++) x.fillRect(0, ((2 * k + 1) * n) / 9, n, n / 9);
+        }),
+        ban = rejas.filter((o, i) => U.hash(club.id + 'senyera' + i) % 100 < 6).map(o => ({ x: o.x, y: o.y, z: o.z, ry: o.ry }));
+      inst(
+        new THREE.PlaneGeometry(1.1, 0.75).translate(0, 0.55, 0.79),
+        GM.kit && GM.kit.viento
+          ? GM.kit.viento(new THREE.MeshStandardMaterial({ map: tx, roughness: 0.9, side: THREE.DoubleSide }), 'tela')
+          : new THREE.MeshStandardMaterial({ map: tx, side: THREE.DoubleSide }),
+        ban,
+        'banderas'
+      );
+    }
     {
       const g = new THREE.BoxGeometry(1, 0.08, 1.3).translate(0, 0, 0.65);
       g.rotateX(0.3);

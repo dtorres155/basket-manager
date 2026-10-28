@@ -37,6 +37,7 @@ const mods = [
   'urbano',
   'vehiculos',
   'mobiliario_ciudad',
+  'identidad_ciudad',
   'monumentos_ciudad',
   'iconos',
   'sonido',

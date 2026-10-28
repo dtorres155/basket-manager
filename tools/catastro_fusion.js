@@ -61,6 +61,7 @@ function fusionar(r, CA, { area, dp, ent }) {
   });
   let RC = 0;
   osm.forEach(o => o.p.forEach(q => (RC = Math.max(RC, Math.hypot(q[0], q[1])))));
+  RC = Math.min(RC, 380); // núcleo con partes como mucho a 380 m (en un casco antiguo salen miles); más allá, el anillo por edificios
   const enOsm = rejilla(osm, 40),
     edif = CA.b.map(b => ({ uso: b[0], anio: b[1], p: pts(b, 2) })),
     partes = CA.p.map(a => ({ pl: a[0], ed: a[1], p: pts(a, 2) })).filter(q => q.p.length >= 3);

@@ -11,6 +11,16 @@
   const ANCHO = [16, 12, 10, 8.5, 7, 5.5, 4],
     ACERA = 2.3;
   const CACHE = {};
+  // Zonas paseables de cada ciudad (punto 149 de la hoja de ruta 2): además de la del pabellón, zonas con datos propios
+  // (vendor/osm/<club>~<zona>.json, generadas con las mismas herramientas a partir de recursos/osm/clubes.json y centros.json).
+  // Se va y se vuelve en taxi. [id, nombre, qué hay]
+  const ZONAS = {
+    'joventut-badalona': [
+      ['mar', 'La Rambla y el Pont del Petroli', 'Paseo marítimo, la playa y el antiguo pantalán petrolero'],
+      ['vila', 'Dalt la Vila', 'El casco antiguo: la Plaça de la Vila, el museo y las calles estrechas']
+    ]
+  };
+  const zonasDe = id => ZONAS[id] || [];
   function cargar(id, st) {
     if (id in CACHE) return Promise.resolve(CACHE[id]);
     // sin datos de OpenStreetMap (o sin conexión) se genera una ciudad con el mismo formato (calle_sintetica.js); en las pruebas de Node sigue la calle antigua
@@ -23,7 +33,7 @@
     return fetch('osm/' + id + '.json')
       .then(r => (r.ok ? r.json() : null))
       .catch(() => null)
-      .then(d => (CACHE[id] = d && d.e && d.c && ((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30) ? casasSinteticas(d, id) : sint()));
+      .then(d => (CACHE[id] = d && d.e && d.c && ((d.e.length >= 10 && d.c.length >= 6) || d.c.length >= 30) ? casasSinteticas(d, id) : id.indexOf('~') >= 0 ? null : sint())); // una zona (club~zona) sin datos no se inventa
   }
   // Huecos (punto 97 de la hoja de ruta 2; antes solo en ciudades con menos de 90 edificios): se añaden edificios a ambos lados de las calles
   // donde el frente está vacío, sin pisar edificios ni sus partes, parques, agua, aparcamientos, pistas, plazas, usos del suelo, vías del tren
@@ -1208,7 +1218,9 @@
   function construir(S, M, st) {
     S.fases = [];
     fase(S, 'inicio');
-    const D = datos(st.clubId),
+    // zona paseable (punto 149): la escena «calle:<zona>» usa vendor/osm/<club>~<zona>.json; sin zona, la del pabellón
+    const zona = S.escena === 'calle' && S.escenaArg && datos(st.clubId + '~' + S.escenaArg) ? S.escenaArg : null,
+      D = datos(st.clubId + (zona ? '~' + zona : '')),
       club = st.equipos[st.clubId],
       W = S.mundo,
       T = M;
@@ -1308,6 +1320,8 @@
           if (b) G.b[G.idx(i, j)] = 1;
         }
     };
+    // el mar (horizonte.js lo dibuja con la costa de X.CO) no se pisa: ni gente, ni canchas, ni coches
+    if (X.CO && GM.horizonte && GM.horizonte._mares) GM.horizonte._mares(X).forEach(p => bloquearPoli(p, 0));
     fase(S, 'datos y rejilla');
     // Suelo general (adoquín gris), parques, agua, aceras y calzadas
     const mSuelo = suelo('Concrete034', { color: false, relieve: 0.5 }, 0x77746e, 0),
@@ -1402,7 +1416,10 @@
       // tres aceras posibles por calle: la principal del país, la otra de losa o adoquín, y hormigón (antes una era Tiles074, una baldosa de
       // mármol de interior en damero: el «tablero de ajedrez» de las aceras)
       const otraAcera = primero(['GR', 'TR'].indexOf(club.pais) >= 0 ? ['PavingStones136', 'Concrete034'] : ['PavingStones146', 'Concrete034']);
-      [mAcera, suelo(otraAcera, { tinte: 0xd6d2ca }, 0xb0aca2, 1), suelo('Concrete034', { tinte: 0xa8a59d }, 0x9a978f, 1)].forEach((m, i) => {
+      // identidad (punto 148): en Barcelona y su área todas las aceras son de panot
+      const panot = GM.identidad && GM.identidad.ficha(club).acera === 'panot',
+        mPanot = panot ? GM.identidad.panot(suelo('Concrete034', { tinte: 0xc4c2bc }, 0xa29f99, 1)) : null; // panot: cemento gris
+      (panot ? [mPanot, mPanot, mPanot] : [mAcera, suelo(otraAcera, { tinte: 0xd6d2ca }, 0xb0aca2, 1), suelo('Concrete034', { tinte: 0xa8a59d }, 0x9a978f, 1)]).forEach((m, i) => {
         const mp = malla(PA[i], m, 'aceras');
         if (mp) W.add(mp);
       });
@@ -1823,7 +1840,8 @@
       });
       t.forEach(k => R0.I.push(base + k[0], base + k[1], base + k[2]));
     };
-    const roles = asignar(X, st, club); // qué edificio hace de qué (cambia la clase del edificio: la peña lleva escaparates, el pabellón es grande…)
+    S.zonaCalle = zona;
+    const roles = asignar(X, st, club, zona); // qué edificio hace de qué (cambia la clase del edificio: la peña lleva escaparates, el pabellón es grande…)
     B.forEach(b => {
       const h = altura(b);
       b.h = h;
@@ -1860,7 +1878,7 @@
       bloquearPoli(b.p, 0.35);
       (porChunk[claveChunk(b)] = porChunk[claveChunk(b)] || []).push(b);
     });
-    pabellonReal(S, W, M, roles.pabellon, club, c1, alta);
+    if (roles.pabellon) pabellonReal(S, W, M, roles.pabellon, club, c1, alta);
     // Ciudad por trozos: cada celda de 90 m se construye cuando el personaje o la cámara se acercan (a menos de 340 m, la más cercana primero y con un presupuesto de milisegundos por fotograma) y se descarta al alejarse (más de 520 m).
     // Al abrir la escena solo se crean las celdas del centro; el resto va apareciendo en los fotogramas siguientes. Con ciudades más grandes que la actual (punto 31) este es el mecanismo que evita construirlo todo de golpe.
     const vivos = {},
@@ -2162,7 +2180,7 @@
       }
     return null;
   }
-  function asignar(X, st, club) {
+  function asignar(X, st, club, zona) {
     const { B } = X,
       R = { viviendas: [], locales: [] },
       ELIGE = {},
@@ -2193,51 +2211,58 @@
     };
     const rr = rnd(U.hash(club.id + 'roles'));
     // pabellón: el edificio que contiene el origen, o el deportivo más cercano, o uno inventado
-    let pab =
-      B.filter(b => pip(0, 0, b.p) && b.ar > 350).sort((a, b) => b.ar - a.ar)[0] ||
-      B.filter(b => b.cl === 10 && b.dc < 160 && b.ar > 300).sort((a, b) => a.dc - b.dc)[0] ||
-      B.filter(b => b.dc < 90 && b.ar > 1100).sort((a, b) => a.dc - b.dc)[0];
-    if (!pab) {
+    let pab = zona
+      ? null
+      : B.filter(b => pip(0, 0, b.p) && b.ar > 350).sort((a, b) => b.ar - a.ar)[0] ||
+        B.filter(b => b.cl === 10 && b.dc < 160 && b.ar > 300).sort((a, b) => a.dc - b.dc)[0] ||
+        B.filter(b => b.dc < 90 && b.ar > 1100).sort((a, b) => a.dc - b.dc)[0];
+    if (!pab && !zona) {
       const p = [];
       for (let k = 0; k < 16; k++) p.push([Math.cos((k / 16) * Math.PI * 2) * 26, Math.sin((k / 16) * Math.PI * 2) * 19]);
       pab = { i: B.length + 1000, p: p.reverse(), lv: 0, cl: 10, nom: '', ar: 1500, bb: [-26, -19, 26, 19], cx: 0, cz: 0, dc: 0, rol: null };
       B.push(pab);
     }
-    pab.rol = 'pabellon';
-    pab.cl = 10;
-    R.pabellon = pab;
-    pab._fr = undefined;
-    tomar(
-      'sede',
-      b => acc(b) && b.ar > 140 && b.ar < 1500 && [0, 1, 2, 3].indexOf(b.cl) >= 0 && b.dc > 40 && b.dc < 200,
-      b => Math.abs(b.dc - 70) + (b.lv >= 2 ? 0 : 40),
-      3
-    ) || sint('sede', 3, 45, 120, 16, 10, 4);
-    tomar(
-      'tienda',
-      b => acc(b) && b.ar > 70 && b.ar < 900 && [0, 1, 2, 3, 12, 9].indexOf(b.cl) >= 0 && b.dc > 20 && b.dc < 230,
-      b => b.dc + (b.cl === 2 ? -30 : 0),
-      2
-    ) || sint('tienda', 2, 25, 110, 12, 9, 2);
-    tomar(
-      'pena',
-      b => acc(b) && b.ar > 55 && b.ar < 600 && [0, 1, 2, 12].indexOf(b.cl) >= 0 && b.dc > 25 && b.dc < 190,
-      b => b.dc + (b.cl === 12 ? -60 : 0),
-      12
-    ) || sint('pena', 12, 30, 130, 10, 8, 2);
-    tomar(
-      'ayuntamiento',
-      b => b.cl === 6 && b.ar > 150,
-      b => b.dc,
-      6
-    ) ||
+    if (pab) {
+      pab.rol = 'pabellon';
+      pab.cl = 10;
+      R.pabellon = pab;
+      pab._fr = undefined;
+    }
+    if (!zona)
+      tomar(
+        'sede',
+        b => acc(b) && b.ar > 140 && b.ar < 1500 && [0, 1, 2, 3].indexOf(b.cl) >= 0 && b.dc > 40 && b.dc < 200,
+        b => Math.abs(b.dc - 70) + (b.lv >= 2 ? 0 : 40),
+        3
+      ) || sint('sede', 3, 45, 120, 16, 10, 4);
+    if (!zona)
+      tomar(
+        'tienda',
+        b => acc(b) && b.ar > 70 && b.ar < 900 && [0, 1, 2, 3, 12, 9].indexOf(b.cl) >= 0 && b.dc > 20 && b.dc < 230,
+        b => b.dc + (b.cl === 2 ? -30 : 0),
+        2
+      ) || sint('tienda', 2, 25, 110, 12, 9, 2);
+    if (!zona)
+      tomar(
+        'pena',
+        b => acc(b) && b.ar > 55 && b.ar < 600 && [0, 1, 2, 12].indexOf(b.cl) >= 0 && b.dc > 25 && b.dc < 190,
+        b => b.dc + (b.cl === 12 ? -60 : 0),
+        12
+      ) || sint('pena', 12, 30, 130, 10, 8, 2);
+    if (!zona)
       tomar(
         'ayuntamiento',
-        b => acc(b) && b.ar > 350 && b.ar < 1800 && [0, 3].indexOf(b.cl) >= 0 && b.dc > 60 && b.dc < 210,
-        b => Math.abs(b.dc - 130),
+        b => b.cl === 6 && b.ar > 150,
+        b => b.dc,
         6
       ) ||
-      sint('ayuntamiento', 6, 70, 200, 20, 12, 4);
+        tomar(
+          'ayuntamiento',
+          b => acc(b) && b.ar > 350 && b.ar < 1800 && [0, 3].indexOf(b.cl) >= 0 && b.dc > 60 && b.dc < 210,
+          b => Math.abs(b.dc - 130),
+          6
+        ) ||
+        sint('ayuntamiento', 6, 70, 200, 20, 12, 4);
     tomar(
       'kiosco',
       b => b.cl === 11 && b.dc < 220 && acc(b),
@@ -2301,12 +2326,13 @@
       b => b.dc,
       13
     );
-    tomar(
-      'campus',
-      b => acc(b) && b.ar > 500 && [0, 9, 3].indexOf(b.cl) >= 0 && b.dc > 150 && b.dc < 265,
-      b => -b.dc,
-      9
-    ) || sint('campus', 9, 150, 250, 22, 12, 2);
+    if (!zona)
+      tomar(
+        'campus',
+        b => acc(b) && b.ar > 500 && [0, 9, 3].indexOf(b.cl) >= 0 && b.dc > 150 && b.dc < 265,
+        b => -b.dc,
+        9
+      ) || sint('campus', 9, 150, 250, 22, 12, 2);
     tomar(
       'bus',
       b => acc(b) && b.ar > 80 && b.dc > 130 && b.dc < 230,
@@ -2315,14 +2341,14 @@
     ) || sint('bus', 0, 130, 230, 9, 7, 2);
     // hitos de la ciudad que crece (crecimiento.js): el hotel y el museo ocupan edificios cerca del pabellón
     const crH = GM.mods.crecimiento && st.ciudad && st.ciudad[st.clubId] && st.ciudad[st.clubId].crec ? st.ciudad[st.clubId].crec.hitos : {};
-    if (crH.hotel && crH.hotel.estado === 'hecho')
+    if (!zona && crH.hotel && crH.hotel.estado === 'hecho')
       tomar(
         'hotel',
         b => acc(b) && b.ar > 250 && b.ar < 1800 && [0, 1, 3, 8].indexOf(b.cl) >= 0 && b.dc > 40 && b.dc < 190,
         b => Math.abs(b.dc - 90) + (b.lv >= 4 ? 0 : 30),
         8
       ) || sint('hotel', 8, 40, 170, 22, 14, 6);
-    if (crH.museo && crH.museo.estado === 'hecho')
+    if (!zona && crH.museo && crH.museo.estado === 'hecho')
       tomar(
         'museo',
         b => acc(b) && b.ar > 200 && b.ar < 1500 && [0, 1, 3, 6].indexOf(b.cl) >= 0 && b.dc > 40 && b.dc < 190 && !b.rol,
@@ -2330,7 +2356,7 @@
         6
       ) || sint('museo', 6, 40, 160, 18, 12, 3);
     // tus viviendas
-    const vivs = GM.mods.hogar && GM.mods.hogar.viviendas ? GM.mods.hogar.viviendas(st) : [];
+    const vivs = !zona && GM.mods.hogar && GM.mods.hogar.viviendas ? GM.mods.hogar.viviendas(st) : [];
     vivs.forEach((v, k) => {
       const casa =
         ['casa', 'mansion'].indexOf(
@@ -2380,7 +2406,7 @@
       if (vb) R.vecinos.push(vb);
     }
     // locales con interior
-    if (GM.interiores)
+    if (GM.interiores && !zona)
       [
         ['restaurante', 'RESTAURANTE EL TAPÓN', '#5a1020', 'Entrar en el restaurante', [12, 2, 0]],
         ['gimnasio_barrio', 'GIMNASIO', '#1d2024', 'Entrar en el gimnasio', [2, 0, 3]],
@@ -2399,7 +2425,7 @@
       });
     // negocios propios abiertos: un local con su interior (punto 55)
     R.negocios = [];
-    if (GM.interiores && GM.negocios && st.negocios)
+    if (GM.interiores && GM.negocios && st.negocios && !zona)
       GM.negocios
         .activos(st)
         .filter(n => n.abierto)
@@ -2549,8 +2575,9 @@
       });
       return m;
     };
-    // Pabellón: el edificio real con su rótulo grande y las banderas del club
-    {
+    // Pabellón: el edificio real con su rótulo grande y las banderas del club (en las zonas sin pabellón, nada)
+    S.ptoPab = null;
+    if (R.pabellon) {
       const b = R.pabellon,
         p = poner('pabellon', b, club.pabellon.nombre.toUpperCase(), '#14181d', '#ffffff', { ancho: 12, y: 6.2, fuera: 2.2, sale: 0.7 }); // el rótulo, por delante de las lamas de la fachada
       S.ptoPab = [p.x, p.z];
@@ -2569,16 +2596,16 @@
         W.add(pl);
       }
     }
-    SALAS.pabellon = { id: 'pabellon', nombre: club.pabellon.nombre, accion: 'Taquillas y estado del pabellón', destino: { todos: 'club' } };
+    if (R.pabellon) SALAS.pabellon = { id: 'pabellon', nombre: club.pabellon.nombre, accion: 'Taquillas y estado del pabellón', destino: { todos: 'club' } };
     if (R.sede) {
       const p = poner('sede', R.sede, club.nombre.toUpperCase(), c1, '#ffffff', { ancho: 8, y: 3.6 });
       S.spawnCalle = { x: p.x, z: p.z, ry: p.ry };
       entrada('sede', p);
       SALAS.sede = { id: 'sede_calle', nombre: 'Sede del club', accion: 'Volver a las instalaciones', destino: {}, irA: 'sede', boton: 'Entrar en la sede' };
-    } else {
+    } else if (R.pabellon) {
       const p = puntoPuerta(R.pabellon, X, G, 5);
       S.spawnCalle = { x: p.x, z: p.z, ry: p.ry };
-    }
+    } else S.spawnCalle = null; // en una zona, la parada de taxi (más abajo)
     const crM = st.ciudad && st.ciudad[st.clubId] && st.ciudad[st.clubId].crec ? st.ciudad[st.clubId].crec.hitos : {},
       hecho = id => !!(crM[id] && crM[id].estado === 'hecho');
     if (R.hotel) {
@@ -2870,6 +2897,41 @@
         SALAS.musico = { id: 'musico', nombre: 'Músico callejero', accion: 'Toca en la plaza', destino: {} };
       }
     }
+    // Parada de taxi a las otras zonas de la ciudad (punto 149): en la del pabellón, a unos 25 m de donde se aparece; en una zona, junto a su
+    // centro, y es donde se llega. Una sala por destino, a 2,5 m una de otra por la acera
+    {
+      const zona = S.zonaCalle,
+        destinos = (zona ? [['', club.pabellon.nombre, 'Volver a la zona del pabellón']] : []).concat(zonasDe(club.id).filter(z => z[0] !== zona && datos(club.id + '~' + z[0])));
+      if (destinos.length && paseo.length) {
+        const ref = S.spawnCalle || { x: 0, z: 0 },
+          lejos = zona ? 0 : 25;
+        let mejor = null,
+          md = 1e9;
+        paseo.forEach(q => {
+          const d = Math.abs(Math.hypot(q[0] - ref.x, q[1] - ref.z) - lejos);
+          if (d < md) {
+            md = d;
+            mejor = q;
+          }
+        });
+        if (mejor) {
+          const ry = Math.atan2(ref.x - mejor[0], ref.z - mejor[1]) || 0;
+          cartel(W, M, 'TAXI', '#1d2024', '#f2c94c', mejor[0], 2.7, mejor[1], ry, 1.8);
+          destinos.forEach(([id, nombre, desc], k) => {
+            const clave = 'taxi_' + (id || 'pabellon'),
+              x = mejor[0] + Math.cos(ry) * (k - (destinos.length - 1) / 2) * 2.5,
+              z = mejor[1] - Math.sin(ry) * (k - (destinos.length - 1) / 2) * 2.5;
+            zonas[clave] = [x, z];
+            SALAS[clave] = { id: clave, nombre: 'Taxi: ' + nombre, accion: desc, destino: {}, irA: 'calle' + (id ? ':' + id : ''), boton: 'Ir en taxi' };
+          });
+          // al volver en taxi se aparece en la parada
+          S.puertas = S.puertas || {};
+          destinos.forEach(([id]) => (S.puertas['calle' + (id ? ':' + id : '')] = { x: mejor[0], z: mejor[1], ry }));
+          if (zona) S.spawnCalle = { x: mejor[0], z: mejor[1], ry };
+        }
+      }
+      if (!S.spawnCalle) S.spawnCalle = { x: paseo.length ? paseo[0][0] : 0, z: paseo.length ? paseo[0][1] : 0, ry: 0 };
+    }
     transporte(S, M, X, G, W, c, SALAS, zonas, paseo, bar);
     anclasVida(S, X, G);
     S.zonas = Object.keys(SALAS)
@@ -2908,7 +2970,19 @@
         if (run.length > mejor.length) mejor = run;
         if (mejor.length >= 3) S.vias.unshift({ k: 3, nom: 'Línea ' + rt.ref, uno: false, p: mejor, ruta: rt.ref });
       });
-    S.calleNombre = nombreCalle(R.sede || R.pabellon) || 'Calle de ' + club.ciudad;
+    S.calleNombre =
+      nombreCalle(
+        R.sede ||
+          R.pabellon || {
+            p: [
+              [S.spawnCalle.x - 1, S.spawnCalle.z],
+              [S.spawnCalle.x + 1, S.spawnCalle.z],
+              [S.spawnCalle.x, S.spawnCalle.z + 1]
+            ],
+            cx: S.spawnCalle.x,
+            cz: S.spawnCalle.z
+          }
+      ) || 'Calle de ' + club.ciudad;
     mobiliario(S, M, X, G, W, c);
     S.cielo = true;
     S.scene.background = new THREE.Color(0xa9c6dc);
@@ -3374,8 +3448,20 @@
       W.add(im);
     }
   }
+  // distancia a la línea de costa (X.CO, décimas de metro); Infinity si no hay costa
+  function distCosta(X, x, z) {
+    let d = Infinity;
+    if (!X.CO || !X.CO.c) return d;
+    X.CO.c.forEach(v => {
+      for (let i = 0; i + 3 < v.length; i += 2) d = Math.min(d, dSeg(x, z, [v[i] / 10, v[i + 1] / 10], [v[i + 2] / 10, v[i + 3] / 10]));
+    });
+    return d;
+  }
   // ---------- Árboles y farolas ----------
   function mobiliario(S, M, X, G, W, c) {
+    // identidad (punto 148): en el paseo marítimo, palmeras
+    const fichaId = GM.identidad ? GM.identidad.ficha(c.club) : { palmerasCosta: 0 },
+      especie = (x, z, def) => (fichaId.palmerasCosta && distCosta(X, x, z) < fichaId.palmerasCosta ? 'palmera' : def);
     const rr = rnd(U.hash(c.club.id + 'mob')),
       libre = (x, z) => {
         const [i, j] = G.celda(x, z);
@@ -3410,7 +3496,7 @@
           const d = dSeg(x, z, a, b);
           if (d < w / 2 + ACERA + 0.3 && (!mejor || d < mejor.d)) mejor = { d, a, b };
         }
-        arb.push([x, z, 'redondo']);
+        arb.push([x, z, especie(x, z, 'redondo')]);
         if (mejor) S_ALC.push({ x, z, ry: Math.atan2(mejor.b[0] - mejor.a[0], mejor.b[1] - mejor.a[1]) });
       });
     }
@@ -3439,7 +3525,7 @@
             const x = a[0] + ux * s - uz * off * lado,
               z = a[1] + uz * s + ux * off * lado;
             if (arb.length < topeArb && libre(x, z) && !cerca(x, z)) {
-              arb.push([x, z, esp]);
+              arb.push([x, z, especie(x, z, esp)]);
               if (cc.k !== 5) S_ALC.push({ x, z, ry: Math.atan2(ux, uz) });
             }
           }
@@ -3516,6 +3602,7 @@
     cargado: id => id in CACHE,
     construir,
     preparar,
+    zonas: zonasDe,
     _int: { subdividir, plantar, mallaAlcorques, cartel, frente, puntoPuerta, pip, dSeg, ANCHO, ACERA, R, rnd, geo, cinta, rellenar, nuevo, malla, suelo }
   });
 })();

@@ -12,13 +12,16 @@ fs.mkdirSync(DIR, { recursive: true });
     p = await (await b.newContext({ viewport: { width: 1600, height: 900 } })).newPage();
   await p.goto('http://localhost:8080/');
   await p.waitForFunction(() => window.GM && GM.pruebas);
-  await p.evaluate(c => {
-    GM.newGame(c, 7, { modo: 'carrera', personaje: GM.mods.personaje.crear(), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } });
-    GM.campus.config.calidad = 'alta';
-    GM.ajustes.marcarNovedades();
-    GM.ui.start(document.getElementById('app'));
-    GM.sede.abrir(GM.state, 'calle');
-  }, club);
+  await p.evaluate(
+    ([c, esc]) => {
+      GM.newGame(c, 7, { modo: 'carrera', personaje: GM.mods.personaje.crear(), carrera: { origen: 'europa', clubId: c, pos: 'SG', perfil: 'tirador', nac: 'ES', age: 20 } });
+      GM.campus.config.calidad = 'alta';
+      GM.ajustes.marcarNovedades();
+      GM.ui.start(document.getElementById('app'));
+      GM.sede.abrir(GM.state, esc);
+    },
+    [club, process.env.ESCENA || 'calle']
+  );
   await esperarEscena(p, 'calle', 150000);
   await sleep(3000);
   // VISTAS='[["nombre",[x,y,z],[x,y,z]]]' para otras vistas; HORA=21 para la noche
