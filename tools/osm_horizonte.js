@@ -14,7 +14,7 @@ const dormir = ms => new Promise(r => setTimeout(r, ms));
   const sel = process.argv.slice(2),
     ids = fs
       .readdirSync(DIR)
-      .filter(f => f.endsWith('.json') && !/\.(poi|ring|dem|tr|pl|ex|hor|costa|cat)\.json$/.test(f) && f !== 'clubes.json' && f !== 'centros.json')
+      .filter(f => f.endsWith('.json') && !/\.(poi|ring|dem|tr|pl|ex|hor|costa|cat|mdt)\.json$/.test(f) && f !== 'clubes.json' && f !== 'centros.json')
       .map(f => f.replace('.json', ''));
   let hechas = 0;
   for (const id of ids) {

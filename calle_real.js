@@ -1150,10 +1150,12 @@
       HZ: D.hz || null,
       CO: D.co || null,
       OR: !!D.or,
+      // árboles reales vistos desde el aire (punto 147): sustituyen a los de la regla por calles, a los de los parques y a los de OSM
+      TA: D.ta ? D.ta.reduce((L, v, i) => (i % 2 ? L : L.concat([[v / 10, D.ta[i + 1] / 10]])), []) : null,
       TR: (D.tr || []).map(a => ({ t: a[0], p: pts(a, 1) })).filter(a => a.p.length >= 2),
       L: D.l || null,
       N: (D.n || []).map(a => ({ t: a[0], nom: a[1] >= 0 ? D.s[a[1]] : '', x: a[2] / 10, z: a[3] / 10 })).filter(a => a.nom),
-      T: (D.t || []).map(a => [a[0] / 10, a[1] / 10]),
+      T: D.ta ? [] : (D.t || []).map(a => [a[0] / 10, a[1] / 10]), // con árboles de la foto aérea, los de OSM sobran
       PT: punto(D.pt, 1, 2),
       K: lista(D.k, 1).filter(a => a.p.length >= 3),
       U: lista(D.u, 1).filter(a => a.p.length >= 3),
@@ -3186,7 +3188,8 @@
         frondas.push(m(f, '#ffffff'));
       }
       GEOARB = {
-        redondo: [tronco(2.4, 0.17), m(new T3.IcosahedronGeometry(1.5, alta ? 1 : 0).translate(0, 3.4, 0), '#ffffff')],
+        // copa de unos 5 m (plátano o almez de calle): con 3 m las hileras reales se veían peladas
+        redondo: [tronco(3.4, 0.2), m(new T3.IcosahedronGeometry(2.5, alta ? 1 : 0).scale(1, 0.85, 1).translate(0, 5.2, 0), '#ffffff')],
         cipres: [tronco(1.0, 0.14), m(new T3.ConeGeometry(0.85, 5.4, 8).translate(0, 3.5, 0), '#ffffff')],
         pino: [
           tronco(3.2, 0.15),
@@ -3314,7 +3317,7 @@
           tx.anisotropy = 4;
           TEXARB[e] = new T3.MeshLambertMaterial({ map: tx, alphaTest: 0.5, side: T3.DoubleSide });
         }
-        const plano = new T3.PlaneGeometry(3.4, 6.8).translate(0, 3.4, 0),
+        const plano = e === 'redondo' ? new T3.PlaneGeometry(5.2, 7.8).translate(0, 3.9, 0) : new T3.PlaneGeometry(3.4, 6.8).translate(0, 3.4, 0),
           g2 = T3.mergeGeometries([plano, plano.clone().rotateY(Math.PI / 2)]);
         bb = new T3.InstancedMesh(g2, TEXARB[e], L.length);
         const mm = new T3.Matrix4();
@@ -3392,8 +3395,27 @@
       cc.p.forEach(q => vert.set(kv(q[0], q[1]), (vert.get(kv(q[0], q[1])) || 0) + 1));
     });
     const topeArb = c.alta ? 1500 : 800;
+    if (X.TA) {
+      // árboles reales vistos desde el aire (punto 147): en su sitio; los que quedan junto a una calle, en alcorque
+      const segs = [];
+      X.C.forEach(cc => {
+        if (cc.k < 1 || cc.k > 4) return;
+        const w = cc.w || ANCHO[cc.k] || 4;
+        for (let i = 0; i + 1 < cc.p.length; i++) segs.push([cc.p[i], cc.p[i + 1], w]);
+      });
+      X.TA.forEach(([x, z]) => {
+        if (arb.length >= topeArb || !libre(x, z) || cerca(x, z)) return;
+        let mejor = null;
+        for (const [a, b, w] of segs) {
+          const d = dSeg(x, z, a, b);
+          if (d < w / 2 + ACERA + 0.3 && (!mejor || d < mejor.d)) mejor = { d, a, b };
+        }
+        arb.push([x, z, 'redondo']);
+        if (mejor) S_ALC.push({ x, z, ry: Math.atan2(mejor.b[0] - mejor.a[0], mejor.b[1] - mejor.a[1]) });
+      });
+    }
     X.C.forEach(cc => {
-      if (cc.k < 1 || cc.k > 5 || cc.p.length < 2) return;
+      if (X.TA || cc.k < 1 || cc.k > 5 || cc.p.length < 2) return;
       const nom = cc.nom || Math.round(cc.p[0][0]) + ',' + Math.round(cc.p[0][1]),
         h = U.hash(c.club.id + 'alin' + nom) % 100;
       if (h >= (cc.k === 5 ? 50 : cc.k === 1 ? 45 : 72)) return;
@@ -3427,7 +3449,7 @@
     });
     mallaAlcorques(W, M, S_ALC);
     X.P.forEach(q => {
-      if (q.t === 1 || q.p.length < 3) return;
+      if (X.TA || q.t === 1 || q.p.length < 3) return;
       let x0 = 1e9,
         z0 = 1e9,
         x1 = -1e9,

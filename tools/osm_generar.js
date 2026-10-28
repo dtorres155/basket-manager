@@ -113,7 +113,7 @@ let total = 0,
   bytes = 0;
 for (const f of fs
   .readdirSync(DIR)
-  .filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem|tr|pl|ex|hor|costa|cat)\.json$/.test(n))
+  .filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem|tr|pl|ex|hor|costa|cat|mdt)\.json$/.test(n))
   .sort()) {
   const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
   const k = 110574,
@@ -359,7 +359,9 @@ for (const f of fs
       .filter((a, i, l) => l.findIndex(b => b[0] === a[0]) === i)
       .slice(0, 10);
   }
-  const df = path.join(DIR, j.id + '.dem.json');
+  // relieve: el MDT del IGN (tools/mdt.js, 50 m en 6,8 km, solo el suelo) si lo hay; si no, Open-Meteo (tools/osm_relieve.js, 125 m en 2 km)
+  const mf = path.join(DIR, j.id + '.mdt.json'),
+    df = fs.existsSync(mf) ? mf : path.join(DIR, j.id + '.dem.json');
   if (fs.existsSync(df)) {
     const DM = JSON.parse(fs.readFileSync(df, 'utf8'));
     r.h = { n: DM.n, p: DM.paso, v: DM.h.map(v => Math.round(v)) };
@@ -406,6 +408,32 @@ for (const f of fs
         return tejado(p);
       });
     r.or = 1; // hay ortofoto en vendor/orto/<id>.jpg (4 x 4 km)
+    // árboles reales desde la foto aérea (punto 147, tools/arboles_orto.js), en la zona en la que se pasea
+    {
+      const ANCHOS = [16, 12, 10, 8.5, 7, 5.5, 4],
+        poli = (v, d) => {
+          const p = [];
+          for (let i = d; i + 1 < v.length; i += 2) p.push([v[i] / 10, v[i + 1] / 10]);
+          return p;
+        },
+        calles = [];
+      r.c.forEach(c => {
+        if (c[0] === 5) return;
+        const p = poli(c, 3);
+        for (let i = 0; i + 1 < p.length; i++) calles.push([p[i][0], p[i][1], p[i + 1][0], p[i + 1][1], ANCHOS[c[0]] || 4]);
+      });
+      const ta = require('./arboles_orto').arboles(
+        of,
+        {
+          edificios: r.e.map(e => poli(e, 5)),
+          pistas: (r.p || []).filter(q => q[0] === 1).map(q => poli(q, 1)),
+          agua: (r.a || []).filter(q => q.length > 6).map(q => poli(q, 1)),
+          calles
+        },
+        360
+      );
+      if (ta && ta.length) r.ta = [].concat(...ta.map(q => [ent(q[0]), ent(q[1])]));
+    }
   }
   // horizonte real (osm_horizonte.js, punto 144): alturas en anillos de 1,5 a 20 km en 72 direcciones
   const hf = path.join(DIR, j.id + '.hor.json');

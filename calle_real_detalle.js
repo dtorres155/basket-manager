@@ -1372,8 +1372,10 @@
             continue;
           }
           if (db > 12) continue;
-          arbE.push([gx, gz, 'redondo']);
-          alcE.push({ x: gx, z: gz, ry: 0 });
+          if (!X.TA) {
+            arbE.push([gx, gz, 'redondo']);
+            alcE.push({ x: gx, z: gz, ry: 0 });
+          } else if (h >= 34) continue; // con árboles reales solo quedan los bancos (con su papelera)
           ocupa(gx, gz);
           if (h < 34 && dentro(gx + 2, gz, 1) && libre(gx + 2, gz)) {
             const b = { x: gx + 2, z: gz, ry: -Math.PI / 2, c: (PAL ? PAL.banco : ['#5a4630', '#3a3f45', '#6b4a2f'])[h % 3] };

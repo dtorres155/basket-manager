@@ -35,3 +35,5 @@ Relieve lejano del horizonte (`hz` en `vendor/osm`, `tools/osm_horizonte.js`): C
 Volúmenes de los edificios de las ciudades españolas con datos del Catastro (plantas de cada parte de edificio, uso y año; `tools/catastro.js`): © Dirección General del Catastro (INSPIRE, https://www.catastro.hacienda.gob.es), uso libre con mención de la fuente.
 
 Foto aérea del suelo lejano y color de los tejados (`vendor/orto`, `tools/ortofoto.js`): PNOA, © Instituto Geográfico Nacional, CC BY 4.0 (scne.es).
+
+Relieve fino de las ciudades españolas (`h` en `vendor/osm` cuando hay MDT, `tools/mdt.js`): Modelo Digital del Terreno del IGN (MDT25, servicio WCS), © Instituto Geográfico Nacional, CC BY 4.0 (scne.es). Los árboles de Badalona salen de la misma ortofoto del PNOA (`tools/arboles_orto.js`).

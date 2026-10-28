@@ -13,9 +13,9 @@
   const R = 150, // radio del anillo (dentro del plano lejano de la cámara)
     N = 720, // muestras alrededor
     RS = 3400, // radio del mar dibujado (los datos de costa llegan a 3,5 km)
-    // altura del mar sobre el suelo: más allá de la cuadrícula de relieve (1 km) las alturas se estiran desde el borde y cada malla las
-    // interpola con triángulos distintos (varios metros de diferencia): el mar va 3 m por encima para que el suelo no lo tape
-    MAR_Y = 3;
+    // altura del mar sobre el suelo: más allá de la cuadrícula de relieve las alturas se estiran desde el borde y cada malla las interpola
+    // con triángulos distintos (varios metros de diferencia): sin relieve fino (MDT de 6,8 km, tools/mdt.js) el mar va 3 m por encima
+    marY = X => (X && X.H && X.H.n * (X.H.p || 125) >= 6000 ? 0.6 : 3);
   const T = () => THREE;
   // ruido 1D periódico (para perfiles alrededor del horizonte)
   function ruido(sem) {
@@ -342,7 +342,7 @@
       agua.polygonOffset = true;
       agua.polygonOffsetFactor = -3;
       agua.polygonOffsetUnits = -3;
-      malla(ms, agua, MAR_Y);
+      malla(ms, agua, marY(X));
     }
     // playas
     const playas = (X.CO.p || []).map(v => puntos(v)).filter(p => p.length >= 3 && p.some(q => Math.hypot(q[0], q[1]) < RS));
@@ -362,7 +362,7 @@
       const petroli = /petroli/i.test(m[1] || ''),
         muelle = m[0] === 0,
         ancho = muelle ? (petroli ? 7 : 2.6) : 9,
-        alto = MAR_Y + (muelle ? (petroli ? 5 : 0.6) : 1.6);
+        alto = marY(X) + (muelle ? (petroli ? 5 : 0.6) : 1.6);
       for (let i = 0; i + 1 < l.length; i++) {
         const a = l[i],
           b = l[i + 1],
@@ -591,7 +591,8 @@
   }
   // ---------- Ortofoto en el suelo lejano (punto 146) ----------
   // Si la ciudad tiene foto aérea (vendor/orto/<id>.jpg, 4 x 4 km centrada en el pabellón, tools/ortofoto.js), el suelo se funde con ella
-  // a partir de 400 m: desde arriba y en el horizonte se ve la ciudad de verdad; junto al pabellón siguen las calles del juego. La textura
+  // a partir de 400 m (oscurecida: la foto ya trae la luz del sol): desde arriba y en el horizonte se ve la ciudad de verdad; junto al
+  // pabellón siguen las calles del juego. La textura
   // se pide una vez por ciudad; hasta que llega, el uniforme vale 0 y el suelo queda como estaba.
   const ORTO = {};
   function ortoMaterial(mat, club) {
@@ -624,7 +625,7 @@
         'uniform sampler2D uOrto;\nuniform float uOrtoK;\nvarying vec2 vWOr;\n' +
         sh.fragmentShader.replace(
           '#include <color_fragment>',
-          '#include <color_fragment>\n if (uOrtoK > 0.0) { float fO = smoothstep(380.0, 470.0, length(vWOr)) * (1.0 - smoothstep(1950.0, 2040.0, max(abs(vWOr.x), abs(vWOr.y)))) * uOrtoK; if (fO > 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(uOrto, vec2((vWOr.x + 2048.0) / 4096.0, 1.0 - (vWOr.y + 2048.0) / 4096.0)).rgb * 0.92, fO); }'
+          '#include <color_fragment>\n if (uOrtoK > 0.0) { float fO = smoothstep(380.0, 470.0, length(vWOr)) * (1.0 - smoothstep(1950.0, 2040.0, max(abs(vWOr.x), abs(vWOr.y)))) * uOrtoK; if (fO > 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(uOrto, vec2((vWOr.x + 2048.0) / 4096.0, 1.0 - (vWOr.y + 2048.0) / 4096.0)).rgb * 0.55, fO); }'
         );
     };
     mat.customProgramCacheKey = () => (clave ? clave() : '') + '-orto';
