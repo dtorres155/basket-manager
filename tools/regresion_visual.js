@@ -32,7 +32,7 @@ const VISTAS = [
         'gm1:consejos',
         JSON.stringify({ 'ayuda-inicio': 1, 'ayuda-plantilla': 1, 'ayuda-mercado': 1, 'ayuda-calendario': 1, 'ayuda-finanzas': 1, 'ayuda-muestra': 1 })
       );
-      localStorage.setItem('gm1:novedades', '0.9.147');
+      localStorage.setItem('gm1:novedades', '0.9.152');
     } catch (e) {}
   });
   await p.reload();

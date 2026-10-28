@@ -6,6 +6,16 @@
   const { h, modal, toast, cerrarModales } = GM.ui._;
   const NOVEDADES = [
     {
+      v: '0.9.152',
+      fecha: '2026-10',
+      t: [
+        'Badalona de verdad: cada edificio con sus plantas reales del Catastro, el color real de sus tejados (foto aérea del PNOA) y los árboles donde están en la realidad.',
+        'Dos zonas más para pasear, en taxi desde el pabellón: el paseo marítimo con la playa y el Pont del Petroli, y Dalt la Vila.',
+        'Lo propio de cada ciudad: aceras de panot en Barcelona y su área, senyeras en los balcones y palmeras junto al mar.',
+        'Relieve real del terreno y foto aérea en el suelo lejano: desde arriba se ve la ciudad entera.'
+      ]
+    },
+    {
       v: '0.9.147',
       fecha: '2026-10',
       t: [
