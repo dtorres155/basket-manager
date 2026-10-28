@@ -113,7 +113,7 @@ let total = 0,
   bytes = 0;
 for (const f of fs
   .readdirSync(DIR)
-  .filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem|tr|pl|ex)\.json$/.test(n))
+  .filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem|tr|pl|ex|hor|costa)\.json$/.test(n))
   .sort()) {
   const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
   const k = 110574,
@@ -363,6 +363,60 @@ for (const f of fs
   if (fs.existsSync(df)) {
     const DM = JSON.parse(fs.readFileSync(df, 'utf8'));
     r.h = { n: DM.n, p: DM.paso, v: DM.h.map(v => Math.round(v)) };
+  }
+  // horizonte real (osm_horizonte.js, punto 144): alturas en anillos de 1,5 a 20 km en 72 direcciones
+  const hf = path.join(DIR, j.id + '.hor.json');
+  if (fs.existsSync(hf)) {
+    const HZ = JSON.parse(fs.readFileSync(hf, 'utf8'));
+    r.hz = { a: HZ.az, d: HZ.d, v: HZ.h };
+  }
+  // costa (osm_costa.js, punto 101): los trozos de línea de costa se unen en líneas seguidas (comparten nodos en los extremos) y se
+  // simplifican a 3 m; playas y muelles, tal cual (décimas de metro)
+  const cf = path.join(DIR, j.id + '.costa.json');
+  if (fs.existsSync(cf)) {
+    const CO = JSON.parse(fs.readFileSync(cf, 'utf8'));
+    if (CO.c.length || CO.p.length || CO.m.length) {
+      const lineas = CO.c.map(g => {
+        const l = [];
+        for (let i = 0; i + 1 < g.length; i += 2) l.push([g[i], g[i + 1]]);
+        return l;
+      });
+      const igual = (a, b) => a[0] === b[0] && a[1] === b[1];
+      let unido = true;
+      while (unido) {
+        unido = false;
+        for (let a = 0; a < lineas.length && !unido; a++)
+          for (let b = 0; b < lineas.length && !unido; b++) {
+            if (a === b || !igual(lineas[a][lineas[a].length - 1], lineas[b][0])) continue;
+            lineas[a] = lineas[a].concat(lineas[b].slice(1));
+            lineas.splice(b, 1);
+            unido = true;
+          }
+      }
+      const simpl = (l, tol) => {
+        if (l.length < 3) return l;
+        const a = l[0],
+          b = l[l.length - 1];
+        let mx = -1,
+          mi = 0;
+        for (let i = 1; i + 1 < l.length; i++) {
+          const dx = b[0] - a[0],
+            dz = b[1] - a[1],
+            L = Math.hypot(dx, dz) || 1,
+            d = Math.abs((l[i][0] - a[0]) * dz - (l[i][1] - a[1]) * dx) / L;
+          if (d > mx) {
+            mx = d;
+            mi = i;
+          }
+        }
+        return mx > tol
+          ? simpl(l.slice(0, mi + 1), tol)
+              .slice(0, -1)
+              .concat(simpl(l.slice(mi), tol))
+          : [a, b];
+      };
+      r.co = { c: lineas.map(l => [].concat(...simpl(l, 30))), p: CO.p, m: CO.m };
+    }
   }
   const s = JSON.stringify(r);
   fs.writeFileSync(path.join(OUT, j.id + '.json'), s);

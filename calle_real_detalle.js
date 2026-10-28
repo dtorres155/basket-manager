@@ -637,7 +637,7 @@
         }
       });
     }
-    // Bordillo en 3D (punto 98 de la hoja de ruta 2): una pieza de granito de 14 cm de alto y 28 de ancho con su cara hacia la calzada, a
+    // Bordillo en 3D (punto 98 de la hoja de ruta 2): una pieza de granito gris de 12 cm de alto y 28 de ancho con su cara hacia la calzada, a
     // lo largo del borde de cada calle con acera. Se corta donde entra otra calzada (los cruces) y en los pasos de cebra (vado peatonal).
     const dentroDeOtra = (x, z, cl) => {
       const i = Math.floor(x / CEL),
@@ -675,7 +675,7 @@
       });
     const bordillo = (cl, w, lado, A) => {
       const p = cl.p,
-        alto = 0.14,
+        alto = 0.12,
         ancho = 0.28;
       // muestras cada metro por el borde de la calzada, con su normal hacia la acera
       const M = [];
@@ -810,8 +810,8 @@
         }
       });
       if (BO.P.length) {
-        const mb = mat(0xb9b7b0, { roughness: 0.85, side: THREE.DoubleSide });
-        if (GM.texturas) GM.texturas.aplicar(mb, 'Concrete034', { tinte: 0xd2d0ca, relieve: 0.4 });
+        const mb = mat(0x8f8d88, { roughness: 0.9, side: THREE.DoubleSide });
+        if (GM.texturas) GM.texturas.aplicar(mb, 'Concrete034', { tinte: 0x9d9b95, relieve: 0.5 });
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.Float32BufferAttribute(BO.P, 3));
         g.setIndex(BO.I);

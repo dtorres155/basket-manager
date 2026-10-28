@@ -1146,6 +1146,8 @@
       RB: (D.rb || []).map(a => ({ ref: a[0] >= 0 ? D.s[a[0]] : '', p: pts(a, 1) })).filter(a => a.p.length >= 2),
       PL: (D.pl || []).map(a => ({ t: a[0], p: pts(a, 1) })).filter(a => a.p.length >= 3),
       H: D.h || null,
+      HZ: D.hz || null,
+      CO: D.co || null,
       TR: (D.tr || []).map(a => ({ t: a[0], p: pts(a, 1) })).filter(a => a.p.length >= 2),
       L: D.l || null,
       N: (D.n || []).map(a => ({ t: a[0], nom: a[1] >= 0 ? D.s[a[1]] : '', x: a[2] / 10, z: a[3] / 10 })).filter(a => a.nom),
