@@ -1272,6 +1272,15 @@
       X.A.forEach(a => (a.t === 1 ? franja(a.p, 6, 3) : a.p.length >= 3 && marcar(a.p, 3)));
       B.forEach(b => marcar(b.p, 1));
       [X.P, X.U, X.K, X.PL].forEach(L => (L || []).forEach(a => a.p.length >= 3 && marcar(a.p, 3)));
+      // playas y mar (horizonte.js los dibuja con la costa): tienen su suelo, no son explanadas
+      if (X.CO) {
+        (X.CO.p || []).forEach(v => {
+          const p = [];
+          for (let i = 0; i + 1 < v.length; i += 2) p.push([v[i] / 10, v[i + 1] / 10]);
+          if (p.length >= 3) marcar(p, 3);
+        });
+        if (GM.horizonte && GM.horizonte._mares) GM.horizonte._mares(X).forEach(p => marcar(p, 3));
+      }
       // componentes de suelo libre
       const comp = new Int32Array(NE * NE).fill(-1),
         pav = new Uint8Array(NE * NE),
@@ -1310,30 +1319,56 @@
           if (calle && fin * CE * CE >= 200) for (let t = 0; t < fin; t++) pav[cola[t]] = 1;
           nComp++;
         }
+      // junto al mar (a menos de 140 m de la línea de costa) el suelo libre es arena de playa, no una plaza: sin árboles ni farolas (3)
+      if (X.CO && X.CO.c && X.CO.c.length) {
+        const segC = [];
+        X.CO.c.forEach(v => {
+          for (let i = 0; i + 3 < v.length; i += 2)
+            segC.push([
+              [v[i] / 10, v[i + 1] / 10],
+              [v[i + 2] / 10, v[i + 3] / 10]
+            ]);
+        });
+        for (let k = 0; k < NE * NE; k++) {
+          if (pav[k] !== 1) continue;
+          const i = k % NE,
+            x = cx(i),
+            z = cx((k - i) / NE);
+          for (const sg of segC)
+            if (dSeg(x, z, sg[0], sg[1]) < 140) {
+              pav[k] = 3;
+              break;
+            }
+        }
+      }
       // el pavimento entra una celda bajo la acera para que no quede una raya de suelo gris entre los dos
       for (let j = 1; j < NE - 1; j++)
         for (let i = 1; i < NE - 1; i++) {
           const k = j * NE + i;
           if (cov[k] === 2 && (pav[k - 1] === 1 || pav[k + 1] === 1 || pav[k - NE] === 1 || pav[k + NE] === 1)) pav[k] = 2;
         }
-      const AE = I.nuevo();
+      const AE = I.nuevo(),
+        AS = I.nuevo();
       for (let j = 0; j < NE; j++) {
         let i = 0;
         while (i < NE) {
-          if (!pav[j * NE + i]) {
+          const tipo = pav[j * NE + i];
+          if (!tipo) {
             i++;
             continue;
           }
+          const arena = tipo === 3;
           let f = i;
-          while (f + 1 < NE && pav[j * NE + f + 1]) f++;
+          while (f + 1 < NE && pav[j * NE + f + 1] && (pav[j * NE + f + 1] === 3) === arena) f++;
           const x0 = -R + i * CE,
             x1 = -R + (f + 1) * CE,
             z0 = -R + j * CE,
             z1 = z0 + CE,
-            v = AE.P.length / 3;
-          AE.P.push(x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1);
-          AE.N.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
-          AE.I.push(v, v + 2, v + 1, v, v + 3, v + 2);
+            A = arena ? AS : AE,
+            v = A.P.length / 3;
+          A.P.push(x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1);
+          A.N.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
+          A.I.push(v, v + 2, v + 1, v, v + 3, v + 2);
           i = f + 1;
         }
       }
@@ -1341,6 +1376,11 @@
       if (me) {
         me.receiveShadow = true;
         W.add(me);
+      }
+      const ma = I.malla(AS, I.suelo('Ground054', { tinte: 0xf0dfba }, 0xe2cfa6, 0.5), 'arena');
+      if (ma) {
+        ma.receiveShadow = true;
+        W.add(ma);
       }
       // mobiliario: árboles en retícula de 9 m solo en una franja de 3 a 12 m del borde (el centro de las explanadas grandes queda abierto,
       // como la plaza de un pabellón), un banco junto a uno de cada tres, papeleras y farolas cada 18 m; nada delante de la entrada del
