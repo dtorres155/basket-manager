@@ -6,6 +6,16 @@
   const { h, modal, toast, cerrarModales } = GM.ui._;
   const NOVEDADES = [
     {
+      v: '0.9.147',
+      fecha: '2026-10',
+      t: [
+        'La ciudad sigue más allá: montes de verdad en el horizonte (relieve real hasta 20 km), el mar con sus playas y muelles en las ciudades de costa (en Badalona, el Pont del Petroli) y manzanas lejanas hasta 2,6 km.',
+        'El pabellón con su forma real: cúpula o bóveda según su planta y fachada de pabellón con cristaleras, lamas y la cornisa del club.',
+        'Calles de verdad: bordillos con altura y rebajados en los pasos de cebra, árboles en hilera con alcorque, plazas donde había explanadas grises y gente que espera en el semáforo.',
+        'Ventanas que de día parecen cristal, alféizares y dinteles en relieve, cielo con el sol y las nubes del día y cámara que baja a la altura de los ojos.'
+      ]
+    },
+    {
       v: '0.9.134',
       fecha: '2026-10',
       t: [

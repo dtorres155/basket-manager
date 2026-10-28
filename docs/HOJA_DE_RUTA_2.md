@@ -93,6 +93,16 @@ Sustituye como guía a `docs/HOJA_DE_RUTA.md` (puntos 1 a 84, cerrados) y a la l
   - Al mirar desde arriba o a pie, ninguna vista debe acabar en un borde gris.
 - *Fase hecha cuando* en las 24 vistas no hay nada gris liso, nada repetido a simple vista ni nada puesto sin regla, y tú le das al menos un 4 sobre 5.
 
+### Fase C2. Ciudades de verdad (propuesta del 28 oct 2026, pendiente de tu visto bueno para las descargas)
+Lo que falta para que una ciudad se reconozca no sale de OpenStreetMap: alturas exactas, la forma de los tejados, qué hay en cada acera y los sitios que la identifican. Se haría primero en Badalona, con datos oficiales abiertos, y después en el resto según haya datos.
+- **145. Alturas y volúmenes exactos:** Catastro (INSPIRE, edificios y partes de edificio con su número de plantas, toda España salvo País Vasco y Navarra) en lugar de las plantas estimadas; en Alemania, Países Bajos, Nueva York y otras ciudades, sus modelos 3D LOD2 abiertos.
+- **146. Tejados y suelo de verdad:** modelo 3D de edificios del ICGC (tejados con su forma) y ortofoto (PNOA o ICGC, 25 cm) para el color de cubiertas, patios y solares vistos desde arriba.
+- **147. Relieve y arbolado finos:** LiDAR del IGN o el ICGC (relieve de 2 m que llega a varios kilómetros, sin el estirado más allá de 1 km) y los árboles reales con su altura; inventarios municipales de arbolado (especie y posición), farolas y bancos donde los haya.
+- **148. Identidad de cada ciudad:** una ficha por ciudad, escrita a mano, con sus lugares conocidos (en Badalona, Dalt la Vila, la Rambla, el Pont del Petroli, la fábrica de Anís del Mono), su pavimento (panot), su mobiliario y sus colores, y los modelos de esos lugares.
+- **149. Varias zonas paseables por ciudad:** en lugar de un solo círculo de 300 m, dos o tres zonas detalladas (pabellón, centro y playa o el sitio emblemático) unidas por metro o taxi, cada una con su vida.
+- **150. Revisión ciudad por ciudad:** galería por ciudad, tu nota con F8 y una lista de fallos (huecos, explanadas, cosas puestas sin regla) que se cierra antes de pasar a la siguiente.
+- Descartado como base: Google Photorealistic 3D Tiles. Es lo más realista, pero necesita tu cuenta de Google Cloud con facturación, no se puede guardar para jugar sin conexión ni modificar, y no se puede entrar ni pasear por ella. Podría servir solo como vista lejana con conexión.
+
 ### Fase D. Personas (1 o 2 tandas)
 - **105. Una malla por persona:** la conversión de Mixamo rehace un esqueleto común y funde las piezas: de 6 llamadas de dibujo a 1, con las texturas en un atlas KTX2 de 1024.
 - **106. Niveles de detalle:** 8.000 triángulos cerca, 2.000 a media distancia e impostor (una imagen) lejos. La multitud lejana usa los mismos modelos.
@@ -206,3 +216,16 @@ Versión de escritorio al cerrar cada fase (salvo arreglos urgentes), con la pá
 - **95 hecho:** fuera el relleno al azar (manchas de césped, tierra y grava, arbustos y coches torcidos), las aceras de baldosa de mármol en damero, los árboles de especie al azar (ahora por tramos de 60 m y cipreses y pinos solo donde corresponde) y las nubes por debajo de la cámara.
 - **Arreglos de paso:** la tarjeta del sitio cercano escribía «null».
 - **Pendiente para las fases C y E:** las paredes de los interiores siguen lisas; la variedad de fachadas es de seis estilos por ciudad (más variedad necesita el kit del punto 96 y 131); los cielos siguen siendo un color con nubes planas (punto 102).
+
+## Estado tras la fase C (28 oct 2026, versión 0.9.147)
+- **96 en parte:** de día las ventanas se ven como cristal (habitación en penumbra y reflejo de cielo que no depende de la luz de la fachada); alféizares y dinteles en 3D en las ventanas sin balcón de las fachadas que dan a la calle. Falta el kit de piezas de fachada (puntos 96 y 131: planta baja, marcos con profundidad, portales) para que cada tipología tenga su relieve.
+- **97 hecho:** huecos de calle rellenos con hileras continuas a la altura del barrio; explanadas que dan a la calle pavimentadas como plaza (árboles en el borde con alcorque, bancos, papeleras y farolas; el centro de las grandes queda abierto). Los patios cerrados no se tocan.
+- **98 hecho:** bordillo de granito en 3D cortado en los cruces, en los pasos de cebra (vado) y dentro de las plazas; pasos con el ancho real de la calzada.
+- **99 en parte:** árboles de alineación por calle (a los dos lados cada 8 m, en alcorque, lejos de los cruces); palmeras solo en las ciudades de palmeras. Los modelos de árbol realistas en la ciudad quedan para la fase M (130).
+- **100 hecho:** el pabellón de la ciudad real tiene fachada y cubierta propias que siguen su planta de OpenStreetMap: cúpula rebajada ajustada al contorno (Palau Olímpic), bóveda si la planta es rectangular, plana si es muy irregular.
+- **101 hecho:** costa de OpenStreetMap (`tools/osm_costa.js`): mar, playas, espigones y muelles, con el Pont del Petroli en Badalona. El paseo marítimo de Badalona queda a 1,2 km del pabellón, fuera de la zona en la que se puede andar: se ve de lejos.
+- **102 hecho:** cielo calculado con el sol real y nubes según el tiempo (calidad alta).
+- **103 hecho:** cámara que baja a la altura de los ojos y no se mete en los edificios, etiquetas a media distancia, barra superior con «Más». Queda separar la cámara de sede3d.js (orden interno).
+- **104 hecho:** gente que espera en el bordillo de los pasos con semáforo y cruza cuando los coches tienen rojo (`tools/semaforos_prueba.js`); terrazas, persianas por horario, perros y coches que paran en rojo ya estaban.
+- **144 hecho:** horizonte con el relieve real de 1,5 a 20 km en 72 direcciones (`tools/osm_horizonte.js`, Open-Meteo; en las direcciones con mar no hay montes ni ciudad), manzanas lejanas generadas hasta 2,6 km (orientación de las calles, altura del barrio, nunca en el mar ni en laderas), bruma de 200 a 1.700 m. Open-Meteo deja unas 7 ciudades por hora: las que falten se completan repitiendo `node tools/osm_horizonte.js` y `node tools/osm_generar.js`.
+- **Arreglos de paso:** los comercios de cadena genéricos tenían escaparate, persiana y rótulo en NaN (no se veían); el mar quedaba tapado por el suelo más allá de la cuadrícula de relieve (va 3 m por encima).

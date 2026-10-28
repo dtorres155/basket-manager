@@ -66,8 +66,12 @@ const fs = require('fs');
     return Math.round(performance.now() - t);
   });
   chk(ms < 120, 'el autoguardado no bloquea la interfaz (' + ms + ' ms)');
-  await sleep(2000);
-  chk(await p.evaluate(() => !!localStorage.getItem('gm1:slot0')), 'el autoguardado llega a escribir la partida');
+  // el autoguardado comprime en un Worker: se espera a que escriba (con la máquina cargada tarda más de 2 s)
+  const escrito = await p
+    .waitForFunction(() => !!localStorage.getItem('gm1:slot0'), null, { timeout: 15000 })
+    .then(() => true)
+    .catch(() => false);
+  chk(escrito, 'el autoguardado llega a escribir la partida');
   await p.evaluate(() => GM.i18n.setIdioma('ca'));
   await p.evaluate(() => GM.ui.navegar('inicio'));
   await sleep(500);
