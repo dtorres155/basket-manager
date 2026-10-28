@@ -193,7 +193,9 @@
     g.add(mM, mC, mS);
     S.scene.add(g);
     // suelo real de 780 m a 3 km alrededor (el plano del suelo de la ciudad acaba a 800 m): con la bruma de la escena, se funde con el horizonte
-    const suelo = new (T().Mesh)(new (T().RingGeometry)(780, 3000, 96, 30).rotateX(-Math.PI / 2), new (T().MeshStandardMaterial)({ color: 0x7d7a70, roughness: 1 }));
+    const mSueloL = new (T().MeshStandardMaterial)({ color: 0x7d7a70, roughness: 1 });
+    if (X && X.OR) ortoMaterial(mSueloL, club);
+    const suelo = new (T().Mesh)(new (T().RingGeometry)(780, 3000, 96, 30).rotateX(-Math.PI / 2), mSueloL);
     suelo.position.y = -0.06;
     suelo.userData = { horizonte: true };
     S.scene.add(suelo);
@@ -587,6 +589,48 @@
     if (S.ventanas) S.ventanas.push(mat);
     return im;
   }
+  // ---------- Ortofoto en el suelo lejano (punto 146) ----------
+  // Si la ciudad tiene foto aérea (vendor/orto/<id>.jpg, 4 x 4 km centrada en el pabellón, tools/ortofoto.js), el suelo se funde con ella
+  // a partir de 400 m: desde arriba y en el horizonte se ve la ciudad de verdad; junto al pabellón siguen las calles del juego. La textura
+  // se pide una vez por ciudad; hasta que llega, el uniforme vale 0 y el suelo queda como estaba.
+  const ORTO = {};
+  function ortoMaterial(mat, club) {
+    if (!mat || !club || typeof document === 'undefined') return mat;
+    let o = ORTO[club.id];
+    if (!o) {
+      o = ORTO[club.id] = { tex: { value: null }, k: { value: 0 } };
+      new (T().TextureLoader)().load(
+        'orto/' + club.id + '.jpg',
+        t => {
+          t.colorSpace = T().SRGBColorSpace;
+          t.anisotropy = 8;
+          o.tex.value = t;
+          o.k.value = 1;
+        },
+        undefined,
+        () => {
+          o.k.value = 0;
+        }
+      );
+    }
+    const prev = mat.onBeforeCompile,
+      clave = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null;
+    mat.onBeforeCompile = function (sh, r) {
+      if (prev) prev.call(this, sh, r);
+      sh.uniforms.uOrto = o.tex;
+      sh.uniforms.uOrtoK = o.k;
+      sh.vertexShader = 'varying vec2 vWOr;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vWOr = (modelMatrix * vec4(transformed, 1.0)).xz;');
+      sh.fragmentShader =
+        'uniform sampler2D uOrto;\nuniform float uOrtoK;\nvarying vec2 vWOr;\n' +
+        sh.fragmentShader.replace(
+          '#include <color_fragment>',
+          '#include <color_fragment>\n if (uOrtoK > 0.0) { float fO = smoothstep(380.0, 470.0, length(vWOr)) * (1.0 - smoothstep(1950.0, 2040.0, max(abs(vWOr.x), abs(vWOr.y)))) * uOrtoK; if (fO > 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(uOrto, vec2((vWOr.x + 2048.0) / 4096.0, 1.0 - (vWOr.y + 2048.0) / 4096.0)).rgb * 0.92, fO); }'
+        );
+    };
+    mat.customProgramCacheKey = () => (clave ? clave() : '') + '-orto';
+    mat.needsUpdate = true;
+    return mat;
+  }
   function quitar(S) {
     const H = S && S.horizonte;
     if (!H) return;
@@ -643,5 +687,5 @@
       .lerp(bruma, 0.86)
       .multiplyScalar(1 - noche * 0.75);
   }
-  GM.horizonte = { montar, actualizar, quitar, _pendiente: pendiente, _mares: mares, _real: real };
+  GM.horizonte = { montar, actualizar, quitar, ortoMaterial, _pendiente: pendiente, _mares: mares, _real: real };
 })();

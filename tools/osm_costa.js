@@ -31,7 +31,7 @@ async function consulta(q) {
   const sel = process.argv.slice(2),
     ids = fs
       .readdirSync(DIR)
-      .filter(f => f.endsWith('.json') && !/\.(poi|ring|dem|tr|pl|ex|hor|costa)\.json$/.test(f) && f !== 'clubes.json' && f !== 'centros.json')
+      .filter(f => f.endsWith('.json') && !/\.(poi|ring|dem|tr|pl|ex|hor|costa|cat)\.json$/.test(f) && f !== 'clubes.json' && f !== 'centros.json')
       .map(f => f.replace('.json', ''));
   for (const id of ids) {
     if (sel.length && !sel.includes(id)) continue;

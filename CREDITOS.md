@@ -29,3 +29,9 @@ Las fuentes vienen de los paquetes de Fontsource (`@fontsource/graduate`, `@font
 
 ## Mapas
 Los edificios, calles, ríos y parques que rodean la calle de cada club (`datos_osm.js`) proceden de OpenStreetMap, © colaboradores de OpenStreetMap, bajo licencia ODbL (https://www.openstreetmap.org/copyright).
+
+Relieve lejano del horizonte (`hz` en `vendor/osm`, `tools/osm_horizonte.js`): Copernicus DEM GLO-90 a través de la API de elevación de Open-Meteo (CC BY 4.0, https://open-meteo.com). Costa, playas y muelles (`co`, `tools/osm_costa.js`): OpenStreetMap (ODbL).
+
+Volúmenes de los edificios de las ciudades españolas con datos del Catastro (plantas de cada parte de edificio, uso y año; `tools/catastro.js`): © Dirección General del Catastro (INSPIRE, https://www.catastro.hacienda.gob.es), uso libre con mención de la fuente.
+
+Foto aérea del suelo lejano y color de los tejados (`vendor/orto`, `tools/ortofoto.js`): PNOA, © Instituto Geográfico Nacional, CC BY 4.0 (scne.es).

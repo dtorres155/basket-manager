@@ -1101,6 +1101,7 @@
           nom: e[2] >= 0 ? D.s[e[2]] : '',
           color: e[3] >= 0 ? D.s[e[3]] : '',
           tm: e[4] || 0,
+          tc: D.tc && D.tc[i] >= 0 ? D.tc[i] : -1, // color real del tejado (ortofoto, punto 146)
           ar,
           bb: [x0, z0, x1, z1],
           cx: cx / p.length,
@@ -1148,6 +1149,7 @@
       H: D.h || null,
       HZ: D.hz || null,
       CO: D.co || null,
+      OR: !!D.or,
       TR: (D.tr || []).map(a => ({ t: a[0], p: pts(a, 1) })).filter(a => a.p.length >= 2),
       L: D.l || null,
       N: (D.n || []).map(a => ({ t: a[0], nom: a[1] >= 0 ? D.s[a[1]] : '', x: a[2] / 10, z: a[3] / 10 })).filter(a => a.nom),
@@ -1316,6 +1318,7 @@
         1
       );
     mSuelo.polygonOffset = false;
+    if (X.OR && GM.horizonte && GM.horizonte.ortoMaterial) GM.horizonte.ortoMaterial(mSuelo, club); // foto aérea en el suelo a partir de 400 m (punto 146)
     const base = new THREE.Mesh(
       new THREE.PlaneGeometry(1600, 1600, GM.relieve && GM.relieve.activo() ? 160 : 1, GM.relieve && GM.relieve.activo() ? 160 : 1).rotateX(-Math.PI / 2),
       mSuelo
@@ -1740,12 +1743,17 @@
       const A = ch(b).g,
         R0 = b.cl === 9 ? ch(b).m : ch(b).r,
         p = b.p,
+        // color real del tejado si hay ortofoto (algo más oscuro: la foto ya trae la luz del sol); si no, de la paleta
         tc =
-          b.cl === 10
-            ? col('#9aa3ab')
-            : col(['#5b5753', '#6d6a66', '#8a7f73', '#7a8087', '#9a9088', '#6a5d52'][U.hash(b.i + 'rf') % 6]).offsetHSL(0, 0, ((U.hash(b.i + 'r') % 100) / 100 - 0.5) * 0.06);
-      const rf = (b.tm || 0) % 10;
-      if (rf !== 1 && ((b.cl === 1 && b.ar < 420 && b.lv <= 4 && p.length <= 12) || ((rf === 2 || rf === 3) && p.length <= 14 && b.ar < 900 && b.cl !== 10))) {
+          b.tc >= 0
+            ? col(b.tc).multiplyScalar(0.82)
+            : b.cl === 10
+              ? col('#9aa3ab')
+              : col(['#5b5753', '#6d6a66', '#8a7f73', '#7a8087', '#9a9088', '#6a5d52'][U.hash(b.i + 'rf') % 6]).offsetHSL(0, 0, ((U.hash(b.i + 'r') % 100) / 100 - 0.5) * 0.06);
+      const rf = (b.tm || 0) % 10,
+        // con ortofoto, tejado de teja (dos aguas) solo si desde el aire se ve rojizo: las azoteas son grises o blancas
+        rojizo = b.tc >= 0 ? ((b.tc >>> 16) & 255) - (b.tc & 255) > 35 && ((b.tc >>> 16) & 255) - ((b.tc >>> 8) & 255) > 12 : true;
+      if (rf !== 1 && rojizo && ((b.cl === 1 && b.ar < 420 && b.lv <= 4 && p.length <= 12) || ((rf === 2 || rf === 3) && p.length <= 14 && b.ar < 900 && b.cl !== 10))) {
         // tejado a dos aguas sobre el rectángulo orientado de la casa
         let li = 0,
           ml = 0;

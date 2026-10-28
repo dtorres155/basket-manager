@@ -113,7 +113,7 @@ let total = 0,
   bytes = 0;
 for (const f of fs
   .readdirSync(DIR)
-  .filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem|tr|pl|ex|hor|costa)\.json$/.test(n))
+  .filter(n => n.endsWith('.json') && n !== 'clubes.json' && n !== 'centros.json' && !/\.(poi|ring|dem|tr|pl|ex|hor|costa|cat)\.json$/.test(n))
   .sort()) {
   const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
   const k = 110574,
@@ -363,6 +363,49 @@ for (const f of fs
   if (fs.existsSync(df)) {
     const DM = JSON.parse(fs.readFileSync(df, 'utf8'));
     r.h = { n: DM.n, p: DM.paso, v: DM.h.map(v => Math.round(v)) };
+  }
+  // Catastro (punto 145, tools/catastro.js y tools/catastro_fusion.js): volúmenes con las plantas reales de cada parte de edificio
+  const catf = path.join(DIR, j.id + '.cat.json');
+  if (fs.existsSync(catf)) {
+    const rs = require('./catastro_fusion').fusionar(r, JSON.parse(fs.readFileSync(catf, 'utf8')), { area, dp, ent });
+    console.log(j.id, 'Catastro:', JSON.stringify(rs));
+  }
+  // color real de cada tejado (punto 146): de la ortofoto (tools/ortofoto.js, 2 m por píxel, 4 x 4 km): media del centro y de cuatro puntos
+  // interiores, sin las sombras más oscuras. tc (núcleo) y l.tc (anillo), en el mismo orden que e y l.e; -1 sin dato
+  const of = path.join(__dirname, '..', 'recursos', 'orto', j.id + '.rgb');
+  if (fs.existsSync(of)) {
+    const RGB = fs.readFileSync(of),
+      N = 2048,
+      pix = (x, z) => {
+        const i = Math.floor((x + 2048) / 2),
+          k2 = Math.floor((z + 2048) / 2);
+        if (i < 0 || k2 < 0 || i >= N || k2 >= N) return null;
+        const o = (k2 * N + i) * 3;
+        return [RGB[o], RGB[o + 1], RGB[o + 2]];
+      },
+      tejado = p => {
+        const cx = p.reduce((s2, q) => s2 + q[0], 0) / p.length,
+          cz = p.reduce((s2, q) => s2 + q[1], 0) / p.length,
+          m = [pix(cx, cz)];
+        for (let i = 0; i < p.length; i += Math.max(1, Math.floor(p.length / 4))) m.push(pix(cx + (p[i][0] - cx) * 0.55, cz + (p[i][1] - cz) * 0.55));
+        const v = m.filter(Boolean).sort((A, B) => A[0] + A[1] + A[2] - (B[0] + B[1] + B[2]));
+        if (!v.length) return -1;
+        const u = v.slice(Math.floor(v.length / 3)),
+          r3 = u.reduce((s2, q) => [s2[0] + q[0], s2[1] + q[1], s2[2] + q[2]], [0, 0, 0]).map(q => Math.round(q / u.length));
+        return (r3[0] << 16) | (r3[1] << 8) | r3[2];
+      };
+    r.tc = r.e.map(e => {
+      const p = [];
+      for (let i = 5; i + 1 < e.length; i += 2) p.push([e[i] / 10, e[i + 1] / 10]);
+      return tejado(p);
+    });
+    if (r.l)
+      r.l.tc = r.l.e.map(e => {
+        const p = [];
+        for (let i = 1; i + 1 < e.length; i += 2) p.push([e[i], e[i + 1]]);
+        return tejado(p);
+      });
+    r.or = 1; // hay ortofoto en vendor/orto/<id>.jpg (4 x 4 km)
   }
   // horizonte real (osm_horizonte.js, punto 144): alturas en anillos de 1,5 a 20 km en 72 direcciones
   const hf = path.join(DIR, j.id + '.hor.json');

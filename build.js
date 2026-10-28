@@ -334,6 +334,13 @@ if (fs.existsSync(path.join(VENDOR, 'hdri'))) {
     .filter(f => /.hdr$/.test(f))
     .forEach(f => fs.copyFileSync(path.join(VENDOR, 'hdri', f), path.join(DIST, 'hdri', f)));
 }
+// Ortofotos (PNOA, IGN, CC BY 4.0 scne.es; tools/ortofoto.js): vendor/orto -> dist/orto; el suelo lejano de la ciudad real (horizonte.js) las pide por fetch
+if (fs.existsSync(path.join(VENDOR, 'orto'))) {
+  fs.mkdirSync(path.join(DIST, 'orto'), { recursive: true });
+  fs.readdirSync(path.join(VENDOR, 'orto'))
+    .filter(f => /.jpg$/.test(f))
+    .forEach(f => fs.copyFileSync(path.join(VENDOR, 'orto', f), path.join(DIST, 'orto', f)));
+}
 // Ciudades reales (OpenStreetMap, ODbL): vendor/osm -> dist/osm (calle_real.js las pide por fetch)
 const OSM = [];
 fs.mkdirSync(path.join(DIST, 'osm'), { recursive: true });
@@ -369,7 +376,7 @@ self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skip
 self.addEventListener('fetch', e => {
   const r = e.request; if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;
   if (r.mode === 'navigate') { e.respondWith(caches.match('index.html').then(x => x || fetch(r))); return; }
-  if (['/modelos/reales/', '/osm/', '/hdri/', '/basis/'].some(p => r.url.indexOf(p) >= 0) || r.url.indexOf('.ktx2') >= 0) { e.respondWith(caches.open('reales-v1').then(c => c.match(r).then(x => x || fetch(r).then(res => { if (res.ok) { c.put(r, res.clone()); c.keys().then(ks => { if (ks.length > 500) ks.slice(0, ks.length - 500).forEach(k => c.delete(k)); }); } return res; })))); return; }
+  if (['/modelos/reales/', '/osm/', '/orto/', '/hdri/', '/basis/'].some(p => r.url.indexOf(p) >= 0) || r.url.indexOf('.ktx2') >= 0) { e.respondWith(caches.open('reales-v1').then(c => c.match(r).then(x => x || fetch(r).then(res => { if (res.ok) { c.put(r, res.clone()); c.keys().then(ks => { if (ks.length > 500) ks.slice(0, ks.length - 500).forEach(k => c.delete(k)); }); } return res; })))); return; }
   e.respondWith(caches.match(r, { ignoreSearch: true }).then(x => x || fetch(r)));
 });
 `;

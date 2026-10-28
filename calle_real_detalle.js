@@ -1975,8 +1975,11 @@
           }
           PI.push(v, v + 1, v + 2, v, v + 2, v + 3);
         }
-        const vv = p.map(q => new THREE.Vector2(q[0], q[1])),
-          pitched = p.length <= 14 && area < 450 && lv <= 5;
+        // color real del tejado (ortofoto, punto 146): con él, tejado de teja solo si desde el aire se ve rojizo
+        const tcK = L.tc && L.tc[k] >= 0 ? L.tc[k] : -1,
+          rojo = tcK < 0 || (((tcK >>> 16) & 255) - (tcK & 255) > 35 && ((tcK >>> 16) & 255) - ((tcK >>> 8) & 255) > 12),
+          vv = p.map(q => new THREE.Vector2(q[0], q[1])),
+          pitched = rojo && p.length <= 14 && area < 450 && lv <= 5;
         if (pitched) {
           let cx = 0,
             cz = 0;
@@ -1987,7 +1990,7 @@
           cx /= p.length;
           cz /= p.length;
           const hr = Math.min(3.4, 0.22 * Math.sqrt(area) + 0.6),
-            te = new THREE.Color(TEJAS[hk % TEJAS.length]).multiplyScalar(0.9 + (hk % 7) / 40);
+            te = tcK >= 0 ? new THREE.Color(tcK).multiplyScalar(0.82) : new THREE.Color(TEJAS[hk % TEJAS.length]).multiplyScalar(0.9 + (hk % 7) / 40);
           for (let i = 0; i < p.length; i++) {
             const a = p[i],
               b = p[(i + 1) % p.length],
@@ -2012,7 +2015,7 @@
             RI.push(v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 1);
           }
         } else {
-          const rf = new THREE.Color('#85817a'),
+          const rf = tcK >= 0 ? new THREE.Color(tcK).multiplyScalar(0.82) : new THREE.Color('#85817a'),
             tri = THREE.ShapeUtils.triangulateShape(vv, []),
             b0 = RP.length / 3;
           vv.forEach(q => {
