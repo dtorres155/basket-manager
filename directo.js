@@ -163,6 +163,7 @@
                   piel: ['#f1c7a5', '#c68863', '#9a6142', '#6e4329', '#e0ac85'][(hsh >>> 3) % 5],
                   pelo: ['#1d1510', '#3b2617', '#a9793e'][(hsh >>> 6) % 3],
                   ropa: [c1, c2],
+                  kit: true,
                   escudo: { siglas: e.siglas, c1, c2, num: 2 + (U.hash(e.id + i) % 30) }
                 })
                 .then(p => {
@@ -418,7 +419,7 @@
                   sp.de = false;
                   GM.sede.animar(sp.p, 'sit');
                 }
-                if (sp.de) sp.p.mixer.update(dt);
+                if (sp.de || sp.p.mixamo) sp.p.mixer.update(dt); // los de Mixamo se sientan con un clip, que hay que mover
               });
             });
           if (a) {

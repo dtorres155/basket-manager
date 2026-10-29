@@ -2751,7 +2751,13 @@
         cuantos = b.coste > 100 ? 3 : 2;
       const ob = await Promise.all(
         Array.from({ length: cuantos }, (_, i) =>
-          M.personaje({ modelo: i % 2 ? 'm-worker' : 'h-worker', altura: 165 + r() * 20, piel: PIEL[(r() * PIEL.length) | 0], pelo: PELO[(r() * PELO.length) | 0] })
+          M.personaje({
+            modelo: i % 2 ? 'm-worker' : 'h-worker',
+            rolV: i % 2 ? undefined : 'obrero',
+            altura: 165 + r() * 20,
+            piel: PIEL[(r() * PIEL.length) | 0],
+            pelo: PELO[(r() * PELO.length) | 0]
+          })
         )
       );
       ob.forEach((p, i) => {

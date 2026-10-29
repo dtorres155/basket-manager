@@ -44,6 +44,61 @@
     // De unas 6 llamadas de dibujo por persona (y otras tantas de sombra) a 1. Requiere que la plantilla esté en la pose de unión (lo está).
     // gL (opcional): la versión de media distancia del mismo modelo (punto 106); se funde con la misma lámina en una segunda malla,
     // 'cuerpo_lejos', atada al mismo esqueleto y oculta (personajeMixamo devuelve las dos en p.lod y sede3d.js elige según la distancia)
+    // Tinte de la ropa por persona (puntos 107 y 108): cada vértice sabe a qué prenda pertenece (atributo ropa: 0 piel y pelo, 1 arriba,
+    // 2 abajo, 3 calzado, 4 medias, 5 cuerpo) y el material lleva un color por prenda (uT1 a uT4: rgb y fuerza) que sustituye el color
+    // de la tela conservando sus luces y sombras; uT5 cambia el tono de la piel (solo los texeles de color piel del cuerpo). Todas las
+    // personas comparten el programa; cada una con tinte lleva su propio material (las texturas son las mismas).
+    function matMixamo(map, normalMap, roughness) {
+      const u = {
+          uT1: { value: new THREE.Vector4(0, 0, 0, 0) },
+          uT2: { value: new THREE.Vector4(0, 0, 0, 0) },
+          uT3: { value: new THREE.Vector4(0, 0, 0, 0) },
+          uT4: { value: new THREE.Vector4(0, 0, 0, 0) },
+          uT5: { value: new THREE.Vector4(1, 1, 1, 0) }
+        },
+        m = new THREE.MeshStandardMaterial({ map, normalMap, roughness, metalness: 0, alphaTest: 0.5 });
+      m.alphaToCoverage = true;
+      m.userData.tinte = u;
+      m.onBeforeCompile = sh => {
+        Object.assign(sh.uniforms, u);
+        sh.vertexShader = 'attribute float ropa;\nvarying float vRopa;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vRopa = ropa;');
+        sh.fragmentShader =
+          'uniform vec4 uT1;\nuniform vec4 uT2;\nuniform vec4 uT3;\nuniform vec4 uT4;\nuniform vec4 uT5;\nvarying float vRopa;\n' +
+          sh.fragmentShader.replace(
+            '#include <map_fragment>',
+            `#include <map_fragment>
+{
+  vec4 tR = vRopa < 0.5 ? vec4(0.0) : vRopa < 1.5 ? uT1 : vRopa < 2.5 ? uT2 : vRopa < 3.5 ? uT3 : vRopa < 4.5 ? uT4 : vec4(0.0);
+  float lR = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+  if (tR.a > 0.0) diffuseColor.rgb = mix(diffuseColor.rgb, tR.rgb * clamp(0.3 + lR * 1.6, 0.0, 1.4), tR.a);
+  if (vRopa > 4.5 && uT5.a > 0.0) {
+    vec3 cR = diffuseColor.rgb;
+    float pR = smoothstep(0.015, 0.06, cR.r - cR.b) * step(cR.b, cR.g + 0.02) * step(0.02, cR.r);
+    diffuseColor.rgb = mix(cR, cR * uT5.rgb, pR * uT5.a);
+  }
+}`
+          );
+      };
+      m.customProgramCacheKey = () => 'mixamo-tinte';
+      return m;
+    }
+    // prenda de cada pieza por su nombre (Ch01_Shirt, Ch08_Hoodie, Ch38_Socks…); con traje, la camisa de debajo no se tiñe
+    const prendaDe = (nombre, conTraje) =>
+      /Suit/.test(nombre)
+        ? 1
+        : /Shirt/.test(nombre) && conTraje
+          ? 0
+          : /Shirt|Cloth|Hood|Sweater|Collar/.test(nombre)
+            ? 1
+            : /Pants|Shorts/.test(nombre)
+              ? 2
+              : /Sneaker|Shoe|Heels|Boots/.test(nombre)
+                ? 3
+                : /Socks/.test(nombre)
+                  ? 4
+                  : /Body/.test(nombre)
+                    ? 5
+                    : 0;
     function fundirMixamo(g, gL) {
       if (g.fundido !== undefined || typeof document === 'undefined' || window.__sinFundir) return g.fundido;
       g.fundido = false;
@@ -105,7 +160,9 @@
           U = [],
           SI = [],
           SW = [],
+          RP = [],
           I = [],
+          conTraje = piezas.some(p => /Suit/.test(p.name)),
           inv = new THREE.Matrix4().copy(esc.matrixWorld).invert(),
           M = new THREE.Matrix4(),
           NM = new THREE.Matrix3(),
@@ -121,7 +178,8 @@
             cu = k % L,
             cv = Math.floor(k / L),
             mapa = p.skeleton.bones.map(b => (idx.has(base(b.name)) ? idx.get(base(b.name)) : hip)),
-            pelo = p.material.transparent || p.material.alphaTest > 0;
+            pelo = p.material.transparent || p.material.alphaTest > 0,
+            prenda = pelo ? 0 : prendaDe(p.name, conTraje);
           M.multiplyMatrices(inv, p.matrixWorld);
           NM.getNormalMatrix(M);
           const caras = pelo ? [1, -1] : [1]; // el pelo y las pestañas, por las dos caras (una copia con el giro y la normal al revés)
@@ -137,6 +195,7 @@
               const u0 = uv ? Math.min(0.999, Math.max(0.001, uv.getX(i))) : 0.5,
                 v0 = uv ? Math.min(0.999, Math.max(0.001, uv.getY(i))) : 0.5;
               U.push((u0 + cu) / L, (v0 + cv) / L);
+              RP.push(prenda);
               for (let c = 0; c < 4; c++) {
                 SI.push(si ? mapa[si.getComponent(i, c)] || hip : hip);
                 SW.push(sw ? sw.getComponent(i, c) : c === 0 ? 1 : 0);
@@ -159,6 +218,7 @@
         geo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
         geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
         geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
+        geo.setAttribute('ropa', new THREE.Float32BufferAttribute(RP, 1));
         geo.setIndex(I);
         geo.computeBoundingBox();
         geo.computeBoundingSphere();
@@ -171,8 +231,35 @@
       tC.colorSpace = THREE.SRGBColorSpace;
       tC.anisotropy = tN.anisotropy = 4;
       const m0 = piezas[0].material,
-        mat = new THREE.MeshStandardMaterial({ map: tC, normalMap: tN, roughness: m0.roughness !== undefined ? m0.roughness : 0.8, metalness: 0, alphaTest: 0.5 });
-      mat.alphaToCoverage = true;
+        rug = m0.roughness !== undefined ? m0.roughness : 0.8,
+        mat = matMixamo(tC, tN, rug);
+      g.nuevoMat = () => matMixamo(tC, tN, rug);
+      // tono medio de la piel del modelo (texeles de color piel de la pieza del cuerpo): base para cambiarlo por persona
+      {
+        const cuerpo = piezas.find(p => /Body/.test(p.name)),
+          k = cuerpo ? Math.max(0, mapas.indexOf(cuerpo.material.map)) : -1;
+        if (cuerpo && cuerpo.geometry.attributes.uv && k >= 0) {
+          const d = xC.getImageData((k % L) * W, Math.floor(k / L) * H, W, H).data,
+            uv = cuerpo.geometry.attributes.uv,
+            s = [0, 0, 0];
+          let n = 0;
+          for (let i = 0; i < uv.count; i += 3) {
+            const x = Math.min(W - 1, Math.max(0, Math.floor(uv.getX(i) * W))),
+              y = Math.min(H - 1, Math.max(0, Math.floor(uv.getY(i) * H))),
+              o = (y * W + x) * 4,
+              r = d[o] / 255,
+              gg = d[o + 1] / 255,
+              b = d[o + 2] / 255;
+            if (r - b > 0.08 && b <= gg + 0.02 && r > 0.2) {
+              s[0] += r;
+              s[1] += gg;
+              s[2] += b;
+              n++;
+            }
+          }
+          if (n > 20) g.pielBase = new THREE.Color().setRGB(s[0] / n, s[1] / n, s[2] / n, THREE.SRGBColorSpace);
+        }
+      }
       const malla = new THREE.SkinnedMesh(geo, mat);
       malla.name = 'cuerpo';
       esc.add(malla);
@@ -211,10 +298,22 @@
       return g.fundido;
     }
     async function personajeMixamo(o) {
-      if (!GM.campus || GM.campus.config.calidad !== 'alta' || o.escudo || o.hincha || o.rolV || o.sinMixamo || o.edad === 'mayor' || typeof fetch !== 'function') return null;
+      // tu personaje cuando eres jugador (con tu cara propia), los mayores y los niños siguen con Quaternius
+      if (!GM.campus || GM.campus.config.calidad !== 'alta' || (o.rostro && o.escudo) || o.sinMixamo || o.edad === 'mayor' || typeof fetch !== 'function') return null;
       const L = await listaMixamo();
       if (!L) return null;
-      const pool = o.proporcion === 'nino' ? L.n : /^m-/.test(o.modelo || '') || o.sexo === 'm' ? L.m : L.h;
+      const roles = L.roles || {},
+        oscura = c => {
+          const k = new THREE.Color(c || '#e0ac85');
+          return k.r * 0.3 + k.g * 0.59 + k.b * 0.11 < 0.25;
+        };
+      let pool;
+      if (o.escudo)
+        pool = o.kit && L.kit && L.kit.length ? L.kit : L.chandal ? L.chandal[oscura(o.piel) ? 'oscuro' : 'claro'] : null; // jugadores (punto 108)
+      else if (o.rolV && roles[o.rolV]) pool = roles[o.rolV];
+      else if (o.rolV === 'policia' || o.rolV === 'obrero')
+        return null; // sin modelo para ese papel: el de Quaternius
+      else pool = o.proporcion === 'nino' ? L.n : /^m-/.test(o.modelo || '') || o.sexo === 'm' ? L.m : L.h;
       if (!pool || !pool.length) return null;
       const id = pool[GM.util.hash(String(o.semilla !== undefined ? o.semilla : [o.modelo, o.altura, o.piel, o.pelo].join('|'))) % pool.length];
       const { cargar, textura } = ctx,
@@ -255,6 +354,38 @@
       });
       const cerca = obj.getObjectByName('cuerpo'),
         lejos = obj.getObjectByName('cuerpo_lejos');
+      // tinte de la ropa (puntos 107 y 108): jugadores con los colores del club (chándal o equipación) y la piel de cada uno; aficionados con
+      // la camiseta del club; el resto, con los colores de ropa del catálogo (según la estación y el papel) en una parte de las prendas
+      if (g.nuevoMat && cerca) {
+        const T = [null, null, null, null],
+          h = GM.util.hash(String(o.semilla !== undefined ? o.semilla : [o.modelo, o.altura, o.piel].join('|')) + 'tinte');
+        let piel = null;
+        if (o.escudo) {
+          T[0] = [o.escudo.c1, 0.92];
+          T[1] = [o.kit ? o.escudo.c1 : o.escudo.c2, 0.88];
+          if (o.kit) T[3] = [o.escudo.c2, 0.92];
+          if (o.piel && g.pielBase) piel = o.piel;
+        } else if (o.hincha && o.ropa) T[0] = [o.ropa[0], 0.9];
+        else if (o.ropa) {
+          if (h % 100 < 70) T[0] = [o.ropa[0], 0.8];
+          if ((h >>> 7) % 100 < 50 && o.ropa[1]) T[1] = [o.ropa[1], 0.75];
+        }
+        if (T.some(Boolean) || piel) {
+          const m = g.nuevoMat(),
+            u = m.userData.tinte,
+            c = new THREE.Color();
+          T.forEach((t, i) => {
+            if (t) u['uT' + (i + 1)].value.set(c.set(t[0]).r, c.g, c.b, t[1]);
+          });
+          if (piel) {
+            c.set(piel);
+            const b = g.pielBase;
+            u.uT5.value.set(Math.min(1.6, c.r / Math.max(0.02, b.r)), Math.min(1.6, c.g / Math.max(0.02, b.g)), Math.min(1.6, c.b / Math.max(0.02, b.b)), 0.9);
+          }
+          cerca.material = m;
+          if (lejos) lejos.material = m;
+        }
+      }
       return {
         obj,
         mixer,
