@@ -19,6 +19,13 @@ for (const f of fs.readdirSync(path.join(carpeta, 'opt/personajes')).filter(f =>
   if (!k) continue;
   lista[k].push(id);
   destinos.forEach(d => fs.copyFileSync(path.join(carpeta, 'opt/personajes', f), path.join(d, f)));
+  // versión de media distancia (punto 106)
+  const lod = path.join(carpeta, 'opt/personajes/lod', f);
+  if (fs.existsSync(lod))
+    destinos.forEach(d => {
+      fs.mkdirSync(path.join(d, 'lod'), { recursive: true });
+      fs.copyFileSync(lod, path.join(d, 'lod', f));
+    });
 }
 destinos.forEach(d => fs.writeFileSync(path.join(d, 'lista.json'), JSON.stringify(lista)));
 console.log('instalados: hombres ' + lista.h.length + ', mujeres ' + lista.m.length + ', niños ' + lista.n.length);

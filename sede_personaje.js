@@ -42,7 +42,9 @@
     // la plantilla (g.scene, antes de clonarla): una sola malla atada a los huesos que mueven las animaciones (el primero de cada nombre),
     // con las texturas en una lámina de 2 x 2 casillas (color y relieve) y el pelo recortado por transparencia y por las dos caras.
     // De unas 6 llamadas de dibujo por persona (y otras tantas de sombra) a 1. Requiere que la plantilla esté en la pose de unión (lo está).
-    function fundirMixamo(g) {
+    // gL (opcional): la versión de media distancia del mismo modelo (punto 106); se funde con la misma lámina en una segunda malla,
+    // 'cuerpo_lejos', atada al mismo esqueleto y oculta (personajeMixamo devuelve las dos en p.lod y sede3d.js elige según la distancia)
+    function fundirMixamo(g, gL) {
       if (g.fundido !== undefined || typeof document === 'undefined' || window.__sinFundir) return g.fundido;
       g.fundido = false;
       const esc = g.scene;
@@ -92,69 +94,77 @@
         xC.drawImage(m.image, x, y, W, H);
         if (normales[k] && normales[k].image) xN.drawImage(normales[k].image, x, y, W, H);
       });
-      // geometría: posiciones y normales en el espacio de la plantilla, índices de hueso al esqueleto canónico, UV a su casilla
-      const P = [],
-        N = [],
-        U = [],
-        SI = [],
-        SW = [],
-        I = [],
-        inv = new THREE.Matrix4().copy(esc.matrixWorld).invert(),
-        M = new THREE.Matrix4(),
-        NM = new THREE.Matrix3(),
-        v = new THREE.Vector3();
-      piezas.forEach(p => {
-        const geo = p.geometry,
-          pos = geo.attributes.position,
-          nor = geo.attributes.normal,
-          uv = geo.attributes.uv,
-          si = geo.attributes.skinIndex,
-          sw = geo.attributes.skinWeight,
-          k = Math.max(0, mapas.indexOf(p.material.map)),
-          cu = k % L,
-          cv = Math.floor(k / L),
-          mapa = p.skeleton.bones.map(b => (idx.has(base(b.name)) ? idx.get(base(b.name)) : hip)),
-          pelo = p.material.transparent || p.material.alphaTest > 0;
-        M.multiplyMatrices(inv, p.matrixWorld);
-        NM.getNormalMatrix(M);
-        const caras = pelo ? [1, -1] : [1]; // el pelo y las pestañas, por las dos caras (una copia con el giro y la normal al revés)
-        caras.forEach(lado => {
-          const b0 = P.length / 3;
-          for (let i = 0; i < pos.count; i++) {
-            v.fromBufferAttribute(pos, i).applyMatrix4(M);
-            P.push(v.x, v.y, v.z);
-            if (nor) {
-              v.fromBufferAttribute(nor, i).applyMatrix3(NM).normalize().multiplyScalar(lado);
-              N.push(v.x, v.y, v.z);
-            } else N.push(0, 1, 0);
-            const u0 = uv ? Math.min(0.999, Math.max(0.001, uv.getX(i))) : 0.5,
-              v0 = uv ? Math.min(0.999, Math.max(0.001, uv.getY(i))) : 0.5;
-            U.push((u0 + cu) / L, (v0 + cv) / L);
-            for (let c = 0; c < 4; c++) {
-              SI.push(si ? mapa[si.getComponent(i, c)] || hip : hip);
-              SW.push(sw ? sw.getComponent(i, c) : c === 0 ? 1 : 0);
+      // casilla de cada material (por nombre: la versión de media distancia trae sus propias texturas reducidas)
+      const celdaMat = {};
+      piezas.forEach(p => (celdaMat[p.material.name] = Math.max(0, mapas.indexOf(p.material.map))));
+      const geoDe = (piezas, esc) => {
+        esc.updateMatrixWorld(true);
+        // geometría: posiciones y normales en el espacio de la plantilla, índices de hueso al esqueleto canónico, UV a su casilla
+        const P = [],
+          N = [],
+          U = [],
+          SI = [],
+          SW = [],
+          I = [],
+          inv = new THREE.Matrix4().copy(esc.matrixWorld).invert(),
+          M = new THREE.Matrix4(),
+          NM = new THREE.Matrix3(),
+          v = new THREE.Vector3();
+        piezas.forEach(p => {
+          const geo = p.geometry,
+            pos = geo.attributes.position,
+            nor = geo.attributes.normal,
+            uv = geo.attributes.uv,
+            si = geo.attributes.skinIndex,
+            sw = geo.attributes.skinWeight,
+            k = celdaMat[p.material.name] !== undefined ? celdaMat[p.material.name] : Math.max(0, mapas.indexOf(p.material.map)),
+            cu = k % L,
+            cv = Math.floor(k / L),
+            mapa = p.skeleton.bones.map(b => (idx.has(base(b.name)) ? idx.get(base(b.name)) : hip)),
+            pelo = p.material.transparent || p.material.alphaTest > 0;
+          M.multiplyMatrices(inv, p.matrixWorld);
+          NM.getNormalMatrix(M);
+          const caras = pelo ? [1, -1] : [1]; // el pelo y las pestañas, por las dos caras (una copia con el giro y la normal al revés)
+          caras.forEach(lado => {
+            const b0 = P.length / 3;
+            for (let i = 0; i < pos.count; i++) {
+              v.fromBufferAttribute(pos, i).applyMatrix4(M);
+              P.push(v.x, v.y, v.z);
+              if (nor) {
+                v.fromBufferAttribute(nor, i).applyMatrix3(NM).normalize().multiplyScalar(lado);
+                N.push(v.x, v.y, v.z);
+              } else N.push(0, 1, 0);
+              const u0 = uv ? Math.min(0.999, Math.max(0.001, uv.getX(i))) : 0.5,
+                v0 = uv ? Math.min(0.999, Math.max(0.001, uv.getY(i))) : 0.5;
+              U.push((u0 + cu) / L, (v0 + cv) / L);
+              for (let c = 0; c < 4; c++) {
+                SI.push(si ? mapa[si.getComponent(i, c)] || hip : hip);
+                SW.push(sw ? sw.getComponent(i, c) : c === 0 ? 1 : 0);
+              }
             }
-          }
-          const ind = geo.index;
-          const n = ind ? ind.count : pos.count;
-          for (let t = 0; t < n; t += 3) {
-            const a = ind ? ind.getX(t) : t,
-              b = ind ? ind.getX(t + 1) : t + 1,
-              c = ind ? ind.getX(t + 2) : t + 2;
-            if (lado > 0) I.push(b0 + a, b0 + b, b0 + c);
-            else I.push(b0 + a, b0 + c, b0 + b);
-          }
+            const ind = geo.index;
+            const n = ind ? ind.count : pos.count;
+            for (let t = 0; t < n; t += 3) {
+              const a = ind ? ind.getX(t) : t,
+                b = ind ? ind.getX(t + 1) : t + 1,
+                c = ind ? ind.getX(t + 2) : t + 2;
+              if (lado > 0) I.push(b0 + a, b0 + b, b0 + c);
+              else I.push(b0 + a, b0 + c, b0 + b);
+            }
+          });
         });
-      });
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
-      geo.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
-      geo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
-      geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
-      geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
-      geo.setIndex(I);
-      geo.computeBoundingBox();
-      geo.computeBoundingSphere();
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+        geo.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
+        geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
+        geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
+        geo.setIndex(I);
+        geo.computeBoundingBox();
+        geo.computeBoundingSphere();
+        return geo;
+      };
+      const geo = geoDe(piezas, esc);
       const tC = new THREE.CanvasTexture(cC),
         tN = new THREE.CanvasTexture(cN);
       tC.flipY = tN.flipY = false; // las UV de glTF empiezan arriba
@@ -167,7 +177,23 @@
       malla.name = 'cuerpo';
       esc.add(malla);
       esc.updateMatrixWorld(true);
-      malla.bind(new THREE.Skeleton(huesos), malla.matrixWorld);
+      const esqueleto = new THREE.Skeleton(huesos);
+      malla.bind(esqueleto, malla.matrixWorld);
+      let lejos = null;
+      if (gL && gL.scene) {
+        const pL = [];
+        gL.scene.traverse(o => {
+          if (o.isSkinnedMesh) pL.push(o);
+        });
+        if (pL.length) {
+          lejos = new THREE.SkinnedMesh(geoDe(pL, gL.scene), mat);
+          lejos.name = 'cuerpo_lejos';
+          lejos.visible = false;
+          esc.add(lejos);
+          esc.updateMatrixWorld(true);
+          lejos.bind(esqueleto, lejos.matrixWorld);
+        }
+      }
       piezas.forEach(p => p.parent && p.parent.remove(p));
       // las cadenas de huesos copiados ya no las usa nadie: fuera (menos nodos que recorrer cada fotograma)
       const sobran = [];
@@ -181,7 +207,7 @@
         });
         if (!usa) o.parent.remove(o);
       });
-      g.fundido = { piezas: piezas.length, huesos: huesos.length, mapas: mapas.length, sobran: sobran.length };
+      g.fundido = { piezas: piezas.length, huesos: huesos.length, mapas: mapas.length, sobran: sobran.length, lejos: !!lejos };
       return g.fundido;
     }
     async function personajeMixamo(o) {
@@ -194,8 +220,10 @@
       const { cargar, textura } = ctx,
         nombres = Object.keys(MX_CLIPS);
       const [g, ...an] = await Promise.all([cargar('modelos/personas/mixamo/' + id + '.glb'), ...nombres.map(n => cargar('modelos/personas/mixamo/anim/' + MX_CLIPS[n] + '.glb'))]);
+      // versión de media distancia (punto 106): si no está (instalaciones antiguas), solo la normal
+      const gL = g.fundido === undefined ? await cargar('modelos/personas/mixamo/lod/' + id + '.glb').catch(() => null) : null;
       try {
-        fundirMixamo(g);
+        fundirMixamo(g, gL);
       } catch (e) {
         g.fundido = false;
         if (GM.registro && GM.registro.anotar) GM.registro.anotar('fundir Mixamo ' + id + ': ' + e.message);
@@ -225,7 +253,23 @@
       Object.keys(MX_HUESOS).forEach(k => {
         if (B['mixamorig' + MX_HUESOS[k]]) B[k] = B['mixamorig' + MX_HUESOS[k]];
       });
-      return { obj, mixer, acc, huesos: B, altura: o.altura || 178, rangosRopa: null, ropa: o.ropa, edad: o.edad, sexo: o.sexo, rolV: o.rolV, modelo: o.modelo, mixamo: id };
+      const cerca = obj.getObjectByName('cuerpo'),
+        lejos = obj.getObjectByName('cuerpo_lejos');
+      return {
+        obj,
+        mixer,
+        acc,
+        huesos: B,
+        altura: o.altura || 178,
+        rangosRopa: null,
+        ropa: o.ropa,
+        edad: o.edad,
+        sexo: o.sexo,
+        rolV: o.rolV,
+        modelo: o.modelo,
+        mixamo: id,
+        lod: cerca && lejos ? [cerca, lejos] : null
+      };
     }
     async function personaje(o) {
       try {

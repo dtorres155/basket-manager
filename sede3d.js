@@ -3402,6 +3402,14 @@
           else if ((n.espera -= dt) <= 0) siguienteActividad(n);
         }
         const dP = Math.hypot(n.obj.position.x - S.foco.x, n.obj.position.z - S.foco.z);
+        // niveles de detalle de las personas de Mixamo (punto 106): a más de 16 m del foco, la versión de unos 2 000 triángulos
+        if (n.lod) {
+          const lj = dP > (S.lodLejos || 16);
+          if (n.lod[1].visible !== lj) {
+            n.lod[0].visible = !lj;
+            n.lod[1].visible = lj;
+          }
+        }
         if (S.nivelRend >= 2) n.obj.visible = dP < (S.nivelRend >= 3 ? 20 : 28); // ahorro de CPU: los muy lejanos no se dibujan
         if (!n.sentado && n.obj.visible) {
           n.dtAcum = (n.dtAcum || 0) + dt;
