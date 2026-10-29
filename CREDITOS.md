@@ -37,3 +37,5 @@ Volúmenes de los edificios de las ciudades españolas con datos del Catastro (p
 Foto aérea del suelo lejano y color de los tejados (`vendor/orto`, `tools/ortofoto.js`): PNOA, © Instituto Geográfico Nacional, CC BY 4.0 (scne.es).
 
 Relieve fino de las ciudades españolas (`h` en `vendor/osm` cuando hay MDT, `tools/mdt.js`): Modelo Digital del Terreno del IGN (MDT25, servicio WCS), © Instituto Geográfico Nacional, CC BY 4.0 (scne.es). Los árboles de Badalona salen de la misma ortofoto del PNOA (`tools/arboles_orto.js`).
+
+Personas realistas de la versión de escritorio (`recursos/pesados/modelos/personas/rocketbox`, fuera de git): Microsoft Rocketbox Avatar Library, © Microsoft Corporation, licencia MIT (https://github.com/microsoft/Microsoft-Rocketbox). Convertidas con `tools/rocketbox_convertir.js` (sus animaciones son las de Mixamo pasadas a su esqueleto) y optimizadas con `tools/rocketbox_optimizar.js`.

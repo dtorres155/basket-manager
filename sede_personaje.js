@@ -29,14 +29,30 @@
       UpperLegR: 'RightUpLeg',
       Foot: 'LeftFoot'
     };
-    let _lista = null;
-    function listaMixamo() {
-      if (!_lista)
-        _lista = fetch('modelos/personas/mixamo/lista.json')
+    // los mismos huesos en el esqueleto de Rocketbox (3ds Max Biped)
+    const RB_HUESOS = {
+      Head: 'Bip01_Head',
+      Neck: 'Bip01_Neck',
+      Hips: 'Bip01_Pelvis',
+      Spine: 'Bip01_Spine',
+      UpperArmL: 'Bip01_L_UpperArm',
+      UpperArmR: 'Bip01_R_UpperArm',
+      UpperLegL: 'Bip01_L_Thigh',
+      UpperLegR: 'Bip01_R_Thigh',
+      Foot: 'Bip01_L_Foot'
+    };
+    // Dos familias de personas realistas (solo escritorio): Mixamo y Microsoft Rocketbox (punto 107; MIT; tools/rocketbox_*.js), cada una
+    // en su carpeta con su lista.json, sus versiones de media distancia (lod/) y sus animaciones (anim/, las de Rocketbox pasadas desde las
+    // de Mixamo a su esqueleto). La gente de la calle sale de las dos; jugadores, policía y equipación, de Mixamo.
+    const _listas = {};
+    function listaDe(fam) {
+      if (!_listas[fam])
+        _listas[fam] = fetch('modelos/personas/' + fam + '/lista.json')
           .then(r => (r.ok ? r.json() : null))
           .catch(() => null);
-      return _lista;
+      return _listas[fam];
     }
+    const listaMixamo = () => listaDe('mixamo');
     // Una malla por persona (punto 105 de la hoja de ruta 2): los modelos de Mixamo traen de 2 a 9 piezas (cuerpo, camisa, pelo…), cada una
     // con su propia copia recortada del esqueleto (mixamorigHips_1, _2…), que las animaciones no mueven. Se funden una vez por modelo en
     // la plantilla (g.scene, antes de clonarla): una sola malla atada a los huesos que mueven las animaciones (el primero de cada nombre),
@@ -300,27 +316,35 @@
     async function personajeMixamo(o) {
       // tu personaje cuando eres jugador (con tu cara propia), los mayores y los niños siguen con Quaternius
       if (!GM.campus || GM.campus.config.calidad !== 'alta' || (o.rostro && o.escudo) || o.sinMixamo || o.edad === 'mayor' || typeof fetch !== 'function') return null;
-      const L = await listaMixamo();
-      if (!L) return null;
+      const [L0, LR] = await Promise.all([listaMixamo(), listaDe('rocketbox')]),
+        L = L0 || { h: [], m: [], n: [], roles: {} };
+      if (!L0 && !LR) return null;
       const roles = L.roles || {},
         oscura = c => {
           const k = new THREE.Color(c || '#e0ac85');
           return k.r * 0.3 + k.g * 0.59 + k.b * 0.11 < 0.25;
         };
       let pool;
+      // cada candidato es [familia, id]; la gente de la calle y los papeles, de las dos familias
+      const de = (fam, ids) => (ids || []).map(id => [fam, id]),
+        rRoles = (LR && LR.roles) || {};
       if (o.escudo)
-        pool = o.kit && L.kit && L.kit.length ? L.kit : L.chandal ? L.chandal[oscura(o.piel) ? 'oscuro' : 'claro'] : null; // jugadores (punto 108)
-      else if (o.rolV && roles[o.rolV]) pool = roles[o.rolV];
+        pool = de('mixamo', o.kit && L.kit && L.kit.length ? L.kit : L.chandal ? L.chandal[oscura(o.piel) ? 'oscuro' : 'claro'] : null); // jugadores (punto 108)
+      else if (o.rolV && (roles[o.rolV] || rRoles[o.rolV])) pool = de('rocketbox', rRoles[o.rolV]).concat(de('mixamo', roles[o.rolV]));
       else if (o.rolV === 'policia' || o.rolV === 'obrero')
         return null; // sin modelo para ese papel: el de Quaternius
-      else pool = o.proporcion === 'nino' ? L.n : /^m-/.test(o.modelo || '') || o.sexo === 'm' ? L.m : L.h;
+      else {
+        const k = o.proporcion === 'nino' ? 'n' : /^m-/.test(o.modelo || '') || o.sexo === 'm' ? 'm' : 'h';
+        pool = de('rocketbox', LR && LR[k]).concat(de('mixamo', L[k]));
+      }
       if (!pool || !pool.length) return null;
-      const id = pool[GM.util.hash(String(o.semilla !== undefined ? o.semilla : [o.modelo, o.altura, o.piel, o.pelo].join('|'))) % pool.length];
+      const [fam, id] = pool[GM.util.hash(String(o.semilla !== undefined ? o.semilla : [o.modelo, o.altura, o.piel, o.pelo].join('|'))) % pool.length],
+        dir = 'modelos/personas/' + fam + '/';
       const { cargar, textura } = ctx,
         nombres = Object.keys(MX_CLIPS);
-      const [g, ...an] = await Promise.all([cargar('modelos/personas/mixamo/' + id + '.glb'), ...nombres.map(n => cargar('modelos/personas/mixamo/anim/' + MX_CLIPS[n] + '.glb'))]);
+      const [g, ...an] = await Promise.all([cargar(dir + id + '.glb'), ...nombres.map(n => cargar(dir + 'anim/' + MX_CLIPS[n] + '.glb').catch(() => ({ animations: [] })))]);
       // versión de media distancia (punto 106): si no está (instalaciones antiguas), solo la normal
-      const gL = g.fundido === undefined ? await cargar('modelos/personas/mixamo/lod/' + id + '.glb').catch(() => null) : null;
+      const gL = g.fundido === undefined ? await cargar(dir + 'lod/' + id + '.glb').catch(() => null) : null;
       try {
         fundirMixamo(g, gL);
       } catch (e) {
@@ -350,7 +374,8 @@
         if (n.isBone) B[n.name] = n;
       });
       Object.keys(MX_HUESOS).forEach(k => {
-        if (B['mixamorig' + MX_HUESOS[k]]) B[k] = B['mixamorig' + MX_HUESOS[k]];
+        const n = fam === 'rocketbox' ? RB_HUESOS[k] : 'mixamorig' + MX_HUESOS[k];
+        if (B[n]) B[k] = B[n];
       });
       const cerca = obj.getObjectByName('cuerpo'),
         lejos = obj.getObjectByName('cuerpo_lejos');
